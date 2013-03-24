@@ -402,12 +402,15 @@ def main():
     best_result = None
     for anim_sets in set_partitions_all_permutation(args.anim):
         print "Trying: ", anim_sets
-        regions, dimensions, offsets_by_id, result_img, pc_result_img = pack_animations(anim_sets)
-        size = result_img.shape[0]*result_img.shape[1]
-        print "Size: %i x %i = %i pixels" % (result_img.shape[1],result_img.shape[0], size)
-        if size < best:
-            best = size
-            best_result = regions, dimensions, offsets_by_id, result_img, pc_result_img
+        try:
+            regions, dimensions, offsets_by_id, result_img, pc_result_img = pack_animations(anim_sets)
+            size = result_img.shape[0]*result_img.shape[1]
+            print "Size: %i x %i = %i pixels" % (result_img.shape[1],result_img.shape[0], size)
+            if size < best:
+                best = size
+                best_result = regions, dimensions, offsets_by_id, result_img, pc_result_img
+        except Exception as e:
+            print "Try failed because: "+e.message
 
     regions, dimensions, offsets_by_id, result_img, pc_result_img = best_result
     for anim in args.anim:
