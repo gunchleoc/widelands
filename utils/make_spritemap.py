@@ -383,7 +383,7 @@ def parse_args():
     p.add_argument("-o", "--output", type = str, default = None, help = "Output picture name. Default is <current dir>.png")
     p.add_argument("-f", "--fps", type = str, default = None, help = "Specify frames per second for all the animations. This will be outputted into the conf file and is just there to spare typing.")
     p.add_argument("-s", "--hotspot", type = str, default = None, help = "Specify hotspot as 'x y' for all the animations. This will be outputted into the conf file and is just there to spare typing.")
-
+    p.add_argument("-rm", "--remove", action='store_true', default = False, help = "Remove old animation images afterwards.")
     args = p.parse_args()
 
     # Find the animations in the current directory
@@ -423,6 +423,11 @@ def main():
         output_results(anim, args.output, dimensions[anim], regions[anim], offsets_by_id, args)
     print "Results were appended to conf."
 
+    if args.remove:
+        for fn in glob(os.path.join(args.dir, '*.png')):
+            m = re.match(r'(.*?)\d+(_pc)?\.png', fn)
+            if m is None: continue
+            os.remove(fn)
     Image.fromarray(result_img).save(args.output)
     if pc_result_img is not None:
         pc_fn = os.path.splitext(args.output)[0] + "_pc.png"
