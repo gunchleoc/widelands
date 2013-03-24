@@ -186,7 +186,7 @@ class Packer(object):
             n = b.node
             x, y = n['x'], n['y']
             img[y:y+b.h,x:x+b.w] = b.img.astype(np.uint8)
-            if b.pc_img is not None:
+            if b.pc_img is not None and pc_img is not None:
                 pc_img[y:y+b.h,x:x+b.w] = b.pc_img.astype(np.uint8)
             else:
                 pc_img = None
