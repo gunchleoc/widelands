@@ -384,9 +384,15 @@ def parse_args():
     args.anim = sorted(anims)
 
     if args.output is None:
-        args.output = os.path.basename(os.getcwd()) + '.png'
+        if args.dir is None:
+            args.output = os.path.basename(os.getcwd()) + '.png'
+        else:
+            args.output = os.path.join(args.dir,os.path.basename(args.dir) + '.png')
     else:
-        args.output = os.path.join(args.dir,".png")
+        if args.dir is None:
+            args.output = os.path.join(os.getcwd(),args.output + '.png')
+        else:
+            args.output = os.path.join(args.dir,args.output+".png")
     return args
 
 def main():
