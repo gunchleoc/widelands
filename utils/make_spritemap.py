@@ -367,7 +367,8 @@ def parse_args():
     p = argparse.ArgumentParser(description=
         "Creates a Spritemap of the animation pictures found in the current directory."
     )
-
+    
+    p.add_argument("-d", "--dir", type=str, default = "." , help = "Use this directory instead of current dir.")
     p.add_argument("-o", "--output", type=str, default=None, help = "Output picture name. Default is <current dir>.png")
     p.add_argument("-f", "--fps", type=str, default=None, help="Specify frames per second for all the animations. This will be outputted into the conf file and is just there to spare typing.")
     p.add_argument("-s", "--hotspot", type=str, default=None, help="Specify hotspot as 'x y' for all the animations. This will be outputted into the conf file and is just there to spare typing.")
@@ -376,7 +377,7 @@ def parse_args():
 
     # Find the animations in the current directory
     anims = set()
-    for fn in glob('*.png'):
+    for fn in glob(os.path.join(args.dir,'*.png')):
         m = re.match(r'(.*?)\d+\.png', fn)
         if m is None: continue
         anims.add(m.group(1))
@@ -384,6 +385,8 @@ def parse_args():
 
     if args.output is None:
         args.output = os.path.basename(os.getcwd()) + '.png'
+    else:
+        args.output = os.path.join(args.dir,".png")
     return args
 
 def main():
