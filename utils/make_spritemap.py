@@ -7,13 +7,14 @@ import re
 import argparse
 import os
 import sys
+import ConfigParser
 
 import Image
 import numpy as np
 from scipy import ndimage
 
 # Set partition: http://code.activestate.com/recipes/576795/
-def set_partition(iterable, chain=chain, map=map):
+def set_partition(iterable, chain = chain, map = map):
     """Returns all set partitions of iteratable"""
     s = iterable if hasattr(iterable, '__getslice__') else tuple(iterable)
     n = len(s)
@@ -28,7 +29,7 @@ def set_partitions_all_permutation(iterable):
         for partition in set_partition(iterable):
             for idx in range(len(partition)):
                 for c in permutations(partition[idx], len(partition[idx])):
-                    yield tuple(map(tuple, partition[:idx] + [list(c)] + partition[idx+1:]))
+                    yield tuple(map(tuple, partition[:idx] + [list(c)] + partition[idx + 1:]))
     return sorted(set(_sub()))
 
 
@@ -72,10 +73,10 @@ class Rect(object):
     def merge(self, r):
         """This yields a new rect that just contains both regions."""
         return Rect(
-            min(self.top,r.top),
-            max(self.bottom,r.bottom),
-            min(self.left,r.left),
-            max(self.right,r.right)
+            min(self.top, r.top),
+            max(self.bottom, r.bottom),
+            min(self.left, r.left),
+            max(self.right, r.right)
         )
 
     def contains(self, p):
@@ -101,8 +102,8 @@ class ImageWrapper(object):
         return self.img.shape[0]
 
     def __lt__(self, o):
-        if max(self.w,self.h) < max(o.w,o.h): return True
-        if max(self.w,self.h) > max(o.w,o.h): return False
+        if max(self.w, self.h) < max(o.w, o.h): return True
+        if max(self.w, self.h) > max(o.w, o.h): return False
         if self.w < o.w: return True
         if self.w > o.w: return False
         if self.h < o.h: return True
@@ -185,9 +186,9 @@ class Packer(object):
             assert(b.node)
             n = b.node
             x, y = n['x'], n['y']
-            img[y:y+b.h,x:x+b.w] = b.img.astype(np.uint8)
+            img[y:y + b.h, x:x + b.w] = b.img.astype(np.uint8)
             if b.pc_img is not None and pc_img is not None:
-                pc_img[y:y+b.h,x:x+b.w] = b.pc_img.astype(np.uint8)
+                pc_img[y:y + b.h, x:x + b.w] = b.pc_img.astype(np.uint8)
             else:
                 pc_img = None
             for id in b.id:
@@ -217,20 +218,20 @@ def load_animations(anims):
                 rv_pc.append(_load(pc_fn, seen_shape))
 
     # Crop the Images.
-    line_x_all_alpha = lambda x,idx: (rv[idx][0][x,:,-1] == 0).all()
-    col_x_all_alpha = lambda x,idx: (rv[idx][0][:,x,-1] == 0).all()
-    while all(line_x_all_alpha(0,i) for i in range(len(rv))):
+    line_x_all_alpha = lambda x, idx: (rv[idx][0][x, :, -1] == 0).all()
+    col_x_all_alpha = lambda x, idx: (rv[idx][0][:, x, -1] == 0).all()
+    while all(line_x_all_alpha(0, i) for i in range(len(rv))):
         rv = [(img[1:], anim, idx) for img, anim, idx in rv]
         rv_pc = [img[1:] for img in rv_pc]
-    while all(line_x_all_alpha(-1,i) for i in range(len(rv))):
+    while all(line_x_all_alpha(-1, i) for i in range(len(rv))):
         rv = [(img[:-1], anim, idx) for img, anim, idx in rv]
         rv_pc = [img[:-1] for img in rv_pc]
-    while all(col_x_all_alpha(0,i) for i in range(len(rv))):
-        rv = [(img[:,1:], anim, idx) for img, anim, idx in rv]
-        rv_pc = [img[:,1:] for img in rv_pc]
-    while all(col_x_all_alpha(-1,i) for i in range(len(rv))):
-        rv = [(img[:,:-1], anim, idx) for img, anim, idx in rv]
-        rv_pc = [img[:,:-1] for img in rv_pc]
+    while all(col_x_all_alpha(0, i) for i in range(len(rv))):
+        rv = [(img[:, 1:], anim, idx) for img, anim, idx in rv]
+        rv_pc = [img[:, 1:] for img in rv_pc]
+    while all(col_x_all_alpha(-1, i) for i in range(len(rv))):
+        rv = [(img[:, :-1], anim, idx) for img, anim, idx in rv]
+        rv_pc = [img[:, :-1] for img in rv_pc]
 
     return rv, rv_pc
 
@@ -249,12 +250,12 @@ def merge_overlapping(regions):
 def cut_out_main(img, regions):
     img = img.copy()
     for r in regions:
-        img[r.top:r.bottom+1, r.left:r.right+1] = (0,0,0,0)
+        img[r.top:r.bottom + 1, r.left:r.right + 1] = (0, 0, 0, 0)
     return img
 
 def eliminate_duplicates(imgs):
     for i in range(len(imgs)):
-        for j in range(i+1, len(imgs)):
+        for j in range(i + 1, len(imgs)):
             if (imgs[i][0] == imgs[j][0]).all():
                 imgs[i] = (imgs[i][0], imgs[i][1], imgs[i][2] + imgs[j][2])
                 del imgs[j]
@@ -272,15 +273,15 @@ def prepare_animations(anims):
     # Find the regions that differ over all frames
     diff = np.zeros(base_pic.shape, np.uint32)
     for i in range(len(imgs)):
-        for j in range(i+1, len(imgs)):
+        for j in range(i + 1, len(imgs)):
             diff += abs(imgs[i][0] - imgs[j][0])
 
-    label_img, nlabels = ndimage.label(diff.max(axis=-1) > 0)
+    label_img, nlabels = ndimage.label(diff.max(axis = -1) > 0)
     regions = []
     for i in range(1, nlabels + 1):
-        ys, xs = np.where(label_img==i)
+        ys, xs = np.where(label_img == i)
         # Note, this rectangular regions are including the end points.
-        regions.append(Rect(ys.min(),ys.max(),xs.min(),xs.max()))
+        regions.append(Rect(ys.min(), ys.max(), xs.min(), xs.max()))
 
     while merge_overlapping(regions):
         pass
@@ -291,11 +292,11 @@ def prepare_animations(anims):
         Rect(0, base_pic.shape[0], 0, base_pic.shape[1]),
         [(anim, -1, -1) for anim in anims])
     )
-    for ridx,r in enumerate(regions):
+    for ridx, r in enumerate(regions):
         reg_imgs = []
         for idx in range(len(imgs)):
-            img,anim,framenr = imgs[idx]
-            subimg = img[r.top:r.bottom+1, r.left:r.right+1]
+            img, anim, framenr = imgs[idx]
+            subimg = img[r.top:r.bottom + 1, r.left:r.right + 1]
             reg_imgs.append((subimg, pc_imgs[idx] if pc_imgs else None, [(anim, ridx, framenr)]))
 
         # Drop the exact same images in this region.
@@ -305,7 +306,7 @@ def prepare_animations(anims):
         for subimg, pc_img, id in reg_imgs:
             pc_subimg = None
             if pc_img is not None:
-                pc_subimg = pc_img[r.top:r.bottom+1, r.left:r.right+1]
+                pc_subimg = pc_img[r.top:r.bottom + 1, r.left:r.right + 1]
             pics_to_fit.append(ImageWrapper(subimg, pc_subimg, r, id))
     return pics_to_fit, regions, base_pic.shape[1], base_pic.shape[0]
 
@@ -321,96 +322,101 @@ def pack_animations(anim_sets):
             dimensions[anim] = (w, h)
             regions[anim] = anim_regions
 
-    pics_to_fit.sort(reverse=True)
+    pics_to_fit.sort(reverse = True)
     p = Packer()
     p.fit(pics_to_fit)
     offsets_by_id, result_img, pc_result_img = p.get_result()
     return regions, dimensions, offsets_by_id, result_img, pc_result_img
 
 def output_results(anim, img_name, dimensions, regions, offsets_by_id, args):
-    with open("conf", "a") as f:
-        f.write("[%s]\n" % anim)
-        f.write("packed=true\n")  # NOCOM(#sirver): get rid of this again.
-        f.write("pics=%s\n" % img_name)
-        f.write("dimensions=%i %i\n" % (dimensions[0], dimensions[1]))
-        has_plr_clr = False
-        if len(regions) and (anim + "_pc", 0, 0) in offsets_by_id:
-            has_plr_clr = True
+    config = ConfigParser.ConfigParser()
+    config.readfp(open(os.path.join(args.dir, "conf"), "r"))
 
-        def _find_offsets(anim, ridx):
-            cur_fr = 0
-            rv = []
-            while True:
-                id = (anim, ridx, cur_fr)
-                if id not in offsets_by_id:
-                    break
-                rv.append("%i %i" % offsets_by_id[id])
-                cur_fr += 1
-            return ";".join(rv)
+    section = "%s" % os.path.basename(anim)
+    n = re.search("_(\w)_", section)
+    if n.group(1) == "i":
+        section = "idle"
+    elif n.group(1) == "b":
+        section = "build"
+    elif n.group(1) == "u":
+        section = "unoccupied"
+    elif n.group(1) == "w":
+        section = "work"
+    config.set(section, "packed", "true")  # NOCOM(#sirver): get rid of this again.
+    config.set(section, "pics", os.path.basename(img_name))
+    config.set(section, "dimensions", "%i %i" % (dimensions[0], dimensions[1]));
+    has_plr_clr = False
+    if len(regions) and (anim + "_pc", 0, 0) in offsets_by_id:
+        has_plr_clr = True
 
-        f.write("base_offset=%i %i\n" % offsets_by_id[anim, -1, -1])
+    def _find_offsets(anim, ridx):
+        cur_fr = 0
+        rv = []
+        while True:
+            id = (anim, ridx, cur_fr)
+            if id not in offsets_by_id:
+                break
+            rv.append("%i %i" % offsets_by_id[id])
+            cur_fr += 1
+        return ";".join(rv)
 
-        for ridx,r in enumerate(regions):
-            f.write("region_%02i=%i %i %i %i:%s\n" % (
-                ridx, r.left, r.top, r.right - r.left + 1,
-                r.bottom - r.top + 1, _find_offsets(anim, ridx)
-                ))
+    config.set(section, "base_offset", "%i %i" % offsets_by_id[anim, -1, -1])
 
-        if args.fps:
-            f.write("fps=%s\n" % args.fps)
-        if args.hotspot:
-            f.write("hotspot=%s\n" % args.hotspot)
-        f.write("\n")
+    for ridx, r in enumerate(regions):
+        config.set(section, "region_%02i" % ridx, "%i %i %i %i:%s" % 
+                   (r.left, r.top, r.right - r.left + 1, 
+                    r.bottom - r.top + 1, _find_offsets(anim, ridx)))
+
+    if args.fps:
+        config.set(section, "fps", args.fps)
+    if args.hotspot:
+        config.set(section, "hotspot", args.hotspot)
+    config.write(open(os.path.join(args.dir, "conf"), "w"))
 
 # NOCOM(#sirver): support for dirpics.
 def parse_args():
-    p = argparse.ArgumentParser(description=
+    p = argparse.ArgumentParser(description = 
         "Creates a Spritemap of the animation pictures found in the current directory."
     )
     
-    p.add_argument("-d", "--dir", type=str, default = "." , help = "Use this directory instead of current dir.")
-    p.add_argument("-o", "--output", type=str, default=None, help = "Output picture name. Default is <current dir>.png")
-    p.add_argument("-f", "--fps", type=str, default=None, help="Specify frames per second for all the animations. This will be outputted into the conf file and is just there to spare typing.")
-    p.add_argument("-s", "--hotspot", type=str, default=None, help="Specify hotspot as 'x y' for all the animations. This will be outputted into the conf file and is just there to spare typing.")
+    p.add_argument("-d", "--dir", type = str, default = os.getcwd() , help = "Use this directory instead of current dir.")
+    p.add_argument("-o", "--output", type = str, default = None, help = "Output picture name. Default is <current dir>.png")
+    p.add_argument("-f", "--fps", type = str, default = None, help = "Specify frames per second for all the animations. This will be outputted into the conf file and is just there to spare typing.")
+    p.add_argument("-s", "--hotspot", type = str, default = None, help = "Specify hotspot as 'x y' for all the animations. This will be outputted into the conf file and is just there to spare typing.")
 
     args = p.parse_args()
 
     # Find the animations in the current directory
     anims = set()
-    for fn in glob(os.path.join(args.dir,'*.png')):
+    for fn in glob(os.path.join(args.dir, '*.png')):
         m = re.match(r'(.*?)\d+\.png', fn)
         if m is None: continue
         anims.add(m.group(1))
     args.anim = sorted(anims)
 
     if args.output is None:
-        if args.dir is None:
-            args.output = os.path.basename(os.getcwd()) + '.png'
-        else:
-            args.output = os.path.join(args.dir,os.path.basename(args.dir) + '.png')
+        args.output = os.path.join(args.dir, os.path.basename(args.dir) + '.png')        
     else:
-        if args.dir is None:
-            args.output = os.path.join(os.getcwd(),args.output + '.png')
-        else:
-            args.output = os.path.join(args.dir,args.output+".png")
+        args.output = os.path.join(args.dir, args.output + ".png")
+            
     return args
 
 def main():
     args = parse_args()
 
-    best = 10000**2
+    best = 10000 ** 2
     best_result = None
     for anim_sets in set_partitions_all_permutation(args.anim):
         print "Trying: ", anim_sets
         try:
             regions, dimensions, offsets_by_id, result_img, pc_result_img = pack_animations(anim_sets)
-            size = result_img.shape[0]*result_img.shape[1]
-            print "Size: %i x %i = %i pixels" % (result_img.shape[1],result_img.shape[0], size)
+            size = result_img.shape[0] * result_img.shape[1]
+            print "Size: %i x %i = %i pixels" % (result_img.shape[1], result_img.shape[0], size)
             if size < best:
                 best = size
                 best_result = regions, dimensions, offsets_by_id, result_img, pc_result_img
         except Exception as e:
-            print "Try failed because: "+e.message
+            print "Try failed because: " + e.message
 
     regions, dimensions, offsets_by_id, result_img, pc_result_img = best_result
     for anim in args.anim:
