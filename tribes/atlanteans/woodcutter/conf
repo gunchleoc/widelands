@@ -1,3 +1,4 @@
+[global]
 help=_Fells trees.
 program=harvest
 soundfx=../../../sound/sawmill/sawmill

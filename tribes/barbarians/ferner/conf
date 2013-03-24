@@ -1,3 +1,4 @@
+[global]
 help=_Grows thatch reed.
 program=plantreed
 program=harvestreed

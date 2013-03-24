@@ -1,3 +1,4 @@
+[global]
 help=_Weapons, armour and tools are made of iron. It is retrieved from iron ores in the smelting works.
 
 default_target_quantity=20

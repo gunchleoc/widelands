@@ -1,3 +1,4 @@
+[global]
 soundfx=../../../sound/smiths/smith
 soundfx=../../../sound/smiths/sharpening
 size=medium

@@ -1,3 +1,4 @@
+[global]
 size=big
 program=program
 picture=destroyed_building_picture.png  # Single frame image

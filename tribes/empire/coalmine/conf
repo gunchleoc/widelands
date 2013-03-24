@@ -1,3 +1,4 @@
+[global]
 size=mine
 output=coal
 enhancement=deep_coalmine

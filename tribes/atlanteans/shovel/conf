@@ -1,3 +1,4 @@
+[global]
 help=_Shovels are needed for proper handling of plants. Therefore the forester and the blackroot farmer are using them. They are produced by the toolsmith.
 default_target_quantity=2
 

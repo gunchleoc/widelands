@@ -1,3 +1,4 @@
+[global]
 soundfx=../../../sound/stonecutting/stonecutter
 help=_Cuts raw pieces of granite out of laying stones.
 program=cut

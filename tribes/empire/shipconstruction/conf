@@ -1,3 +1,4 @@
+[global]
 size=small
 program=program
 picture=idle_00.png

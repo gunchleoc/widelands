@@ -1,3 +1,4 @@
+[global]
 size=small
 program=program
 picture=field0s.png  # 1-image file

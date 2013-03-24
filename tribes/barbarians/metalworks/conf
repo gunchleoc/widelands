@@ -1,3 +1,4 @@
+[global]
 soundfx=../../../sound/smiths/toolsmith
 size=medium
 output=felling_axe

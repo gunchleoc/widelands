@@ -1,3 +1,4 @@
+[global]
 help=_Produces tools for the workers.
 
 [buildcost]

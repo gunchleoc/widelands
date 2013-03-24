@@ -1,3 +1,4 @@
+[global]
 help=_Cuts raw pieces of granite and marble out of laying stones.
 program=cut_stone
 program=cut_marble

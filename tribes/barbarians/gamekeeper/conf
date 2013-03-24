@@ -1,3 +1,4 @@
+[global]
 help=_The Gamekeeper makes sure that the natural population of animals never drops too low.
 program=release
 

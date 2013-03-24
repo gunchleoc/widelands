@@ -1,3 +1,4 @@
+[global]
 help=_Defend and Conquer!
 max_hp_level=1
 max_attack_level=4

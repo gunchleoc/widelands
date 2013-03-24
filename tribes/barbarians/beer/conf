@@ -1,3 +1,4 @@
+[global]
 help=_Beer is produced in micro breweries used in inns and big inns to produce snacks.
 preciousness=2
 default_target_quantity=15

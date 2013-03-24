@@ -1,3 +1,4 @@
+[global]
 help=_Produces food for miners.
 
 [buildcost]

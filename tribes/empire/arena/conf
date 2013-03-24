@@ -1,3 +1,4 @@
+[global]
 size=big
 enhancement=colosseum
 soldier_capacity=8

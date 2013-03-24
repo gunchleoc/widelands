@@ -1,3 +1,4 @@
+[global]
 help=_"Scouts like Scotty the scout scout unscouted area in a scouty fashion." # (c) WiHack Team 02.01.2010
 program=scout
 

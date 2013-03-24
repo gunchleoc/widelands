@@ -1,3 +1,4 @@
+[global]
 help=_Produces cloth for buildings, ships and soldiers.
 
 [buildcost]

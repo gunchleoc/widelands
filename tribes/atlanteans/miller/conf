@@ -1,3 +1,4 @@
+[global]
 help=_Mills blackroot and corn to produce blackroot flour and corn flour, respectively.
 
 [buildcost]

@@ -1,3 +1,4 @@
+[global]
 help=_Wood is a basic building material of the Empire. It is also consumed in the weapon smithy.
 
 default_target_quantity=40

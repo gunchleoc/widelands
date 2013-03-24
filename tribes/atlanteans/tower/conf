@@ -1,3 +1,4 @@
+[global]
 size=medium
 max_soldiers=4
 heal_per_second=120

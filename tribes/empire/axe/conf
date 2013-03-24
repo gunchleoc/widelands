@@ -1,3 +1,4 @@
+[global]
 help=_The axe is the tool for the lumberjack. It is produced by the toolsmith.
 default_target_quantity=3
 preciousness=1

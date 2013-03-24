@@ -1,3 +1,4 @@
+[global]
 help=_Works at construction sites to create a new building.
 soundfx=../../../sound/hammering/hammering
 

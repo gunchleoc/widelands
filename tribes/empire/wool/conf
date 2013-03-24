@@ -1,3 +1,4 @@
+[global]
 help=_Wool is the hair of sheep. Weaving mills use it to make cloth.
 default_target_quantity=4
 preciousness=2

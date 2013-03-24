@@ -1,3 +1,4 @@
+[global]
 size=small
 heal_per_second=60 # very low -> smallest building
 conquers=6

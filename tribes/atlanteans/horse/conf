@@ -1,3 +1,4 @@
+[global]
 help=_Horses help to carry items at heavily used roads. They are raised in a horse farm.
 default_target_quantity=5
 ware_hotspot=-2 12

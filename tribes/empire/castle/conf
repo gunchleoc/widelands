@@ -1,3 +1,4 @@
+[global]
 size=big
 buildable=no
 max_soldiers=12

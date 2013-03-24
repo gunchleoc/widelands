@@ -1,3 +1,4 @@
+[global]
 help=_Works at the shipyard and constructs new ships.
 soundfx=../../../sound/hammering/hammering
 program=buildship

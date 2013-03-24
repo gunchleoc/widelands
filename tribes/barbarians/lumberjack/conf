@@ -1,3 +1,4 @@
+[global]
 help=_Fells trees.
 program=chop
 soundfx=../../../sound/spoken/timber

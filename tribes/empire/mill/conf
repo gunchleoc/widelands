@@ -1,3 +1,4 @@
+[global]
 size=medium
 output=flour
 soundfx=../../../sound/mill/mill_turning

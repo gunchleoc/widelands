@@ -1,3 +1,4 @@
+[global]
 help=_Discovers resources for mining.
 program=expedition
 program=search

@@ -1,3 +1,4 @@
+[global]
 help=_The fisher fishes delicious fish.
 program=fish
 soundfx=../../../sound/fisher/fisher_throw_net

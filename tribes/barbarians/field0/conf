@@ -1,3 +1,4 @@
+[global]
 size=small
 program=program
 picture=field0m.png  # Note - this is a 1-frame image

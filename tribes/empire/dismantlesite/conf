@@ -1,3 +1,4 @@
+[global]
 size=small   # dummy; overridden by building size
 buildable=no
 vision_range=2

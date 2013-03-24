@@ -1,3 +1,4 @@
+[global]
 help=_Produces weapons for soldiers and tools for workers.
 experience=24
 becomes=master-blacksmith

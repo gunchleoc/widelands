@@ -1,3 +1,4 @@
+[global]
 help=_Bakes bread for workers.
 
 [buildcost]

@@ -1,3 +1,4 @@
+[global]
 help=_Fire tongs are tools of the smelter, who works in the smelting works. Produced in the metal works (but ceases to be produced by the building if it is enhanced to an axefactory and war mill).
 
 [idle]

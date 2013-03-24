@@ -1,3 +1,4 @@
+[global]
 soundfx=../../../sound/farm/horse
 size=big
 output=horse

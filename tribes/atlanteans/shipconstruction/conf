@@ -1,3 +1,4 @@
+[global]
 size=small
 program=program
 picture=ship_i_00.png  # Is this still used?

@@ -1,3 +1,4 @@
+[global]
 help=_Helps to carry items at heavy used roads.
 default_target_quantity=5
 ware_hotspot=-2 8

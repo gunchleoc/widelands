@@ -1,3 +1,4 @@
+[global]
 help=_Produces armour for the soldiers.
 
 [buildcost]

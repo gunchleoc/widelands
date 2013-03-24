@@ -1,3 +1,4 @@
+[global]
 help=_Gets fish out of the sea.
 program=fish
 soundfx=../../../sound/fisher/fisher_throw_net

@@ -1,3 +1,4 @@
+[global]
 help=_Iron ores need to be smelted in the smelting works to give iron. Iron ores are produced in iron mines.
 
 preciousness=4

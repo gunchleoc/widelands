@@ -1,3 +1,4 @@
+[global]
 #help: Will smoke food unless the economy has less trunks than the target quantity and at least the target quantity of the smoked food.
 
 size=medium

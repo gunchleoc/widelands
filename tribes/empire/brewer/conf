@@ -1,3 +1,4 @@
+[global]
 help=_Produces beer or wine.
 
 [buildcost]
