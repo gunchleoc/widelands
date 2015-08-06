@@ -63,9 +63,11 @@ private:
 	void center_view();
 	void filter_messages(Widelands::Message::Type);
 	void toggle_filter_messages_button(UI::Button &, Widelands::Message::Type);
-	void set_filter_messages_tooltips();
 	void set_display_message_type_label(Widelands::Message::Type);
 	void update_record(UI::Table<uintptr_t>::EntryRecord & er, const Widelands::Message &);
+
+	std::string hotkey_scope_;
+	const SDL_Keycode all_messages_hotkey_;
 
 	UI::Table<uintptr_t> * list;
 	UI::MultilineTextarea message_body;

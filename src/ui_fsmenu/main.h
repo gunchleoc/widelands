@@ -46,6 +46,8 @@ public:
 
 	FullscreenMenuMain();
 
+	bool handle_key(bool down, SDL_Keysym) override;
+
 private:
 	UI::Box      vbox;
 	UI::Button   playtutorial;

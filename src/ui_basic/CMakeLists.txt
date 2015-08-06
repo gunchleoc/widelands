@@ -10,6 +10,8 @@ wl_library(ui_basic
     editbox.h
     helpwindow.cc
     helpwindow.h
+    hotkeys.cc
+    hotkeys.h
     icon.cc
     icon.h
     icongrid.cc

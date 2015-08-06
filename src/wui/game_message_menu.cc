@@ -29,6 +29,7 @@
 #include "logic/player.h"
 #include "logic/playercommand.h"
 #include "wui/interactive_player.h"
+#include "wlapplication.h" // NOCOM Back reference to Widelands. We need to find a better place to put this. Graphic?
 
 using Widelands::Message;
 using Widelands::MessageId;
@@ -44,6 +45,8 @@ GameMessageMenu::GameMessageMenu
 	:
 	UI::UniqueWindow
 		(&plr, "messages", &registry, 580, 375, _("Messages: Inbox")),
+	hotkey_scope_("game_message_menu"),
+	all_messages_hotkey_(SDLK_0),
 	message_body
 		(this,
 		 5, 154, 570, 216 - 5 - 34, // Subtracting height for message type icon
@@ -61,14 +64,19 @@ GameMessageMenu::GameMessageMenu
 	list->focus();
 
 	// Buttons for message types
+	/** TRANSLATORS: Tooltip in the messages window */
+	const std::string pressed_tooltip = _("Show all messages");
+
 	m_geologistsbtn =
 			new UI::Button
 				(this, "filter_geologists_messages",
 				 5, 5, 34, 34,
 				 g_gr->images().get("pics/but0.png"),
 				 g_gr->images().get("pics/menu_geologist.png"),
-				 "",
+				 /** TRANSLATORS: Tooltip in the messages window */
+				 _("Show geologists' messages only"),
 				 true);
+	m_geologistsbtn->set_pressed_tooltip(pressed_tooltip);
 	m_geologistsbtn->sigclicked.connect
 			(boost::bind(&GameMessageMenu::filter_messages, this, Widelands::Message::Type::kGeologists));
 
@@ -78,8 +86,10 @@ GameMessageMenu::GameMessageMenu
 				 2 * 5 + 34, 5, 34, 34,
 				 g_gr->images().get("pics/but0.png"),
 				 g_gr->images().get("pics/menu_build_flag.png"),
-				 "",
+				 /** TRANSLATORS: Tooltip in the messages window */
+				 _("Show economy messages only"),
 				 true);
+	m_economybtn->set_pressed_tooltip(pressed_tooltip);
 	m_economybtn->sigclicked.connect
 			(boost::bind(&GameMessageMenu::filter_messages, this, Widelands::Message::Type::kEconomy));
 
@@ -89,8 +99,10 @@ GameMessageMenu::GameMessageMenu
 				 3 * 5 + 2 * 34, 5, 34, 34,
 				 g_gr->images().get("pics/but0.png"),
 				 g_gr->images().get("pics/start_expedition.png"),
-				 "",
+				 /** TRANSLATORS: Tooltip in the messages window */
+				 _("Show seafaring messages only"),
 				 true);
+	m_seafaringbtn->set_pressed_tooltip(pressed_tooltip);
 	m_seafaringbtn->sigclicked.connect
 			(boost::bind(&GameMessageMenu::filter_messages, this, Widelands::Message::Type::kSeafaring));
 
@@ -100,8 +112,10 @@ GameMessageMenu::GameMessageMenu
 				 4 * 5 + 3 * 34, 5, 34, 34,
 				 g_gr->images().get("pics/but0.png"),
 				 g_gr->images().get("pics/messages_warfare.png"),
-				 "",
+				 /** TRANSLATORS: Tooltip in the messages window */
+				 _("Show warfare messages only"),
 				 true);
+	m_warfarebtn->set_pressed_tooltip(pressed_tooltip);
 	m_warfarebtn->sigclicked.connect
 			(boost::bind(&GameMessageMenu::filter_messages, this, Widelands::Message::Type::kWarfare));
 
@@ -111,13 +125,14 @@ GameMessageMenu::GameMessageMenu
 				 5 * 5 + 4 * 34, 5, 34, 34,
 				 g_gr->images().get("pics/but0.png"),
 				 g_gr->images().get("pics/menu_objectives.png"),
-				 "",
+				 /** TRANSLATORS: Tooltip in the messages window */
+				 _("Show scenario messages only"),
 				 true);
+	m_scenariobtn->set_pressed_tooltip(pressed_tooltip);
 	m_scenariobtn->sigclicked.connect
 			(boost::bind(&GameMessageMenu::filter_messages, this, Widelands::Message::Type::kScenario));
 
 	m_message_filter = Widelands::Message::Type::kAllMessages;
-	set_filter_messages_tooltips();
 	// End: Buttons for message types
 
 	UI::Button * clearselectionbtn =
@@ -146,10 +161,8 @@ GameMessageMenu::GameMessageMenu
 			 6 * 5 + 9 * 34 + 34, 5, 34, 34,
 			 g_gr->images().get("pics/but2.png"),
 			 g_gr->images().get("pics/message_archive.png"),
-			 /** TRANSLATORS: %s is a tooltip, Del is the corresponding hotkey */
-			 (boost::format(_("Del: %s"))
-			  /** TRANSLATORS: Tooltip in the messages window */
-			  % _("Archive selected messages")).str());
+			 /** TRANSLATORS: Tooltip in the messages window */
+			 _("Archive selected messages"));
 	m_archivebtn->sigclicked.connect
 		(boost::bind(&GameMessageMenu::archive_or_restore, this));
 
@@ -169,10 +182,8 @@ GameMessageMenu::GameMessageMenu
 			 580 - 5 - 34, 5, 34, 34,
 			 g_gr->images().get("pics/but2.png"),
 			 g_gr->images().get("pics/menu_goto.png"),
-			 /** TRANSLATORS: %s is a tooltip, G is the corresponding hotkey */
-			 (boost::format(_("G: %s"))
-			  /** TRANSLATORS: Tooltip in the messages window */
-			  % _("Center main mapview on location")).str(),
+			 /** TRANSLATORS: Tooltip in the messages window */
+			 _("Center main mapview on location"),
 			 false);
 	m_centerviewbtn->sigclicked.connect(boost::bind(&GameMessageMenu::center_view, this));
 
@@ -194,6 +205,22 @@ GameMessageMenu::GameMessageMenu
 
 	set_can_focus(true);
 	focus();
+
+	m_geologistsbtn->set_hotkey(hotkey_scope_, SDLK_1);
+	m_economybtn->set_hotkey(hotkey_scope_, SDLK_2);
+	m_seafaringbtn->set_hotkey(hotkey_scope_, SDLK_3);
+	m_warfarebtn->set_hotkey(hotkey_scope_, SDLK_4);
+	m_scenariobtn->set_hotkey(hotkey_scope_, SDLK_5);
+
+	m_geologistsbtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
+	m_economybtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
+	m_seafaringbtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
+	m_warfarebtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
+	m_scenariobtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
+	m_archivebtn->set_hotkey(hotkey_scope_, SDLK_DELETE);
+	m_centerviewbtn->set_hotkey(hotkey_scope_, SDLK_g);
+
+	WLApplication::get()->hotkeys().add_hotkey(hotkey_scope_, "all_messages", SDLK_0, "All Messages");
 }
 
 /**
@@ -340,40 +367,50 @@ void GameMessageMenu::double_clicked(uint32_t const /* t */) {
 bool GameMessageMenu::handle_key(bool down, SDL_Keysym code)
 {
 	if (down) {
-		switch (code.sym) {
+
 		// Don't forget to change the tooltips if any of these get reassigned
-		case SDLK_g:
-			if (m_centerviewbtn->enabled())
-				center_view();
-			return true;
-		case SDLK_0:
+		if (code.sym == all_messages_hotkey_) {
 			filter_messages(Widelands::Message::Type::kAllMessages);
 			return true;
-		case SDLK_1:
+		} else if (code.sym == m_geologistsbtn->get_hotkey()) {
 			filter_messages(Widelands::Message::Type::kGeologists);
 			return true;
-		case SDLK_2:
+		} else if (code.sym == m_economybtn->get_hotkey()) {
 			filter_messages(Widelands::Message::Type::kEconomy);
 			return true;
-		case SDLK_3:
+		} else if (code.sym == m_seafaringbtn->get_hotkey()) {
 			filter_messages(Widelands::Message::Type::kSeafaring);
 			return true;
-		case SDLK_4:
+		} else if (code.sym == m_warfarebtn->get_hotkey()) {
 			filter_messages(Widelands::Message::Type::kWarfare);
 			return true;
-		case SDLK_5:
+		} else if (code.sym == m_scenariobtn->get_hotkey()) {
 			filter_messages(Widelands::Message::Type::kScenario);
 			return true;
-		case SDLK_DELETE:
+		}
+
+		if (code.sym == m_centerviewbtn->get_hotkey()) {
+			if (m_centerviewbtn->enabled()) {
+				center_view();
+			}
+			return true;
+		} else if (code.sym == m_archivebtn->get_hotkey()) {
 			archive_or_restore();
 			return true;
-		case SDL_SCANCODE_KP_PERIOD:
-		case SDLK_KP_PERIOD:
-			if (code.mod & KMOD_NUM)
-				break;
-			/* no break */
-		default:
-			break; // not handled
+		} else if (code.sym == all_messages_hotkey_) {
+			filter_messages(Widelands::Message::Type::kAllMessages);
+			return true;
+		}
+
+		// NOCOM what it this for?
+		switch (code.sym) {
+			case SDL_SCANCODE_KP_PERIOD:
+			case SDLK_KP_PERIOD:
+				if (code.mod & KMOD_NUM)
+					break;
+				/* no break */
+			default:
+				break; // not handled
 		}
 	}
 
@@ -469,7 +506,6 @@ void GameMessageMenu::filter_messages(Widelands::Message::Type const msgtype) {
 			toggle_filter_messages_button(*m_scenariobtn, msgtype);
 			break;
 		default:
-			set_filter_messages_tooltips();
 			m_message_filter = Widelands::Message::Type::kAllMessages;
 			m_geologistsbtn->set_perm_pressed(false);
 			m_economybtn->set_perm_pressed(false);
@@ -484,7 +520,6 @@ void GameMessageMenu::filter_messages(Widelands::Message::Type const msgtype) {
  * Helper for filter_messages
  */
 void GameMessageMenu::toggle_filter_messages_button(UI::Button & button, Widelands::Message::Type msgtype) {
-	set_filter_messages_tooltips();
 	if (button.get_perm_pressed()) {
 		button.set_perm_pressed(false);
 		m_message_filter = Widelands::Message::Type::kAllMessages;
@@ -496,39 +531,9 @@ void GameMessageMenu::toggle_filter_messages_button(UI::Button & button, Widelan
 		m_scenariobtn->set_perm_pressed(false);
 		button.set_perm_pressed(true);
 		m_message_filter = msgtype;
-		/** TRANSLATORS: %1% is a tooltip, %2% is the corresponding hotkey */
-		button.set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-								  /** TRANSLATORS: Tooltip in the messages window */
-								  % _("Show all messages")
-								  % "0").str());
 	}
 }
 
-/**
- * Helper for filter_messages
- */
-void GameMessageMenu::set_filter_messages_tooltips() {
-	m_geologistsbtn->set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-											/** TRANSLATORS: Tooltip in the messages window */
-											% _("Show geologists' messages only")
-											% "1").str());
-	m_economybtn->set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-										/** TRANSLATORS: Tooltip in the messages window */
-										% _("Show economy messages only")
-										% "2").str());
-	m_seafaringbtn->set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-										  /** TRANSLATORS: Tooltip in the messages window */
-										  % _("Show seafaring messages only")
-										  % "3").str());
-	m_warfarebtn->set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-										/** TRANSLATORS: Tooltip in the messages window */
-										% _("Show warfare messages only")
-										% "4").str());
-	m_scenariobtn->set_tooltip((boost::format(_("%1% (Hotkey: %2%)"))
-										 /** TRANSLATORS: Tooltip in the messages window */
-										 % _("Show scenario messages only")
-										 % "5").str());
-}
 
 /**
  * Update image and tooltip for message category label
@@ -606,10 +611,7 @@ void GameMessageMenu::toggle_mode()
 		mode = Archive;
 		set_title(_("Messages: Archive"));
 		m_archivebtn->set_pic(g_gr->images().get("pics/message_restore.png"));
-		/** TRANSLATORS: %s is a tooltip, Del is the corresponding hotkey */
-		m_archivebtn->set_tooltip((boost::format(_("Del: %s"))
-											/** TRANSLATORS: Tooltip in the messages window */
-											% _("Restore selected messages")).str());
+		m_archivebtn->set_tooltip(_("Restore selected messages"));
 		m_togglemodebtn->set_pic(g_gr->images().get("pics/message_new.png"));
 		m_togglemodebtn->set_tooltip(_("Show Inbox"));
 		break;
@@ -617,10 +619,7 @@ void GameMessageMenu::toggle_mode()
 		mode = Inbox;
 		set_title(_("Messages: Inbox"));
 		m_archivebtn->set_pic(g_gr->images().get("pics/message_archive.png"));
-		/** TRANSLATORS: %s is a tooltip, Del is the corresponding hotkey */
-		m_archivebtn->set_tooltip((boost::format(_("Del: %s"))
-											/** TRANSLATORS: Tooltip in the messages window */
-											% _("Archive selected messages")).str());
+		m_archivebtn->set_tooltip(_("Archive selected messages"));
 		m_togglemodebtn->set_pic(g_gr->images().get("pics/message_archived.png"));
 		m_togglemodebtn->set_tooltip(_("Show Archive"));
 		break;

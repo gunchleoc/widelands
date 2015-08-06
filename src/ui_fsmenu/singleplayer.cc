@@ -68,6 +68,10 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 			(&FullscreenMenuSinglePlayer::end_modal,
 			 boost::ref(*this),
 			 static_cast<int32_t>(MenuTarget::kBack)));
+	new_game.set_hotkey("singleplayer", SDLK_n);
+	campaign.set_hotkey("singleplayer", SDLK_c);
+	load_game.set_hotkey("singleplayer", SDLK_l);
+	back.set_hotkey("singleplayer", SDLK_ESCAPE);
 
 	title.set_font(ui_fn(), fs_big(), UI_FONT_CLR_FG);
 
@@ -83,4 +87,26 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 	vbox.add(&back, UI::Box::AlignCenter);
 
 	vbox.set_size(m_butw, get_h() - vbox.get_y());
+}
+
+
+bool FullscreenMenuSinglePlayer::handle_key(bool down, SDL_Keysym code)
+{
+	if (!down)
+		return false;
+	if (code.sym == new_game.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kNewGame));
+	} else if (code.sym == campaign.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kCampaign));
+	} else if (code.sym == load_game.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kLoadGame));
+	} else if (code.sym == back.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kBack));
+	}
+
+	return FullscreenMenuBase::handle_key(down, code);
 }

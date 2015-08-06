@@ -80,6 +80,17 @@ FullscreenMenuMain::FullscreenMenuMain() :
 		 _("Licensed under the GNU General Public License V2.0"),
 		 UI::Align_BottomLeft)
 {
+	playtutorial.set_hotkey("mainmenu", SDLK_t);
+	singleplayer.set_hotkey("mainmenu", SDLK_s);
+	multiplayer.set_hotkey("mainmenu", SDLK_m);
+	replay.set_hotkey("mainmenu", SDLK_w);
+	editor.set_hotkey("mainmenu", SDLK_e);
+	options.set_hotkey("mainmenu", SDLK_o);
+	readme.set_hotkey("mainmenu", SDLK_r);
+	license.set_hotkey("mainmenu", SDLK_l);
+	authors.set_hotkey("mainmenu", SDLK_a);
+	exit.set_hotkey("mainmenu", SDLK_x);
+
 	playtutorial.sigclicked.connect
 		(boost::bind
 			 (&FullscreenMenuMain::end_modal, boost::ref(*this),
@@ -148,4 +159,45 @@ FullscreenMenuMain::FullscreenMenuMain() :
 	vbox.add(&exit, UI::Box::AlignCenter);
 
 	vbox.set_size(m_butw, get_h() - vbox.get_y());
+}
+
+
+bool FullscreenMenuMain::handle_key(bool down, SDL_Keysym code)
+{
+	if (!down)
+		return false;
+
+	if (code.sym == playtutorial.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kTutorial));
+	} else if (code.sym == singleplayer.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kSinglePlayer));
+	} else if (code.sym == multiplayer.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kMultiplayer));
+	} else if (code.sym == replay.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kReplay));
+	} else if (code.sym == editor.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kEditor));
+	} else if (code.sym == options.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kOptions));
+	} else if (code.sym == readme.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kReadme));
+	} else if (code.sym == license.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kLicense));
+	} else if (code.sym == authors.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kAuthors));
+	} else if (code.sym == exit.get_hotkey()) {
+		play_click();
+		end_modal(static_cast<int32_t>(MenuTarget::kExit));
+	}
+
+	return FullscreenMenuBase::handle_key(down, code);
 }

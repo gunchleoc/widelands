@@ -19,6 +19,10 @@
 
 #include "ui_basic/button.h"
 
+#include <boost/format.hpp>
+#include <SDL_keyboard.h>
+
+#include "base/i18n.h"
 #include "base/log.h"
 #include "graphic/font_handler.h"
 #include "graphic/image.h"
@@ -26,7 +30,7 @@
 #include "graphic/text_constants.h"
 #include "graphic/text_layout.h"
 #include "ui_basic/mouse_constants.h"
-#include "wlapplication.h"
+#include "wlapplication.h" // NOCOM Back reference to Widelands. We need to find a better place to put this. Graphic?
 
 namespace UI {
 
@@ -52,6 +56,11 @@ Button::Button //  for textual buttons
 	m_draw_flat_background(false),
 	m_time_nextact  (0),
 	m_title         (title_text),
+	hotkey_scope_   (""),
+	hotkey_code_    (SDLK_UNKNOWN),
+	pressed_hotkey_code_(SDLK_UNKNOWN),
+	normal_tooltip_(tooltip_text),
+	pressed_tooltip_(tooltip_text),
 	m_pic_background(bg_pic),
 	m_pic_custom    (nullptr),
 	m_textstyle(UI::TextStyle::ui_small()),
@@ -59,6 +68,7 @@ Button::Button //  for textual buttons
 	m_draw_caret    (false)
 {
 	set_thinks(false);
+	set_tooltip(tooltip_text);
 }
 
 Button::Button //  for pictorial buttons
@@ -79,6 +89,11 @@ Button::Button //  for pictorial buttons
 	m_flat          (flat),
 	m_draw_flat_background(false),
 	m_time_nextact  (0),
+	hotkey_scope_   (""),
+	hotkey_code_    (SDLK_UNKNOWN),
+	pressed_hotkey_code_(SDLK_UNKNOWN),
+	normal_tooltip_(tooltip_text),
+	pressed_tooltip_(tooltip_text),
 	m_pic_background(bg_pic),
 	m_pic_custom    (fg_pic),
 	m_textstyle(UI::TextStyle::ui_small()),
@@ -86,6 +101,7 @@ Button::Button //  for pictorial buttons
 	m_draw_caret    (false)
 {
 	set_thinks(false);
+	set_tooltip(tooltip_text);
 }
 
 
@@ -121,6 +137,73 @@ void Button::set_title(const std::string & title) {
 	m_title      = title;
 
 	update();
+}
+
+/**
+ * NOCOM set hotkey scope in constructor. Doing it here now to keep diff small.
+ * The scope might even need to be defined all the way up in Panel - let's see how this goes.
+ *
+ * If the hotkey already exists in the global table, the value from the
+ * global table is used instead.
+*/
+void Button::set_hotkey(const std::string& scope, const SDL_Keycode& code, bool pressed) {
+	SDL_Keycode temp_code = code;
+	if (WLApplication::get()->hotkeys().has_hotkey(scope, get_name())) {
+		temp_code = WLApplication::get()->hotkeys().get_hotkey(scope, get_name());
+	} else {
+		WLApplication::get()->hotkeys().add_hotkey(scope, get_name(), code, get_title());
+		temp_code = code;
+	}
+	if (pressed) {
+		pressed_hotkey_code_ = temp_code;
+	} else {
+		hotkey_code_ = temp_code;
+	}
+	hotkey_scope_ = scope;
+	update_tooltip();
+	update();
+}
+
+const SDL_Keycode& Button::get_hotkey() {
+	if (m_permpressed) {
+		return pressed_hotkey_code_;
+	} else {
+		return hotkey_code_;
+	}
+}
+
+void Button::set_tooltip(const std::string& text) {
+	normal_tooltip_ = text;
+	update_tooltip();
+}
+
+void Button::set_pressed_tooltip(const std::string& text) {
+	pressed_tooltip_ = text;
+}
+
+void Button::update_tooltip() {
+	std::string new_tooltip;
+	SDL_Keycode hotkey_code;
+	if (m_permpressed) {
+		new_tooltip = pressed_tooltip_;
+		hotkey_code = pressed_hotkey_code_;
+	} else {
+		new_tooltip = normal_tooltip_;
+		hotkey_code = hotkey_code_;
+	}
+	if (hotkey_code != SDLK_UNKNOWN) {
+		if (new_tooltip.empty()) {
+			/** TRANSLATORS: %1% is a hotkey */
+			new_tooltip = (boost::format(_("Hotkey: %1%"))
+						  % SDL_GetKeyName(hotkey_code)).str();
+		} else {
+			/** TRANSLATORS: %1% is a tooltip, %2% is the corresponding hotkey */
+			new_tooltip = (boost::format(_("%1% (Hotkey: %2%)"))
+						  % new_tooltip
+						  % SDL_GetKeyName(hotkey_code)).str();
+		}
+	}
+	Panel::set_tooltip(new_tooltip);
 }
 
 
@@ -326,6 +409,8 @@ bool Button::handle_mouserelease(uint8_t const btn, int32_t, int32_t) {
 	if (btn != SDL_BUTTON_LEFT)
 		return false;
 
+	update_tooltip();
+
 	if (m_pressed) {
 		m_pressed = false;
 		set_thinks(false);
@@ -350,6 +435,7 @@ bool Button::handle_mousemove(const uint8_t, int32_t, int32_t, int32_t, int32_t)
 void Button::set_perm_pressed(bool state) {
 	if (state != m_permpressed) {
 		m_permpressed = state;
+		update_tooltip();
 		update();
 	}
 }

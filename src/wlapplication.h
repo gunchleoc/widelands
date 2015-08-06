@@ -37,6 +37,7 @@
 #include <SDL_keyboard.h>
 
 #include "base/point.h"
+#include "ui_basic/hotkeys.h"
 
 
 namespace Widelands {class Game;}
@@ -184,6 +185,8 @@ struct WLApplication {
 	void replay();
 	static void emergency_save(Widelands::Game &);
 
+	UI::Hotkeys hotkeys() {return m_hotkeys;}
+
 private:
 	WLApplication(int argc, char const * const * argv);
 
@@ -224,6 +227,8 @@ private:
 	std::string m_logfile;
 
 	GameType m_game_type;
+
+	UI::Hotkeys m_hotkeys;
 
 	///True if left and right mouse button should be swapped
 	bool  m_mouse_swapped;

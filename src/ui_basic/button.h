@@ -23,6 +23,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/signals2.hpp>
+#include <SDL_keycode.h>
 
 #include "graphic/color.h"
 #include "graphic/text_layout.h"
@@ -59,6 +60,10 @@ struct Button : public NamedPanel {
 	void set_pic(const Image* pic);
 	void set_title(const std::string &);
 	const std::string & get_title() const {return m_title;}
+	void set_hotkey(const std::string& scope, const SDL_Keycode& code, bool pressed = false);
+	const SDL_Keycode& get_hotkey();
+	void set_tooltip(const std::string& text) override;
+	void set_pressed_tooltip(const std::string& text);
 
 	bool enabled() const {return m_enabled;}
 	void set_enabled(bool on);
@@ -93,6 +98,9 @@ struct Button : public NamedPanel {
 protected:
 	virtual void clicked() {} /// Override this to react on the click.
 
+private:
+	void update_tooltip();
+
 	bool        m_highlighted;    //  mouse is over the button
 	bool        m_pressed;        //  mouse is clicked over the button
 	bool        m_permpressed;    //  button should appear  pressed
@@ -104,6 +112,12 @@ protected:
 	int32_t     m_time_nextact;
 
 	std::string m_title;          //  title string used when _mypic == 0
+
+	std::string hotkey_scope_;
+	SDL_Keycode hotkey_code_;
+	SDL_Keycode pressed_hotkey_code_;
+	std::string normal_tooltip_;
+	std::string pressed_tooltip_;
 
 	const Image* m_pic_background; //  background texture (picture ID)
 	const Image* m_pic_custom;     //  custom icon on the button

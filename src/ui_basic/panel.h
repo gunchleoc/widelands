@@ -224,7 +224,7 @@ public:
 	static void set_allow_user_input(bool const t) {_g_allow_user_input = t;}
 	static bool allow_user_input() {return _g_allow_user_input;}
 
-	void set_tooltip(const std::string& text) {_tooltip = text;}
+	virtual void set_tooltip(const std::string& text) {_tooltip = text;}
 	const std::string& tooltip() const {return _tooltip;}
 
 	///\return the current set UI font

@@ -40,6 +40,8 @@ public:
 		kLoadGame
 	};
 
+	bool handle_key(bool down, SDL_Keysym) override;
+
 private:
 	UI::Textarea title;
 	UI::Box      vbox;
