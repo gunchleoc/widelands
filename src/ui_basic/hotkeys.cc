@@ -94,15 +94,14 @@ bool Hotkeys::has_code(const std::string& scope, const SDL_Keycode& code) {
 	return false;
 }
 
-bool Hotkeys::add_hotkey(const std::string& scope,
+const SDL_Keycode& Hotkeys::add_hotkey(const std::string& scope,
                          const std::string& key,
                          const SDL_Keycode& code,
                          const std::string& title) {
 	if (!has_hotkey(scope, key) && !has_code(scope, code)) {
 		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(code, title));
-		return true;
 	}
-	return false;
+	return get_hotkey(scope, key);
 }
 
 bool

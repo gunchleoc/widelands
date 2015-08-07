@@ -146,19 +146,15 @@ void Button::set_title(const std::string & title) {
  * If the hotkey already exists in the global table, the value from the
  * global table is used instead.
 */
-void Button::set_hotkey(const std::string& scope, const SDL_Keycode& code, bool pressed) {
-	SDL_Keycode temp_code = code;
-	if (WLApplication::get()->hotkeys().has_hotkey(scope, get_name())) {
-		temp_code = WLApplication::get()->hotkeys().get_hotkey(scope, get_name());
+void Button::set_hotkey(const std::string& scope, const SDL_Keycode& code, const SDL_Keycode& pressed_code) {
+	if (pressed_code == SDLK_UNKNOWN) {
+		pressed_hotkey_code_ =
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), code, m_title.empty() ? normal_tooltip_ : m_title);
 	} else {
-		WLApplication::get()->hotkeys().add_hotkey(scope, get_name(), code, get_title());
-		temp_code = code;
+		pressed_hotkey_code_ =
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), pressed_code, m_title.empty() ? pressed_tooltip_ : m_title);
 	}
-	if (pressed) {
-		pressed_hotkey_code_ = temp_code;
-	} else {
-		hotkey_code_ = temp_code;
-	}
+	hotkey_code_ = WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), code, m_title.empty() ? normal_tooltip_ : m_title);
 	hotkey_scope_ = scope;
 	update_tooltip();
 	update();
@@ -195,12 +191,12 @@ void Button::update_tooltip() {
 		if (new_tooltip.empty()) {
 			/** TRANSLATORS: %1% is a hotkey */
 			new_tooltip = (boost::format(_("Hotkey: %1%"))
-						  % WLApplication::get()->hotkeys().get_displayname(hotkey_code)).str();
+						  % WLApplication::get()->hotkeys()->get_displayname(hotkey_code)).str();
 		} else {
 			/** TRANSLATORS: %1% is a tooltip, %2% is the corresponding hotkey */
 			new_tooltip = (boost::format(_("%1% (Hotkey: %2%)"))
 						  % new_tooltip
-						  % WLApplication::get()->hotkeys().get_displayname(hotkey_code)).str();
+						  % WLApplication::get()->hotkeys()->get_displayname(hotkey_code)).str();
 		}
 	}
 	Panel::set_tooltip(new_tooltip);

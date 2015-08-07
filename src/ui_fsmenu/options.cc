@@ -44,6 +44,8 @@
 #include "sound/sound_handler.h"
 #include "wlapplication.h"
 
+// NOCOM a tabbed layout would be nice
+
 namespace {
 
 // Data model for the entries in the language selection list.
@@ -525,14 +527,20 @@ FullscreenMenuAdvancedOptions::FullscreenMenuAdvancedOptions
 	m_space   (25),
 
 // Buttons
+
+	m_hotkey_options
+		(this, "advanced_options",
+		 get_w() * 9 / 80, get_h() * 19 / 20, m_butw, m_buth,
+		 g_gr->images().get("pics/but2.png"),
+		 _("Keyboard Shortcuts"), std::string(), true, false),
 	m_cancel
 		(this, "cancel",
-		 get_w() * 41 / 80, get_h() * 19 / 20, m_butw, m_buth,
+		 get_w() * 51 / 80, get_h() * 19 / 20, m_butw, m_buth,
 		 g_gr->images().get("pics/but0.png"),
 		 _("Cancel"), std::string(), true, false),
 	m_apply
 		(this, "apply",
-		 get_w() / 4,   get_h() * 19 / 20, m_butw, m_buth,
+		 get_w() * 3 / 8, get_h() * 19 / 20, m_butw, m_buth,
 		 g_gr->images().get("pics/but2.png"),
 		 _("Apply"), std::string(), true, false),
 
@@ -622,6 +630,8 @@ FullscreenMenuAdvancedOptions::FullscreenMenuAdvancedOptions
 					 boost::ref(*this)));
 	}
 
+	m_hotkey_options.sigclicked.connect
+		(boost::bind(&FullscreenMenuAdvancedOptions::hotkey_options, boost::ref(*this)));
 	m_cancel.sigclicked.connect
 		(boost::bind
 			(&FullscreenMenuAdvancedOptions::end_modal,
@@ -667,6 +677,14 @@ void FullscreenMenuAdvancedOptions::update_sb_dis_border_unit() {
 	m_sb_dis_border.set_unit(ngettext("pixel", "pixels", m_sb_dis_border.get_value()));
 }
 
+void FullscreenMenuAdvancedOptions::hotkey_options() {
+	FullscreenMenuHotkeyOptions hom(os);
+	if (hom.run() == FullscreenMenuHotkeyOptions::om_ok) {
+		os = hom.get_values();
+		end_modal(om_restart);
+	}
+}
+
 OptionsCtrl::OptionsStruct FullscreenMenuAdvancedOptions::get_values() {
 	// Write all remaining data from UI elements
 	os.message_sound        = m_message_sound.get_state();
@@ -675,6 +693,121 @@ OptionsCtrl::OptionsStruct FullscreenMenuAdvancedOptions::get_values() {
 	os.border_snap_distance = m_sb_dis_border.get_value();
 	os.remove_syncstreams   = m_remove_syncstreams.get_state();
 	os.transparent_chat     = m_transparent_chat.get_state();
+	return os;
+}
+
+
+/**
+ * The hotkey options menu
+ */
+FullscreenMenuHotkeyOptions::FullscreenMenuHotkeyOptions
+	(OptionsCtrl::OptionsStruct const opt)
+	:
+	FullscreenMenuBase("ui_fsmenu.jpg"),
+
+// Values for alignment and size
+	m_vbutw   (get_h() * 333 / 10000),
+	m_butw    (get_w() / 4),
+	m_buth    (get_h() * 9 / 200),
+	m_hmargin (get_w() * 19 / 200),
+	m_padding (10),
+	m_space   (25),
+
+// Buttons
+	m_cancel
+		(this, "cancel",
+		 get_w() * 41 / 80, get_h() * 19 / 20, m_butw, m_buth,
+		 g_gr->images().get("pics/but0.png"),
+		 _("Cancel"), std::string(), true, false),
+	m_apply
+		(this, "apply",
+		 get_w() / 4,   get_h() * 19 / 20, m_butw, m_buth,
+		 g_gr->images().get("pics/but2.png"),
+		 _("Apply"), std::string(), true, false),
+
+// Title
+	m_title
+		(this,
+		 get_w() / 2, get_h() * 17 / 150,
+		 _("Keyboard Shortcuts"), UI::Align_HCenter),
+	hotkey_table_(this, m_hmargin, get_h() * 9 / 30, get_inner_w() - 2 * m_hmargin, 300), // NOCOM good values / box layout
+	os(opt)
+{
+	m_cancel.sigclicked.connect
+		(boost::bind
+			(&FullscreenMenuHotkeyOptions::end_modal,
+			 boost::ref(*this),
+			 static_cast<int32_t>(om_cancel)));
+	m_apply.sigclicked.connect
+		(boost::bind
+			(&FullscreenMenuHotkeyOptions::end_modal,
+			 boost::ref(*this),
+			 static_cast<int32_t>(om_ok)));
+
+	m_title.set_textstyle(UI::TextStyle::ui_big());
+
+	hotkey_table_.add_column(150, _("Scope"),"", UI::Align_Left);
+	hotkey_table_.add_column(150, _("Key"),"", UI::Align_Left);
+	hotkey_table_.add_column(100, _("Code"),"", UI::Align_Left);
+	hotkey_table_.add_column(get_inner_w() - 2 * m_hmargin - 400, _("Title"),"", UI::Align_Left);
+	fill_table();
+}
+
+bool FullscreenMenuHotkeyOptions::handle_key(bool down, SDL_Keysym code)
+{
+	if (down) {
+		switch (code.sym) {
+			case SDLK_KP_ENTER:
+			case SDLK_RETURN:
+				end_modal(static_cast<int32_t>(om_ok));
+				return true;
+			case SDLK_ESCAPE:
+				end_modal(static_cast<int32_t>(om_cancel));
+				return true;
+			default:
+				break; // not handled
+		}
+	}
+
+	return FullscreenMenuBase::handle_key(down, code);
+}
+
+void FullscreenMenuHotkeyOptions::fill_table()
+{
+	uint8_t col_scope = 0;
+	uint8_t col_key = 1;
+	uint8_t col_code = 2;
+	uint8_t col_title = 3;
+	hotkey_data_.clear();
+
+	for (const std::pair<const UI::Hotkeys::ScopeAndKey, const UI::Hotkeys::HotkeyEntry>& hotkey : WLApplication::get()->hotkeys()->all_hotkeys()) {
+
+			HotkeyData hotkeydata;
+			hotkeydata.scope = hotkey.first.scope_;
+			hotkeydata.key = hotkey.first.key_;
+			hotkeydata.code = hotkey.second.first;
+			hotkeydata.title = hotkey.second.second.empty() ? hotkeydata.key : hotkey.second.second;
+			hotkey_data_.push_back(hotkeydata);
+
+			UI::Table<uintptr_t const>::EntryRecord & te = hotkey_table_.add(hotkey_data_.size() - 1);
+
+			te.set_string(col_scope, hotkeydata.scope);
+			te.set_string(col_key, hotkeydata.key);
+			te.set_string(col_code, WLApplication::get()->hotkeys()->get_displayname(hotkeydata.code));
+			te.set_string(col_title, hotkeydata.title);
+	}
+	// NOCOM hotkey_table_.sort();
+
+	if (hotkey_table_.size()) {
+		hotkey_table_.select(0);
+	}
+}
+
+
+
+OptionsCtrl::OptionsStruct FullscreenMenuHotkeyOptions::get_values() {
+	// Write all remaining data from UI elements
+	//os.message_sound        = m_message_sound.get_state();
 	return os;
 }
 
@@ -714,7 +847,7 @@ OptionsCtrl::OptionsStruct OptionsCtrl::options_struct() {
 	opt.auto_roadbuild_mode = m_opt_section.get_bool("auto_roadbuild_mode", true);
 	opt.show_warea = m_opt_section.get_bool("workareapreview", true);
 	opt.snap_win_overlap_only =
-	   m_opt_section.get_bool("snap_windows_only_when_overlapping", false);
+		m_opt_section.get_bool("snap_windows_only_when_overlapping", false);
 	opt.dock_windows_to_edges = m_opt_section.get_bool("dock_windows_to_edges", false);
 	opt.language = m_opt_section.get_string("language", "");
 	opt.music = !m_opt_section.get_bool("disable_music", false);

@@ -185,7 +185,7 @@ struct WLApplication {
 	void replay();
 	static void emergency_save(Widelands::Game &);
 
-	UI::Hotkeys hotkeys() {return m_hotkeys;}
+	UI::Hotkeys* hotkeys() {return &m_hotkeys;}
 
 private:
 	WLApplication(int argc, char const * const * argv);

@@ -60,7 +60,9 @@ struct Button : public NamedPanel {
 	void set_pic(const Image* pic);
 	void set_title(const std::string &);
 	const std::string & get_title() const {return m_title;}
-	void set_hotkey(const std::string& scope, const SDL_Keycode& code, bool pressed = false);
+	void set_hotkey(const std::string& scope,
+						 const SDL_Keycode& code,
+						 const SDL_Keycode& pressed_code = SDLK_UNKNOWN);
 	const SDL_Keycode& get_hotkey();
 	void set_tooltip(const std::string& text) override;
 	void set_pressed_tooltip(const std::string& text);

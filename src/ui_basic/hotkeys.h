@@ -26,26 +26,8 @@
 
 namespace UI {
 
-struct Hotkeys {
-	Hotkeys();
-
-	bool has_hotkey(const std::string& scope, const std::string& key);
-	bool has_code(const std::string& scope, const SDL_Keycode& code);
-	bool add_hotkey(const std::string& scope,
-	                const std::string& key,
-	                const SDL_Keycode& code,
-	                const std::string& title);
-	bool replace_hotkey(const std::string& scope, const std::string& key, const SDL_Keycode& code);
-	const SDL_Keycode& get_hotkey(const std::string& scope, const std::string& key);
-	const std::string& get_hotkey_title(const std::string& scope, const std::string& key);
-	const std::string get_displayname(const SDL_Keycode& code);
-
-	// NOCOM comment stuff
-	// key
-	// scope
-	// SDL_key
-
-private:
+class Hotkeys {
+public:
 	struct ScopeAndKey {
 		ScopeAndKey();
 		ScopeAndKey(const std::string& scope, const std::string& key) : scope_(scope), key_(key) {
@@ -67,6 +49,27 @@ private:
 	};
 	using HotkeyEntry = std::pair<SDL_Keycode, std::string>;
 
+	Hotkeys();
+
+	bool has_hotkey(const std::string& scope, const std::string& key);
+	bool has_code(const std::string& scope, const SDL_Keycode& code);
+	const SDL_Keycode& add_hotkey(const std::string& scope,
+	                const std::string& key,
+	                const SDL_Keycode& code,
+	                const std::string& title);
+	bool replace_hotkey(const std::string& scope, const std::string& key, const SDL_Keycode& code);
+	const SDL_Keycode& get_hotkey(const std::string& scope, const std::string& key);
+	const std::string& get_hotkey_title(const std::string& scope, const std::string& key);
+	const std::string get_displayname(const SDL_Keycode& code);
+	// NOCOM this is very public.
+	std::map<ScopeAndKey, HotkeyEntry> all_hotkeys() { return hotkeys_;}
+
+	// NOCOM comment stuff
+	// key
+	// scope
+	// SDL_key
+
+private:
 	void register_localized_names();
 
 	std::map<ScopeAndKey, HotkeyEntry> hotkeys_;

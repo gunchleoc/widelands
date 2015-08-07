@@ -22,6 +22,7 @@
 
 #include <cstring>
 #include <string>
+#include <map>
 #include <vector>
 
 #include "ui_fsmenu/base.h"
@@ -30,7 +31,10 @@
 #include "ui_basic/listselect.h"
 #include "ui_basic/multilinetextarea.h"
 #include "ui_basic/spinbox.h"
+#include "ui_basic/table.h"
 #include "ui_basic/textarea.h"
+
+#include "wlapplication.h" // NOCOM hotkeys should go somewhere else.
 
 class FullscreenMenuOptions;
 class Section;
@@ -168,7 +172,8 @@ public:
 	OptionsCtrl::OptionsStruct get_values();
 	enum {
 		om_cancel =   0,
-		om_ok     =   1
+		om_ok     =   1,
+		om_restart = 2
 	};
 
 	/// Handle keypresses
@@ -177,6 +182,7 @@ public:
 private:
 	void update_sb_dis_panel_unit();
 	void update_sb_dis_border_unit();
+	void hotkey_options();
 
 	uint32_t const              m_vbutw;
 	uint32_t const              m_butw;
@@ -185,7 +191,7 @@ private:
 	uint32_t const              m_padding;
 	uint32_t const              m_space;
 
-	UI::Button                  m_cancel, m_apply;
+	UI::Button                  m_hotkey_options, m_cancel, m_apply;
 	UI::Textarea                m_title;
 
 	UI::Textarea                m_label_snap_dis_panel, m_label_snap_dis_border;
@@ -198,6 +204,50 @@ private:
 	UI::MultilineTextarea       m_label_nozip;
 	UI::Checkbox                m_remove_syncstreams;
 	UI::MultilineTextarea       m_label_remove_syncstreams;
+
+	OptionsCtrl::OptionsStruct  os;
+};
+
+
+/**
+ * Fullscreen Optionsmenu for hotkeys. A modal optionsmenu
+ */
+
+class FullscreenMenuHotkeyOptions : public FullscreenMenuBase {
+public:
+	FullscreenMenuHotkeyOptions(OptionsCtrl::OptionsStruct opt);
+	OptionsCtrl::OptionsStruct get_values();
+	enum {
+		om_cancel =   0,
+		om_ok     =   1
+	};
+
+	void fill_table();
+
+	/// Handle keypresses
+	bool handle_key(bool down, SDL_Keysym code) override;
+
+private:
+	struct HotkeyData {
+		std::string scope;
+		std::string key;
+		SDL_Keycode code;
+		std::string title;
+	};
+
+	uint32_t const              m_vbutw;
+	uint32_t const              m_butw;
+	uint32_t const              m_buth;
+	uint32_t const              m_hmargin;
+	uint32_t const              m_padding;
+	uint32_t const              m_space;
+
+	UI::Button                  m_cancel, m_apply;
+	UI::Textarea                m_title;
+
+	UI::Table<uintptr_t const> hotkey_table_;
+	// NOCOM std::map<UI::Hotkeys::ScopeAndKey, UI::Hotkeys::HotkeyEntry> hotkeys_;
+	std::vector<HotkeyData> hotkey_data_;
 
 	OptionsCtrl::OptionsStruct  os;
 };

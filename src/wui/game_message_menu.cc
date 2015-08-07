@@ -206,21 +206,16 @@ GameMessageMenu::GameMessageMenu
 	set_can_focus(true);
 	focus();
 
-	m_geologistsbtn->set_hotkey(hotkey_scope_, SDLK_1);
-	m_economybtn->set_hotkey(hotkey_scope_, SDLK_2);
-	m_seafaringbtn->set_hotkey(hotkey_scope_, SDLK_3);
-	m_warfarebtn->set_hotkey(hotkey_scope_, SDLK_4);
-	m_scenariobtn->set_hotkey(hotkey_scope_, SDLK_5);
+	m_geologistsbtn->set_hotkey(hotkey_scope_, SDLK_1, all_messages_hotkey_);
+	m_economybtn->set_hotkey(hotkey_scope_, SDLK_2, all_messages_hotkey_);
+	m_seafaringbtn->set_hotkey(hotkey_scope_, SDLK_3, all_messages_hotkey_);
+	m_warfarebtn->set_hotkey(hotkey_scope_, SDLK_4, all_messages_hotkey_);
+	m_scenariobtn->set_hotkey(hotkey_scope_, SDLK_5, all_messages_hotkey_);
 
-	m_geologistsbtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
-	m_economybtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
-	m_seafaringbtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
-	m_warfarebtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
-	m_scenariobtn->set_hotkey(hotkey_scope_, all_messages_hotkey_, true);
 	m_archivebtn->set_hotkey(hotkey_scope_, SDLK_DELETE);
 	m_centerviewbtn->set_hotkey(hotkey_scope_, SDLK_g);
 
-	WLApplication::get()->hotkeys().add_hotkey(hotkey_scope_, "all_messages", SDLK_0, "All Messages");
+	WLApplication::get()->hotkeys()->add_hotkey(hotkey_scope_, "all_messages", SDLK_0, "All Messages");
 }
 
 /**
