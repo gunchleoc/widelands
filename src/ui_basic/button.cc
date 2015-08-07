@@ -195,12 +195,12 @@ void Button::update_tooltip() {
 		if (new_tooltip.empty()) {
 			/** TRANSLATORS: %1% is a hotkey */
 			new_tooltip = (boost::format(_("Hotkey: %1%"))
-						  % SDL_GetKeyName(hotkey_code)).str();
+						  % WLApplication::get()->hotkeys().get_displayname(hotkey_code)).str();
 		} else {
 			/** TRANSLATORS: %1% is a tooltip, %2% is the corresponding hotkey */
 			new_tooltip = (boost::format(_("%1% (Hotkey: %2%)"))
 						  % new_tooltip
-						  % SDL_GetKeyName(hotkey_code)).str();
+						  % WLApplication::get()->hotkeys().get_displayname(hotkey_code)).str();
 		}
 	}
 	Panel::set_tooltip(new_tooltip);

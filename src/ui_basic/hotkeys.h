@@ -38,6 +38,7 @@ struct Hotkeys {
 	bool replace_hotkey(const std::string& scope, const std::string& key, const SDL_Keycode& code);
 	const SDL_Keycode& get_hotkey(const std::string& scope, const std::string& key);
 	const std::string& get_hotkey_title(const std::string& scope, const std::string& key);
+	const std::string get_displayname(const SDL_Keycode& code);
 
 	// NOCOM comment stuff
 	// key
@@ -66,7 +67,11 @@ private:
 	};
 	using HotkeyEntry = std::pair<SDL_Keycode, std::string>;
 
+	void register_localized_names();
+
 	std::map<ScopeAndKey, HotkeyEntry> hotkeys_;
+
+	std::map<SDL_Keycode, std::string> localized_names_;
 
 	SDL_Keycode no_key_;
 	std::string no_title_;

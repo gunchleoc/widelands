@@ -27,9 +27,13 @@
 #include "base/i18n.h"
 #include "base/log.h"  // NOCOM
 
+// NOCOM can't do key combinations yet.
+
 namespace UI {
 
 Hotkeys::Hotkeys() : no_key_(SDLK_UNKNOWN) {
+	register_localized_names();
+
 	// NOCOM move this to a unit test
 	/*
 	log("\nNOCOM testing hotkeys ***********\n");
@@ -124,6 +128,75 @@ const std::string& Hotkeys::get_hotkey_title(const std::string& scope, const std
 		return hotkeys_.at(ScopeAndKey(scope, key)).second;
 	}
 	return no_title_;
+}
+
+const std::string Hotkeys::get_displayname(const SDL_Keycode& code) {
+	if (localized_names_.count(code) == 1) {
+		return localized_names_.at(code);
+	} else {
+		return SDL_GetKeyName(code);
+	}
+}
+
+void Hotkeys::register_localized_names() {
+	/** TRANSLATORS: Unknown hotkey */
+	localized_names_.emplace(SDLK_UNKNOWN, _("Unknown"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_RETURN, _("Return"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_ESCAPE, _("Escape"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_BACKSPACE, _("Backspace"));
+	//localized_names_.emplace(SDLK_CAPSLOCK, _("Caps Lock"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F1, _("F1"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F2, _("F2"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F3, _("F3"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F4, _("F4"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F5, _("F5"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F6, _("F6"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F7, _("F7"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F8, _("F8"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F9, _("F9"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F10, _("F10"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F11, _("F11"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_F12, _("F12"));
+	//localized_names_.emplace(SDLK_PRINTSCREEN, _("Print"));
+	//localized_names_.emplace(SDLK_SCROLLLOCK, _("Scroll"));
+	//localized_names_.emplace(SDLK_PAUSE, _("Pause"));
+	//localized_names_.emplace(SDLK_INSERT, _("Insert"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_HOME, _("Home"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_PAGEUP, _("Page Up"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_DELETE, _("Del"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_END, _("End"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_PAGEDOWN, _("Page Down"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_RIGHT, _("Right Arrow"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_LEFT, _("Left Arrow"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_DOWN, _("Down Arrow"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_UP, _("Up Arrow"));
+	//localized_names_.emplace(SDLK_NUMLOCKCLEAR, _("Num Lock"));
+	/** TRANSLATORS: Hotkey name */
+	localized_names_.emplace(SDLK_KP_ENTER, _("Enter"));
 }
 
 }  // namespace UI
