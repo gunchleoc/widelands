@@ -57,8 +57,8 @@ Button::Button //  for textual buttons
 	m_time_nextact  (0),
 	m_title         (title_text),
 	hotkey_scope_   (""),
-	hotkey_code_    (SDLK_UNKNOWN),
-	pressed_hotkey_code_(SDLK_UNKNOWN),
+	hotkey_code_    (UI::Hotkeys::HotkeyCode()),
+	pressed_hotkey_code_(UI::Hotkeys::HotkeyCode()),
 	normal_tooltip_(tooltip_text),
 	pressed_tooltip_(tooltip_text),
 	m_pic_background(bg_pic),
@@ -90,8 +90,8 @@ Button::Button //  for pictorial buttons
 	m_draw_flat_background(false),
 	m_time_nextact  (0),
 	hotkey_scope_   (""),
-	hotkey_code_    (SDLK_UNKNOWN),
-	pressed_hotkey_code_(SDLK_UNKNOWN),
+	hotkey_code_    (UI::Hotkeys::HotkeyCode()),
+	pressed_hotkey_code_(UI::Hotkeys::HotkeyCode()),
 	normal_tooltip_(tooltip_text),
 	pressed_tooltip_(tooltip_text),
 	m_pic_background(bg_pic),
@@ -146,21 +146,21 @@ void Button::set_title(const std::string & title) {
  * If the hotkey already exists in the global table, the value from the
  * global table is used instead.
 */
-void Button::set_hotkey(const std::string& scope, const SDL_Keycode& code, const SDL_Keycode& pressed_code) {
-	if (pressed_code == SDLK_UNKNOWN) {
+void Button::set_hotkey(const std::string& scope, const Hotkeys::HotkeyCode& code, const Hotkeys::HotkeyCode& pressed_code) {
+	if (pressed_code.mod == SDLK_UNKNOWN) {
 		pressed_hotkey_code_ =
-				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), code, m_title.empty() ? normal_tooltip_ : m_title);
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mod);
 	} else {
 		pressed_hotkey_code_ =
-				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), pressed_code, m_title.empty() ? pressed_tooltip_ : m_title);
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? pressed_tooltip_ : m_title, pressed_code.sym, pressed_code.mod);
 	}
-	hotkey_code_ = WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), code, m_title.empty() ? normal_tooltip_ : m_title);
+	hotkey_code_ = WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mod);
 	hotkey_scope_ = scope;
 	update_tooltip();
 	update();
 }
 
-const SDL_Keycode& Button::get_hotkey() {
+const UI::Hotkeys::HotkeyCode& Button::get_hotkey() {
 	if (m_permpressed) {
 		return pressed_hotkey_code_;
 	} else {
@@ -179,7 +179,7 @@ void Button::set_pressed_tooltip(const std::string& text) {
 
 void Button::update_tooltip() {
 	std::string new_tooltip;
-	SDL_Keycode hotkey_code;
+	UI::Hotkeys::HotkeyCode hotkey_code;
 	if (m_permpressed) {
 		new_tooltip = pressed_tooltip_;
 		hotkey_code = pressed_hotkey_code_;
@@ -187,7 +187,7 @@ void Button::update_tooltip() {
 		new_tooltip = normal_tooltip_;
 		hotkey_code = hotkey_code_;
 	}
-	if (hotkey_code != SDLK_UNKNOWN) {
+	if (hotkey_code.sym != SDLK_UNKNOWN) {
 		if (new_tooltip.empty()) {
 			/** TRANSLATORS: %1% is a hotkey */
 			new_tooltip = (boost::format(_("Hotkey: %1%"))

@@ -783,10 +783,11 @@ void FullscreenMenuHotkeyOptions::fill_table()
 	for (const std::pair<const UI::Hotkeys::ScopeAndKey, const UI::Hotkeys::HotkeyEntry>& hotkey : WLApplication::get()->hotkeys()->all_hotkeys()) {
 
 			HotkeyData hotkeydata;
-			const std::string& title = WLApplication::get()->hotkeys()->get_scope_title(hotkey.first.scope_);
-			hotkeydata.scope = title.empty()? hotkey.first.scope_ : title;
-			hotkeydata.key = hotkey.first.key_;
-			hotkeydata.code = hotkey.second.first;
+			const std::string& title = WLApplication::get()->hotkeys()->get_scope_title(hotkey.first.scope);
+			hotkeydata.scope = title.empty()? hotkey.first.scope : title;
+			hotkeydata.key = hotkey.first.key;
+			hotkeydata.mod = hotkey.second.first.mod;
+			hotkeydata.code = hotkey.second.first.sym;
 			hotkeydata.title = hotkey.second.second.empty() ? hotkeydata.key : hotkey.second.second;
 			hotkey_data_.push_back(hotkeydata);
 
@@ -794,7 +795,7 @@ void FullscreenMenuHotkeyOptions::fill_table()
 
 			te.set_string(col_scope, hotkeydata.scope);
 			te.set_string(col_key, hotkeydata.key);
-			te.set_string(col_code, WLApplication::get()->hotkeys()->get_displayname(hotkeydata.code));
+			te.set_string(col_code, WLApplication::get()->hotkeys()->get_displayname(hotkey.second.first));
 			te.set_string(col_title, hotkeydata.title);
 	}
 	// NOCOM hotkey_table_.sort();

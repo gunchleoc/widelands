@@ -22,17 +22,17 @@
 #include <cassert>
 
 #include <boost/format.hpp>
-#include <SDL_keyboard.h>
 
 #include "base/i18n.h"
 #include "base/log.h"  // NOCOM
 #include "base/wexception.h"
 
-// NOCOM can't do key combinations yet.
+// NOCOM can't do all key combinations yet (we need up to 3).
+// if ((code.mod & (KMOD_LCTRL | KMOD_RCTRL)) && (code.mod & (KMOD_LSHIFT | KMOD_RSHIFT)))
 
 namespace UI {
 
-Hotkeys::Hotkeys() : root_scope_("global"), no_key_(SDLK_UNKNOWN) {
+Hotkeys::Hotkeys() : root_scope_("global") {
 	register_localized_names();
 
 	add_scope(root_scope_, _("Global"), "");
@@ -43,25 +43,29 @@ Hotkeys::Hotkeys() : root_scope_("global"), no_key_(SDLK_UNKNOWN) {
 	add_scope("game_message_menu", _("Message Menu"), "game");
 
 	// NOCOM copied over from the readme, these still need to be implemented
-	add_hotkey("game", "speed_increase", SDLK_PAGEUP, _("Increase Game Speed"));
-	add_hotkey("game", "speed_decrease", SDLK_PAGEDOWN, _("Decrease Game Speed"));
-	add_hotkey("game", "pause", SDLK_PAUSE, _("Pause the game"));
-	add_hotkey("game", "buildhelp", SDLK_SPACE, _("Toggle Building Spaces"));
-	add_hotkey("game", "minimap", SDLK_m, _("Toggle Minimap"));
-	add_hotkey("game", "messages", SDLK_n, _("Toggle Messages (‘News’)"));
-	add_hotkey("game", "census", SDLK_c, _("Toggle Census"));
-	add_hotkey("game", "statistics", SDLK_s, _("Toggle Statistics"));
-	add_hotkey("game", "stock", SDLK_i, _("Toggle Stock Inventory"));
-	add_hotkey("game", "objectives", SDLK_o, _("Toggle Objectives"));
-	add_hotkey("game", "buildings", SDLK_b, _("Toggle Building Statictics"));
-	add_hotkey("game", "fullscreen", SDLK_PAGEDOWN, _("Toggle Fullscreen"));
-	add_hotkey("game", "location_home", SDLK_HOME, _("Go to Starting Location"));
-	add_hotkey("game", "location_previous", SDLK_COMMA, _("Go to Previous Location"));
-	add_hotkey("game", "location_next", SDLK_PERIOD, _("Go to Next Location"));
+	add_hotkey("game", "speed_increase", _("Increase Game Speed"), SDLK_PAGEUP);
+	add_hotkey("game", "speed_decrease", _("Decrease Game Speed"), SDLK_PAGEDOWN);
+	add_hotkey("game", "pause", _("Pause the game"), SDLK_PAUSE);
+	add_hotkey("game", "buildhelp", _("Toggle Building Spaces"), SDLK_SPACE);
+	add_hotkey("game", "minimap", _("Toggle Minimap"), SDLK_m);
+	add_hotkey("game", "messages", _("Toggle Messages (‘News’)"), SDLK_n);
+	add_hotkey("game", "census", _("Toggle Census"), SDLK_c);
+	add_hotkey("game", "statistics", _("Toggle Statistics"), SDLK_s);
+	add_hotkey("game", "stock", _("Toggle Stock Inventory"), SDLK_i);
+	add_hotkey("game", "objectives", _("Toggle Objectives"), SDLK_o);
+	add_hotkey("game", "buildings", _("Toggle Building Statictics"), SDLK_b);
+	add_hotkey("game", "fullscreen", _("Toggle Fullscreen"), SDLK_PAGEDOWN);
+	add_hotkey("game", "location_home", _("Go to Starting Location"), SDLK_HOME);
+	add_hotkey("game", "location_previous", _("Go to Previous Location"), SDLK_COMMA);
+	add_hotkey("game", "location_next", _("Go to Next Location"), SDLK_PERIOD);
 #ifndef NDEBUG
-	add_hotkey("game", "debug", SDLK_F6, _("Debug Console"));
+	add_hotkey("game", "debug", _("Debug Console"), SDLK_F6);
 #endif
-
+	add_hotkey("global",
+	           "screenshot",
+	           _("Screenshot"),
+	           SDLK_F11,
+	           KMOD_LCTRL);  // NOCOM need synonyms for ctrl
 
 	/* NOCOM no key combinations yet
 .. _"(CTRL+) 0-9: Remember and go to previously remembered locations" .. "<br>"
@@ -120,7 +124,8 @@ bool Hotkeys::has_scope(const std::string& name) const {
 	return scopes_.count(name) == 1;
 }
 
-void Hotkeys::add_scope(const std::string& name, const std::string& title, const std::string& parent) {
+void
+Hotkeys::add_scope(const std::string& name, const std::string& title, const std::string& parent) {
 	if (!has_scope(name)) {
 		scopes_.emplace(name, Scope(name, title, parent));
 	}
@@ -171,7 +176,8 @@ bool Hotkeys::has_hotkey(const std::string& scope, const std::string& key) const
 	return hotkeys_.count(ScopeAndKey(scope, key)) == 1;
 }
 
-bool Hotkeys::has_code(const std::string& scope, const SDL_Keycode& code) const {
+bool
+Hotkeys::has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Keymod& mod) const {
 	if (!scope_has_root_ancestor(scope)) {
 		throw wexception("Hotkey scope '%s'' is not a decendant of root", scope.c_str());
 	}
@@ -179,138 +185,200 @@ bool Hotkeys::has_code(const std::string& scope, const SDL_Keycode& code) const 
 	for (const std::pair<const UI::Hotkeys::ScopeAndKey, const HotkeyEntry>& hotkey : hotkeys_) {
 		// Iterate the scopes, so we get no hotkey collisions
 		std::string temp_scope = scope;
-		do {
-			if (hotkey.first.scope_ == temp_scope && hotkey.second.first == code) {
+		// Make sure that this terminates
+		for (int i = 0; i < 100; ++i) {
+			if (hotkey.first.scope == temp_scope && hotkey.second.first.mod == mod &&
+			    hotkey.second.first.sym == sym) {
 				return true;
 			}
+			if (temp_scope == root_scope_) {
+				return false;
+			}
 			if (!has_scope(temp_scope)) {
-				break; // NOCOM some error handling
+				throw wexception("Hotkey scope '%s'' does not exist for hotkey '%s'",
+				                 temp_scope.c_str(),
+				                 get_displayname(Hotkeys::HotkeyCode(sym, mod)).c_str());
 			}
 			temp_scope = scopes_.at(temp_scope).get_parent();
-
-		} while (temp_scope != root_scope_);
+		}
 	}
 	return false;
 }
 
-const SDL_Keycode& Hotkeys::add_hotkey(const std::string& scope,
-                         const std::string& key,
-                         const SDL_Keycode& code,
-                         const std::string& title) {
+const Hotkeys::HotkeyCode& Hotkeys::add_hotkey(const std::string& scope,
+                                               const std::string& key,
+                                               const std::string& title,
+                                               const SDL_Keycode& sym,
+                                               const SDL_Keymod& mod) {
 	if (!has_scope(scope)) {
 		add_scope(scope, scope, root_scope_);
 	}
-	if (!has_hotkey(scope, key) && !has_code(scope, code)) {
-		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(code, title));
+
+	if (!has_hotkey(scope, key)) {
+		if (has_code(scope, sym, mod)) {
+			// NOCOM hotkey collisions need to be handled - we still want to be able to add a hotkey
+			// here.
+			// Popup messagebox?
+			log("NOCOM Hotkey collision - need error handling!\n");
+		}
+		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mod), title));
 	}
 	assert(scope_has_root_ancestor(scope));
 	return get_hotkey(scope, key);
 }
 
-bool Hotkeys::replace_hotkey(const std::string& scope, const std::string& key, const SDL_Keycode& code) {
+bool Hotkeys::replace_hotkey(const std::string& scope,
+                             const std::string& key,
+                             const SDL_Keycode& sym,
+                             const SDL_Keymod& mod) {
 	if (!scope_has_root_ancestor(scope)) {
 		throw wexception("Hotkey scope '%s'' is not a decendant of root", scope.c_str());
 	}
-	if (has_hotkey(scope, key) && !has_code(scope, code)) {
+	if (has_hotkey(scope, key) && !has_code(scope, sym, mod)) {
 		const std::string& title = get_hotkey_title(scope, key);
 		hotkeys_.erase(ScopeAndKey(scope, key));
-		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(code, title));
+		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mod), title));
 		return true;
 	}
 	return false;
 }
 
-const SDL_Keycode& Hotkeys::get_hotkey(const std::string& scope, const std::string& key) const {
+const Hotkeys::HotkeyCode& Hotkeys::get_hotkey(const std::string& scope,
+                                               const std::string& key) const {
 	if (has_hotkey(scope, key)) {
 		return hotkeys_.at(ScopeAndKey(scope, key)).first;
 	}
+	log("Unknown hotkey '%s' in scope '%s'\n", key.c_str(), scope.c_str());
 	return no_key_;
 }
 
-const std::string& Hotkeys::get_hotkey_title(const std::string& scope, const std::string& key) const {
+const std::string& Hotkeys::get_hotkey_title(const std::string& scope,
+                                             const std::string& key) const {
 	if (has_hotkey(scope, key)) {
 		return hotkeys_.at(ScopeAndKey(scope, key)).second;
 	}
 	return no_title_;
 }
 
-const std::string Hotkeys::get_displayname(const SDL_Keycode& code) const {
-	if (localized_names_.count(code) == 1) {
-		return localized_names_.at(code);
+bool Hotkeys::is_hotkey_pressed(const UI::Hotkeys::HotkeyCode& hotkey,
+                                const SDL_Keysym& code) const {
+	if (hotkey.mod == KMOD_NONE) {
+		return hotkey.sym == code.sym;
 	} else {
-		return SDL_GetKeyName(code);
+		return (hotkey.sym == code.sym) && (code.mod & hotkey.mod);
 	}
 }
 
 std::map<std::string, Hotkeys::HotkeyEntry> Hotkeys::hotkeys(const std::string& scope) const {
 	std::map<std::string, Hotkeys::HotkeyEntry> result;
 	for (const std::pair<const UI::Hotkeys::ScopeAndKey, HotkeyEntry>& hotkey : hotkeys_) {
-		if (hotkey.first.scope_ == scope) {
-			result.emplace(hotkey.first.key_, hotkey.second);
+		if (hotkey.first.scope == scope) {
+			result.emplace(hotkey.first.key, hotkey.second);
 		}
 	}
 	return result;
 }
 
+const std::string Hotkeys::get_displayname(const HotkeyCode& code) const {
+	std::string result;
+	if (localized_codes_.count(code.sym) == 1) {
+		result = localized_codes_.at(code.sym);
+	} else {
+		result = SDL_GetKeyName(code.sym);
+	}
+	if (code.mod != KMOD_NONE && localized_mods_.count(code.mod) == 1) {
+		/** TRANSLATORS: A key combination on the keyboard, e.g. 'Ctrl + A' */
+		result = (boost::format(_("%1% + %2%")) % localized_mods_.at(code.mod) % result).str();
+	}
+	return result;
+}
+
 void Hotkeys::register_localized_names() {
-	/** TRANSLATORS: Unknown hotkey */
-	localized_names_.emplace(SDLK_UNKNOWN, _("Unknown"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_RETURN, _("Return"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_ESCAPE, _("Escape"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_BACKSPACE, _("Backspace"));
-	//localized_names_.emplace(SDLK_CAPSLOCK, _("Caps Lock"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F1, _("F1"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F2, _("F2"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F3, _("F3"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F4, _("F4"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F5, _("F5"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F6, _("F6"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F7, _("F7"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F8, _("F8"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F9, _("F9"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F10, _("F10"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F11, _("F11"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_F12, _("F12"));
-	//localized_names_.emplace(SDLK_PRINTSCREEN, _("Print"));
-	//localized_names_.emplace(SDLK_SCROLLLOCK, _("Scroll"));
-	//localized_names_.emplace(SDLK_PAUSE, _("Pause"));
-	//localized_names_.emplace(SDLK_INSERT, _("Insert"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_HOME, _("Home"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_PAGEUP, _("Page Up"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_DELETE, _("Del"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_END, _("End"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_PAGEDOWN, _("Page Down"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_RIGHT, _("Right Arrow"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_LEFT, _("Left Arrow"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_DOWN, _("Down Arrow"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_UP, _("Up Arrow"));
-	//localized_names_.emplace(SDLK_NUMLOCKCLEAR, _("Num Lock"));
-	/** TRANSLATORS: Hotkey name */
-	localized_names_.emplace(SDLK_KP_ENTER, _("Enter"));
+	/** TRANSLATORS: A key on the keyboard. Unknown hotkey */
+	localized_codes_.emplace(SDLK_UNKNOWN, _("Unknown"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_RETURN, _("Return"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_ESCAPE, _("Escape"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_BACKSPACE, _("Backspace"));
+	// localized_names_.emplace(SDLK_CAPSLOCK, _("Caps Lock"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F1, _("F1"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F2, _("F2"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F3, _("F3"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F4, _("F4"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F5, _("F5"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F6, _("F6"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F7, _("F7"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F8, _("F8"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F9, _("F9"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F10, _("F10"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F11, _("F11"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_F12, _("F12"));
+	// localized_names_.emplace(SDLK_PRINTSCREEN, _("Print"));
+	// localized_names_.emplace(SDLK_SCROLLLOCK, _("Scroll"));
+	// localized_names_.emplace(SDLK_PAUSE, _("Pause"));
+	// localized_names_.emplace(SDLK_INSERT, _("Insert"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_HOME, _("Home"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_PAGEUP, _("Page Up"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_DELETE, _("Del"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_END, _("End"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_PAGEDOWN, _("Page Down"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_RIGHT, _("Right Arrow"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_LEFT, _("Left Arrow"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_DOWN, _("Down Arrow"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_UP, _("Up Arrow"));
+	// localized_names_.emplace(SDLK_NUMLOCKCLEAR, _("Num Lock"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey name */
+	localized_codes_.emplace(SDLK_KP_ENTER, _("Enter"));
+
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LSHIFT, _("Shift"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_RSHIFT, _("Shift"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LCTRL, _("Ctrl"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_RCTRL, _("Ctrl"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LSHIFT, _("Shift"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LALT, _("Alt"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_RALT, _("Alt"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_RALT, _("Alt"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LGUI, _("Gui"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_LGUI, _("Gui"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_NUM, _("Num Lock"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_CAPS, _("Caps Lock"));
+	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
+	localized_mods_.emplace(KMOD_MODE, _("Mode"));
 }
 
 }  // namespace UI

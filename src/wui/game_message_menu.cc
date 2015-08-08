@@ -46,7 +46,7 @@ GameMessageMenu::GameMessageMenu
 	UI::UniqueWindow
 		(&plr, "messages", &registry, 580, 375, _("Messages: Inbox")),
 	hotkey_scope_("game_message_menu"),
-	all_messages_hotkey_(SDLK_0),
+	all_messages_hotkey_(WLApplication::get()->hotkeys()->add_hotkey(hotkey_scope_, "all_messages", _("All Messages"), SDLK_0)),
 	message_body
 		(this,
 		 5, 154, 570, 216 - 5 - 34, // Subtracting height for message type icon
@@ -206,16 +206,15 @@ GameMessageMenu::GameMessageMenu
 	set_can_focus(true);
 	focus();
 
-	m_geologistsbtn->set_hotkey(hotkey_scope_, SDLK_1, all_messages_hotkey_);
-	m_economybtn->set_hotkey(hotkey_scope_, SDLK_2, all_messages_hotkey_);
-	m_seafaringbtn->set_hotkey(hotkey_scope_, SDLK_3, all_messages_hotkey_);
-	m_warfarebtn->set_hotkey(hotkey_scope_, SDLK_4, all_messages_hotkey_);
-	m_scenariobtn->set_hotkey(hotkey_scope_, SDLK_5, all_messages_hotkey_);
+	m_geologistsbtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_1), all_messages_hotkey_);
+	m_economybtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_2), all_messages_hotkey_);
+	m_seafaringbtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_3), all_messages_hotkey_);
+	m_warfarebtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_4), all_messages_hotkey_);
+	m_scenariobtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_5), all_messages_hotkey_);
 
-	m_archivebtn->set_hotkey(hotkey_scope_, SDLK_DELETE);
-	m_centerviewbtn->set_hotkey(hotkey_scope_, SDLK_g);
+	m_archivebtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_DELETE));
+	m_centerviewbtn->set_hotkey(hotkey_scope_, UI::Hotkeys::HotkeyCode(SDLK_g));
 
-	WLApplication::get()->hotkeys()->add_hotkey(hotkey_scope_, "all_messages", SDLK_0, "All Messages");
 }
 
 /**
@@ -364,36 +363,32 @@ bool GameMessageMenu::handle_key(bool down, SDL_Keysym code)
 	if (down) {
 
 		// Don't forget to change the tooltips if any of these get reassigned
-		if (code.sym == all_messages_hotkey_) {
+		// NOCOM allow key combination
+		if (WLApplication::get()->hotkeys()->is_hotkey_pressed(all_messages_hotkey_, code)) {
 			filter_messages(Widelands::Message::Type::kAllMessages);
 			return true;
-		} else if (code.sym == m_geologistsbtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_geologistsbtn->get_hotkey(), code)) {
 			filter_messages(Widelands::Message::Type::kGeologists);
 			return true;
-		} else if (code.sym == m_economybtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_economybtn->get_hotkey(), code)) {
 			filter_messages(Widelands::Message::Type::kEconomy);
 			return true;
-		} else if (code.sym == m_seafaringbtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_seafaringbtn->get_hotkey(), code)) {
 			filter_messages(Widelands::Message::Type::kSeafaring);
 			return true;
-		} else if (code.sym == m_warfarebtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_warfarebtn->get_hotkey(), code)) {
 			filter_messages(Widelands::Message::Type::kWarfare);
 			return true;
-		} else if (code.sym == m_scenariobtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_scenariobtn->get_hotkey(), code)) {
 			filter_messages(Widelands::Message::Type::kScenario);
 			return true;
-		}
-
-		if (code.sym == m_centerviewbtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_centerviewbtn->get_hotkey(), code)) {
 			if (m_centerviewbtn->enabled()) {
 				center_view();
 			}
 			return true;
-		} else if (code.sym == m_archivebtn->get_hotkey()) {
+		} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(m_archivebtn->get_hotkey(), code)) {
 			archive_or_restore();
-			return true;
-		} else if (code.sym == all_messages_hotkey_) {
-			filter_messages(Widelands::Message::Type::kAllMessages);
 			return true;
 		}
 

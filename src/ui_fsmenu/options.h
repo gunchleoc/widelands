@@ -231,6 +231,7 @@ private:
 	struct HotkeyData {
 		std::string scope;
 		std::string key;
+		SDL_Keymod mod;
 		SDL_Keycode code;
 		std::string title;
 	};

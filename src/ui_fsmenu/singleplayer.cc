@@ -20,8 +20,11 @@
 #include "ui_fsmenu/singleplayer.h"
 
 #include "base/i18n.h"
+#include "base/log.h" // NOCOM
 #include "graphic/graphic.h"
 #include "graphic/text_constants.h"
+
+#include "wlapplication.h" // NOCOM
 
 FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 	FullscreenMenuMainMenu(),
@@ -68,10 +71,35 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 			(&FullscreenMenuSinglePlayer::end_modal,
 			 boost::ref(*this),
 			 static_cast<int32_t>(MenuTarget::kBack)));
-	new_game.set_hotkey("singleplayer", SDLK_n);
-	campaign.set_hotkey("singleplayer", SDLK_c);
-	load_game.set_hotkey("singleplayer", SDLK_l);
-	back.set_hotkey("singleplayer", SDLK_ESCAPE);
+	log("NOCOM KMOD_LCTRL = %d\n", KMOD_LCTRL);
+	new_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_n, KMOD_LCTRL)); // NOCOM
+	campaign.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_c));
+	load_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_l));
+	back.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_ESCAPE));
+
+	/*
+	NOCOM testing hotkey stuff
+	This needs to be fully recursive in the end.
+	 */
+/*
+	UI::Hotkeys* hotkeys = WLApplication::get()->hotkeys();
+
+	UI::Hotkeys::Scope* global = hotkeys ->get_scope("global");
+
+	for (const std::string& child : global->get_children()) {
+
+		UI::Hotkeys::Scope* scope = hotkeys->get_scope(child);
+		if (scope != nullptr) {
+			log("NOCOM Scope: %s - Parent: %s\n", scope->get_title().c_str(), scope->get_parent().c_str());
+
+			for (std::pair<std::string, UI::Hotkeys::HotkeyEntry> entry : hotkeys->hotkeys(scope->get_name())) {
+				log("NOCOM -- %s\n", entry.second.second.c_str());
+			}
+		} else {
+			log("NOCOM unknown scope: %s\n", child.c_str());
+		}
+	}
+	*/
 
 	title.set_font(ui_fn(), fs_big(), UI_FONT_CLR_FG);
 
@@ -94,19 +122,21 @@ bool FullscreenMenuSinglePlayer::handle_key(bool down, SDL_Keysym code)
 {
 	if (!down)
 		return false;
-	if (code.sym == new_game.get_hotkey()) {
+	if (WLApplication::get()->hotkeys()->is_hotkey_pressed(new_game.get_hotkey(), code)) {
 		play_click();
 		end_modal(static_cast<int32_t>(MenuTarget::kNewGame));
-	} else if (code.sym == campaign.get_hotkey()) {
+	} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(campaign.get_hotkey(), code)) {
 		play_click();
 		end_modal(static_cast<int32_t>(MenuTarget::kCampaign));
-	} else if (code.sym == load_game.get_hotkey()) {
+	} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(load_game.get_hotkey(), code)) {
 		play_click();
 		end_modal(static_cast<int32_t>(MenuTarget::kLoadGame));
-	} else if (code.sym == back.get_hotkey()) {
+	} else if (WLApplication::get()->hotkeys()->is_hotkey_pressed(back.get_hotkey(), code)) {
 		play_click();
 		end_modal(static_cast<int32_t>(MenuTarget::kBack));
 	}
+
+	log("NOCOM mod: %d \n", code.mod);
 
 	return FullscreenMenuBase::handle_key(down, code);
 }

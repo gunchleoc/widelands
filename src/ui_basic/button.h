@@ -27,6 +27,7 @@
 
 #include "graphic/color.h"
 #include "graphic/text_layout.h"
+#include "ui_basic/hotkeys.h"
 #include "ui_basic/panel.h"
 
 namespace UI {
@@ -61,9 +62,9 @@ struct Button : public NamedPanel {
 	void set_title(const std::string &);
 	const std::string & get_title() const {return m_title;}
 	void set_hotkey(const std::string& scope,
-						 const SDL_Keycode& code,
-						 const SDL_Keycode& pressed_code = SDLK_UNKNOWN);
-	const SDL_Keycode& get_hotkey();
+						 const Hotkeys::HotkeyCode& code,
+						 const Hotkeys::HotkeyCode& pressed_code = Hotkeys::HotkeyCode());
+	const Hotkeys::HotkeyCode& get_hotkey();
 	void set_tooltip(const std::string& text) override;
 	void set_pressed_tooltip(const std::string& text);
 
@@ -116,8 +117,8 @@ private:
 	std::string m_title;          //  title string used when _mypic == 0
 
 	std::string hotkey_scope_;
-	SDL_Keycode hotkey_code_;
-	SDL_Keycode pressed_hotkey_code_;
+	UI::Hotkeys::HotkeyCode hotkey_code_;
+	UI::Hotkeys::HotkeyCode pressed_hotkey_code_;
 	std::string normal_tooltip_;
 	std::string pressed_tooltip_;
 

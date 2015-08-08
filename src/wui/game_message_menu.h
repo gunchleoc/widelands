@@ -67,7 +67,7 @@ private:
 	void update_record(UI::Table<uintptr_t>::EntryRecord & er, const Widelands::Message &);
 
 	std::string hotkey_scope_;
-	const SDL_Keycode all_messages_hotkey_;
+	UI::Hotkeys::HotkeyCode all_messages_hotkey_;
 
 	UI::Table<uintptr_t> * list;
 	UI::MultilineTextarea message_body;

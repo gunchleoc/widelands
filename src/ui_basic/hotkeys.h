@@ -24,16 +24,17 @@
 #include <set>
 
 #include <SDL_keycode.h>
+#include <SDL_keyboard.h>
 
 namespace UI {
 
 class Hotkeys {
 public:
 	struct Scope {
-		Scope(const std::string& name, const std::string& title, const std::string& parent) :
-			name_(name),
-			title_(title),
-			parent_(parent) {
+		Scope(const std::string& init_name,
+		      const std::string& init_title,
+		      const std::string& init_parent)
+		   : name_(init_name), title_(init_title), parent_(init_parent) {
 		}
 
 		void add_child(const std::string& name) {
@@ -67,47 +68,68 @@ public:
 
 	struct ScopeAndKey {
 		ScopeAndKey();
-		ScopeAndKey(const std::string& scope, const std::string& key) : scope_(scope), key_(key) {
+		ScopeAndKey(const std::string& init_scope, const std::string& init_key)
+		   : scope(init_scope), key(init_key) {
 		}
 
 		bool operator<(const ScopeAndKey& other) const {
-			if (scope_ == other.scope_) {
-				return key_ < other.key_;
+			if (scope == other.scope) {
+				return key < other.key;
 			}
-			return scope_ < other.scope_;
+			return scope < other.scope;
 		}
 
 		bool operator==(const ScopeAndKey& other) const {
-			return (scope_ == other.scope_ && key_ == other.key_);
+			return (scope == other.scope && key == other.key);
 		}
 
-		std::string scope_;
-		std::string key_;
+		std::string scope;
+		std::string key;
 	};
-	using HotkeyEntry = std::pair<SDL_Keycode, std::string>;
+
+	struct HotkeyCode {
+		HotkeyCode() : sym(SDLK_UNKNOWN), mod(KMOD_NONE) {
+		}
+		HotkeyCode(const SDL_Keycode& init_sym) : sym(init_sym), mod(KMOD_NONE) {
+		}
+		HotkeyCode(const SDL_Keycode& init_sym, const SDL_Keymod& init_mod)
+		   : sym(init_sym), mod(init_mod) {
+		}
+		SDL_Keycode sym;
+		SDL_Keymod mod;
+	};
+	using HotkeyEntry = std::pair<HotkeyCode, std::string>;
 
 	Hotkeys();
 
-	bool has_scope(const std::string& name) const ;
+	bool has_scope(const std::string& name) const;
 	void add_scope(const std::string& name, const std::string& title, const std::string& parent);
 	const std::string& get_scope_title(const std::string& name) const;
 	Scope* get_scope(const std::string& name);
 
 	bool has_hotkey(const std::string& scope, const std::string& key) const;
-	bool has_code(const std::string& scope, const SDL_Keycode& code) const;
-	const SDL_Keycode& add_hotkey(const std::string& scope,
-	                const std::string& key,
-	                const SDL_Keycode& code,
-	                const std::string& title);
-	bool replace_hotkey(const std::string& scope, const std::string& key, const SDL_Keycode& code);
-	const SDL_Keycode& get_hotkey(const std::string& scope, const std::string& key) const;
+	bool has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Keymod& mod) const;
+	const HotkeyCode& add_hotkey(const std::string& scope,
+	                             const std::string& key,
+	                             const std::string& title,
+	                             const SDL_Keycode& sym,
+	                             const SDL_Keymod& mod = KMOD_NONE);
+	bool replace_hotkey(const std::string& scope,
+	                    const std::string& key,
+	                    const SDL_Keycode& sym,
+	                    const SDL_Keymod& mod);
+	const Hotkeys::HotkeyCode& get_hotkey(const std::string& scope, const std::string& key) const;
 	const std::string& get_hotkey_title(const std::string& scope, const std::string& key) const;
-	const std::string get_displayname(const SDL_Keycode& code) const;
+	const std::string get_displayname(const HotkeyCode& code) const;
+
+	bool is_hotkey_pressed(const UI::Hotkeys::HotkeyCode& hotkey, const SDL_Keysym& code) const;
 
 	std::map<std::string, HotkeyEntry> hotkeys(const std::string& scope) const;
 
 	// NOCOM can this go?
-	const std::map<ScopeAndKey, HotkeyEntry>& all_hotkeys() const { return hotkeys_;}
+	const std::map<ScopeAndKey, HotkeyEntry>& all_hotkeys() const {
+		return hotkeys_;
+	}
 
 	// NOCOM comment stuff
 	// key
@@ -123,9 +145,10 @@ private:
 
 	std::map<ScopeAndKey, HotkeyEntry> hotkeys_;
 
-	std::map<SDL_Keycode, std::string> localized_names_;
+	std::map<SDL_Keycode, std::string> localized_codes_;
+	std::map<SDL_Keycode, std::string> localized_mods_;
 
-	SDL_Keycode no_key_;
+	HotkeyCode no_key_;
 	std::string no_title_;
 };
 }
