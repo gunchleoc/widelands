@@ -265,7 +265,54 @@ bool Hotkeys::is_hotkey_pressed(const UI::Hotkeys::HotkeyCode& hotkey,
 	if (hotkey.mod == KMOD_NONE) {
 		return hotkey.sym == code.sym;
 	} else {
-		return (hotkey.sym == code.sym) && (code.mod & hotkey.mod);
+		return (hotkey.sym == code.sym) && (is_modifier_pressed(hotkey.mod, code.mod));
+	}
+}
+
+const Hotkeys::ModifierSynonyms& Hotkeys::get_modifier_synonym(const SDL_Keymod& mod) const {
+	switch (mod) {
+	case KMOD_LSHIFT:
+	case KMOD_RSHIFT:
+		return Hotkeys::ModifierSynonyms::kShift;
+	case KMOD_LCTRL:
+	case KMOD_RCTRL:
+		return Hotkeys::ModifierSynonyms::kCtrl;
+	case KMOD_LALT:
+	case KMOD_RALT:
+		return Hotkeys::ModifierSynonyms::kAlt;
+	case KMOD_LGUI:
+	case KMOD_RGUI:
+		return Hotkeys::ModifierSynonyms::kGui;
+	case KMOD_NUM:
+		return Hotkeys::ModifierSynonyms::kNum;
+	case KMOD_CAPS:
+		return Hotkeys::ModifierSynonyms::kCaps;
+	case KMOD_MODE:
+		return Hotkeys::ModifierSynonyms::kMode;
+	default:
+		return Hotkeys::ModifierSynonyms::kNone;
+	}
+}
+
+bool Hotkeys::is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pressed_mod) const {
+	const Hotkeys::ModifierSynonyms& modifier = get_modifier_synonym(hotkey_mod);
+	switch (modifier) {
+	case Hotkeys::ModifierSynonyms::kShift:
+		return (pressed_mod & (KMOD_LSHIFT | KMOD_RSHIFT));
+	case Hotkeys::ModifierSynonyms::kCtrl:
+		return (pressed_mod & (KMOD_LCTRL | KMOD_RCTRL));
+	case Hotkeys::ModifierSynonyms::kAlt:
+		return (pressed_mod & (KMOD_LALT | KMOD_RALT));
+	case Hotkeys::ModifierSynonyms::kGui:
+		return (pressed_mod & (KMOD_LGUI | KMOD_RGUI));
+	case Hotkeys::ModifierSynonyms::kNum:
+		return (pressed_mod & KMOD_NUM);
+	case Hotkeys::ModifierSynonyms::kCaps:
+		return (pressed_mod & KMOD_CAPS);
+	case Hotkeys::ModifierSynonyms::kMode:
+		return (pressed_mod & KMOD_MODE);
+	default:
+		return false;
 	}
 }
 
@@ -286,9 +333,10 @@ const std::string Hotkeys::get_displayname(const HotkeyCode& code) const {
 	} else {
 		result = SDL_GetKeyName(code.sym);
 	}
-	if (code.mod != KMOD_NONE && localized_mods_.count(code.mod) == 1) {
+	const Hotkeys::ModifierSynonyms modifier = get_modifier_synonym(code.mod);
+	if (code.mod != KMOD_NONE && localized_modifiers_.count(modifier) == 1) {
 		/** TRANSLATORS: A key combination on the keyboard, e.g. 'Ctrl + A' */
-		result = (boost::format(_("%1% + %2%")) % localized_mods_.at(code.mod) % result).str();
+		result = (boost::format(_("%1% + %2%")) % localized_modifiers_.at(modifier) % result).str();
 	}
 	return result;
 }
@@ -354,31 +402,19 @@ void Hotkeys::register_localized_names() {
 	localized_codes_.emplace(SDLK_KP_ENTER, _("Enter"));
 
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LSHIFT, _("Shift"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kShift, _("Shift"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_RSHIFT, _("Shift"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kCtrl, _("Ctrl"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LCTRL, _("Ctrl"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kAlt, _("Alt"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_RCTRL, _("Ctrl"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kGui, _("Gui"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LSHIFT, _("Shift"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kNum, _("Num Lock"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LALT, _("Alt"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kCaps, _("Caps Lock"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_RALT, _("Alt"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_RALT, _("Alt"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LGUI, _("Gui"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_LGUI, _("Gui"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_NUM, _("Num Lock"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_CAPS, _("Caps Lock"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_mods_.emplace(KMOD_MODE, _("Mode"));
+	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kMode, _("Mode"));
 }
 
 }  // namespace UI

@@ -71,7 +71,7 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 			(&FullscreenMenuSinglePlayer::end_modal,
 			 boost::ref(*this),
 			 static_cast<int32_t>(MenuTarget::kBack)));
-	log("NOCOM KMOD_LCTRL = %d\n", KMOD_LCTRL);
+
 	new_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_n, KMOD_LCTRL)); // NOCOM
 	campaign.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_c));
 	load_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_l));
@@ -135,8 +135,6 @@ bool FullscreenMenuSinglePlayer::handle_key(bool down, SDL_Keysym code)
 		play_click();
 		end_modal(static_cast<int32_t>(MenuTarget::kBack));
 	}
-
-	log("NOCOM mod: %d \n", code.mod);
 
 	return FullscreenMenuBase::handle_key(down, code);
 }

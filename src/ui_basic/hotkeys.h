@@ -137,6 +137,11 @@ public:
 	// SDL_key
 
 private:
+	enum class ModifierSynonyms { kNone = 0, kShift, kCtrl, kAlt, kGui, kNum, kCaps, kMode };
+
+	const ModifierSynonyms& get_modifier_synonym(const SDL_Keymod& mod) const;
+	bool is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pressed_mod) const;
+
 	bool scope_has_root_ancestor(const std::string& name) const;
 	void register_localized_names();
 
@@ -146,7 +151,7 @@ private:
 	std::map<ScopeAndKey, HotkeyEntry> hotkeys_;
 
 	std::map<SDL_Keycode, std::string> localized_codes_;
-	std::map<SDL_Keycode, std::string> localized_mods_;
+	std::map<ModifierSynonyms, std::string> localized_modifiers_;
 
 	HotkeyCode no_key_;
 	std::string no_title_;
