@@ -55,7 +55,7 @@ removed.]]
 [[You can skip confirmation windows for irreversible actions if you hold CTRL
 while clicking on the action button.]]
    ) .. h2(_
-[[Keyboard shortcuts (in-game)]]
+[[Keyboard shortcuts (in-game)]] -- NOCOM read hotkeys from C++
    ) .. p(
 _"PAGEUP: increases game speed" .. "<br>"
 .. _"PAGEDOWN: decreases game speed" .. "<br>"

@@ -783,7 +783,8 @@ void FullscreenMenuHotkeyOptions::fill_table()
 	for (const std::pair<const UI::Hotkeys::ScopeAndKey, const UI::Hotkeys::HotkeyEntry>& hotkey : WLApplication::get()->hotkeys()->all_hotkeys()) {
 
 			HotkeyData hotkeydata;
-			hotkeydata.scope = hotkey.first.scope_;
+			const std::string& title = WLApplication::get()->hotkeys()->get_scope_title(hotkey.first.scope_);
+			hotkeydata.scope = title.empty()? hotkey.first.scope_ : title;
 			hotkeydata.key = hotkey.first.key_;
 			hotkeydata.code = hotkey.second.first;
 			hotkeydata.title = hotkey.second.second.empty() ? hotkeydata.key : hotkey.second.second;
