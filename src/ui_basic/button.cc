@@ -147,7 +147,7 @@ void Button::set_title(const std::string & title) {
  * global table is used instead.
 */
 void Button::set_hotkey(const std::string& scope, const Hotkeys::HotkeyCode& code, const Hotkeys::HotkeyCode& pressed_code) {
-	if (pressed_code.mod == SDLK_UNKNOWN) {
+	if (pressed_code.sym == SDLK_UNKNOWN) {
 		pressed_hotkey_code_ =
 				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mod);
 	} else {

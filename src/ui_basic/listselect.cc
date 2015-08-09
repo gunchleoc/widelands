@@ -489,7 +489,7 @@ bool BaseListselect::handle_key(bool const down, SDL_Keysym const code) {
 		uint32_t selected_idx;
 		switch (code.sym) {
 		case SDLK_KP_2:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 			/* no break */
 		case SDLK_DOWN:
@@ -503,7 +503,7 @@ bool BaseListselect::handle_key(bool const down, SDL_Keysym const code) {
 			}
 			return true;
 		case SDLK_KP_8:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 			/* no break */
 		case SDLK_UP:

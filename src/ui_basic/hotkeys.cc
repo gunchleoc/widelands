@@ -32,7 +32,7 @@
 
 namespace UI {
 
-Hotkeys::Hotkeys() : root_scope_("global") {
+Hotkeys::Hotkeys() : root_scope_("global"), use_numlock_(true) {
 	register_localized_names();
 
 	add_scope(root_scope_, _("Global"), "");
@@ -118,6 +118,13 @@ Hotkeys::Hotkeys() : root_scope_("global") {
 
 	// NOCOM Default hotkeys
 	// add_hotkey("mainmenu", "tutorial", SDLK_t, "Play Tutorial");
+}
+
+bool Hotkeys::use_numlock() const {
+	return use_numlock_;
+}
+void Hotkeys::set_numlock(bool yes_or_no) {
+	use_numlock_ = yes_or_no;
 }
 
 bool Hotkeys::has_scope(const std::string& name) const {
@@ -263,13 +270,67 @@ const std::string& Hotkeys::get_hotkey_title(const std::string& scope,
 bool Hotkeys::is_hotkey_pressed(const UI::Hotkeys::HotkeyCode& hotkey,
                                 const SDL_Keysym& code) const {
 	if (hotkey.mod == KMOD_NONE) {
-		return hotkey.sym == code.sym;
+		return is_symbol_pressed(hotkey.sym, code);
 	} else {
-		return (hotkey.sym == code.sym) && (is_modifier_pressed(hotkey.mod, code.mod));
+		return (is_symbol_pressed(hotkey.sym, code)) && (is_modifier_pressed(hotkey.mod, code.mod));
 	}
 }
 
-const Hotkeys::ModifierSynonyms& Hotkeys::get_modifier_synonym(const SDL_Keymod& mod) const {
+bool Hotkeys::is_symbol_pressed(const SDL_Keycode& hotkey_sym, const SDL_Keysym& code) const {
+
+	switch (hotkey_sym) {
+		case SDLK_KP_DIVIDE:
+		case SDLK_SLASH:
+			return (code.sym == SDLK_KP_DIVIDE) || (code.sym == SDLK_SLASH);
+		case SDLK_KP_MULTIPLY:
+		case SDLK_ASTERISK:
+			return (code.sym == SDLK_KP_MULTIPLY) || (code.sym == SDLK_ASTERISK);
+		case SDLK_KP_MINUS:
+		case SDLK_MINUS:
+			return (code.sym == SDLK_KP_MINUS) || (code.sym == SDLK_MINUS);
+		case SDL_SCANCODE_KP_PLUS:
+		case SDLK_PLUS:
+			return (code.sym == SDL_SCANCODE_KP_PLUS) || (code.sym == SDLK_PLUS);
+		case SDLK_KP_ENTER:
+		case SDLK_RETURN:
+			return (code.sym == SDLK_KP_ENTER) || (code.sym == SDLK_RETURN);
+		case SDLK_KP_0:
+		case SDLK_0:
+			return (use_numlock() && code.sym == SDLK_KP_0) || (code.sym == SDLK_0);
+		case SDLK_KP_1:
+		case SDLK_1:
+			return (use_numlock() && code.sym == SDLK_KP_1) || (code.sym == SDLK_1);
+		case SDLK_KP_2:
+		case SDLK_2:
+			return (use_numlock() && code.sym == SDLK_KP_2) || (code.sym == SDLK_2);
+		case SDLK_KP_3:
+		case SDLK_3:
+			return (use_numlock() && code.sym == SDLK_KP_3) || (code.sym == SDLK_3);
+		case SDLK_KP_4:
+		case SDLK_4:
+			return (use_numlock() && code.sym == SDLK_KP_4) || (code.sym == SDLK_4);
+		case SDLK_KP_5:
+		case SDLK_5:
+			return (use_numlock() && code.sym == SDLK_KP_5) || (code.sym == SDLK_5);
+		case SDLK_KP_6:
+		case SDLK_6:
+			return (use_numlock() && code.sym == SDLK_KP_6) || (code.sym == SDLK_6);
+		case SDLK_KP_7:
+		case SDLK_7:
+			return (use_numlock() && code.sym == SDLK_KP_7) || (code.sym == SDLK_7);
+		case SDLK_KP_8:
+		case SDLK_8:
+			return (use_numlock() && code.sym == SDLK_KP_8) || (code.sym == SDLK_8);
+		case SDLK_KP_9:
+		case SDLK_9:
+			return (use_numlock() && code.sym == SDLK_KP_9) || (code.sym == SDLK_9);
+		default:
+			break;
+	}
+	return hotkey_sym == code.sym;
+}
+
+Hotkeys::ModifierSynonyms Hotkeys::get_modifier_synonym(const SDL_Keymod& mod) const {
 	switch (mod) {
 	case KMOD_LSHIFT:
 	case KMOD_RSHIFT:
@@ -283,8 +344,6 @@ const Hotkeys::ModifierSynonyms& Hotkeys::get_modifier_synonym(const SDL_Keymod&
 	case KMOD_LGUI:
 	case KMOD_RGUI:
 		return Hotkeys::ModifierSynonyms::kGui;
-	case KMOD_NUM:
-		return Hotkeys::ModifierSynonyms::kNum;
 	case KMOD_CAPS:
 		return Hotkeys::ModifierSynonyms::kCaps;
 	case KMOD_MODE:
@@ -305,8 +364,6 @@ bool Hotkeys::is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pre
 		return (pressed_mod & (KMOD_LALT | KMOD_RALT));
 	case Hotkeys::ModifierSynonyms::kGui:
 		return (pressed_mod & (KMOD_LGUI | KMOD_RGUI));
-	case Hotkeys::ModifierSynonyms::kNum:
-		return (pressed_mod & KMOD_NUM);
 	case Hotkeys::ModifierSynonyms::kCaps:
 		return (pressed_mod & KMOD_CAPS);
 	case Hotkeys::ModifierSynonyms::kMode:
@@ -409,8 +466,6 @@ void Hotkeys::register_localized_names() {
 	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kAlt, _("Alt"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
 	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kGui, _("Gui"));
-	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
-	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kNum, _("Num Lock"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */
 	localized_modifiers_.emplace(Hotkeys::ModifierSynonyms::kCaps, _("Caps Lock"));
 	/** TRANSLATORS: A key on the keyboard. Hotkey modifier */

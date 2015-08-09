@@ -27,6 +27,7 @@
 #include "graphic/text_layout.h"
 #include "graphic/wordwrap.h"
 #include "ui_basic/scrollbar.h"
+#include "wlapplication.h" // NOCOM
 
 namespace UI {
 
@@ -255,7 +256,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 	if (down) {
 		switch (code.sym) {
 		case SDLK_KP_PERIOD:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 			/* no break */
 		case SDLK_DELETE:
@@ -273,7 +274,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 			break;
 
 		case SDLK_KP_4:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -296,7 +297,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 		}
 
 		case SDLK_KP_6:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -314,7 +315,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 			break;
 
 		case SDLK_KP_2:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -343,7 +344,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 			break;
 
 		case SDLK_KP_8:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -370,7 +371,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 			break;
 
 		case SDLK_KP_7:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -388,7 +389,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code)
 			break;
 
 		case SDLK_KP_1:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */

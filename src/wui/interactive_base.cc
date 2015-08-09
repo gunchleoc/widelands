@@ -316,19 +316,19 @@ void InteractiveBase::think()
 
 	if (keyboard_free() && Panel::allow_user_input()) {
 		if (get_key_state(SDL_SCANCODE_UP) ||
-			 (get_key_state(SDL_SCANCODE_KP_8) && (SDL_GetModState() ^ KMOD_NUM))) {
+			 (get_key_state(SDL_SCANCODE_KP_8) && !WLApplication::get()->hotkeys()->use_numlock())) {
 			set_rel_viewpoint(Point(0, -scrollval), false);
 		}
 		if (get_key_state(SDL_SCANCODE_DOWN) ||
-			 (get_key_state(SDL_SCANCODE_KP_2) && (SDL_GetModState() ^ KMOD_NUM))) {
+			 (get_key_state(SDL_SCANCODE_KP_2) && !WLApplication::get()->hotkeys()->use_numlock())) {
 			set_rel_viewpoint(Point(0,  scrollval), false);
 		}
 		if (get_key_state(SDL_SCANCODE_LEFT) ||
-			 (get_key_state(SDL_SCANCODE_KP_4) && (SDL_GetModState() ^ KMOD_NUM))) {
+			 (get_key_state(SDL_SCANCODE_KP_4) && !WLApplication::get()->hotkeys()->use_numlock())) {
 			set_rel_viewpoint(Point(-scrollval, 0), false);
 		}
 		if (get_key_state(SDL_SCANCODE_RIGHT) ||
-			 (get_key_state(SDL_SCANCODE_KP_6) && (SDL_GetModState() ^ KMOD_NUM))) {
+			 (get_key_state(SDL_SCANCODE_KP_6) && !WLApplication::get()->hotkeys()->use_numlock())) {
 			set_rel_viewpoint(Point (scrollval, 0), false);
 		}
 	}
@@ -869,7 +869,7 @@ bool InteractiveBase::handle_key(bool const down, SDL_Keysym const code)
 	if (down) {
 		switch (code.sym) {
 		case SDLK_KP_9:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 		/* no break */
 		case SDLK_PAGEUP:
@@ -889,7 +889,7 @@ bool InteractiveBase::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_3:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 		/* no break */
 		case SDLK_PAGEDOWN:

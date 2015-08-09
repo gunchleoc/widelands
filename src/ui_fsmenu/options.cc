@@ -699,6 +699,7 @@ OptionsCtrl::OptionsStruct FullscreenMenuAdvancedOptions::get_values() {
 
 /**
  * The hotkey options menu
+ * NOCOM add option for num lock
  */
 FullscreenMenuHotkeyOptions::FullscreenMenuHotkeyOptions
 	(OptionsCtrl::OptionsStruct const opt)

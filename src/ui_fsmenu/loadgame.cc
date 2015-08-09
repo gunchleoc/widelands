@@ -44,6 +44,7 @@
 #include "logic/replay.h"
 #include "ui_basic/icon.h"
 #include "ui_basic/messagebox.h"
+#include "wlapplication.h" // NOCOM
 
 namespace {
 
@@ -629,7 +630,7 @@ bool FullscreenMenuLoadGame::handle_key(bool down, SDL_Keysym code)
 	switch (code.sym)
 	{
 		case SDLK_KP_PERIOD:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 			/* no break */
 		case SDLK_DELETE:

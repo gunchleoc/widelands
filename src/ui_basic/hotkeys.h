@@ -102,6 +102,9 @@ public:
 
 	Hotkeys();
 
+	bool use_numlock() const;
+	void set_numlock(bool yes_or_no);
+
 	bool has_scope(const std::string& name) const;
 	void add_scope(const std::string& name, const std::string& title, const std::string& parent);
 	const std::string& get_scope_title(const std::string& name) const;
@@ -137,9 +140,10 @@ public:
 	// SDL_key
 
 private:
-	enum class ModifierSynonyms { kNone = 0, kShift, kCtrl, kAlt, kGui, kNum, kCaps, kMode };
+	enum class ModifierSynonyms { kNone = 0, kShift, kCtrl, kAlt, kGui, kCaps, kMode };
 
-	const ModifierSynonyms& get_modifier_synonym(const SDL_Keymod& mod) const;
+	ModifierSynonyms get_modifier_synonym(const SDL_Keymod& mod) const;
+	bool is_symbol_pressed(const SDL_Keycode& hotkey_sym, const SDL_Keysym& code) const;
 	bool is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pressed_mod) const;
 
 	bool scope_has_root_ancestor(const std::string& name) const;
@@ -155,6 +159,11 @@ private:
 
 	HotkeyCode no_key_;
 	std::string no_title_;
+
+	// KMOD_NUM does not initialize the Num Lock state from the OS
+	// (Bug in SDL2)
+	// https://bugs.launchpad.net/widelands/+bug/1177064
+	bool use_numlock_;
 };
 }
 

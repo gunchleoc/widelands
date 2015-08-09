@@ -29,6 +29,7 @@
 #include "graphic/text/font_set.h"
 #include "graphic/text_constants.h"
 #include "ui_basic/mouse_constants.h"
+#include "wlapplication.h" // NOCOM
 
 namespace UI {
 
@@ -248,7 +249,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_PERIOD:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -271,7 +272,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_4:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -290,7 +291,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_6:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -314,7 +315,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_7:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -328,7 +329,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_1:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -341,7 +342,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_8:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */
@@ -360,7 +361,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_2:
-			if (code.mod & KMOD_NUM) {
+			if (WLApplication::get()->hotkeys()->use_numlock()) {
 				break;
 			}
 			/* no break */

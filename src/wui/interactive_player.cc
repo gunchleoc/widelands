@@ -43,6 +43,7 @@
 #include "logic/tribe.h"
 #include "profile/profile.h"
 #include "ui_basic/unique_window.h"
+#include "wlapplication.h" // NOCOM
 #include "wui/building_statistics_menu.h"
 #include "wui/debugconsole.h"
 #include "wui/encyclopedia_window.h"
@@ -353,7 +354,7 @@ bool InteractivePlayer::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_KP_7:
-			if (code.mod & KMOD_NUM)
+			if (WLApplication::get()->hotkeys()->use_numlock())
 				break;
 			/* no break */
 		case SDLK_HOME:
