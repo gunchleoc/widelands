@@ -88,15 +88,15 @@ public:
 	};
 
 	struct HotkeyCode {
-		HotkeyCode() : sym(SDLK_UNKNOWN), mod(KMOD_NONE) {
+		HotkeyCode() : sym(SDLK_UNKNOWN) {
 		}
-		HotkeyCode(const SDL_Keycode& init_sym) : sym(init_sym), mod(KMOD_NONE) {
+		HotkeyCode(const SDL_Keycode& init_sym) : sym(init_sym) {
 		}
-		HotkeyCode(const SDL_Keycode& init_sym, const SDL_Keymod& init_mod)
-		   : sym(init_sym), mod(init_mod) {
+		HotkeyCode(const SDL_Keycode& init_sym, const std::set<SDL_Keymod>& init_mods)
+		   : sym(init_sym), mods(init_mods) {
 		}
 		SDL_Keycode sym;
-		SDL_Keymod mod;
+		std::set<SDL_Keymod> mods;
 	};
 	using HotkeyEntry = std::pair<HotkeyCode, std::string>;
 
@@ -111,16 +111,18 @@ public:
 	Scope* get_scope(const std::string& name);
 
 	bool has_hotkey(const std::string& scope, const std::string& key) const;
-	bool has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Keymod& mod) const;
+	bool has_code(const std::string& scope,
+	              const SDL_Keycode& sym,
+	              const std::set<SDL_Keymod>& mods) const;
 	const HotkeyCode& add_hotkey(const std::string& scope,
 	                             const std::string& key,
 	                             const std::string& title,
 	                             const SDL_Keycode& sym,
-	                             const SDL_Keymod& mod = KMOD_NONE);
+	                             const std::set<SDL_Keymod>& mods = std::set<SDL_Keymod>());
 	bool replace_hotkey(const std::string& scope,
 	                    const std::string& key,
 	                    const SDL_Keycode& sym,
-	                    const SDL_Keymod& mod);
+	                    const std::set<SDL_Keymod>& mods);
 	const Hotkeys::HotkeyCode& get_hotkey(const std::string& scope, const std::string& key) const;
 	const std::string& get_hotkey_title(const std::string& scope, const std::string& key) const;
 	const std::string get_displayname(const HotkeyCode& code) const;
@@ -144,7 +146,10 @@ private:
 
 	ModifierSynonyms get_modifier_synonym(const SDL_Keymod& mod) const;
 	bool is_symbol_pressed(const SDL_Keycode& hotkey_sym, const SDL_Keysym& code) const;
-	bool is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pressed_mod) const;
+	bool is_modifier_pressed(const Hotkeys::ModifierSynonyms& modifier,
+	                         const Uint16 pressed_mod) const;
+	bool are_modifiers_pressed(const std::set<SDL_Keymod>& hotkey_mods,
+	                           const Uint16 pressed_mod) const;
 
 	bool scope_has_root_ancestor(const std::string& name) const;
 	void register_localized_names();

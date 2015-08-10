@@ -149,12 +149,12 @@ void Button::set_title(const std::string & title) {
 void Button::set_hotkey(const std::string& scope, const Hotkeys::HotkeyCode& code, const Hotkeys::HotkeyCode& pressed_code) {
 	if (pressed_code.sym == SDLK_UNKNOWN) {
 		pressed_hotkey_code_ =
-				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mod);
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mods);
 	} else {
 		pressed_hotkey_code_ =
-				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? pressed_tooltip_ : m_title, pressed_code.sym, pressed_code.mod);
+				WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? pressed_tooltip_ : m_title, pressed_code.sym, pressed_code.mods);
 	}
-	hotkey_code_ = WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mod);
+	hotkey_code_ = WLApplication::get()->hotkeys()->add_hotkey(scope, get_name(), m_title.empty() ? normal_tooltip_ : m_title, code.sym, code.mods);
 	hotkey_scope_ = scope;
 	update_tooltip();
 	update();

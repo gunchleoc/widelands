@@ -27,9 +27,6 @@
 #include "base/log.h"  // NOCOM
 #include "base/wexception.h"
 
-// NOCOM can't do all key combinations yet (we need up to 3).
-// if ((code.mod & (KMOD_LCTRL | KMOD_RCTRL)) && (code.mod & (KMOD_LSHIFT | KMOD_RSHIFT)))
-
 namespace UI {
 
 Hotkeys::Hotkeys() : root_scope_("global"), use_numlock_(true) {
@@ -61,13 +58,17 @@ Hotkeys::Hotkeys() : root_scope_("global"), use_numlock_(true) {
 #ifndef NDEBUG
 	add_hotkey("game", "debug", _("Debug Console"), SDLK_F6);
 #endif
-	add_hotkey("global",
-	           "screenshot",
-	           _("Screenshot"),
-	           SDLK_F11,
-	           KMOD_LCTRL);  // NOCOM need synonyms for ctrl
+	add_hotkey(
+	   "global", "screenshot", _("Screenshot"), SDLK_F11, std::set<SDL_Keymod>({KMOD_LCTRL}));
 
-	/* NOCOM no key combinations yet
+	// NOCOM this gives CTRL twice in the Options screen
+	add_hotkey("test",
+	           "test",
+	           "test",
+	           SDLK_F11,
+	           std::set<SDL_Keymod>({KMOD_LCTRL, KMOD_RCTRL, KMOD_LSHIFT}));
+
+	/* NOCOM
 .. _"(CTRL+) 0-9: Remember and go to previously remembered locations" .. "<br>"
 .. _"CTRL+F10: quits the game immediately" .. "<br>"
 .. _"CTRL+Leftclick: skips confirmation dialogs" .. "<br>"
@@ -183,8 +184,9 @@ bool Hotkeys::has_hotkey(const std::string& scope, const std::string& key) const
 	return hotkeys_.count(ScopeAndKey(scope, key)) == 1;
 }
 
-bool
-Hotkeys::has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Keymod& mod) const {
+bool Hotkeys::has_code(const std::string& scope,
+                       const SDL_Keycode& sym,
+                       const std::set<SDL_Keymod>& mods) const {
 	if (!scope_has_root_ancestor(scope)) {
 		throw wexception("Hotkey scope '%s'' is not a decendant of root", scope.c_str());
 	}
@@ -194,9 +196,17 @@ Hotkeys::has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Ke
 		std::string temp_scope = scope;
 		// Make sure that this terminates
 		for (int i = 0; i < 100; ++i) {
-			if (hotkey.first.scope == temp_scope && hotkey.second.first.mod == mod &&
-			    hotkey.second.first.sym == sym) {
-				return true;
+			if (hotkey.first.scope == temp_scope && hotkey.second.first.sym == sym) {
+				// Iterate over mods NOCOM with synonyms.
+				std::set<SDL_Keymod> temp_mods = mods;
+				for (const SDL_Keymod& existing_mod : hotkey.second.first.mods) {
+					std::set<SDL_Keymod>::iterator iterator = temp_mods.find(existing_mod);
+					if (iterator == temp_mods.end()) {
+						return false;
+					} else {
+						temp_mods.erase(iterator);
+					}
+				}
 			}
 			if (temp_scope == root_scope_) {
 				return false;
@@ -204,7 +214,7 @@ Hotkeys::has_code(const std::string& scope, const SDL_Keycode& sym, const SDL_Ke
 			if (!has_scope(temp_scope)) {
 				throw wexception("Hotkey scope '%s'' does not exist for hotkey '%s'",
 				                 temp_scope.c_str(),
-				                 get_displayname(Hotkeys::HotkeyCode(sym, mod)).c_str());
+				                 get_displayname(Hotkeys::HotkeyCode(sym, mods)).c_str());
 			}
 			temp_scope = scopes_.at(temp_scope).get_parent();
 		}
@@ -216,19 +226,19 @@ const Hotkeys::HotkeyCode& Hotkeys::add_hotkey(const std::string& scope,
                                                const std::string& key,
                                                const std::string& title,
                                                const SDL_Keycode& sym,
-                                               const SDL_Keymod& mod) {
+                                               const std::set<SDL_Keymod>& mods) {
 	if (!has_scope(scope)) {
 		add_scope(scope, scope, root_scope_);
 	}
 
 	if (!has_hotkey(scope, key)) {
-		if (has_code(scope, sym, mod)) {
+		if (has_code(scope, sym, mods)) {
 			// NOCOM hotkey collisions need to be handled - we still want to be able to add a hotkey
 			// here.
 			// Popup messagebox?
 			log("NOCOM Hotkey collision - need error handling!\n");
 		}
-		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mod), title));
+		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mods), title));
 	}
 	assert(scope_has_root_ancestor(scope));
 	return get_hotkey(scope, key);
@@ -237,14 +247,14 @@ const Hotkeys::HotkeyCode& Hotkeys::add_hotkey(const std::string& scope,
 bool Hotkeys::replace_hotkey(const std::string& scope,
                              const std::string& key,
                              const SDL_Keycode& sym,
-                             const SDL_Keymod& mod) {
+                             const std::set<SDL_Keymod>& mods) {
 	if (!scope_has_root_ancestor(scope)) {
 		throw wexception("Hotkey scope '%s'' is not a decendant of root", scope.c_str());
 	}
-	if (has_hotkey(scope, key) && !has_code(scope, sym, mod)) {
+	if (has_hotkey(scope, key) && !has_code(scope, sym, mods)) {
 		const std::string& title = get_hotkey_title(scope, key);
 		hotkeys_.erase(ScopeAndKey(scope, key));
-		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mod), title));
+		hotkeys_.emplace(ScopeAndKey(scope, key), HotkeyEntry(HotkeyCode(sym, mods), title));
 		return true;
 	}
 	return false;
@@ -269,63 +279,65 @@ const std::string& Hotkeys::get_hotkey_title(const std::string& scope,
 
 bool Hotkeys::is_hotkey_pressed(const UI::Hotkeys::HotkeyCode& hotkey,
                                 const SDL_Keysym& code) const {
-	if (hotkey.mod == KMOD_NONE) {
-		return is_symbol_pressed(hotkey.sym, code);
-	} else {
-		return (is_symbol_pressed(hotkey.sym, code)) && (is_modifier_pressed(hotkey.mod, code.mod));
+	if (is_symbol_pressed(hotkey.sym, code)) {
+		if (!hotkey.mods.empty()) {
+			return are_modifiers_pressed(hotkey.mods, code.mod);
+		}
+		return true;
 	}
+	return false;
 }
 
 bool Hotkeys::is_symbol_pressed(const SDL_Keycode& hotkey_sym, const SDL_Keysym& code) const {
 
 	switch (hotkey_sym) {
-		case SDLK_KP_DIVIDE:
-		case SDLK_SLASH:
-			return (code.sym == SDLK_KP_DIVIDE) || (code.sym == SDLK_SLASH);
-		case SDLK_KP_MULTIPLY:
-		case SDLK_ASTERISK:
-			return (code.sym == SDLK_KP_MULTIPLY) || (code.sym == SDLK_ASTERISK);
-		case SDLK_KP_MINUS:
-		case SDLK_MINUS:
-			return (code.sym == SDLK_KP_MINUS) || (code.sym == SDLK_MINUS);
-		case SDL_SCANCODE_KP_PLUS:
-		case SDLK_PLUS:
-			return (code.sym == SDL_SCANCODE_KP_PLUS) || (code.sym == SDLK_PLUS);
-		case SDLK_KP_ENTER:
-		case SDLK_RETURN:
-			return (code.sym == SDLK_KP_ENTER) || (code.sym == SDLK_RETURN);
-		case SDLK_KP_0:
-		case SDLK_0:
-			return (use_numlock() && code.sym == SDLK_KP_0) || (code.sym == SDLK_0);
-		case SDLK_KP_1:
-		case SDLK_1:
-			return (use_numlock() && code.sym == SDLK_KP_1) || (code.sym == SDLK_1);
-		case SDLK_KP_2:
-		case SDLK_2:
-			return (use_numlock() && code.sym == SDLK_KP_2) || (code.sym == SDLK_2);
-		case SDLK_KP_3:
-		case SDLK_3:
-			return (use_numlock() && code.sym == SDLK_KP_3) || (code.sym == SDLK_3);
-		case SDLK_KP_4:
-		case SDLK_4:
-			return (use_numlock() && code.sym == SDLK_KP_4) || (code.sym == SDLK_4);
-		case SDLK_KP_5:
-		case SDLK_5:
-			return (use_numlock() && code.sym == SDLK_KP_5) || (code.sym == SDLK_5);
-		case SDLK_KP_6:
-		case SDLK_6:
-			return (use_numlock() && code.sym == SDLK_KP_6) || (code.sym == SDLK_6);
-		case SDLK_KP_7:
-		case SDLK_7:
-			return (use_numlock() && code.sym == SDLK_KP_7) || (code.sym == SDLK_7);
-		case SDLK_KP_8:
-		case SDLK_8:
-			return (use_numlock() && code.sym == SDLK_KP_8) || (code.sym == SDLK_8);
-		case SDLK_KP_9:
-		case SDLK_9:
-			return (use_numlock() && code.sym == SDLK_KP_9) || (code.sym == SDLK_9);
-		default:
-			break;
+	case SDLK_KP_DIVIDE:
+	case SDLK_SLASH:
+		return (code.sym == SDLK_KP_DIVIDE) || (code.sym == SDLK_SLASH);
+	case SDLK_KP_MULTIPLY:
+	case SDLK_ASTERISK:
+		return (code.sym == SDLK_KP_MULTIPLY) || (code.sym == SDLK_ASTERISK);
+	case SDLK_KP_MINUS:
+	case SDLK_MINUS:
+		return (code.sym == SDLK_KP_MINUS) || (code.sym == SDLK_MINUS);
+	case SDL_SCANCODE_KP_PLUS:
+	case SDLK_PLUS:
+		return (code.sym == SDL_SCANCODE_KP_PLUS) || (code.sym == SDLK_PLUS);
+	case SDLK_KP_ENTER:
+	case SDLK_RETURN:
+		return (code.sym == SDLK_KP_ENTER) || (code.sym == SDLK_RETURN);
+	case SDLK_KP_0:
+	case SDLK_0:
+		return (use_numlock() && code.sym == SDLK_KP_0) || (code.sym == SDLK_0);
+	case SDLK_KP_1:
+	case SDLK_1:
+		return (use_numlock() && code.sym == SDLK_KP_1) || (code.sym == SDLK_1);
+	case SDLK_KP_2:
+	case SDLK_2:
+		return (use_numlock() && code.sym == SDLK_KP_2) || (code.sym == SDLK_2);
+	case SDLK_KP_3:
+	case SDLK_3:
+		return (use_numlock() && code.sym == SDLK_KP_3) || (code.sym == SDLK_3);
+	case SDLK_KP_4:
+	case SDLK_4:
+		return (use_numlock() && code.sym == SDLK_KP_4) || (code.sym == SDLK_4);
+	case SDLK_KP_5:
+	case SDLK_5:
+		return (use_numlock() && code.sym == SDLK_KP_5) || (code.sym == SDLK_5);
+	case SDLK_KP_6:
+	case SDLK_6:
+		return (use_numlock() && code.sym == SDLK_KP_6) || (code.sym == SDLK_6);
+	case SDLK_KP_7:
+	case SDLK_7:
+		return (use_numlock() && code.sym == SDLK_KP_7) || (code.sym == SDLK_7);
+	case SDLK_KP_8:
+	case SDLK_8:
+		return (use_numlock() && code.sym == SDLK_KP_8) || (code.sym == SDLK_8);
+	case SDLK_KP_9:
+	case SDLK_9:
+		return (use_numlock() && code.sym == SDLK_KP_9) || (code.sym == SDLK_9);
+	default:
+		break;
 	}
 	return hotkey_sym == code.sym;
 }
@@ -353,8 +365,26 @@ Hotkeys::ModifierSynonyms Hotkeys::get_modifier_synonym(const SDL_Keymod& mod) c
 	}
 }
 
-bool Hotkeys::is_modifier_pressed(const SDL_Keymod& hotkey_mod, const Uint16 pressed_mod) const {
-	const Hotkeys::ModifierSynonyms& modifier = get_modifier_synonym(hotkey_mod);
+bool Hotkeys::are_modifiers_pressed(const std::set<SDL_Keymod>& hotkey_mods,
+                                    const Uint16 pressed_mod) const {
+	bool result = true;
+	std::set<Hotkeys::ModifierSynonyms> hotkey_modifiers;
+	for (const SDL_Keymod& hotkey_mod : hotkey_mods) {
+		hotkey_modifiers.emplace(get_modifier_synonym(hotkey_mod));
+	}
+	// Make sure that all the modifiers that we want are pressed, and only them.
+	for (int i = static_cast<int>(ModifierSynonyms::kNone);
+	     i < static_cast<int>(ModifierSynonyms::kMode) && result;
+	     ++i) {
+		bool is_wanted = hotkey_modifiers.count(static_cast<ModifierSynonyms>(i)) == 1;
+		bool is_pressed = is_modifier_pressed(static_cast<ModifierSynonyms>(i), pressed_mod);
+		result = result && (is_wanted == is_pressed);
+	}
+	return result;
+}
+
+bool Hotkeys::is_modifier_pressed(const Hotkeys::ModifierSynonyms& modifier,
+                                  const Uint16 pressed_mod) const {
 	switch (modifier) {
 	case Hotkeys::ModifierSynonyms::kShift:
 		return (pressed_mod & (KMOD_LSHIFT | KMOD_RSHIFT));
@@ -390,10 +420,13 @@ const std::string Hotkeys::get_displayname(const HotkeyCode& code) const {
 	} else {
 		result = SDL_GetKeyName(code.sym);
 	}
-	const Hotkeys::ModifierSynonyms modifier = get_modifier_synonym(code.mod);
-	if (code.mod != KMOD_NONE && localized_modifiers_.count(modifier) == 1) {
-		/** TRANSLATORS: A key combination on the keyboard, e.g. 'Ctrl + A' */
-		result = (boost::format(_("%1% + %2%")) % localized_modifiers_.at(modifier) % result).str();
+	for (const SDL_Keymod& mod : code.mods) {
+		const Hotkeys::ModifierSynonyms& modifier = get_modifier_synonym(mod);
+		if (mod != KMOD_NONE && localized_modifiers_.count(modifier) == 1) {
+			/** TRANSLATORS: A key combination on the keyboard, e.g. 'Ctrl + A' */
+			result =
+			   (boost::format(_("%1% + %2%")) % localized_modifiers_.at(modifier) % result).str();
+		}
 	}
 	return result;
 }
