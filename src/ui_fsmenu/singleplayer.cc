@@ -53,24 +53,24 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 {
 	new_game.sigclicked.connect
 		(boost::bind
-			(&FullscreenMenuSinglePlayer::end_modal,
+			(&FullscreenMenuSinglePlayer::end_modal<FullscreenMenuBase::MenuTarget>,
 			 boost::ref(*this),
-			 static_cast<int32_t>(MenuTarget::kNewGame)));
+			 FullscreenMenuBase::MenuTarget::kNewGame));
 	campaign.sigclicked.connect
 		(boost::bind
-			(&FullscreenMenuSinglePlayer::end_modal,
+			(&FullscreenMenuSinglePlayer::end_modal<FullscreenMenuBase::MenuTarget>,
 			 boost::ref(*this),
-			 static_cast<int32_t>(MenuTarget::kCampaign)));
+			 FullscreenMenuBase::MenuTarget::kCampaign));
 	load_game.sigclicked.connect
 		(boost::bind
-			(&FullscreenMenuSinglePlayer::end_modal,
+			(&FullscreenMenuSinglePlayer::end_modal<FullscreenMenuBase::MenuTarget>,
 			 boost::ref(*this),
-			 static_cast<int32_t>(MenuTarget::kLoadGame)));
+			 FullscreenMenuBase::MenuTarget::kLoadGame));
 	back.sigclicked.connect
 		(boost::bind
-			(&FullscreenMenuSinglePlayer::end_modal,
+			(&FullscreenMenuSinglePlayer::end_modal<FullscreenMenuBase::MenuTarget>,
 			 boost::ref(*this),
-			 static_cast<int32_t>(MenuTarget::kBack)));
+			 FullscreenMenuBase::MenuTarget::kBack));
 
 	new_game.set_hotkey
 			("singleplayer",
@@ -146,4 +146,8 @@ bool FullscreenMenuSinglePlayer::handle_key(bool down, SDL_Keysym code)
 	}
 
 	return FullscreenMenuBase::handle_key(down, code);
+}
+
+void FullscreenMenuSinglePlayer::clicked_ok() {
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kNewGame);
 }

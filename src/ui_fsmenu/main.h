@@ -31,22 +31,12 @@
 */
 class FullscreenMenuMain : public FullscreenMenuMainMenu {
 public:
-	enum class MenuTarget: int32_t {
-		kTutorial,
-		kSinglePlayer,
-		kMultiplayer,
-		kReplay,
-		kEditor,
-		kOptions,
-		kReadme,
-		kLicense,
-		kAuthors,
-		kExit
-	};
-
 	FullscreenMenuMain();
 
 	bool handle_key(bool down, SDL_Keysym) override;
+
+protected:
+	void clicked_ok() override;
 
 private:
 	UI::Box      vbox;
