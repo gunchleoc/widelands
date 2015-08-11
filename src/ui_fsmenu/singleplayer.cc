@@ -72,10 +72,19 @@ FullscreenMenuSinglePlayer::FullscreenMenuSinglePlayer() :
 			 boost::ref(*this),
 			 static_cast<int32_t>(MenuTarget::kBack)));
 
-	new_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_n, KMOD_LCTRL)); // NOCOM
-	campaign.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_c));
-	load_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_l));
-	back.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_ESCAPE));
+	new_game.set_hotkey
+			("singleplayer",
+			 UI::Hotkeys::HotkeyCode
+			 (SDLK_n,
+			  std::set<UI::Hotkeys::Modifier>({UI::Hotkeys::Modifier::kCtrl}))); // NOCOM
+	campaign.set_hotkey
+			("singleplayer",
+			 UI::Hotkeys::HotkeyCode
+			 (SDLK_2,
+			  std::set<UI::Hotkeys::Modifier>({UI::Hotkeys::Modifier::kCtrl, UI::Hotkeys::Modifier::kShift})));
+
+	load_game.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_KP_3));
+	back.set_hotkey("singleplayer", UI::Hotkeys::HotkeyCode(SDLK_RETURN));
 
 	/*
 	NOCOM testing hotkey stuff

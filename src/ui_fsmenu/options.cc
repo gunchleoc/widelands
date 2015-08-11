@@ -749,8 +749,8 @@ FullscreenMenuHotkeyOptions::FullscreenMenuHotkeyOptions
 
 	hotkey_table_.add_column(150, _("Scope"),"", UI::Align_Left);
 	hotkey_table_.add_column(150, _("Key"),"", UI::Align_Left);
-	hotkey_table_.add_column(100, _("Code"),"", UI::Align_Left);
-	hotkey_table_.add_column(get_inner_w() - 2 * m_hmargin - 400, _("Title"),"", UI::Align_Left);
+	hotkey_table_.add_column(150, _("Code"),"", UI::Align_Left);
+	hotkey_table_.add_column(get_inner_w() - 2 * m_hmargin - 350, _("Title"),"", UI::Align_Left);
 	fill_table();
 }
 
@@ -781,22 +781,22 @@ void FullscreenMenuHotkeyOptions::fill_table()
 	uint8_t col_title = 3;
 	hotkey_data_.clear();
 
-	for (const std::pair<const UI::Hotkeys::ScopeAndKey, const UI::Hotkeys::HotkeyEntry>& hotkey : WLApplication::get()->hotkeys()->all_hotkeys()) {
+	for (const std::pair<const UI::Hotkeys::Id, const UI::Hotkeys::HotkeyEntry>& hotkey : WLApplication::get()->hotkeys()->all_hotkeys()) {
 
 			HotkeyData hotkeydata;
 			const std::string& title = WLApplication::get()->hotkeys()->get_scope_title(hotkey.first.scope);
 			hotkeydata.scope = title.empty()? hotkey.first.scope : title;
 			hotkeydata.key = hotkey.first.key;
-			hotkeydata.mods = hotkey.second.first.mods;
-			hotkeydata.code = hotkey.second.first.sym;
-			hotkeydata.title = hotkey.second.second.empty() ? hotkeydata.key : hotkey.second.second;
+			hotkeydata.mods = hotkey.second.code.mods;
+			hotkeydata.code = hotkey.second.code.sym;
+			hotkeydata.title = hotkey.second.title.empty() ? hotkeydata.key : hotkey.second.title;
 			hotkey_data_.push_back(hotkeydata);
 
 			UI::Table<uintptr_t const>::EntryRecord & te = hotkey_table_.add(hotkey_data_.size() - 1);
 
 			te.set_string(col_scope, hotkeydata.scope);
 			te.set_string(col_key, hotkeydata.key);
-			te.set_string(col_code, WLApplication::get()->hotkeys()->get_displayname(hotkey.second.first));
+			te.set_string(col_code, WLApplication::get()->hotkeys()->get_displayname(hotkey.second.code));
 			te.set_string(col_title, hotkeydata.title);
 	}
 	// NOCOM hotkey_table_.sort();
