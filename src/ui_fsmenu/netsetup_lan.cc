@@ -113,7 +113,6 @@ FullscreenMenuNetSetupLAN::FullscreenMenuNetSetupLAN () :
 	playername  .changed.connect
 		(boost::bind(&FullscreenMenuNetSetupLAN::change_playername, this));
 	playername  .set_font(ui_fn(), fs_small(), UI_FONT_CLR_FG);
-	opengames   .set_font(ui_fn(), fs_small());
 	opengames   .add_column(m_lisw * 2 / 5, _("Host"));
 	opengames   .add_column(m_lisw * 2 / 5, _("Map"));
 	opengames   .add_column(m_lisw     / 5, _("State"));
@@ -194,7 +193,8 @@ void FullscreenMenuNetSetupLAN::update_game_info
 	switch (info.state) {
 	case LAN_GAME_OPEN:   er.set_string(2, _("Open"));   break;
 	case LAN_GAME_CLOSED: er.set_string(2, _("Closed")); break;
-	default:              er.set_string(2, _("Unknown")); break;
+	/** TRANSLATORS: The state of a LAN game can be open, closed or unknown */
+	default:              er.set_string(2, pgettext("game_state", "Unknown")); break;
 	};
 }
 

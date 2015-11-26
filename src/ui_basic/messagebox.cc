@@ -20,7 +20,6 @@
 #include "ui_basic/messagebox.h"
 
 #include "base/i18n.h"
-#include "base/log.h" // NOCOM
 #include "graphic/font_handler.h"
 #include "graphic/graphic.h"
 #include "ui_basic/button.h"
@@ -87,14 +86,14 @@ WLMessageBox::WLMessageBox
 		UI::Button * okbtn = new Button
 			(this, "ok",
 			 (get_inner_w() - 120) / 2, get_inner_h() - 30, 120, 20,
-			 g_gr->images().get("pics/but0.png"),
+			 g_gr->images().get("pics/but5.png"),
 			 _("OK"));
 		okbtn->sigclicked.connect(boost::bind(&WLMessageBox::clicked_ok, boost::ref(*this)));
 	} else if (type == MBoxType::kOkCancel) {
 		UI::Button * okbtn = new Button
 			(this, "ok",
 			 (get_inner_w() / 2 - 120) / 2, get_inner_h() - 30, 120, 20,
-			 g_gr->images().get("pics/but0.png"),
+			 g_gr->images().get("pics/but5.png"),
 			 _("OK"));
 		okbtn->sigclicked.connect(boost::bind(&WLMessageBox::clicked_ok, boost::ref(*this)));
 		UI::Button * cancelbtn = new Button

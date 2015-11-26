@@ -42,7 +42,7 @@
 #include "logic/pathfield.h"
 #include "logic/player.h"
 #include "logic/soldier.h"
-#include "logic/tribe.h"
+#include "logic/tribes/tribe_descr.h"
 #include "logic/world/terrain_description.h"
 #include "logic/world/world.h"
 #include "map_io/s2map.h"
@@ -308,6 +308,11 @@ void Map::cleanup() {
 	objectives_.clear();
 
 	m_port_spaces.clear();
+
+	// TODO(meitis): should be done here ... but WidelandsMapLoader::preload_map calls
+	// this cleanup AFTER assigning filesystem_ in WidelandsMapLoader::WidelandsMapLoader
+	// ... so we can't do it here :/
+	// filesystem_.reset(nullptr);
 }
 
 /*
@@ -330,7 +335,7 @@ void Map::create_empty_map
 	// Set first tribe found as the "basic" tribe
 	// <undefined> (as set before) is useless and will lead to a
 	// crash -> Widelands will search for tribe "<undefined>"
-	set_scenario_player_tribe(1, TribeDescr::get_all_tribenames()[0]);
+	set_scenario_player_tribe(1, Tribes::get_all_tribenames()[0]);
 	set_scenario_player_name(1, (boost::format(_("Player %u")) % 1).str());
 	set_scenario_player_ai(1, "");
 	set_scenario_player_closeable(1, false);
@@ -347,6 +352,8 @@ void Map::create_empty_map
 		}
 	}
 	recalc_whole_map(world);
+
+	filesystem_.reset(nullptr);
 }
 
 
@@ -472,6 +479,11 @@ bool Map::get_scenario_player_closeable(const PlayerNumber p) const
 	assert(p);
 	assert(p <= get_nrplayers());
 	return m_scenario_closeables[p - 1];
+}
+
+void Map::swap_filesystem(std::unique_ptr<FileSystem>& fs)
+{
+	filesystem_.swap(fs);
 }
 
 FileSystem* Map::filesystem() const {
@@ -1384,7 +1396,7 @@ std::vector<Coords> Map::find_portdock(const Coords & c) const
 }
 
 /// \returns true, if Coordinates are in port space list
-bool Map::is_port_space(const Coords& c) {
+bool Map::is_port_space(const Coords& c) const {
 	return m_port_spaces.count(c);
 }
 
@@ -1396,7 +1408,6 @@ void Map::set_port_space(Coords c, bool allowed) {
 		m_port_spaces.erase(c);
 	}
 }
-
 
 /**
  * Calculate the (Manhattan) distance from a to b
@@ -1854,7 +1865,7 @@ returns the radius of changes (which are always 2)
 ===========
 */
 int32_t Map::change_terrain
-	(const World& world, TCoords<FCoords> const c, TerrainIndex const terrain)
+	(const World& world, TCoords<FCoords> const c, DescriptionIndex const terrain)
 {
 	c.field->set_terrain(c.t, terrain);
 
@@ -2048,6 +2059,16 @@ bool Map::allows_seafaring() {
 				swim_coords.insert(swim_coord);
 			else
 				return true;
+	}
+	return false;
+}
+
+bool Map::has_artifacts(const World& world) {
+	for (int32_t i = 0; i < world.get_nr_immovables(); ++i) {
+		const ImmovableDescr& descr = *world.get_immovable_descr(i);
+		if (descr.has_attribute(descr.get_attribute_id("artifact"))) {
+			return true;
+		}
 	}
 	return false;
 }

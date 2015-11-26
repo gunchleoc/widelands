@@ -50,20 +50,19 @@ Window(&parent, "login_box", 0, 0, 500, 220, _("Metaserver login"))
 			 _("WARNING: Password will be shown and saved readable!"),
 			 UI::Align_Left);
 
-	cb_register = new UI::Checkbox(this, Point(margin, 110));
-	ta_register =
-		new UI::Textarea(this, 40, 110, _("Log in to a registered account"));
+	cb_register = new UI::Checkbox(this, Point(margin, 110),
+											 _("Log in to a registered account"),
+											 "", get_inner_w() - 2 * margin);
 
-	cb_auto_log = new UI::Checkbox(this, Point(margin, 135));
-	ta_auto_log = new UI::MultilineTextarea
-		(this, 40, 135, get_inner_w() - cb_auto_log->get_w() - margin, 35,
-		 _("Automatically use this login information from now on."));
+	cb_auto_log = new UI::Checkbox(this, Point(margin, 135),
+											 _("Automatically use this login information from now on."),
+											 "", get_inner_w() - 2 * margin);
 
 	UI::Button * loginbtn = new UI::Button
 		(this, "login",
 		 (get_inner_w() / 2 - 200) / 2, get_inner_h() - 20 - margin,
 		 200, 20,
-		 g_gr->images().get("pics/but0.png"),
+		 g_gr->images().get("pics/but5.png"),
 		 _("Login"));
 	loginbtn->sigclicked.connect(boost::bind(&LoginBox::clicked_ok, boost::ref(*this)));
 	UI::Button * cancelbtn = new UI::Button

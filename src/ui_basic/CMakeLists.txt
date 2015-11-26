@@ -8,8 +8,6 @@ wl_library(ui_basic
     checkbox.h
     editbox.cc
     editbox.h
-    helpwindow.cc
-    helpwindow.h
     hotkeys.cc
     hotkeys.h
     icon.cc
