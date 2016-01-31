@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "barbarians_lumberjacks_hut",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("barbarians_building", "Lumberjack’s Hut"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "small",
 
@@ -18,18 +18,15 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 43, 45 },
       },
       build = {
-         template = "build_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "build_??.png"),
          hotspot = { 43, 45 },
       },
       unoccupied = {
-         template = "unoccupied_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "unoccupied_??.png"),
          hotspot = { 43, 45 },
       },
    },
@@ -59,7 +56,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Out of Trees",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Trees",
+      heading = _"Out of Trees",
       message = pgettext("barbarians_building", "The lumberjack working at this lumberjack’s hut can’t find any trees in his work area. You should consider dismantling or destroying the building or building a ranger’s hut."),
       productivity_threshold = 66
    },

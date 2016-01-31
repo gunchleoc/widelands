@@ -19,7 +19,7 @@
 
 
 #include "graphic/graphic.h"
-#include "logic/dismantlesite.h"
+#include "logic/map_objects/tribes/dismantlesite.h"
 #include "ui_basic/progressbar.h"
 #include "ui_basic/tabpanel.h"
 #include "wui/buildingwindow.h"
@@ -58,7 +58,7 @@ DismantleSiteWindow::DismantleSiteWindow
 			 UI::ProgressBar::DefaultWidth, UI::ProgressBar::DefaultHeight,
 			 UI::ProgressBar::Horizontal);
 	m_progress->set_total(1 << 16);
-	box.add(m_progress, UI::Box::AlignCenter);
+	box.add(m_progress, UI::Align::kHCenter);
 
 	box.add_space(8);
 

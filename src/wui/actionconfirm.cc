@@ -24,9 +24,9 @@
 #include "base/macros.h"
 #include "economy/economy.h"
 #include "graphic/graphic.h"
-#include "logic/building.h"
+#include "logic/map_objects/tribes/building.h"
+#include "logic/map_objects/tribes/ship.h"
 #include "logic/player.h"
-#include "logic/ship.h"
 #include "ui_basic/multilinetextarea.h"
 #include "ui_basic/window.h"
 #include "wui/interactive_player.h"
@@ -148,7 +148,7 @@ ActionConfirm::ActionConfirm
 		(this,
 		 0, 0, 200, 74,
 		 (boost::format(message) % building.descr().descname()).str(),
-		 UI::Align_Center);
+		 UI::Align::kCenter);
 
 	UI::Button * okbtn =
 		new UI::Button
@@ -184,7 +184,7 @@ ActionConfirm::ActionConfirm
 		(this,
 		 0, 0, 200, 74,
 		 message,
-		 UI::Align_Center);
+		 UI::Align::kCenter);
 
 	UI::Button * okbtn =
 		new UI::Button

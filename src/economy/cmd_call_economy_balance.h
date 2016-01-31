@@ -22,7 +22,7 @@
 
 #include "economy/flag.h"
 #include "logic/cmd_queue.h"
-#include "logic/instances.h"
+#include "logic/map_objects/map_object.h"
 
 namespace Widelands {
 class Economy;
@@ -37,7 +37,7 @@ struct CmdCallEconomyBalance : public GameLogicCommand {
 
 	void execute (Game &) override;
 
-	uint8_t id() const override {return QUEUE_CMD_CALL_ECONOMY_BALANCE;}
+	QueueCommandTypes id() const override {return QueueCommandTypes::kCallEconomyBalance;}
 
 	void write(FileWrite &, EditorGameBase &, MapObjectSaver  &) override;
 	void read (FileRead  &, EditorGameBase &, MapObjectLoader &) override;

@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "empire_well",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Well"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "small",
 
@@ -21,13 +21,11 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 43, 43 },
       },
       working = {
-         template = "idle_??", -- TODO(GunChleoc): No animation yet.
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"), -- TODO(GunChleoc): No animation yet.
          hotspot = { 43, 43 },
       },
    },
@@ -59,7 +57,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Out of Water",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Water",
+      heading = _"Out of Water",
       message = pgettext("empire_building", "The carrier working at this well can’t find any water in his work area."),
       productivity_threshold = 33
    },

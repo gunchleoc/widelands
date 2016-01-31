@@ -35,6 +35,8 @@
 // TODO(GunChleoc): Arabic: line height broken for descriptions for Arabic.
 // Fix align for table headings & entries and for wordwrap.
 
+// NOCOM loading is sloooooow
+
 using Widelands::WidelandsMapLoader;
 
 FullscreenMenuMapSelect::FullscreenMenuMapSelect
@@ -47,7 +49,7 @@ FullscreenMenuMapSelect::FullscreenMenuMapSelect
 	title_
 		(this, get_w() / 2, checkboxes_y_ / 3,
 		 _("Choose a map"),
-		 UI::Align_HCenter),
+		 UI::Align::kHCenter),
 
 	table_(this, tablex_, tabley_, tablew_, tableh_, false),
 	map_details_(this, right_column_x_, tabley_,
@@ -88,7 +90,7 @@ FullscreenMenuMapSelect::FullscreenMenuMapSelect
 	tags_checkboxes_.clear(); // Remove this again, it is a special tag checkbox
 	cb_show_all_maps_->set_state(true);
 
-	vbox->add(cb_dont_localize_mapnames_, UI::Box::AlignLeft, true);
+	vbox->add(cb_dont_localize_mapnames_, UI::Align::kLeft, true);
 	vbox->set_size(get_w() - 2 * tablex_, checkbox_space_);
 
 	vbox = new UI::Box(this,
@@ -383,7 +385,7 @@ UI::Checkbox * FullscreenMenuMapSelect::_add_tag_checkbox
 	cb->changedto.connect
 		(boost::bind(&FullscreenMenuMapSelect::_tagbox_changed, this, id, _1));
 
-	box->add(cb, UI::Box::AlignLeft, true);
+	box->add(cb, UI::Align::kLeft, true);
 	box->add_space(checkbox_space_);
 	tags_checkboxes_.push_back(cb);
 

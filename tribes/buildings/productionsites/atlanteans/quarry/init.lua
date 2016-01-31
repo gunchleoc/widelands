@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "atlanteans_quarry",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("atlanteans_building", "Quarry"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "small",
 
@@ -19,8 +19,7 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 40, 45 },
       },
    },
@@ -62,7 +61,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Out of Rocks",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Rocks",
+      heading = _"Out of Rocks",
       message = pgettext("atlanteans_building", "The stonecutter working at this quarry can’t find any rocks in his work area."),
    },
 }

@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "graphic/color.h"
-#include "logic/building.h"
+#include "logic/map_objects/tribes/building.h"
 #include "logic/widelands.h"
 #include "ui_basic/box.h"
 #include "ui_basic/button.h"
@@ -126,6 +126,8 @@ private:
 	Widelands::DescriptionIndex last_building_type_;
 	/// The last time the information in this Panel got updated
 	uint32_t lastupdate_;
+	/// Whether the window was minimized the last time that think() was executed
+	uint32_t was_minimized_;
 
 	/// At which percent to deem buildings as unproductive
 	int low_production_;

@@ -80,6 +80,7 @@ m_align(align)
  */
 void Textarea::init()
 {
+	fixed_width_ = 0;
 	set_handle_mouse(false);
 	set_thinks(false);
 	set_textstyle(UI::TextStyle::ui_small());
@@ -96,6 +97,11 @@ void Textarea::set_textstyle(const TextStyle & style)
 	if (m_layoutmode == AutoMove)
 		collapse();
 	m_textstyle = style;
+	rendered_text_ = UI::g_fh1->render(
+									as_uifont(m_text,
+												 m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
+												 m_textstyle.fg));
+
 	if (m_layoutmode == AutoMove)
 		expand();
 	else if (m_layoutmode == Layouted)
@@ -123,17 +129,27 @@ void Textarea::set_text(const std::string & text)
 		collapse(); // collapse() implicitly updates
 
 	m_text = text;
+	rendered_text_ = UI::g_fh1->render(
+									as_uifont(m_text,
+												 m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
+												 m_textstyle.fg));
 	if (m_layoutmode == AutoMove)
 		expand();
 	else if (m_layoutmode == Layouted)
 		update_desired_size();
-
-	update();
 }
 
 const std::string& Textarea::get_text()
 {
 	return m_text;
+}
+
+
+/**
+ * Set the fixed width. The Textarea will still collapse, but then restore this width when expand() is called.
+ */
+void Textarea::set_fixed_width(uint32_t w) {
+	fixed_width_ = w;
 }
 
 
@@ -144,18 +160,12 @@ void Textarea::draw(RenderTarget & dst)
 {
 	if (!m_text.empty()) {
 		Point anchor
-			(m_align & Align_HCenter ?
-			 get_w() / 2 : m_align & Align_Right  ? get_w() : 0,
-			 m_align & Align_VCenter ?
-			 get_h() / 2 : m_align & Align_Bottom ? get_h() : 0);
+			(static_cast<int>(m_align & UI::Align::kHCenter) ?
+			 get_w() / 2 : static_cast<int>(m_align & UI::Align::kRight)  ? get_w() : 0,
+			 static_cast<int>(m_align & UI::Align::kVCenter) ?
+			 get_h() / 2 : static_cast<int>(m_align & UI::Align::kBottom) ? get_h() : 0);
 
-		dst.blit(anchor,
-				 UI::g_fh1->render(
-						as_uifont(m_text,
-									 m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
-									 m_textstyle.fg)),
-				 BlendMode::UseAlpha,
-				 m_align);
+		dst.blit(anchor, rendered_text_, BlendMode::UseAlpha, m_align);
 	}
 }
 
@@ -170,14 +180,14 @@ void Textarea::collapse()
 	int32_t w = get_w();
 	int32_t h = get_h();
 
-	if (m_align & Align_HCenter)
+	if (static_cast<int>(m_align & UI::Align::kHCenter))
 		x += w >> 1;
-	else if (m_align & Align_Right)
+	else if (static_cast<int>(m_align & UI::Align::kRight))
 		x += w;
 
-	if (m_align & Align_VCenter)
+	if (static_cast<int>(m_align & UI::Align::kVCenter))
 		y += h >> 1;
-	else if (m_align & Align_Bottom)
+	else if (static_cast<int>(m_align & UI::Align::kBottom))
 		y += h;
 
 	set_pos(Point(x, y));
@@ -192,28 +202,19 @@ void Textarea::expand()
 {
 	int32_t x = get_x();
 	int32_t y = get_y();
-	const Image* image = UI::g_fh1->render(
-									as_uifont(m_text,
-												 m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
-												 m_textstyle.fg));
-	uint32_t w = image->width();
-	uint16_t h = image->height();
-	// We want empty textareas to have height
-	if (m_text.empty()) {
-		h = UI::g_fh1->render(
-				 as_uifont(".",
-							  m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
-							  m_textstyle.fg))->height();
-	}
 
-	if      (m_align & Align_HCenter)
+	update_desired_size();
+	int w, h;
+	get_desired_size(&w, &h);
+
+	if      (static_cast<int>(m_align & UI::Align::kHCenter))
 		x -= w >> 1;
-	else if (m_align & Align_Right)
+	else if (static_cast<int>(m_align & UI::Align::kRight))
 		x -= w;
 
-	if      (m_align & Align_VCenter)
+	if      (static_cast<int>(m_align & UI::Align::kVCenter))
 		y -= h >> 1;
-	else if (m_align & Align_Bottom)
+	else if (static_cast<int>(m_align & UI::Align::kBottom))
 		y -= h;
 
 	set_pos(Point(x, y));
@@ -225,18 +226,19 @@ void Textarea::expand()
  */
 void Textarea::update_desired_size()
 {
-	const Image* image = UI::g_fh1->render(
-									as_uifont(m_text,
-												 m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
-												 m_textstyle.fg));
-	uint32_t w = image->width();
-	uint16_t h = image->height();
-	// We want empty textareas to have height
-	if (m_text.empty()) {
-		h = UI::g_fh1->render(
-				 as_uifont(".",
-							  m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
-							  m_textstyle.fg))->height();
+	uint32_t w = 0;
+	uint16_t h = 0;
+
+	if (rendered_text_) {
+		w = fixed_width_ > 0 ? fixed_width_ : rendered_text_->width();
+		h = rendered_text_->height();
+		// We want empty textareas to have height
+		if (m_text.empty()) {
+			h = UI::g_fh1->render(
+					 as_uifont(".",
+								  m_textstyle.font->size() - UI::g_fh1->fontset().size_offset(),
+								  m_textstyle.fg))->height();
+		}
 	}
 	set_desired_size(w, h);
 }

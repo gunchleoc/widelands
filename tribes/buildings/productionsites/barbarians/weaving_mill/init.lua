@@ -5,9 +5,10 @@ tribes:new_productionsite_type {
    name = "barbarians_weaving_mill",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("barbarians_building", "Weaving Mill"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "big",
+   needs_seafaring = true,
 
    buildcost = {
       log = 5,
@@ -21,18 +22,15 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 36, 74 },
       },
       build = {
-         template = "build_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "build_??.png"),
          hotspot = { 36, 74 },
       },
       working = {
-         template = "working_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "working_??.png"),
          hotspot = { 36, 74 },
       },
    },
@@ -58,6 +56,7 @@ tribes:new_productionsite_type {
          descname = _"weaving",
          actions = {
             "sleep=20000",
+            "check_map=seafaring",
             "return=skipped unless economy needs cloth",
             "consume=thatch_reed",
             "animate=working 25000",

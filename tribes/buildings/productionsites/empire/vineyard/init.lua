@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "empire_vineyard",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Vineyard"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "medium",
 
@@ -22,8 +22,7 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 53, 53 },
       },
    },
@@ -69,7 +68,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Out of Fields",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Fields",
+      heading = _"Out of Fields",
       message = pgettext("empire_building", "The vine farmer working at this vineyard has no cleared soil to plant his grapevines."),
       productivity_threshold = 30
    },

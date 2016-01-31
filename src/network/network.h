@@ -26,6 +26,7 @@
 
 #include <SDL_net.h>
 
+#include "base/wexception.h"
 #include "io/streamread.h"
 #include "io/streamwrite.h"
 #include "logic/cmd_queue.h"
@@ -49,7 +50,7 @@ struct CmdNetCheckSync : public Widelands::Command {
 
 	void execute (Widelands::Game &) override;
 
-	uint8_t id() const override {return QUEUE_CMD_NETCHECKSYNC;}
+	Widelands::QueueCommandTypes id() const override {return Widelands::QueueCommandTypes::kNetCheckSync;}
 
 private:
 	SyncCallback * m_callback;
@@ -180,7 +181,9 @@ struct ProtocolException : public std::exception {
 
 	/// do NOT use!!! This exception shall only return the command number of the received message
 	/// via \ref ProtocolException:number()
-	const char * what() const noexcept override {assert(false); return "dummy";}
+	const char * what() const noexcept override {
+		NEVER_HERE();
+	}
 
 	/// \returns the command number of the received message
 	virtual int          number() const {return m_what;}

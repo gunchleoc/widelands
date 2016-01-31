@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "atlanteans_ironmine",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("atlanteans_building", "Iron Mine"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "mine",
 
@@ -21,18 +21,15 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 50, 56 },
       },
       working = {
-         template = "idle_??", -- TODO(GunChleoc): No animation yet.
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"), -- TODO(GunChleoc): No animation yet.
          hotspot = { 50, 56 },
       },
       empty = {
-         template = "empty_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "empty_??.png"),
          hotspot = { 50, 56 },
       },
    },
@@ -76,7 +73,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Main Iron Vein Exhausted",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Iron",
+      heading = _"Main Iron Vein Exhausted",
       message =
          pgettext("atlanteans_building", "This iron mine’s main vein is exhausted. Expect strongly diminished returns on investment. You should consider dismantling or destroying it."),
    },

@@ -5,7 +5,7 @@ tribes:new_productionsite_type {
    name = "empire_coalmine",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Coal Mine"),
-   directory = dirname,
+   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "mine",
    enhancement = "empire_coalmine_deep",
@@ -21,19 +21,16 @@ tribes:new_productionsite_type {
 
    animations = {
       idle = {
-         template = "idle_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 49, 49 },
       },
       working = {
-         template = "working_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "working_??.png"),
          hotspot = { 49, 49 },
          fps = 10
       },
       empty = {
-         template = "empty_??",
-         directory = dirname,
+         pictures = path.list_files(dirname .. "empty_??.png"),
          hotspot = { 49, 49 },
       },
    },
@@ -74,7 +71,9 @@ tribes:new_productionsite_type {
       },
    },
    out_of_resource_notification = {
-      title = _"Main Coal Vein Exhausted",
+      -- Translators: Short for "Out of ..." for a resource
+      title = _"No Coal",
+      heading = _"Main Coal Vein Exhausted",
       message =
          pgettext("empire_building", "This coal mine’s main vein is exhausted. Expect strongly diminished returns on investment. You should consider enhancing, dismantling or destroying it."),
    },

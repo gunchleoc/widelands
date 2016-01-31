@@ -25,9 +25,11 @@
 #include "graphic/font_handler1.h"
 #include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
+#include "graphic/text/bidi.h"
 #include "graphic/text/font_set.h"
 #include "graphic/text_constants.h"
 #include "graphic/text_layout.h"
+#include "graphic/texture.h"
 #include "ui_basic/button.h"
 #include "ui_basic/mouse_constants.h"
 #include "ui_basic/scrollbar.h"
@@ -246,9 +248,9 @@ void Table<void *>::fit_height(uint32_t entries) {
 	if (entries == 0) {
 		entries = size();
 	}
-	uint32_t tablewidth;
-	uint32_t tableheight;
-	get_desired_size(tablewidth, tableheight);
+	int tablewidth;
+	int tableheight;
+	get_desired_size(&tablewidth, &tableheight);
 	tableheight = m_headerheight + 2 + get_lineheight() * entries;
 	set_desired_size(tablewidth, tableheight);
 }
@@ -280,46 +282,102 @@ void Table<void *>::draw(RenderTarget & dst)
 
 		Columns::size_type const nr_columns = m_columns.size();
 		for (uint32_t i = 0, curx = 0; i < nr_columns; ++i) {
-			const Column & column    = m_columns[i];
-			uint32_t const curw      = column.width;
+			const Column& column = m_columns[i];
+			int const curw = column.width;
 			Align alignment = mirror_alignment(column.alignment);
 
 			const Image* entry_picture = er.get_picture(i);
-			const std::string &       entry_string  = er.get_string (i);
-			uint32_t picw = 0;
-			uint32_t pich = 0;
+			const std::string& entry_string = er.get_string(i);
 
-			if (entry_picture) {
-				picw = entry_picture->width();
-				pich = entry_picture->height();
-			}
 			Point point(curx, y);
-			if (entry_picture) {
-				dst.blit
-					(point +
-					 Point
-					 	(0,
-					 	 (static_cast<int32_t>(lineheight) -
-					 	  static_cast<int32_t>(pich))
-					 	 / 2),
-					 entry_picture);
+			int picw = 0;
+
+			if (entry_picture != nullptr) {
+				picw = entry_picture->width();
+				const int pich = entry_picture->height();
+
+				int draw_x = point.x;
+
+				// We want a bit of margin
+				int max_pic_height = lineheight - 3;
+
+				if (pich > 0 && pich > max_pic_height) {
+					// Scale image to fit lineheight
+					double image_scale = static_cast<double>(max_pic_height) / pich;
+					int blit_width = image_scale * picw;
+
+					if (entry_string.empty()) {
+						if (i == nr_columns - 1 && m_scrollbar->is_enabled()) {
+							draw_x = point.x + (curw - blit_width - m_scrollbar->get_w()) / 2;
+						} else {
+							draw_x = point.x + (curw - blit_width) / 2;
+						}
+					}
+
+					if (static_cast<int>(alignment & UI::Align::kRight)) {
+						draw_x += curw - blit_width;
+					}
+
+					// Create the scaled image
+					dst.blitrect_scale(Rect(draw_x, point.y + 1, blit_width, max_pic_height),
+					                   entry_picture, Rect(0, 0, picw, pich), 1., BlendMode::UseAlpha);
+
+					// For text alignment below
+					picw = blit_width;
+				} else {
+					if (entry_string.empty()) {
+						if (i == nr_columns - 1 && m_scrollbar->is_enabled()) {
+							draw_x = point.x + (curw - picw - m_scrollbar->get_w()) / 2;
+						} else {
+							draw_x = point.x + (curw - picw) / 2;
+						}
+					} else if (static_cast<int>(alignment & UI::Align::kRight)) {
+						draw_x += curw - picw;
+					}
+					dst.blit(Point(draw_x, point.y + (lineheight - pich) / 2), entry_picture);
+				}
 				point.x += picw;
 			}
+
+			++picw; // A bit of margin between image and text
 
 			if (entry_string.empty()) {
 				curx += curw;
 				continue;
 			}
-			const Image* entry_text_im = UI::g_fh1->render(as_uifont(entry_string, m_fontsize));
-			uint16_t text_width = entry_text_im->width();
-			if (alignment & Align_Right) {
-				point.x += curw - picw;
-			} else if (alignment & Align_HCenter) {
+			const Image* entry_text_im = UI::g_fh1->render(as_uifont(richtext_escape(entry_string), m_fontsize));
+
+			if (static_cast<int>(alignment & UI::Align::kRight)) {
+				point.x += curw - 2 * picw;
+			} else if (static_cast<int>(alignment & UI::Align::kHCenter)) {
 				point.x += (curw - picw) / 2;
 			}
+
+			// Add an offset for rightmost column when the scrollbar is shown.
+			int text_width = entry_text_im->width();
+			if (i == nr_columns - 1 && m_scrollbar->is_enabled()) {
+				text_width = text_width + m_scrollbar->get_w();
+			}
 			UI::correct_for_align(alignment, text_width, entry_text_im->height(), &point);
-			// Crop to column width
-			dst.blitrect(point, entry_text_im, Rect(0, 0, curw - picw, lineheight));
+
+			// Crop to column width while blitting
+			if ((curw + picw) < text_width) {
+				// Fix positioning for BiDi languages.
+				if (UI::g_fh1->fontset().is_rtl()) {
+					point.x = static_cast<int>(alignment & UI::Align::kRight) ? curx : curx + picw;
+				}
+				// We want this always on, e.g. for mixed language savegame filenames
+				if (i18n::has_rtl_character(entry_string.c_str(), 20)) { // Restrict check for efficiency
+					dst.blitrect(point,
+									 entry_text_im,
+									 Rect(text_width - curw + picw, 0, text_width, lineheight));
+				}
+				else {
+					dst.blitrect(point, entry_text_im, Rect(0, 0, curw - picw, lineheight));
+				}
+			} else {
+				dst.blitrect(point, entry_text_im, Rect(0, 0, curw - picw, lineheight));
+			}
 			curx += curw;
 		}
 
@@ -390,7 +448,6 @@ bool Table<void *>::handle_mousepress
 					if (column.is_checkbox_column) {
 						play_click();
 						m_entry_records.at(row)->toggle(col);
-						update(0, 0, get_eff_w(), get_h());
 					}
 					break;
 				}
@@ -466,7 +523,6 @@ void Table<void *>::select(const uint32_t i)
 	m_selection = i;
 
 	selected(m_selection);
-	update(0, 0, get_eff_w(), get_h());
 }
 
 /**
@@ -493,8 +549,6 @@ Table<void *>::EntryRecord & Table<void *>::add
 		select(m_entry_records.size() - 1);
 		m_scrollbar->set_scrollpos(std::numeric_limits<int32_t>::max());
 	}
-
-	update(0, 0, get_eff_w(), get_h());
 	return result;
 }
 
@@ -504,8 +558,6 @@ Table<void *>::EntryRecord & Table<void *>::add
 void Table<void *>::set_scrollpos(int32_t const i)
 {
 	m_scrollpos = i;
-
-	update(0, 0, get_eff_w(), get_h());
 }
 
 /**
@@ -573,8 +625,6 @@ void Table<void *>::sort(const uint32_t Begin, uint32_t End)
 			newselection = i;
 	}
 	m_selection = newselection;
-
-	update();
 }
 
 /**
