@@ -96,6 +96,9 @@ public:
 	// Modifiers combine SDL_Keymod types (e.g. kCtrl represents KMOD_LCTRL and/or KMOD_RCTRL)
 	enum class Modifier { kNone = 0, kShift, kCtrl, kAlt, kGui, kCaps, kMode };
 
+	static std::string modifier2string(const UI::Hotkeys::Modifier& mod);
+	static UI::Hotkeys::Modifier string2modifier(const std::string& modname);
+
 	// Wrapper class for keys that can be pressed together
 	struct HotkeyCode {
 		HotkeyCode() : sym(SDLK_UNKNOWN) {
@@ -155,6 +158,11 @@ public:
 	const std::map<Id, HotkeyEntry>& all_hotkeys() const {
 		return hotkeys_;
 	}
+
+	/// Read hotkeys from conf file
+	void read();
+	/// Write all hotkeys to conf file
+	void write() const;
 
 private:
 	bool is_symbol_pressed(const SDL_Keycode& hotkey_sym, const SDL_Keysym& code) const;

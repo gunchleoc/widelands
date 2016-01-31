@@ -26,6 +26,7 @@
 #include "base/i18n.h"
 #include "base/log.h"  // NOCOM
 #include "base/wexception.h"
+#include "profile/profile.h"
 
 // NOCOM Test all modifier keys to see what they are - revisit the enum and the localization.
 
@@ -155,6 +156,42 @@ Hotkeys::Scope* Hotkeys::get_scope(const std::string& name) {
 		return &scopes_.at(name);
 	}
 	return nullptr;
+}
+
+std::string Hotkeys::modifier2string(const UI::Hotkeys::Modifier& mod) {
+	switch (mod) {
+		case Modifier::kShift:
+			return "shift";
+		case Modifier::kCtrl:
+			return "ctrl";
+		case Modifier::kAlt:
+			return "alt";
+		case Modifier::kGui:
+			return "gui";
+		case Modifier::kCaps:
+			return "caps";
+		case Modifier::kMode:
+			return "mode";
+		default:
+			return "";
+	}
+}
+
+UI::Hotkeys::Modifier Hotkeys::string2modifier(const std::string& modname) {
+	if (modname == "shift") {
+		return Modifier::kShift;
+	} else if (modname == "ctrl") {
+		return Modifier::kCtrl;
+	} else if (modname == "alt") {
+		return Modifier::kAlt;
+	} else if (modname == "gui") {
+		return Modifier::kGui;
+	} else if (modname == "caps") {
+		return Modifier::kCaps;
+	} else if (modname == "mode") {
+		return Modifier::kMode;
+	}
+	return Modifier::kNone;
 }
 
 bool Hotkeys::scope_has_root_ancestor(const std::string& name) const {
@@ -406,6 +443,64 @@ std::map<std::string, Hotkeys::HotkeyEntry> Hotkeys::hotkeys(const std::string& 
 		}
 	}
 	return result;
+}
+
+void Hotkeys::read() {
+	// NOCOM WIP
+	Profile profile;
+	//profile.read("hotkeys.conf", nullptr, g_fs);
+
+	//Section& scopes = profile.get_section("scopes");
+}
+
+void Hotkeys::write() const {
+	// NOCOM WIP
+	Profile profile;
+
+	// Write scopes
+	int scope_counter = 0;
+	for (const std::pair<std::string, Scope>& scope : scopes_) {
+		Section& all_scopes = profile.create_section("scopes");
+		const std::string& name = scope.second.get_name();
+		all_scopes.set_string(
+					(boost::format("scope_%03d") % scope_counter).str().c_str(),
+					(boost::format("scope.%s") % name).str());
+
+		Section& scope_section = profile.create_section(
+											 (boost::format("scope_%03d") % scope_counter).str().c_str());
+		scope_section.set_string("name", name);
+		scope_section.set_string("parent", scope.second.get_parent());
+		scope_section.set_string("title", scope.second.get_title()); // NOCOM can this go?
+		++scope_counter;
+	}
+
+	int hotkey_counter = 0;
+	for (const std::pair<Id, HotkeyEntry>& hotkey : hotkeys_) {
+		// NOCOM do we need these main sections?
+		Section& main_hotkeys = profile.create_section("hotkeys");
+		const std::string& key = hotkey.first.key;
+		const std::string& scope = hotkey.first.scope;
+		main_hotkeys.set_string(
+					(boost::format("hotkey_%03d") % hotkey_counter).str().c_str(),
+					(boost::format("%s.%s") % scope % key).str());
+
+		Section& hotkey_section = profile.create_section(
+											 (boost::format("hotkey_%03d") % hotkey_counter).str().c_str());
+		hotkey_section.set_string("key", key);
+		hotkey_section.set_string("scope", scope);
+		hotkey_section.set_string("title", hotkey.second.title); // NOCOM can this go?
+		hotkey_section.set_int("sym", hotkey.second.code.sym);
+
+		int mods_counter = 0;
+		for (const Modifier& mod : hotkey.second.code.mods) {
+			hotkey_section.set_string(
+						(boost::format("mod_%03d") % mods_counter).str().c_str(),
+						modifier2string(mod));
+		}
+		++hotkey_counter;
+	}
+
+	profile.write("hotkeys.conf", false);
 }
 
 const std::string Hotkeys::get_displayname(const HotkeyCode& code) const {

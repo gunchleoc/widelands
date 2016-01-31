@@ -623,9 +623,8 @@ FullscreenMenuHotkeyOptions::FullscreenMenuHotkeyOptions
 			 FullscreenMenuBase::MenuTarget::kBack));
 	m_apply.sigclicked.connect
 		(boost::bind
-			(&FullscreenMenuHotkeyOptions::end_modal<FullscreenMenuBase::MenuTarget>,
-			 boost::ref(*this),
-			 FullscreenMenuBase::MenuTarget::kOk));
+			(&FullscreenMenuHotkeyOptions::save,
+			 boost::ref(*this)));
 
 	m_title.set_textstyle(UI::TextStyle::ui_big());
 
@@ -667,6 +666,12 @@ void FullscreenMenuHotkeyOptions::fill_table()
 	if (hotkey_table_.size()) {
 		hotkey_table_.select(0);
 	}
+}
+
+void FullscreenMenuHotkeyOptions::save() {
+	// NOCOM WIP
+	WLApplication::get()->hotkeys()->write();
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kOk);
 }
 
 

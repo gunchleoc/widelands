@@ -200,6 +200,8 @@ private:
 		std::string title;
 	};
 
+	void save();
+
 	uint32_t const              m_vbutw;
 	uint32_t const              m_butw;
 	uint32_t const              m_buth;
