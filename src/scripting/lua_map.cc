@@ -5574,6 +5574,7 @@ const PropertyType<LuaPlayerSlot> LuaPlayerSlot::Properties[] = {
 	PROP_RO(LuaPlayerSlot, tribe_name),
 	PROP_RO(LuaPlayerSlot, name),
 	PROP_RO(LuaPlayerSlot, starting_field),
+	PROP_RO(LuaPlayerSlot, ai),
 	{nullptr, nullptr, nullptr},
 };
 
@@ -5622,6 +5623,17 @@ int LuaPlayerSlot::get_starting_field(lua_State * L) {
 	to_lua<LuaField>(L, new LuaField(get_egbase(L).map().get_starting_pos(player_number_)));
 	return 1;
 }
+
+/* RST
+	.. attribute:: ai
+
+		(RO) Returns the name of the AI for this slot. String is empty if this is not an AI.
+*/
+int LuaPlayerSlot::get_ai(lua_State * L) {
+	lua_pushstring(L, get_egbase(L).map().get_scenario_player_ai(player_number_));
+	return 1;
+}
+
 
 /*
  ==========================================================
