@@ -70,7 +70,7 @@ packed=true
 pics=axefactory.png
 dimensions=117 89
 base_offset=117 100
-region_00=23 6 94 81:94 189;0 189;234 81;234 0
+region_00=23 6 94 81:94 189;0 189;234 81;234 0 # x y w h:x_off y_off;x_off y_off;x_off y_off
 hotspot=57 76
 
 [idle]

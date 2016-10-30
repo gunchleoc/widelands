@@ -29,6 +29,10 @@
 
 #include "constants.h"
 #include "helper.h"
+#include "io/fileread.h"
+#include "io/filewrite.h"
+
+#include "io/basic_filewrite.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "log.h"
 #include "profile/profile.h"
@@ -125,7 +129,7 @@ public:
 	virtual uint16_t height() const {return height_;}
 	virtual uint16_t nr_frames() const {return nr_frames_;}
 	virtual uint32_t frametime() const {return frametime_;}
-	virtual const Point& hotspot() const {return hotspot_;};
+	virtual const Point& hotspot() const {return hotspot_;}
 	virtual const Image& representative_image(const RGBColor& clr) const;
 	void blit(uint32_t time, const Point&, const Rect& srcrc, const RGBColor* clr, Surface*) const;
 	virtual void trigger_soundfx(uint32_t framenumber, uint32_t stereo_position) const;
@@ -155,6 +159,7 @@ private:
 PackedAnimation::PackedAnimation(const string& directory, Section& s)
 		: width_(0), height_(0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(NULL), pcmask_(NULL) {
 	hash_ = directory + s.get_name();
+	log("\nNOCOM packed animation %s %s\n", directory.c_str(), s.get_name());
 
 	// Read mapping from frame numbers to sound effect names and load effects
 	while (Section::Value * const v = s.get_next_val("sfx")) {
@@ -245,6 +250,44 @@ PackedAnimation::PackedAnimation(const string& directory, Section& s)
 
 	if (!regions_.size())  // No regions? Only one frame then.
 		nr_frames_ = 1;
+
+	// NOCOM Write to new file
+	// 		std::unique_ptr<FileSystem> out_filesystem = initialize(output_path);
+	//LayeredFileSystem* fs = new LayeredFileSystem();
+	//fs->add_file_system(&FileSystem::create(INSTALL_DATADIR));
+
+	//FileSystem* out_filesystem(&FileSystem::create("tribes"));
+	//boost::scoped_ptr<FileSystem> fs
+	//		(g_fs->CreateSubFileSystem("NOCOM", FileSystem::DIR));
+/*
+	std::string complete_filename = "tribes";
+	complete_filename            += "/";
+	complete_filename            += "NOCOM";
+	g_fs->EnsureDirectoryExists(complete_filename);
+	boost::scoped_ptr<FileSystem> fs
+			(g_fs->CreateSubFileSystem(complete_filename, FileSystem::DIR));
+
+	FileWrite fw;
+	fw.CString("test");
+	*/
+	//fw.Write(*fs, "NOCOM");
+	//fw.Flush();
+	//fw.Clear();
+
+	BOOST_FOREACH(const Region& region, regions_) {
+		log("  NOCOM %d %d - ", region.target_offset.x, region.target_offset.y);
+		log("NOCOM %d %d\n", region.w, region.h);
+		BOOST_FOREACH(const Point& source_offset, region.source_offsets) {
+			log("  NOCOM %d %d\n", source_offset.x, source_offset.y);
+		}
+	}
+	/*
+	 * 	struct Region {
+		Point target_offset;
+		uint16_t w, h;
+		std::vector<Point> source_offsets;  // indexed by frame nr.
+	};
+	*/
 }
 
 void PackedAnimation::trigger_soundfx
