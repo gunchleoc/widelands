@@ -17,13 +17,13 @@
  *
  */
 
-#ifndef WATCHWINDOW_H
-#define WATCHWINDOW_H
+#ifndef WL_WUI_WATCHWINDOW_H
+#define WL_WUI_WATCHWINDOW_H
 
 #include "logic/widelands_geometry.h"
 
-class Interactive_GameBase;
+class InteractiveGameBase;
 
-void show_watch_window(Interactive_GameBase &, Widelands::Coords);
+void show_watch_window(InteractiveGameBase&, const Widelands::Coords&);
 
-#endif
+#endif  // end of include guard: WL_WUI_WATCHWINDOW_H

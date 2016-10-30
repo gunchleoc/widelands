@@ -17,12 +17,11 @@
  *
  */
 
-#ifndef ECONOMY_ROUTEASTAR_H
-#define ECONOMY_ROUTEASTAR_H
+#ifndef WL_ECONOMY_ROUTEASTAR_H
+#define WL_ECONOMY_ROUTEASTAR_H
 
-#include "container_iterate.h"
-#include "itransport_cost_calculator.h"
-#include "routing_node.h"
+#include "economy/itransport_cost_calculator.h"
+#include "economy/routing_node.h"
 
 namespace Widelands {
 
@@ -30,14 +29,14 @@ struct IRoute;
 struct Router;
 
 struct BaseRouteAStar {
-	BaseRouteAStar(Router & router, WareWorker type);
+	BaseRouteAStar(Router& router, WareWorker type);
 
-	void routeto(RoutingNode & to, IRoute & route);
+	void routeto(RoutingNode& to, IRoute& route);
 
 protected:
-	RoutingNode::Queue m_open;
-	WareWorker m_type;
-	RoutingNodeNeighbours m_neighbours;
+	RoutingNode::Queue open_;
+	WareWorker type_;
+	RoutingNodeNeighbours neighbours_;
 	uint32_t mpf_cycle;
 };
 
@@ -73,17 +72,16 @@ protected:
  *
  * @see MapAStar
  */
-template<typename Est_>
-struct RouteAStar : BaseRouteAStar {
-	typedef Est_ Estimator;
+template <typename Est_> struct RouteAStar : BaseRouteAStar {
+	using Estimator = Est_;
 
-	RouteAStar(Router & router, WareWorker type, const Estimator & est = Estimator());
+	RouteAStar(Router& router, WareWorker type, const Estimator& est = Estimator());
 
-	void push(RoutingNode & node, int32_t cost = 0, RoutingNode * backlink = 0);
-	RoutingNode * step();
+	void push(RoutingNode& node, int32_t cost = 0, RoutingNode* backlink = nullptr);
+	RoutingNode* step();
 
 private:
-	Estimator m_estimator;
+	Estimator estimator_;
 };
 
 /**
@@ -91,11 +89,9 @@ private:
  * while @p est is used to estimate the remaining cost to destination at each newly
  * seen node.
  */
-template<typename Est_>
-RouteAStar<Est_>::RouteAStar(Router & router, WareWorker type, const Estimator & est) :
-	BaseRouteAStar(router, type),
-	m_estimator(est)
-{
+template <typename Est_>
+RouteAStar<Est_>::RouteAStar(Router& router, WareWorker type, const Estimator& est)
+   : BaseRouteAStar(router, type), estimator_(est) {
 }
 
 /**
@@ -103,50 +99,45 @@ RouteAStar<Est_>::RouteAStar(Router & router, WareWorker type, const Estimator &
  *
  * In particular, this is used to populate the open queue with the initial source nodes.
  */
-template<typename Est_>
-void RouteAStar<Est_>::push(RoutingNode & node, int32_t cost, RoutingNode * backlink)
-{
+template <typename Est_>
+void RouteAStar<Est_>::push(RoutingNode& node, int32_t cost, RoutingNode* backlink) {
 	if (node.mpf_cycle != mpf_cycle) {
 		node.mpf_cycle = mpf_cycle;
 		node.mpf_backlink = backlink;
 		node.mpf_realcost = cost;
-		node.mpf_estimate = m_estimator(node);
-		m_open.push(&node);
+		node.mpf_estimate = estimator_(node);
+		open_.push(&node);
 	} else if (node.mpf_cookie.is_active() && cost <= node.mpf_realcost) {
 		node.mpf_backlink = backlink;
 		node.mpf_realcost = cost;
-		m_open.decrease_key(&node);
+		open_.decrease_key(&node);
 	}
 }
 
-template<typename Est_>
-RoutingNode * RouteAStar<Est_>::step()
-{
-	if (m_open.empty())
-		return 0;
+template <typename Est_> RoutingNode* RouteAStar<Est_>::step() {
+	if (open_.empty())
+		return nullptr;
 
 	// Keep the neighbours vector around to avoid excessive amounts of memory
 	// allocations and frees.
 	// Note that the C++ standard does not state whether clear will reset
 	// the reserved memory, but most implementations do not.
-	m_neighbours.clear();
+	neighbours_.clear();
 
-	RoutingNode * current = m_open.top();
-	m_open.pop(current);
+	RoutingNode* current = open_.top();
+	open_.pop(current);
 
-	current->get_neighbours(m_type, m_neighbours);
+	current->get_neighbours(type_, neighbours_);
 
-	container_iterate_const(RoutingNodeNeighbours, m_neighbours, it) {
-		RoutingNode & neighbour = *it.current->get_neighbour();
+	for (RoutingNodeNeighbour& temp_neighbour : neighbours_) {
+		RoutingNode& neighbour = *temp_neighbour.get_neighbour();
 
 		// We have already found the best path
 		// to this neighbour, no need to visit it again.
-		if
-			(neighbour.mpf_cycle == mpf_cycle &&
-			 !neighbour.cookie().is_active())
+		if (neighbour.mpf_cycle == mpf_cycle && !neighbour.cookie().is_active())
 			continue;
 
-		int32_t realcost = current->mpf_realcost + it.current->get_cost();
+		int32_t realcost = current->mpf_realcost + temp_neighbour.get_cost();
 		push(neighbour, realcost, current);
 	}
 
@@ -158,19 +149,17 @@ RoutingNode * RouteAStar<Est_>::step()
  * so that it should move quickly towards the given destination.
  */
 struct AStarEstimator {
-	AStarEstimator(ITransportCostCalculator & calc, RoutingNode & dest) :
-		m_calc(calc), m_dest(dest.get_position())
-	{
+	AStarEstimator(ITransportCostCalculator& calc, RoutingNode& dest)
+	   : calc_(calc), dest_(dest.get_position()) {
 	}
 
-	int32_t operator()(RoutingNode & current) const
-	{
-		return m_calc.calc_cost_estimate(current.get_position(), m_dest);
+	int32_t operator()(RoutingNode& current) const {
+		return calc_.calc_cost_estimate(current.get_position(), dest_);
 	}
 
 private:
-	ITransportCostCalculator & m_calc;
-	Coords m_dest;
+	ITransportCostCalculator& calc_;
+	Coords dest_;
 };
 
 /**
@@ -178,9 +167,11 @@ private:
  * which means that the resulting search is effectively Dijkstra's algorithm.
  */
 struct AStarZeroEstimator {
-	int32_t operator()(RoutingNode &) const {return 0;}
+	int32_t operator()(RoutingNode&) const {
+		return 0;
+	}
 };
 
-} // namespace Widelands
+}  // namespace Widelands
 
-#endif // ECONOMY_ROUTEASTAR_H
+#endif  // end of include guard: WL_ECONOMY_ROUTEASTAR_H

@@ -11,13 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   compiling
    development
-   hidden_features
    server
    geometry
    productionsite_program
-   manual_testing
    lua_index
 
 

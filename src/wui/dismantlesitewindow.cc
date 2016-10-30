@@ -17,82 +17,69 @@
  *
  */
 
+#include "logic/map_objects/tribes/dismantlesite.h"
 
-#include "buildingwindow.h"
 #include "graphic/graphic.h"
-#include "logic/dismantlesite.h"
 #include "ui_basic/progressbar.h"
 #include "ui_basic/tabpanel.h"
+#include "wui/buildingwindow.h"
 
-static const char pic_tab_wares[] = "pics/menu_tab_wares.png";
+static const char pic_tab_wares[] = "images/wui/buildings/menu_tab_wares.png";
 
 /**
  * Status window for dismantle sites.
  */
-struct DismantleSite_Window : public Building_Window {
-	DismantleSite_Window
-		(Interactive_GameBase        & parent,
-		 Widelands::DismantleSite &,
-		 UI::Window *                & registry);
+struct DismantleSiteWindow : public BuildingWindow {
+	DismantleSiteWindow(InteractiveGameBase& parent,
+	                    Widelands::DismantleSite&,
+	                    UI::Window*& registry);
 
-	virtual void think();
+	void think() override;
 
 private:
-	UI::Progress_Bar * m_progress;
+	UI::ProgressBar* progress_;
 };
 
-
-DismantleSite_Window::DismantleSite_Window
-	(Interactive_GameBase        & parent,
-	 Widelands::DismantleSite & cs,
-	 UI::Window *                & registry)
-	: Building_Window(parent, cs, registry)
-{
-	UI::Box & box = *new UI::Box(get_tabs(), 0, 0, UI::Box::Vertical);
+DismantleSiteWindow::DismantleSiteWindow(InteractiveGameBase& parent,
+                                         Widelands::DismantleSite& cs,
+                                         UI::Window*& registry)
+   : BuildingWindow(parent, cs, registry) {
+	UI::Box& box = *new UI::Box(get_tabs(), 0, 0, UI::Box::Vertical);
 
 	// Add the progress bar
-	m_progress =
-		new UI::Progress_Bar
-			(&box,
-			 0, 0,
-			 UI::Progress_Bar::DefaultWidth, UI::Progress_Bar::DefaultHeight,
-			 UI::Progress_Bar::Horizontal);
-	m_progress->set_total(1 << 16);
-	box.add(m_progress, UI::Box::AlignCenter);
+	progress_ = new UI::ProgressBar(&box, 0, 0, UI::ProgressBar::DefaultWidth,
+	                                UI::ProgressBar::DefaultHeight, UI::ProgressBar::Horizontal);
+	progress_->set_total(1 << 16);
+	box.add(progress_, UI::Align::kHCenter);
 
 	box.add_space(8);
 
 	// Add the wares queue
 	for (uint32_t i = 0; i < cs.get_nrwaresqueues(); ++i)
-		Building_Window::create_ware_queue_panel(&box, cs, cs.get_waresqueue(i), true);
+		BuildingWindow::create_ware_queue_panel(&box, cs, cs.get_waresqueue(i), true);
 
 	get_tabs()->add("wares", g_gr->images().get(pic_tab_wares), &box, _("Building materials"));
 }
-
 
 /*
 ===============
 Make sure the window is redrawn when necessary.
 ===============
 */
-void DismantleSite_Window::think()
-{
-	Building_Window::think();
+void DismantleSiteWindow::think() {
+	BuildingWindow::think();
 
-	const Widelands::DismantleSite & ds =
-		ref_cast<Widelands::DismantleSite, Widelands::Building>(building());
+	const Widelands::DismantleSite& ds = dynamic_cast<Widelands::DismantleSite&>(building());
 
-	m_progress->set_state(ds.get_built_per64k());
+	progress_->set_state(ds.get_built_per64k());
 }
-
 
 /*
 ===============
 Create the status window describing the site.
 ===============
 */
-void Widelands::DismantleSite::create_options_window
-	(Interactive_GameBase & parent, UI::Window * & registry)
-{
-	new DismantleSite_Window(parent, *this, registry);
+void Widelands::DismantleSite::create_options_window(InteractiveGameBase& parent,
+                                                     UI::Window*& registry) {
+	new DismantleSiteWindow(parent, *this, registry);
 }

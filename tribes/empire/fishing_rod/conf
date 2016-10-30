@@ -1,6 +1,0 @@
-[global]
-help=_Fishing rods are needed by fishers, to catch fish. Produced by the toolsmith.
-
-[idle]
-pics=idle.png
-hotspot=4 5

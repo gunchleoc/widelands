@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2007-2008 by the Widelands Development Team
+ * Copyright (C) 2002-2004, 2007-2008, 2015 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,57 +17,56 @@
  *
  */
 
-#include "cmd_queue.h"
+#include "logic/cmd_queue.h"
 
+#include "base/macros.h"
+#include "base/wexception.h"
+#include "io/fileread.h"
 #include "io/filewrite.h"
-#include "game.h"
-#include "game_data_error.h"
-#include "instances.h"
-#include "machdep.h"
-#include "player.h"
-#include "playercommand.h"
-#include "wexception.h"
-#include "widelands_fileread.h"
-#include "worker.h"
-
-#include "upcast.h"
+#include "io/machdep.h"
+#include "logic/game.h"
+#include "logic/game_data_error.h"
+#include "logic/map_objects/map_object.h"
+#include "logic/map_objects/tribes/worker.h"
+#include "logic/player.h"
+#include "logic/playercommand.h"
 
 namespace Widelands {
 
 //
 // class Cmd_Queue
 //
-Cmd_Queue::Cmd_Queue(Game & game) :
-	m_game(game),
-	nextserial(0),
-	m_ncmds(0),
-	m_cmds(CMD_QUEUE_BUCKET_SIZE, std::priority_queue<cmditem>()) {}
+CmdQueue::CmdQueue(Game& game)
+   : game_(game),
+     nextserial_(0),
+     ncmds_(0),
+     cmds_(kCommandQueueBucketSize, std::priority_queue<CmdItem>()) {
+}
 
-Cmd_Queue::~Cmd_Queue()
-{
+CmdQueue::~CmdQueue() {
 	flush();
 }
 
 /*
  * flushs all commands from the queue. Needed for
  * game loading (while in game)
- * FIXME ...but game loading while in game is not possible!
- * Note: Order of destruction of Items is not guaranteed
  */
-void Cmd_Queue::flush() {
+// TODO(unknown): ...but game loading while in game is not possible!
+// Note: Order of destruction of Items is not guaranteed
+void CmdQueue::flush() {
 	uint32_t cbucket = 0;
-	while (m_ncmds and cbucket < CMD_QUEUE_BUCKET_SIZE) {
-		std::priority_queue<cmditem> & current_cmds = m_cmds[cbucket];
+	while (ncmds_ && cbucket < kCommandQueueBucketSize) {
+		std::priority_queue<CmdItem>& current_cmds = cmds_[cbucket];
 
 		while (!current_cmds.empty()) {
-			Command * cmd = current_cmds.top().cmd;
+			Command* cmd = current_cmds.top().cmd;
 			current_cmds.pop();
 			delete cmd;
-			--m_ncmds;
+			--ncmds_;
 		}
-		++ cbucket;
+		++cbucket;
 	}
-	assert(m_ncmds == 0);
+	assert(ncmds_ == 0);
 }
 
 /*
@@ -75,17 +74,16 @@ void Cmd_Queue::flush() {
 Insert a new command into the queue; it will be executed at the given time
 ===============
 */
-void Cmd_Queue::enqueue (Command * const cmd)
-{
-	cmditem ci;
+void CmdQueue::enqueue(Command* const cmd) {
+	CmdItem ci;
 
 	ci.cmd = cmd;
 	if (upcast(PlayerCommand, plcmd, cmd)) {
 		ci.category = cat_playercommand;
 		ci.serial = plcmd->cmdserial();
-	} else if (dynamic_cast<GameLogicCommand *>(cmd)) {
+	} else if (dynamic_cast<GameLogicCommand*>(cmd)) {
 		ci.category = cat_gamelogic;
-		ci.serial = nextserial++;
+		ci.serial = nextserial_++;
 	} else {
 		// the order of non-gamelogic commands matters only with respect to
 		// gamelogic commands; the order of non-gamelogic commands wrt other
@@ -95,42 +93,34 @@ void Cmd_Queue::enqueue (Command * const cmd)
 		ci.serial = 0;
 	}
 
-	m_cmds[cmd->duetime() % CMD_QUEUE_BUCKET_SIZE].push(ci);
-	++ m_ncmds;
+	cmds_[cmd->duetime() % kCommandQueueBucketSize].push(ci);
+	++ncmds_;
 }
 
-/**
- * Run all commands scheduled for the next interval milliseconds, and update the
- * internal time as well.
- * the game_time_var represents the current game time, which we update and with
- * which we must mess around (to run all queued cmd.s) and which we update (add
- * the interval)
- */
-int32_t Cmd_Queue::run_queue(int32_t const interval, int32_t & game_time_var) {
-	int32_t const final = game_time_var + interval;
-	int32_t cnt = 0;
+void CmdQueue::run_queue(int32_t const interval, uint32_t& game_time_var) {
+	uint32_t const final = game_time_var + interval;
 
 	while (game_time_var < final) {
-		std::priority_queue<cmditem> & current_cmds = m_cmds[game_time_var % CMD_QUEUE_BUCKET_SIZE];
+		std::priority_queue<CmdItem>& current_cmds = cmds_[game_time_var % kCommandQueueBucketSize];
 
 		while (!current_cmds.empty()) {
-			Command & c = *current_cmds.top().cmd;
+			Command& c = *current_cmds.top().cmd;
 			if (game_time_var < c.duetime())
 				break;
 
 			current_cmds.pop();
-			-- m_ncmds;
+			--ncmds_;
 			assert(game_time_var == c.duetime());
 
-			if (dynamic_cast<GameLogicCommand *>(&c)) {
-				StreamWrite & ss = m_game.syncstream();
+			if (dynamic_cast<GameLogicCommand*>(&c)) {
+				StreamWrite& ss = game_.syncstream();
 				static uint8_t const tag[] = {0xde, 0xad, 0x00};
-				ss.Data(tag, 3); // provide an easy-to-find pattern as debugging aid
-				ss.Unsigned32(c.duetime());
-				ss.Unsigned32(c.id());
+				ss.data(tag, 3);  // provide an easy-to-find pattern as debugging aid
+				ss.unsigned_32(c.duetime());
+				ss.unsigned_32(static_cast<uint32_t>(c.id()));
 			}
 
-			c.execute (m_game);
+			c.execute(game_);
 
 			delete &c;
 		}
@@ -139,36 +129,30 @@ int32_t Cmd_Queue::run_queue(int32_t const interval, int32_t & game_time_var) {
 
 	assert(final - game_time_var == 0);
 	game_time_var = final;
-
-	return cnt;
 }
 
+Command::~Command() {
+}
 
-Command::~Command () {}
-
-
-#define BASE_CMD_VERSION 1
+constexpr uint16_t kCurrentPacketVersion = 1;
 
 /**
  * Write variables from the base command to a file.
  *
  * \note This function must be called by deriving objects that override it.
  */
-void GameLogicCommand::Write
-	(FileWrite & fw,
+void GameLogicCommand::write(FileWrite& fw,
 #ifndef NDEBUG
-	 Editor_Game_Base & egbase,
+                             EditorGameBase& egbase,
 #else
-	 Editor_Game_Base &,
+                             EditorGameBase&,
 #endif
-	 Map_Map_Object_Saver &)
-{
-	// First version
-	fw.Unsigned16(BASE_CMD_VERSION);
+                             MapObjectSaver&) {
+	fw.unsigned_16(kCurrentPacketVersion);
 
 	// Write duetime
 	assert(egbase.get_gametime() <= duetime());
-	fw.Unsigned32(duetime());
+	fw.unsigned_32(duetime());
 }
 
 /**
@@ -176,23 +160,19 @@ void GameLogicCommand::Write
  *
  * \note This function must be called by deriving objects that override it.
  */
-void GameLogicCommand::Read
-	(FileRead & fr, Editor_Game_Base & egbase, Map_Map_Object_Loader &)
-{
+void GameLogicCommand::read(FileRead& fr, EditorGameBase& egbase, MapObjectLoader&) {
 	try {
-		uint16_t const packet_version = fr.Unsigned16();
-		if (packet_version == BASE_CMD_VERSION) {
-			set_duetime(fr.Unsigned32());
-			int32_t const gametime = egbase.get_gametime();
+		uint16_t const packet_version = fr.unsigned_16();
+		if (packet_version == kCurrentPacketVersion) {
+			set_duetime(fr.unsigned_32());
+			uint32_t const gametime = egbase.get_gametime();
 			if (duetime() < gametime)
-				throw game_data_error
-					(_("duetime (%i) < gametime (%i)"), duetime(), gametime);
-		} else
-			throw game_data_error
-				(_("unknown/unhandled version %u"), packet_version);
-	} catch (const _wexception & e) {
-		throw game_data_error(_("game logic: %s"), e.what());
+				throw GameDataError("duetime (%i) < gametime (%i)", duetime(), gametime);
+		} else {
+			throw UnhandledVersionError("GameLogicCommand", packet_version, kCurrentPacketVersion);
+		}
+	} catch (const WException& e) {
+		throw GameDataError("game logic: %s", e.what());
 	}
 }
-
 }

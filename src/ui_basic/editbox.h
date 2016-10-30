@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003, 2006-2008, 2011 by the Widelands Development Team
+ * Copyright (C) 2003-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,17 +17,17 @@
  *
  */
 
-#ifndef UI_EDITBOX_H
-#define UI_EDITBOX_H
+#ifndef WL_UI_BASIC_EDITBOX_H
+#define WL_UI_BASIC_EDITBOX_H
+
+#include <memory>
 
 #include <SDL_keyboard.h>
-#include <boost/scoped_ptr.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 
-#include "button.h"
-
-#include "align.h"
+#include "graphic/align.h"
 #include "graphic/graphic.h"
+#include "ui_basic/button.h"
 
 #define CHAT_HISTORY_SIZE 5
 
@@ -35,47 +35,53 @@ namespace UI {
 
 struct EditBoxImpl;
 
-/// An editbox can be clicked, then the user can change its text (title). When
-/// return is pressed, the editbox is unfocused, the keyboard released and a
-/// callback function is called
+/** An editbox can be clicked, then the user can change its text (title).
+ *
+ * When return is pressed, the editbox is unfocused, the keyboard
+ * released and a callback function is called.
+ * If h == 0, height will be dynamic according to font set.
+ * If h > 0, margin_y has no effect.
+ */
 struct EditBox : public Panel {
-	EditBox
-		(Panel *,
-		 int32_t x, int32_t y, uint32_t w, uint32_t h,
-		 const Image* background = g_gr->images().get("pics/but2.png"), Align align = Align_Center);
+	EditBox(Panel*,
+	        int32_t x,
+	        int32_t y,
+	        uint32_t w,
+	        uint32_t h = 0,
+	        int margin_y = 2,
+	        const Image* background = g_gr->images().get("images/ui_basic/but2.png"),
+	        int font_size = UI_FONT_SIZE_SMALL);
 	virtual ~EditBox();
 
-	boost::signal<void ()> changed;
-	boost::signal<void ()> ok;
-	boost::signal<void ()> cancel;
+	boost::signals2::signal<void()> changed;
+	boost::signals2::signal<void()> ok;
+	boost::signals2::signal<void()> cancel;
 
-	const std::string & text() const;
-	void setText(const std::string &);
-	uint32_t maxLength() const;
-	void setMaxLength(uint32_t);
-	Align align() const;
-	void setAlign(Align);
-	void set_font(const std::string & name, int32_t size, RGBColor color);
+	const std::string& text() const;
+	void set_text(const std::string&);
+	uint32_t max_length() const;
+	void set_max_length(uint32_t);
 
-	void activate_history(bool activate) {m_history_active = activate;}
+	void activate_history(bool activate) {
+		history_active_ = activate;
+	}
 
-	bool handle_mousepress(Uint8 btn, int32_t x, int32_t y);
-	bool handle_mouserelease(Uint8 btn, int32_t x, int32_t y);
-	bool handle_key(bool down, SDL_keysym);
+	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y) override;
+	bool handle_mouserelease(uint8_t btn, int32_t x, int32_t y) override;
+	bool handle_key(bool down, SDL_Keysym) override;
+	bool handle_textinput(const std::string& text) override;
 
-	void draw(RenderTarget &);
+	void draw(RenderTarget&) override;
 
 private:
-	boost::scoped_ptr<EditBoxImpl> m;
+	std::unique_ptr<EditBoxImpl> m_;
 
 	void check_caret();
-	void insert(SDL_keysym code);
 
-	bool        m_history_active;
-	int16_t     m_history_position;
-	std::string m_history[CHAT_HISTORY_SIZE];
+	bool history_active_;
+	int16_t history_position_;
+	std::string history_[CHAT_HISTORY_SIZE];
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_EDITBOX_H

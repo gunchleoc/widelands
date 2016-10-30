@@ -17,17 +17,17 @@
  *
  */
 
-#ifndef INTERNET_GAMING_MESSAGES_H
-#define INTERNET_GAMING_MESSAGES_H
+#ifndef WL_NETWORK_INTERNET_GAMING_MESSAGES_H
+#define WL_NETWORK_INTERNET_GAMING_MESSAGES_H
 
 #include <string>
 
 struct InternetGamingMessages {
 public:
 	// Before calling this function the first time, keep in mind to first fill_map()
-	static const std::string & get_message(const std::string & code);
+	static const std::string& get_message(const std::string& code);
 
 	static void fill_map();
 };
 
-#endif
+#endif  // end of include guard: WL_NETWORK_INTERNET_GAMING_MESSAGES_H

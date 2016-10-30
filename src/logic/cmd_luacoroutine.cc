@@ -17,82 +17,79 @@
  *
  */
 
-#include "cmd_luacoroutine.h"
+#include "logic/cmd_luacoroutine.h"
 
-#include "game.h"
-#include "game_data_error.h"
-#include "scripting/scripting.h"
-#include "upcast.h"
-#include "log.h"
-#include <gamecontroller.h>
-#include "player.h"
+#include <boost/format.hpp>
+
+#include "base/log.h"
+#include "base/macros.h"
+#include "io/fileread.h"
+#include "io/filewrite.h"
+#include "logic/game.h"
+#include "logic/game_controller.h"
+#include "logic/game_data_error.h"
+#include "logic/player.h"
+#include "scripting/logic.h"
+#include "scripting/lua_coroutine.h"
 
 namespace Widelands {
 
-void Cmd_LuaCoroutine::execute (Game & game) {
+void CmdLuaCoroutine::execute(Game& game) {
 	try {
-		uint32_t sleeptime;
-		int rv = m_cr->resume(&sleeptime);
+		int rv = cr_->resume();
+		const uint32_t sleeptime = cr_->pop_uint32();
 		if (rv == LuaCoroutine::YIELDED) {
-			game.enqueue_command(new Widelands::Cmd_LuaCoroutine(sleeptime, m_cr));
-			m_cr = 0;  // Remove our ownership so we don't delete.
+			game.enqueue_command(new Widelands::CmdLuaCoroutine(sleeptime, cr_));
+			cr_ = nullptr;  // Remove our ownership so we don't delete.
 		} else if (rv == LuaCoroutine::DONE) {
-			delete m_cr;
-			m_cr = 0;
+			delete cr_;
+			cr_ = nullptr;
 		}
-	} catch (LuaError & e) {
+	} catch (LuaError& e) {
 		log("Error in Lua Coroutine\n");
 		log("%s\n", e.what());
 		log("Send message to all players and pause game");
 		for (int i = 1; i <= game.map().get_nrplayers(); i++) {
-			Widelands::Message & msg =
-				*new Widelands::Message
-				("Game Logic", game.get_gametime(),
-				 Forever(), "Lua Coroutine Failed", e.what());
+			Widelands::Message& msg = *new Widelands::Message(
+			   Message::Type::kGameLogic, game.get_gametime(), "Coroutine",
+			   "images/ui_basic/menu_help.png", "Lua Coroutine Failed",
+			   (boost::format("<rt><p font-size=12>%s</p></rt>") % e.what()).str());
 			game.player(i).add_message(game, msg, true);
 		}
-		game.gameController()->setDesiredSpeed(0);
+		game.game_controller()->set_desired_speed(0);
 	}
 }
 
-#define CMD_LUACOROUTINE_VERSION 1
-void Cmd_LuaCoroutine::Read
-	(FileRead & fr, Editor_Game_Base & egbase, Map_Map_Object_Loader & mol)
-{
+constexpr uint16_t kCurrentPacketVersion = 3;
+
+void CmdLuaCoroutine::read(FileRead& fr, EditorGameBase& egbase, MapObjectLoader& mol) {
 	try {
-		uint16_t const packet_version = fr.Unsigned16();
-		if (packet_version == CMD_LUACOROUTINE_VERSION) {
-			GameLogicCommand::Read(fr, egbase, mol);
+		uint16_t const packet_version = fr.unsigned_16();
+		if (packet_version == kCurrentPacketVersion) {
+			GameLogicCommand::read(fr, egbase, mol);
 
 			// This function is only called when saving/loading savegames. So save
 			// to cast here
 			upcast(LuaGameInterface, lgi, &egbase.lua());
-			assert(lgi); // If this is not true, this is not a game.
+			assert(lgi);  // If this is not true, this is not a game.
 
-			m_cr = lgi->read_coroutine(fr, mol, fr.Unsigned32());
-		} else
-			throw game_data_error
-				(_("unknown/unhandled version %u"), packet_version);
-	} catch (const _wexception & e) {
-		throw game_data_error(_("lua function: %s"), e.what());
+			cr_ = lgi->read_coroutine(fr);
+		} else {
+			throw UnhandledVersionError("CmdLuaCoroutine", packet_version, kCurrentPacketVersion);
+		}
+	} catch (const WException& e) {
+		throw GameDataError("lua function: %s", e.what());
 	}
 }
-void Cmd_LuaCoroutine::Write
-	(FileWrite & fw, Editor_Game_Base & egbase, Map_Map_Object_Saver & mos)
-{
-	fw.Unsigned16(CMD_LUACOROUTINE_VERSION);
-	GameLogicCommand::Write(fw, egbase, mos);
+void CmdLuaCoroutine::write(FileWrite& fw, EditorGameBase& egbase, MapObjectSaver& mos) {
+	fw.unsigned_16(kCurrentPacketVersion);
+	GameLogicCommand::write(fw, egbase, mos);
 
-	FileWrite::Pos p = fw.GetPos();
-	fw.Unsigned32(0); // N bytes written, follows below
-
-	// This function is only called when saving/loading savegames. So save
-	// to cast here
+	// This function is only called when saving/loading savegames. So save to
+	// cast here
 	upcast(LuaGameInterface, lgi, &egbase.lua());
-	assert(lgi); // If this is not true, this is not a game.
+	assert(lgi);  // If this is not true, this is not a game.
 
-	uint32_t nwritten = Little32(lgi->write_coroutine(fw, mos, m_cr));
-	fw.Data(&nwritten, 4, p);
+	lgi->write_coroutine(fw, cr_);
 }
-
 }

@@ -8,12 +8,12 @@ would be in the stoneage, if not for using these files :-).
 
 The Widelands Development Team thanks the following projects:
 
-    libSDL
-    libSDL_mixer
-    libSDL_net
-    libSDL_image
-    libSDL_ttf
-    * All files from SDL-Project
+    libSDL2
+    libSDL2_mixer
+    libSDL2_net
+    libSDL2_image
+    libSDL2_ttf
+    * All files from SDL2-Project
     * Project can be found at http://www.libsdl.org/
 
 
@@ -75,14 +75,9 @@ The Widelands Development Team thanks the following projects:
     * http://www.lua.org
 
 
-    Pluto
-    * by Ben Sunshine-Hill, Rob Hoelz
-    * http://luaforge.net/projects/pluto/
-
-
-    Lodepng (for testing, not in Widelands itself)
-    * by Lode Vandevenne
-    * http://lodev.org/lodepng/
+    Eris
+    * by Florian Nücke
+    * https://github.com/fnuecke/eris
 
 
 and last but not least:

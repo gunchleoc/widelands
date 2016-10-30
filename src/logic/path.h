@@ -17,15 +17,16 @@
  *
  */
 
-#ifndef S__PATH_H
-#define S__PATH_H
+#ifndef WL_LOGIC_PATH_H
+#define WL_LOGIC_PATH_H
 
 #include <vector>
 
-#include "widelands.h"
-#include "widelands_fileread.h"
-#include "widelands_filewrite.h"
-#include "widelands_geometry.h"
+#include "logic/widelands.h"
+#include "logic/widelands_geometry.h"
+
+class FileRead;
+class FileWrite;
 
 namespace Widelands {
 
@@ -34,77 +35,95 @@ namespace Widelands {
  * Represents a cross-country path found by Path::findpath, for example
  */
 struct CoordPath;
-struct Map;
+class Map;
 
 struct Path {
-	friend struct Map;
+	friend class Map;
 	friend struct MapAStarBase;
 
-	Path() {}
-	Path(const Coords & c) : m_start(c), m_end(c) {}
-	Path(CoordPath &);
+	Path() {
+	}
+	Path(const Coords& c) : start_(c), end_(c) {
+	}
+	Path(CoordPath&);
 
 	void reverse();
 
-	Coords get_start() const throw () {return m_start;}
-	Coords get_end  () const throw () {return m_end;}
-
-	typedef std::vector<Direction> Step_Vector;
-	Step_Vector::size_type get_nsteps() const throw () {return m_path.size();}
-	Direction operator[](Step_Vector::size_type const i) const {
-		assert(i < m_path.size());
-		return m_path[m_path.size() - i - 1];
+	Coords get_start() const {
+		return start_;
+	}
+	Coords get_end() const {
+		return end_;
 	}
 
-	void append(const Map & map, Direction);
-
-	void reorigin(const Coords & new_origin, const Extent & extent) {
-		m_start.reorigin(new_origin, extent);
-		m_end  .reorigin(new_origin, extent);
+	using StepVector = std::vector<Direction>;
+	StepVector::size_type get_nsteps() const {
+		return path_.size();
+	}
+	Direction operator[](StepVector::size_type const i) const {
+		assert(i < path_.size());
+		return path_[path_.size() - i - 1];
 	}
 
-	void save(FileWrite & fw) const;
-	void load(FileRead & fr, const Map & map);
+	void append(const Map& map, Direction);
+
+	void reorigin(const Coords& new_origin, const Extent& extent) {
+		start_.reorigin(new_origin, extent);
+		end_.reorigin(new_origin, extent);
+	}
+
+	void save(FileWrite& fw) const;
+	void load(FileRead& fr, const Map& map);
 
 private:
-	Coords m_start;
-	Coords m_end;
-	Step_Vector m_path;
+	Coords start_;
+	Coords end_;
+	StepVector path_;
 };
 
 // CoordPath is an extended path that also caches related Coords
 struct CoordPath {
-	CoordPath() {}
-	CoordPath(Coords c) {m_coords.push_back(c);}
-	CoordPath(const Map & map, const Path & path);
-
-	Coords get_start() const throw () {return m_coords.front();}
-	Coords get_end  () const throw () {return m_coords.back ();}
-	const std::vector<Coords> &get_coords() const {return m_coords;}
-
-	typedef std::vector<Direction> Step_Vector;
-	Step_Vector::size_type get_nsteps() const throw () {return m_path.size();}
-	Direction operator[](Step_Vector::size_type const i) const {
-		assert(i < m_path.size());
-		return m_path[i];
+	CoordPath() {
 	}
-	const Step_Vector & steps() const throw () {return m_path;}
+	CoordPath(Coords c) {
+		coords_.push_back(c);
+	}
+	CoordPath(const Map& map, const Path& path);
+
+	Coords get_start() const {
+		return coords_.front();
+	}
+	Coords get_end() const {
+		return coords_.back();
+	}
+	const std::vector<Coords>& get_coords() const {
+		return coords_;
+	}
+
+	using StepVector = std::vector<Direction>;
+	StepVector::size_type get_nsteps() const {
+		return path_.size();
+	}
+	Direction operator[](StepVector::size_type const i) const {
+		assert(i < path_.size());
+		return path_[i];
+	}
+	const StepVector& steps() const {
+		return path_;
+	}
 
 	int32_t get_index(Coords field) const;
 
 	void reverse();
-	void truncate (const std::vector<char>::size_type after);
-	void starttrim(const std::vector<char>::size_type before);
-	void append(const Map & map, const Path & tail);
-	void append(const CoordPath & tail);
+	void truncate(const std::vector<char>::size_type after);
+	void trim_start(const std::vector<char>::size_type before);
+	void append(const Map& map, const Path& tail);
+	void append(const CoordPath& tail);
 
 private:
-	Step_Vector          m_path;   //  directions
-	std::vector<Coords>  m_coords; //  m_coords.size() == m_path.size() + 1
+	StepVector path_;             //  directions
+	std::vector<Coords> coords_;  //  coords_.size() == path_.size() + 1
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_LOGIC_PATH_H

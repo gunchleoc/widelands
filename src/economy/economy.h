@@ -17,30 +17,36 @@
  *
  */
 
-#ifndef ECONOMY_H
-#define ECONOMY_H
+#ifndef WL_ECONOMY_ECONOMY_H
+#define WL_ECONOMY_ECONOMY_H
 
-#include <boost/function.hpp>
+#include <memory>
 #include <set>
 #include <vector>
 
-#include "supply_list.h"
-#include "ui_basic/unique_window.h"
-#include "logic/instances.h"
-#include "logic/warelist.h"
-#include "logic/wareworker.h"
+#include <boost/function.hpp>
+#include <boost/utility.hpp>
 
+#include "base/macros.h"
+#include "economy/supply.h"
+#include "economy/supply_list.h"
+#include "logic/map_objects/map_object.h"
+#include "logic/map_objects/tribes/warelist.h"
+#include "logic/map_objects/tribes/wareworker.h"
+#include "ui_basic/unique_window.h"
 
 namespace Widelands {
-struct Player;
-struct Game;
-struct Flag;
-struct Route;
-struct RSPairStruct;
+
+class Game;
+class Player;
+class Soldier;
 class Warehouse;
-struct Request;
-struct Supply;
+struct Flag;
+struct RSPairStruct;
+class Request;
+struct Route;
 struct Router;
+struct Supply;
 
 /**
  * Each Economy represents all building and flags, which are connected over the same
@@ -66,7 +72,8 @@ struct Router;
  * connected by roads or the seafaring network - though of course, most code operates
  * on the assumption that they are, with fallbacks for when they aren't.
  */
-struct Economy {
+class Economy {
+public:
 	friend class EconomyDataPacket;
 
 	/// Configurable target quantity for the supply of a ware type in the
@@ -80,150 +87,185 @@ struct Economy {
 	/// The last_modified time is used to determine which setting to use when
 	/// economies are merged. The setting that was modified most recently will
 	/// be used for the merged economy.
-	struct Target_Quantity {
-		uint32_t permanent;
-		Time     last_modified;
+	struct TargetQuantity {
+		Quantity permanent;
+		Time last_modified;
 	};
 
-	Economy(Player &);
+	Economy(Player&);
 	~Economy();
 
-	Player & owner() const throw () {return m_owner;}
+	Player& owner() const {
+		return owner_;
+	}
 
-	static void check_merge(Flag &, Flag &);
-	static void check_split(Flag &, Flag &);
+	static void check_merge(Flag&, Flag&);
+	static void check_split(Flag&, Flag&);
 
-	bool find_route
-		(Flag & start, Flag & end,
-		 Route * route,
-		 WareWorker type,
-		 int32_t cost_cutoff = -1);
+	bool find_route(Flag& start, Flag& end, Route* route, WareWorker type, int32_t cost_cutoff = -1);
 
-	typedef boost::function<bool (Warehouse &)> WarehouseAcceptFn;
-	Warehouse * find_closest_warehouse
-		(Flag & start, WareWorker type = wwWORKER, Route * route = 0,
-		 uint32_t cost_cutoff = 0,
-		 const WarehouseAcceptFn & acceptfn = WarehouseAcceptFn());
+	using WarehouseAcceptFn = boost::function<bool(Warehouse&)>;
+	Warehouse* find_closest_warehouse(Flag& start,
+	                                  WareWorker type = wwWORKER,
+	                                  Route* route = nullptr,
+	                                  uint32_t cost_cutoff = 0,
+	                                  const WarehouseAcceptFn& acceptfn = WarehouseAcceptFn());
 
-	std::vector<Flag *>::size_type get_nrflags() const {return m_flags.size();}
-	void    add_flag(Flag &);
-	void remove_flag(Flag &);
-	Flag & get_arbitrary_flag();
+	std::vector<Flag*>::size_type get_nrflags() const {
+		return flags_.size();
+	}
+	void add_flag(Flag&);
+	void remove_flag(Flag&);
 
-	void set_ware_target_quantity  (Ware_Index, uint32_t, Time);
-	void set_worker_target_quantity(Ware_Index, uint32_t, Time);
+	// Returns an arbitrary flag or nullptr if this is an economy without flags
+	// (i.e. an Expedition ship).
+	Flag* get_arbitrary_flag();
 
-	void    add_wares  (Ware_Index, uint32_t count = 1);
-	void remove_wares  (Ware_Index, uint32_t count = 1);
+	void set_ware_target_quantity(DescriptionIndex, Quantity, Time);
+	void set_worker_target_quantity(DescriptionIndex, Quantity, Time);
 
-	void    add_workers(Ware_Index, uint32_t count = 1);
-	void remove_workers(Ware_Index, uint32_t count = 1);
+	void add_wares(DescriptionIndex, Quantity count = 1);
+	void remove_wares(DescriptionIndex, Quantity count = 1);
 
-	void    add_warehouse(Warehouse &);
-	void remove_warehouse(Warehouse &);
-	const std::vector<Warehouse *>& warehouses() const {return m_warehouses;}
+	void add_workers(DescriptionIndex, Quantity count = 1);
+	void remove_workers(DescriptionIndex, Quantity count = 1);
 
-	void    add_request(Request &);
-	void remove_request(Request &);
+	void add_warehouse(Warehouse&);
+	void remove_warehouse(Warehouse&);
+	const std::vector<Warehouse*>& warehouses() const {
+		return warehouses_;
+	}
 
-	void    add_supply(Supply &);
-	void remove_supply(Supply &);
+	void add_request(Request&);
+	void remove_request(Request&);
+
+	void add_supply(Supply&);
+	void remove_supply(Supply&);
 
 	/// information about this economy
-	WareList::count_type stock_ware  (Ware_Index const i) {
-		return m_wares  .stock(i);
+	Quantity stock_ware(DescriptionIndex const i) {
+		return wares_.stock(i);
 	}
-	WareList::count_type stock_worker(Ware_Index const i) {
-		return m_workers.stock(i);
+	Quantity stock_worker(DescriptionIndex const i) {
+		return workers_.stock(i);
 	}
 
 	/// Whether the economy needs more of this ware type.
 	/// Productionsites may ask this before they produce, to avoid depleting a
 	/// ware type by overproducing another from it.
-	bool needs_ware(Ware_Index) const;
+	bool needs_ware(DescriptionIndex) const;
 
 	/// Whether the economy needs more of this worker type.
 	/// Productionsites may ask this before they produce, to avoid depleting a
 	/// ware type by overproducing a worker type from it.
-	bool needs_worker(Ware_Index) const;
+	bool needs_worker(DescriptionIndex) const;
 
-	const Target_Quantity & ware_target_quantity  (Ware_Index const i) const {
-		return m_ware_target_quantities[i.value()];
+	const TargetQuantity& ware_target_quantity(DescriptionIndex const i) const {
+		return ware_target_quantities_[i];
 	}
-	Target_Quantity       & ware_target_quantity  (Ware_Index const i)       {
-		return m_ware_target_quantities[i.value()];
+	TargetQuantity& ware_target_quantity(DescriptionIndex const i) {
+		return ware_target_quantities_[i];
 	}
-	const Target_Quantity & worker_target_quantity(Ware_Index const i) const {
-		return m_worker_target_quantities[i.value()];
+	const TargetQuantity& worker_target_quantity(DescriptionIndex const i) const {
+		return worker_target_quantities_[i];
 	}
-	Target_Quantity       & worker_target_quantity(Ware_Index const i)       {
-		return m_worker_target_quantities[i.value()];
+	TargetQuantity& worker_target_quantity(DescriptionIndex const i) {
+		return worker_target_quantities_[i];
 	}
 
 	void show_options_window();
-	UI::UniqueWindow::Registry m_optionswindow_registry;
+	UI::UniqueWindow::Registry& optionswindow_registry() {
+		return optionswindow_registry_;
+	}
 
-
-	const WareList & get_wares  () const {return m_wares;}
-	const WareList & get_workers() const {return m_workers;}
+	const WareList& get_wares() const {
+		return wares_;
+	}
+	const WareList& get_workers() const {
+		return workers_;
+	}
 
 	///< called by \ref Cmd_Call_Economy_Balance
 	void balance(uint32_t timerid);
 
-	void rebalance_supply() {_start_request_timer();}
+	void rebalance_supply() {
+		start_request_timer();
+	}
 
 private:
-/*************/
-/* Functions */
-/*************/
-	void _remove_flag(Flag &);
-	void _reset_all_pathfinding_cycles();
+	// This structs is to store distance from supply to request(or), but to allow unambiguous
+	// sorting if distances are the same, we use also serial number of provider and type of provider
+	// (flag,
+	// warehouse)
+	struct UniqueDistance {
+		bool operator<(const UniqueDistance& other) const {
+			return std::forward_as_tuple(distance, serial, provider_type) <
+			       std::forward_as_tuple(other.distance, other.serial, other.provider_type);
+		}
 
-	void _merge(Economy &);
-	void _check_splits();
-	void _split(const std::set<OPtr<Flag> > &);
+		uint32_t distance;
+		uint32_t serial;
+		SupplyProviders provider_type;
+	};
 
-	void _start_request_timer(int32_t delta = 200);
+	/*************/
+	/* Functions */
+	/*************/
+	void do_remove_flag(Flag&);
+	void reset_all_pathfinding_cycles();
 
-	Supply * _find_best_supply(Game &, const Request &, int32_t & cost);
-	void _process_requests(Game &, RSPairStruct &);
-	void _balance_requestsupply(Game &);
-	void _handle_active_supplies(Game &);
-	void _create_requested_workers(Game &);
-	void _create_requested_worker(Game &, Ware_Index);
+	void merge(Economy&);
+	void check_splits();
+	void split(const std::set<OPtr<Flag>>&);
 
-	bool   _has_request(Request &);
+	void start_request_timer(int32_t delta = 200);
 
-/*************/
-/* Variables */
-/*************/
-	typedef std::vector<Request *> RequestList;
+	Supply* find_best_supply(Game&, const Request&, int32_t& cost);
+	void process_requests(Game&, RSPairStruct&);
+	void balance_requestsupply(Game&);
+	void handle_active_supplies(Game&);
+	void create_requested_workers(Game&);
+	void create_requested_worker(Game&, DescriptionIndex);
 
-	Player & m_owner;
+	bool has_request(Request&);
 
-	typedef std::vector<Flag *> Flags;
-	Flags m_flags;
-	WareList m_wares;     ///< virtual storage with all wares in this Economy
-	WareList m_workers;   ///< virtual storage with all workers in this Economy
-	std::vector<Warehouse *> m_warehouses;
+	/*************/
+	/* Variables */
+	/*************/
+	using RequestList = std::vector<Request*>;
 
-	RequestList m_requests; ///< requests
-	SupplyList m_supplies;
+	Player& owner_;
 
-	Target_Quantity        * m_ware_target_quantities;
-	Target_Quantity        * m_worker_target_quantities;
-	Router                 * m_router;
+	using Flags = std::vector<Flag*>;
+	Flags flags_;
+	WareList wares_;    ///< virtual storage with all wares in this Economy
+	WareList workers_;  ///< virtual storage with all workers in this Economy
+	std::vector<Warehouse*> warehouses_;
 
-	typedef std::pair<OPtr<Flag>, OPtr<Flag> > SplitPair;
-	std::vector<SplitPair> m_split_checks;
+	RequestList requests_;  ///< requests
+	SupplyList supplies_;
+
+	TargetQuantity* ware_target_quantities_;
+	TargetQuantity* worker_target_quantities_;
+	Router* router_;
+
+	using SplitPair = std::pair<OPtr<Flag>, OPtr<Flag>>;
+	std::vector<SplitPair> split_checks_;
 
 	/**
 	 * ID for the next request balancing timer. Used to throttle
 	 * excessive calls to the request/supply balancing logic.
 	 */
-	uint32_t m_request_timerid;
-};
+	uint32_t request_timerid_;
 
+	static std::unique_ptr<Soldier> soldier_prototype_;
+	UI::UniqueWindow::Registry optionswindow_registry_;
+
+	// 'list' of unique providers
+	std::map<UniqueDistance, Supply*> available_supplies_;
+
+	DISALLOW_COPY_AND_ASSIGN(Economy);
+};
 }
 
-#endif
+#endif  // end of include guard: WL_ECONOMY_ECONOMY_H

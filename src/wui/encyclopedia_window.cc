@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2011 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,207 +17,170 @@
  *
  */
 
-#include "encyclopedia_window.h"
+#include "wui/encyclopedia_window.h"
 
-#include "logic/building.h"
-#include "graphic/graphic.h"
-#include "i18n.h"
-#include "interactive_player.h"
-#include "helper.h"
-#include "logic/player.h"
-#include "logic/productionsite.h"
-#include "logic/production_program.h"
-#include "logic/tribe.h"
-#include "logic/warelist.h"
-#include "economy/economy.h"
-
-#include "ui_basic/window.h"
-#include "ui_basic/unique_window.h"
-#include "ui_basic/table.h"
-
-#include "upcast.h"
-#include "type_check.h"
-
-#include <algorithm>
-#include <set>
 #include <map>
+#include <memory>
 #include <vector>
-#include <string>
-#include <cstring>
-#include <typeinfo>
 
-#define WINDOW_WIDTH  std::min(600, g_gr->get_xres() - 40)
+#include <boost/format.hpp>
+
+#include "base/i18n.h"
+#include "graphic/graphic.h"
+#include "io/filesystem/layered_filesystem.h"
+#include "logic/map_objects/tribes/tribe_descr.h"
+#include "scripting/lua_coroutine.h"
+#include "ui_basic/messagebox.h"
+#include "wui/interactive_base.h"
+
+namespace {
+
+#define WINDOW_WIDTH std::min(700, g_gr->get_xres() - 40)
 #define WINDOW_HEIGHT std::min(550, g_gr->get_yres() - 40)
 
-#define WARE_PICTURE_COLUMN_WIDTH 32
-#define QUANTITY_COLUMN_WIDTH 64
-#define WARE_GROUPS_TABLE_WIDTH (WINDOW_WIDTH * 2 / 3 - 5)
+constexpr int kPadding = 5;
+constexpr int kTabHeight = 35;
 
-using namespace Widelands;
-
-inline Interactive_Player & EncyclopediaWindow::iaplayer() const {
-	return ref_cast<Interactive_Player, UI::Panel>(*get_parent());
+const std::string heading(const std::string& text) {
+	return ((boost::format("<rt><p font-size=18 font-weight=bold font-color=D1D1D1>"
+	                       "%s<br></p><p font-size=8> <br></p></rt>") %
+	         text)
+	           .str());
 }
 
+}  // namespace
 
-EncyclopediaWindow::EncyclopediaWindow
-	(Interactive_Player & parent, UI::UniqueWindow::Registry & registry)
-:
-	UI::UniqueWindow
-		(&parent, "encyclopedia",
-		 &registry,
-		 WINDOW_WIDTH, WINDOW_HEIGHT,
-		 _("Tribe ware encyclopedia")),
-	wares            (this, 5, 5, WINDOW_WIDTH - 10, WINDOW_HEIGHT - 250),
-	prodSites        (this, 5, WINDOW_HEIGHT - 150, WINDOW_WIDTH / 3 - 5, 140),
-	condTable
-		(this,
-		 WINDOW_WIDTH / 3, WINDOW_HEIGHT - 150, WARE_GROUPS_TABLE_WIDTH, 140),
-	descrTxt         (this, 5, WINDOW_HEIGHT - 240, WINDOW_WIDTH - 10, 80, "")
-{
-	wares.selected.connect(boost::bind(&EncyclopediaWindow::wareSelected, this, _1));
+namespace UI {
 
-	prodSites.selected.connect(boost::bind(&EncyclopediaWindow::prodSiteSelected, this, _1));
-
-	condTable.add_column (WARE_PICTURE_COLUMN_WIDTH);
-	condTable.add_column
-		(WARE_GROUPS_TABLE_WIDTH
-		 - WARE_PICTURE_COLUMN_WIDTH
-		 - QUANTITY_COLUMN_WIDTH,
-		 _("Consumed ware type(s)"));
-	condTable.add_column (QUANTITY_COLUMN_WIDTH, _("Quantity"));
-
-	fillWares();
-
-	if (get_usedefaultpos())
-		center_to_parent();
+EncyclopediaWindow::EncyclopediaWindow(InteractiveBase& parent,
+                                       UI::UniqueWindow::Registry& registry,
+                                       LuaInterface* const lua)
+   : UI::UniqueWindow(&parent, "encyclopedia", &registry, WINDOW_WIDTH, WINDOW_HEIGHT, ""),
+     lua_(lua),
+     tabs_(this, 0, 0, nullptr) {
 }
 
-void EncyclopediaWindow::fillWares() {
-	const Tribe_Descr & tribe = iaplayer().player().tribe();
-	Ware_Index const nr_wares = tribe.get_nrwares();
-	std::vector<Ware> ware_vec;
+void EncyclopediaWindow::init(InteractiveBase& parent, std::unique_ptr<LuaTable> table) {
 
-	for (Ware_Index i = Ware_Index::First(); i < nr_wares; ++i) {
-		Item_Ware_Descr const * ware = tribe.get_ware_descr(i);
-		Ware w(i, ware);
-		ware_vec.push_back(w);
-	}
+	const int contents_height = WINDOW_HEIGHT - kTabHeight - 2 * kPadding;
+	const int contents_width = WINDOW_WIDTH / 2 - 1.5 * kPadding;
 
-	std::sort(ware_vec.begin(), ware_vec.end());
+	try {
+		set_title(table->get_string("title"));
 
-	for (uint32_t i = 0; i < ware_vec.size(); i++) {
-		Ware cur = ware_vec[i];
-		wares.add(cur.m_descr->descname().c_str(), cur.m_i, cur.m_descr->icon());
-	}
-}
+		// Read tab definitions
+		std::unique_ptr<LuaTable> tabs_table = table->get_table("tabs");
+		for (const auto& tab_table : tabs_table->array_entries<std::unique_ptr<LuaTable>>()) {
+			const std::string tab_name = tab_table->get_string("name");
+			const std::string tab_icon =
+			   tab_table->has_key("icon") ? tab_table->get_string("icon") : "";
+			const std::string tab_title = tab_table->get_string("title");
 
-void EncyclopediaWindow::wareSelected(uint32_t) {
-	const Tribe_Descr & tribe = iaplayer().player().tribe();
-	selectedWare = tribe.get_ware_descr(wares.get_selected());
+			wrapper_boxes_.insert(std::make_pair(
+			   tab_name, std::unique_ptr<UI::Box>(new UI::Box(&tabs_, 0, 0, UI::Box::Horizontal))));
 
-	descrTxt.set_text(selectedWare->helptext());
+			boxes_.insert(std::make_pair(
+			   tab_name, std::unique_ptr<UI::Box>(new UI::Box(
+			                wrapper_boxes_.at(tab_name).get(), 0, 0, UI::Box::Horizontal))));
 
-	prodSites.clear();
-	condTable.clear();
+			lists_.insert(std::make_pair(
+			   tab_name, std::unique_ptr<UI::Listselect<EncyclopediaEntry>>(
+			                new UI::Listselect<EncyclopediaEntry>(
+			                   boxes_.at(tab_name).get(), 0, 0, contents_width, contents_height))));
+			lists_.at(tab_name)->selected.connect(
+			   boost::bind(&EncyclopediaWindow::entry_selected, this, tab_name));
 
-	bool found = false;
+			contents_.insert(std::make_pair(
+			   tab_name, std::unique_ptr<UI::MultilineTextarea>(new UI::MultilineTextarea(
+			                boxes_.at(tab_name).get(), 0, 0, contents_width, contents_height))));
 
-	Building_Index const nr_buildings = tribe.get_nrbuildings();
-	for (Building_Index i = Building_Index::First(); i < nr_buildings; ++i) {
-		const Building_Descr & descr = *tribe.get_building_descr(i);
-		if (upcast(ProductionSite_Descr const, de, &descr)) {
+			boxes_.at(tab_name)->add(lists_.at(tab_name).get(), UI::Align::kLeft);
+			boxes_.at(tab_name)->add_space(kPadding);
+			boxes_.at(tab_name)->add(contents_.at(tab_name).get(), UI::Align::kLeft);
 
-			if
-				((descr.is_buildable() or descr.is_enhanced())
-				 and
-				 de->output_ware_types().count(wares.get_selected()))
-			{
-				prodSites.add(de->descname().c_str(), i, de->get_buildicon());
-				found = true;
+			wrapper_boxes_.at(tab_name)->add_space(kPadding);
+			wrapper_boxes_.at(tab_name)->add(boxes_.at(tab_name).get(), UI::Align::kLeft);
+
+			if (tab_icon.empty()) {
+				tabs_.add("encyclopedia_" + tab_name, tab_title, wrapper_boxes_.at(tab_name).get());
+			} else if (g_fs->file_exists(tab_icon)) {
+				tabs_.add("encyclopedia_" + tab_name, g_gr->images().get(tab_icon),
+				          wrapper_boxes_.at(tab_name).get(), tab_title);
+			} else {
+				throw wexception(
+				   "Icon path '%s' for tab '%s' does not exist!", tab_icon.c_str(), tab_name.c_str());
 			}
-		}
-	}
-	if (found)
-		prodSites.select(0);
 
-}
+			// Now fill the lists
+			std::unique_ptr<LuaTable> entries_table = tab_table->get_table("entries");
+			for (const auto& entry_table : entries_table->array_entries<std::unique_ptr<LuaTable>>()) {
+				const std::string entry_name = entry_table->get_string("name");
+				const std::string entry_title = entry_table->get_string("title");
+				const std::string entry_icon =
+				   entry_table->has_key("icon") ? entry_table->get_string("icon") : "";
+				const std::string entry_script = entry_table->get_string("script");
 
-void EncyclopediaWindow::prodSiteSelected(uint32_t) {
-	assert(prodSites.has_selection());
-	condTable.clear();
-	const Tribe_Descr & tribe = iaplayer().player().tribe();
+				// Make sure that all paths exist
+				if (!g_fs->file_exists(entry_script)) {
+					throw wexception("Script path %s for entry %s does not exist!", entry_script.c_str(),
+					                 entry_name.c_str());
+				}
 
-	const ProductionSite_Descr::Programs & programs =
-		ref_cast<ProductionSite_Descr const, Building_Descr const>
-			(*tribe.get_building_descr(prodSites.get_selected()))
-		.programs();
+				EncyclopediaEntry entry(
+				   entry_script,
+				   entry_table->get_table("script_parameters")->array_entries<std::string>());
 
-	//  FIXME This needs reworking. A program can indeed produce iron even if
-	//  FIXME the program name is not any of produce_iron, smelt_iron, prog_iron
-	//  FIXME or work. What matters is whether the program has a statement such
-	//  FIXME as "produce iron" or "createitem iron". The program name is not
-	//  FIXME supposed to have any meaning to the game logic except to uniquely
-	//  FIXME identify the program.
-	//  Only shows information from the first program that has a name indicating
-	//  that it produces the considered ware type.
-	std::map<std::string, ProductionProgram *>::const_iterator programIt =
-		programs.find(std::string("produce_") + selectedWare->name());
-
-	if (programIt == programs.end())
-		programIt = programs.find(std::string("smelt_")  + selectedWare->name());
-
-	if (programIt == programs.end())
-		programIt = programs.find(std::string("smoke_")  + selectedWare->name());
-
-	if (programIt == programs.end())
-		programIt = programs.find(std::string("mine_")   + selectedWare->name());
-
-	if (programIt == programs.end())
-		programIt = programs.find("work");
-
-	if (programIt != programs.end()) {
-		const ProductionProgram::Actions & actions =
-			programIt->second->actions();
-
-		container_iterate_const(ProductionProgram::Actions, actions, i)
-			if (upcast(ProductionProgram::ActConsume const, action, *i.current)) {
-				const ProductionProgram::ActConsume::Groups & groups =
-					action->groups();
-				container_iterate_const
-					(ProductionProgram::ActConsume::Groups, groups, j)
-				{
-					const std::set<Ware_Index> & ware_types = j.current->first;
-					assert(ware_types.size());
-					std::string ware_type_names;
-					for
-						(wl_const_range<std::set<Ware_Index> >
-						 k(ware_types);;)
-					{
-						ware_type_names +=
-							tribe.get_ware_descr(*k)->descname();
-						if (k.advance().empty())
-							break;
-						ware_type_names += _(" or ");
-					}
-
-					//  Make sure to detect if someone changes the type so that it
-					//  needs more than 3 decimal digits to represent.
-					compile_assert
-						(only1byte<sizeof(j.current->second)>::result);
-					char amount_string[4]; //  Space for 3 digits + terminator.
-					sprintf(amount_string, "%u", j.current->second);
-
-					//  picture only of first ware type in group
-					UI::Table<uintptr_t>::Entry_Record & tableEntry =
-						condTable.add(0);
-					tableEntry.set_picture
-						(0, tribe.get_ware_descr(*ware_types.begin())->icon());
-					tableEntry.set_string (1, ware_type_names);
-					tableEntry.set_string (2, amount_string);
-					condTable.set_sort_column(1);
-					condTable.sort();
+				if (entry_icon.empty()) {
+					lists_.at(tab_name)->add(entry_title, entry);
+				} else if (g_fs->file_exists(entry_icon)) {
+					lists_.at(tab_name)->add(entry_title, entry, g_gr->images().get(entry_icon));
+				} else {
+					throw wexception("Icon path '%s' for tab entry '%s' does not exist!",
+					                 entry_icon.c_str(), entry_name.c_str());
 				}
 			}
+		}
+	} catch (WException& err) {
+		log("Error loading script for encyclopedia:\n%s\n", err.what());
+		UI::WLMessageBox wmb(
+		   &parent, _("Error!"),
+		   (boost::format("Error loading script for encyclopedia:\n%s") % err.what()).str(),
+		   UI::WLMessageBox::MBoxType::kOk);
+		wmb.run<UI::Panel::Returncodes>();
+	}
+
+	for (const auto& list : lists_) {
+		if (!(list.second->empty())) {
+			list.second->select(0);
+		}
+	}
+
+	tabs_.set_size(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	if (get_usedefaultpos()) {
+		center_to_parent();
 	}
 }
+
+void EncyclopediaWindow::entry_selected(const std::string& tab_name) {
+	const EncyclopediaEntry& entry = lists_.at(tab_name)->get_selected();
+	try {
+		std::unique_ptr<LuaTable> table(lua_->run_script(entry.script_path));
+		if (!entry.script_parameters.empty()) {
+			std::unique_ptr<LuaCoroutine> cr(table->get_coroutine("func"));
+			for (const std::string& parameter : entry.script_parameters) {
+				cr->push_arg(parameter);
+			}
+			cr->resume();
+			table = cr->pop_table();
+		}
+		contents_.at(tab_name)->set_text(
+		   (boost::format("%s%s") % heading(table->get_string("title")) % table->get_string("text"))
+		      .str());
+	} catch (LuaError& err) {
+		contents_.at(tab_name)->set_text(err.what());
+	}
+	contents_.at(tab_name)->scroll_to_top();
+}
+
+}  // namespace UI

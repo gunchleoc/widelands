@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2008-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,35 +17,35 @@
  *
  */
 
-#ifndef GAME_LOADER_H
-#define GAME_LOADER_H
+#ifndef WL_GAME_IO_GAME_LOADER_H
+#define WL_GAME_IO_GAME_LOADER_H
+
+#include <string>
 
 #include <stdint.h>
-#include <string>
 
 class FileSystem;
 
 namespace Widelands {
 
-struct Game;
-struct Game_Preload_Data_Packet;
+class Game;
+struct GamePreloadPacket;
 
 /*
  * This class reads a complete state
  * of a game out to a file.
  */
-struct Game_Loader {
-	Game_Loader(const std::string & path, Game &);
-	~Game_Loader();
+struct GameLoader {
+	GameLoader(const std::string& path, Game&);
+	~GameLoader();
 
-	int32_t preload_game(Game_Preload_Data_Packet &);
-	int32_t    load_game(bool multiplayer = false);
+	int32_t preload_game(GamePreloadPacket&);
+	int32_t load_game(bool multiplayer = false);
 
 private:
-	FileSystem & m_fs;
-	Game       & m_game;
+	FileSystem& fs_;
+	Game& game_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_GAME_IO_GAME_LOADER_H

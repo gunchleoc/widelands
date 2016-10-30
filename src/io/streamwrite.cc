@@ -17,20 +17,21 @@
  *
  */
 
-#include "streamwrite.h"
-#include "wexception.h"
+#include "io/streamwrite.h"
 
 #include <cstdarg>
+#include <cstring>
 
-StreamWrite::~StreamWrite() {}
+#include "base/wexception.h"
 
-void StreamWrite::Flush()
-{
+StreamWrite::~StreamWrite() {
+}
+
+void StreamWrite::flush() {
 	// no-op as default implementation
 }
 
-void StreamWrite::Printf(char const * const fmt, ...)
-{
+void StreamWrite::print_f(char const* const fmt, ...) {
 	//  Try to do formatting on the stack first, but fallback to heap
 	//  allocations to accommodate strings of arbitrary length.
 	char buffer[2048];
@@ -41,16 +42,16 @@ void StreamWrite::Printf(char const * const fmt, ...)
 	va_end(va);
 
 	if (static_cast<uint32_t>(i) < sizeof(buffer)) {
-		Data(buffer, i);
+		data(buffer, i);
 	} else {
 		uint32_t size = sizeof(buffer);
-		char * heapbuf = 0;
+		char* heapbuf = nullptr;
 
 		do {
 			if (i < 0)
-				size = 2 * size; //  old vsnprintf
+				size = 2 * size;  //  old vsnprintf
 			else
-				size = i + 1; //  C99-compatible vsnprintf
+				size = i + 1;  //  C99-compatible vsnprintf
 
 			delete[] heapbuf;
 			heapbuf = new char[size];
@@ -60,9 +61,8 @@ void StreamWrite::Printf(char const * const fmt, ...)
 			va_end(va);
 		} while (static_cast<uint32_t>(i) >= size);
 
-		Data(heapbuf, i);
+		data(heapbuf, i);
 
 		delete[] heapbuf;
 	}
 }
-

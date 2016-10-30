@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,30 +17,21 @@
  *
  */
 
-#ifndef PROFILE_H
-#define PROFILE_H
+#ifndef WL_PROFILE_PROFILE_H
+#define WL_PROFILE_PROFILE_H
 
 #include <cstring>
-
-#include <boost/noncopyable.hpp>
-
-//TODO: as soon as g_fs is not needed anymore, next include can be changed
-//to ..../filesystem.h
-#include "io/filesystem/layered_filesystem.h"
-#include "logic/widelands.h"
-#include "logic/widelands_geometry.h"
-
-#include "point.h"
-
+#include <memory>
+#include <string>
 #include <vector>
 
-namespace Widelands {
-struct Building_Descr;
-struct Editor_Game_Base;
-struct Immovable_Descr;
-};
+#include "base/macros.h"
+#include "base/vector.h"
+#include "io/filesystem/layered_filesystem.h"
+// TODO(unknown): as soon as g_fs is not needed anymore,
+// include "filesystem.h" instead of layered_filesystem.h.
 
-extern struct Profile g_options;
+extern class Profile g_options;
 class FileSystem;
 
 /**
@@ -61,53 +52,68 @@ class FileSystem;
  * retrieve any unused key. Value::used is used to determine which key is next.
  * The value of the key is stored in the second parameter.
  */
-struct Section {
-	friend struct Profile;
+class Section {
+public:
+	friend class Profile;
 
 	struct Value {
-		bool   m_used;
-		char * m_name;
-		char * m_value;
+		using string = std::string;
 
-		Value(char const * nname, char const * nval);
-		Value(const Value &);
-		~Value();
+		Value(const string& name, const char* const value);
+		Value(const Value&);
+		Value(Value&& other);
 
-		Value & operator= (const Value &);
+		// destructor would be empty
 
-		char const * get_name() const {return m_name;}
+		Value& operator=(Value);
+		Value& operator=(Value&& other);
+
+		char const* get_name() const {
+			return name_.c_str();
+		}
 
 		bool is_used() const;
 		void mark_used();
 
 		int32_t get_int() const;
-		uint32_t get_natural () const;
+		uint32_t get_natural() const;
 		uint32_t get_positive() const;
 		bool get_bool() const;
-		char const * get_string() const {return m_value;}
-		char       * get_string()       {return m_value;}
-		Point  get_Point () const;
-		Widelands::Coords get_Coords(Widelands::Extent) const;
+		char const* get_string() const {
+			return value_.get();
+		}
+		char* get_string() {
+			return value_.get();
+		}
+		Vector2i get_point() const;
 
-		void set_string(char const *);
+		void set_string(char const*);
+
+		friend void swap(Value& first, Value& second);
+
+	private:
+		bool used_;
+		string name_;
+		std::unique_ptr<char[]> value_;
+
+		Value() = default;
 	};
 
-	typedef std::vector<Value> Value_list;
+	using ValueList = std::vector<Value>;
 
-	Section(Profile *, char const * name);
-	Section(const Section &);
-
-	Section & operator= (const Section &);
+	Section(Profile*, const std::string& name);
 
 	/// \returns whether a value with the given name exists.
 	/// Does not mark the value as used.
-	bool has_val(char const * name) const;
+	bool has_val(char const* name) const;
 
-	Value * get_val     (char const * name);
-	Value * get_next_val(char const * name = 0);
-	uint32_t get_num_values() const {return m_values.size();}
+	Value* get_val(char const* name);
+	Value* get_next_val(char const* name = nullptr);
+	uint32_t get_num_values() const {
+		return values_.size();
+	}
 
-	char const * get_name() const;
+	char const* get_name() const;
 	void set_name(const std::string&);
 
 	bool is_used() const;
@@ -115,102 +121,47 @@ struct Section {
 
 	void check_used() const;
 
-	int32_t                  get_int
-		(char             const * name,
-		 int32_t                  def = 0);
-	uint32_t                 get_natural
-		(char             const * name,
-		 uint32_t                 def = 0);
-	uint32_t                 get_positive
-		(char             const * name,
-		 uint32_t                 def = 1);
-	bool                     get_bool
-		(char             const * name,
-		 bool                     def = false);
-	const char *             get_string
-		(char             const * name,
-		 char             const * def = 0);
-	Point                    get_Point
-		(char             const * name,
-		 Point                    def = Point (0, 0));
-	Widelands::Coords        get_Coords
-		(char             const * name, Widelands::Extent,
-		 Widelands::Coords        def);
-	Widelands::Player_Number get_Player_Number
-		(char             const * name,
-		 Widelands::Player_Number nr_players,
-		 Widelands::Player_Number def = 1);
+	int32_t get_int(char const* name, int32_t def = 0);
+	uint32_t get_natural(char const* name, uint32_t def = 0);
+	uint32_t get_positive(char const* name, uint32_t def = 1);
+	bool get_bool(char const* name, bool def = false);
+	const char* get_string(char const* name, char const* def = nullptr);
+	Vector2i get_point(char const* name, Vector2i def = Vector2i(0, 0));
 
-	int32_t                   get_safe_int
-		(const char * name);
-	uint32_t                  get_safe_natural
-		(char const * name);
-	uint32_t                  get_safe_positive
-		(char const * name);
-	bool                      get_safe_bool
-		(const char * name);
-	const char *              get_safe_string
-		(const char * name);
-	Widelands::Coords         get_safe_Coords
-		(const char * name, Widelands::Extent);
-	Widelands::Player_Number  get_safe_Player_Number
-		(char const * name,
-		 Widelands::Player_Number nr_players);
-	const Widelands::Immovable_Descr & get_safe_Immovable_Type
-		(char const * tribe, char const * name,
-		 Widelands::Editor_Game_Base &);
-	Widelands::Building_Index get_safe_Building_Index
-		(char const * name,
-		 Widelands::Editor_Game_Base &, Widelands::Player_Number);
-	const Widelands::Building_Descr & get_safe_Building_Type
-		(char const * name,
-		 Widelands::Editor_Game_Base &, Widelands::Player_Number);
+	int32_t get_safe_int(const char* name);
+	uint32_t get_safe_natural(char const* name);
+	uint32_t get_safe_positive(char const* name);
+	bool get_safe_bool(const char* name);
+	const char* get_safe_string(const char* name);
+	const char* get_safe_string(const std::string& name);
 
-	char const * get_next_bool(char const * name, bool * value);
+	char const* get_next_bool(char const* name, bool* value);
 
-	void set_int
-		(char const *       name, int32_t                   value);
-	void set_bool
-		(char const * const name, bool                const value)
-	{
+	void set_int(char const* name, int32_t value);
+	void set_bool(char const* const name, bool const value) {
 		set_string(name, value ? "true" : "false");
 	}
-	void set_string
-		(char const *       name, char        const *       value);
-	void set_string_duplicate
-		(char const *       name, char        const *       value);
-	void set_string
-		(char const * const name, const std::string &       value)
-	{
+	void set_string(char const* name, char const* value);
+	void set_string_duplicate(char const* name, char const* value);
+	void set_string(char const* const name, const std::string& value) {
 		set_string(name, value.c_str());
 	}
-	void set_string_duplicate
-		(char const * const name, const std::string &       value)
-	{
+	void set_string_duplicate(char const* const name, const std::string& value) {
 		set_string_duplicate(name, value.c_str());
 	}
-	void set_Coords
-		(char const * name, Widelands::Coords value);
-	void set_Immovable_Type
-		(char const * tribe, char const * name,
-		 const Widelands::Immovable_Descr &);
-	void set_Building_Index
-		(char const * name,
-		 Widelands::Building_Index value,
-		 Widelands::Editor_Game_Base &, Widelands::Player_Number);
 
 	/// If a Value with this name already exists, update it with the given
 	/// value. Otherwise create a new Value with the given name and value.
-	Value & create_val          (char const * name, char const * value);
+	Value& create_val(char const* name, char const* value);
 
 	/// Create a new Value with the given name and value.
-	Value & create_val_duplicate(char const * name, char const * value);
+	Value& create_val_duplicate(char const* name, char const* value);
 
 private:
-	Profile  * m_profile;
-	bool       m_used;
-	std::string m_section_name;
-	Value_list m_values;
+	Profile* profile_;
+	bool used_;
+	std::string section_name_;
+	ValueList values_;
 };
 
 /**
@@ -227,54 +178,48 @@ private:
  * Returns the next unused section of the given name, or 0 if all sections
  * have been used. name can be 0 to retrieve any remaining sections.
  */
-struct Profile : boost::noncopyable {
-	enum {
-		err_ignore = 0,
-		err_log,
-		err_throw
-	};
+class Profile {
+public:
+	enum { err_ignore = 0, err_log, err_throw };
 
 	Profile(int32_t error_level = err_throw);
-	Profile
-		(char const * filename,
-		 char const * global_section = 0,
-		 int32_t      error_level    = err_throw);
-	Profile
-		(char const * filename,
-		 char const * global_section,
-		 const std::string & textdomain,
-		 int32_t      error_level    = err_throw);
+	Profile(char const* filename,
+	        char const* global_section = nullptr,
+	        int32_t error_level = err_throw);
+	Profile(char const* filename,
+	        char const* global_section,
+	        const std::string& textdomain,
+	        int32_t error_level = err_throw);
 
-	void error(char const *, ...) const __attribute__((format(printf, 2, 3)));
+	void error(char const*, ...) const __attribute__((format(printf, 2, 3)));
 	void check_used() const;
 
-	void read
-		(const char * const filename,
-		 const char * const global_section = 0,
-		 FileSystem & = *g_fs);
-	void write
-		(const char * const filename,
-		 bool used_only = true,
-		 FileSystem & = *g_fs);
+	void read(const char* const filename,
+	          const char* const global_section = nullptr,
+	          FileSystem& = *g_fs);
+	void write(const char* const filename, bool used_only = true, FileSystem& = *g_fs);
 
-	Section * get_section     (char const * name);
-	Section & get_safe_section(const std::string & name);
-	Section & pull_section    (char const * name);
-	Section * get_next_section(char const * name = 0);
+	Section* get_section(const std::string& name);
+	Section& get_safe_section(const std::string& name);
+	Section& pull_section(char const* name);
+	Section* get_next_section(char const* name = nullptr);
 
 	/// If a section with the given name already exists, return a reference to
 	/// it. Otherwise create a new section with the given name and return a
 	/// reference to it.
-	Section & create_section          (char const * name);
+	Section& create_section(char const* name);
 
 	/// Create a new section with the given name and return a reference to it.
-	Section & create_section_duplicate(char const * name);
+	Section& create_section_duplicate(char const* name);
 
 private:
-	std::string m_filename;
-	typedef std::vector<Section> Section_list;
-	Section_list m_sections;
-	int32_t m_error_level;
+	using SectionList = std::vector<Section>;
+
+	std::string filename_;
+	SectionList sections_;
+	int32_t error_level_;
+
+	DISALLOW_COPY_AND_ASSIGN(Profile);
 };
 
-#endif
+#endif  // end of include guard: WL_PROFILE_PROFILE_H

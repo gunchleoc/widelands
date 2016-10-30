@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2008 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,38 +17,36 @@
  *
  */
 
-#include "intro.h"
+#include "ui_fsmenu/intro.h"
 
-#include "i18n.h"
+#include "base/i18n.h"
 
+FullscreenMenuIntro::FullscreenMenuIntro()
+   : FullscreenMenuBase("images/loadscreens/splash.jpg"),
 
-Fullscreen_Menu_Intro::Fullscreen_Menu_Intro()
-	: Fullscreen_Menu_Base("splash.jpg"),
-
-// Text area
-m_message
-	(this,
-	 get_w() / 2, get_h() * 19 / 20,
-	 _("Press ESC or click to continue ..."), UI::Align_HCenter)
-{
-	m_message.set_font(ui_fn(), fs_small() * 6 / 5, RGBColor(192, 192, 128));
+     // Text area
+     message_(this,
+              get_w() / 2,
+              get_h() * 19 / 20,
+              _("Press any key or click to continue…"),
+              UI::Align::kHCenter) {
+	message_.set_fontsize(fs_small() * 6 / 5);
+	message_.set_color(RGBColor(192, 192, 128));
 }
 
-bool Fullscreen_Menu_Intro::handle_mousepress  (Uint8, int32_t, int32_t)
-{
-	end_modal(0);
+bool FullscreenMenuIntro::handle_mousepress(uint8_t, int32_t, int32_t) {
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kOk);
 
 	return true;
 }
-bool Fullscreen_Menu_Intro::handle_mouserelease(Uint8, int32_t, int32_t)
-{
+bool FullscreenMenuIntro::handle_mouserelease(uint8_t, int32_t, int32_t) {
 	return true;
 }
 
-bool Fullscreen_Menu_Intro::handle_key(bool const down, SDL_keysym const code)
-{
-	if (down and code.sym == SDLK_ESCAPE)
-		end_modal(0);
+bool FullscreenMenuIntro::handle_key(const bool down, const SDL_Keysym) {
+	if (down) {
+		end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kOk);
+	}
 
-	return true;
+	return false;
 }

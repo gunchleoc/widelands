@@ -17,18 +17,31 @@
  *
  */
 
-#ifndef ROAD_H
-#define ROAD_H
-
-#include "logic/immovable.h"
-#include "logic/path.h"
-#include "logic/roadtype.h"
+#ifndef WL_ECONOMY_ROAD_H
+#define WL_ECONOMY_ROAD_H
 
 #include <vector>
 
+#include "base/macros.h"
+#include "logic/map_objects/immovable.h"
+#include "logic/path.h"
+#include "logic/roadtype.h"
+
 namespace Widelands {
 struct Carrier;
-struct Request;
+class Request;
+
+class RoadDescr : public MapObjectDescr {
+public:
+	RoadDescr(char const* const init_name, char const* const init_descname)
+	   : MapObjectDescr(MapObjectType::ROAD, init_name, init_descname) {
+	}
+	~RoadDescr() override {
+	}
+
+private:
+	DISALLOW_COPY_AND_ASSIGN(RoadDescr);
+};
 
 /**
  * Road is a special object which connects two flags.
@@ -46,102 +59,104 @@ struct Request;
  * road.
  */
 struct Road : public PlayerImmovable {
-	friend struct Map_Roaddata_Data_Packet; // For saving
-	friend struct Map_Road_Data_Packet; // For init()
+	friend class MapRoaddataPacket;  // For saving
+	friend class MapRoadPacket;      // For init()
 
-	static bool IsRoadDescr(Map_Object_Descr const *);
+	const RoadDescr& descr() const;
 
-	enum FlagId {
-		FlagStart = 0,
-		FlagEnd = 1
-	};
+	static bool is_road_descr(MapObjectDescr const*);
+
+	enum FlagId { FlagStart = 0, FlagEnd = 1 };
 
 	struct CarrierSlot {
 		CarrierSlot();
 
 		OPtr<Carrier> carrier;
-		Request * carrier_request;
+		Request* carrier_request;
 		uint8_t carrier_type;
 	};
 
 	Road();
 	virtual ~Road();
 
-	static Road & create
-		(Editor_Game_Base &,
-		 Flag & start, Flag & end, const Path &);
+	static Road& create(EditorGameBase&, Flag& start, Flag& end, const Path&);
 
-	Flag & get_flag(FlagId const flag) const {return *m_flags[flag];}
+	Flag& get_flag(FlagId const flag) const {
+		return *flags_[flag];
+	}
 
-	virtual int32_t  get_type    () const throw ();
-	uint8_t get_roadtype() const {return m_type;}
-	char const * type_name() const throw () {return "road";}
-	virtual int32_t  get_size    () const throw ();
-	virtual bool get_passable() const throw ();
-	virtual PositionList get_positions(const Editor_Game_Base &) const throw ();
-	const std::string & name() const throw ();
+	uint8_t get_roadtype() const {
+		return type_;
+	}
+	int32_t get_size() const override;
+	bool get_passable() const override;
+	PositionList get_positions(const EditorGameBase&) const override;
 
-	virtual Flag & base_flag();
+	Flag& base_flag() override;
 
-	virtual void set_economy(Economy *);
+	void set_economy(Economy*) override;
 
 	int32_t get_cost(FlagId fromflag);
-	const Path & get_path() const {return m_path;}
-	int32_t get_idle_index() const {return m_idle_index;}
+	const Path& get_path() const {
+		return path_;
+	}
+	int32_t get_idle_index() const {
+		return idle_index_;
+	}
 
-	void presplit(Game &, Coords split);
-	void postsplit(Game &, Flag &);
+	void presplit(Game&, Coords split);
+	void postsplit(Game&, Flag&);
 
-	bool notify_ware(Game & game, FlagId flagid);
+	bool notify_ware(Game& game, FlagId flagid);
 
-	virtual void remove_worker(Worker &);
-	void assign_carrier(Carrier &, uint8_t);
+	void remove_worker(Worker&) override;
+	void assign_carrier(Carrier&, uint8_t);
 
-	void log_general_info(const Editor_Game_Base &);
+	void log_general_info(const EditorGameBase&) override;
 
 protected:
-	virtual void init(Editor_Game_Base &);
-	virtual void cleanup(Editor_Game_Base &);
+	void init(EditorGameBase&) override;
+	void cleanup(EditorGameBase&) override;
 
-	virtual void draw(const Editor_Game_Base &, RenderTarget &, FCoords, Point);
-
-private:
-	void _set_path(Editor_Game_Base &, const Path &);
-
-	void _mark_map(Editor_Game_Base &);
-	void _unmark_map(Editor_Game_Base &);
-
-	void _link_into_flags(Editor_Game_Base &);
-
-	void _request_carrier(CarrierSlot &);
-	static void _request_carrier_callback
-		(Game &, Request &, Ware_Index, Worker *, PlayerImmovable &);
+	void draw(uint32_t gametime,
+	          TextToDraw draw_text,
+	          const Vector2f& point_on_dst,
+				 float scale,
+	          RenderTarget* dst) override;
 
 private:
+	void set_path(EditorGameBase&, const Path&);
 
+	void mark_map(EditorGameBase&);
+	void unmark_map(EditorGameBase&);
+
+	void link_into_flags(EditorGameBase&);
+
+	void request_carrier(CarrierSlot&);
+	static void
+	request_carrier_callback(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
+
+private:
 	/// Counter that is incremented when a ware does not get a carrier for this
 	/// road immediately and decremented over time.
-	uint32_t   m_busyness;
+	uint32_t busyness_;
 
-	/// holds the gametime when m_busyness was last updated
-	uint32_t   m_busyness_last_update;
+	/// holds the gametime when busyness_ was last updated
+	uint32_t busyness_last_update_;
 
-	uint8_t    m_type;       ///< RoadType, 2 bits used
-	Flag     * m_flags  [2]; ///< start and end flag
-	int32_t    m_flagidx[2]; ///< index of this road in the flag's road array
+	uint8_t type_;        ///< RoadType, 2 bits used
+	Flag* flags_[2];      ///< start and end flag
+	int32_t flagidx_[2];  ///< index of this road in the flag's road array
 
 	/// cost for walking this road (0 = from start to end, 1 = from end to start)
-	int32_t    m_cost   [2];
+	int32_t cost_[2];
 
-	Path       m_path;       ///< path goes from start to end
-	uint32_t   m_idle_index; ///< index into path where carriers should idle
+	Path path_;            ///< path goes from start to end
+	uint32_t idle_index_;  ///< index into path where carriers should idle
 
-	typedef std::vector<CarrierSlot> SlotVector;
-	SlotVector m_carrier_slots;
+	using SlotVector = std::vector<CarrierSlot>;
+	SlotVector carrier_slots_;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_ROAD_H

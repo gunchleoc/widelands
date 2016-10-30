@@ -17,18 +17,18 @@
  *
  */
 
-#ifndef GAME_DATA_PACKET_H
-#define GAME_DATA_PACKET_H
+#ifndef WL_GAME_IO_GAME_DATA_PACKET_H
+#define WL_GAME_IO_GAME_DATA_PACKET_H
 
-#include "wexception.h"
+#include "base/wexception.h"
 
 class FileSystem;
 
 namespace Widelands {
 
-struct Game;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Saver;
+class Game;
+class MapObjectLoader;
+struct MapObjectSaver;
 
 /*
 ========================================
@@ -38,12 +38,13 @@ saved game file. it is an abstract base class
 
 ========================================
 */
-struct Game_Data_Packet {
-	virtual ~Game_Data_Packet() {}
-	virtual void Read (FileSystem &, Game &, Map_Map_Object_Loader * = 0) = 0;
-	virtual void Write(FileSystem &, Game &, Map_Map_Object_Saver  * = 0) = 0;
+class GameDataPacket {
+public:
+	virtual ~GameDataPacket() {
+	}
+	virtual void read(FileSystem&, Game&, MapObjectLoader* = nullptr) = 0;
+	virtual void write(FileSystem&, Game&, MapObjectSaver* = nullptr) = 0;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_GAME_IO_GAME_DATA_PACKET_H

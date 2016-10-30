@@ -17,20 +17,66 @@
  *
  */
 
-#ifndef SDL_TTF_FONT_H
-#define SDL_TTF_FONT_H
+#ifndef WL_GRAPHIC_TEXT_SDL_TTF_FONT_H
+#define WL_GRAPHIC_TEXT_SDL_TTF_FONT_H
 
+#include <memory>
 #include <string>
 
-#include "rt_render.h"
+#include <SDL_ttf.h>
 
-class FileSystem;
+#include "graphic/texture.h"
+#include "graphic/texture_cache.h"
 
 namespace RT {
-RT::IFontLoader * ttf_fontloader_from_file(const std::string&);
-RT::IFontLoader * ttf_fontloader_from_filesystem(FileSystem*);
-}
 
+/**
+ * Wrapper object around a font.
+ *
+ * Fonts in our sense are defined by the general font shape (given by the font
+ * name) and the size of the font. Note that Bold and Italic are special in the
+ * regard that we expect that this is already handled by the Font File, so, the
+ * font loader directly loads DejaVuSans-Bold.ttf for example.
+ */
+class IFont {
+public:
+	enum {
+		DEFAULT = 0,
+		BOLD = 1,
+		ITALIC = 2,
+		UNDERLINE = 4,
+		SHADOW = 8,
+	};
+	virtual ~IFont() {
+	}
 
-#endif /* end of include guard: SDL_TTF_FONT_H */
+	virtual void dimensions(const std::string&, int, uint16_t*, uint16_t*) = 0;
+	virtual const Texture& render(const std::string&, const RGBColor& clr, int, TextureCache*) = 0;
 
+	virtual uint16_t ascent(int) const = 0;
+};
+
+// Implementation of a Font object using SDL_ttf.
+class SdlTtfFont : public IFont {
+public:
+	SdlTtfFont(TTF_Font* ttf, const std::string& face, int ptsize, std::string* ttf_memory_block);
+	virtual ~SdlTtfFont();
+
+	void dimensions(const std::string&, int, uint16_t* w, uint16_t* h) override;
+	const Texture& render(const std::string&, const RGBColor& clr, int, TextureCache*) override;
+	uint16_t ascent(int) const override;
+
+private:
+	void set_style(int);
+
+	TTF_Font* font_;
+	int style_;
+	const std::string font_name_;
+	const int ptsize_;
+	// Old version of SDLTtf seem to need to keep this around.
+	std::unique_ptr<std::string> ttf_file_memory_block_;
+};
+
+}  // namespace RT
+
+#endif  // end of include guard:

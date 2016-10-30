@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2011 by the Widelands Development Team
+ * Copyright (C) 2007-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,83 +17,166 @@
  *
  */
 
-#include "interactive_gamebase.h"
+#include "wui/interactive_gamebase.h"
 
-#include "chatoverlay.h"
-#include "profile/profile.h"
-#include "upcast.h"
+#include <boost/format.hpp>
 
+#include "base/macros.h"
+#include "graphic/font_handler1.h"
+#include "graphic/rendertarget.h"
+#include "graphic/text_constants.h"
+#include "graphic/text_layout.h"
 #include "logic/findbob.h"
 #include "logic/game.h"
+#include "logic/game_controller.h"
+#include "logic/map.h"
+#include "logic/map_objects/tribes/ship.h"
 #include "logic/player.h"
-#include "logic/ship.h"
+#include "profile/profile.h"
+#include "wui/game_summary.h"
+#include "wui/shipwindow.h"
 
-Interactive_GameBase::Interactive_GameBase
-	(Widelands::Game & _game, Section & global_s,
-	 PlayerType pt, bool const chatenabled)
-	:
-	Interactive_Base(_game, global_s),
-	m_chatProvider(0),
-	m_chatOverlay(0),
-	m_building_census_format
-		(global_s.get_string("building_census_format",       "%N")),
-	m_building_statistics_format
-		(global_s.get_string("building_statistics_format",   "%t")),
-	m_building_tooltip_format
-		(global_s.get_string("building_tooltip_format",      "%r")),
-	m_chatenabled(chatenabled),
-	m_playertype(pt)
-{}
+namespace {
+
+std::string speed_string(int const speed) {
+	if (speed) {
+		return (boost::format("%u.%ux") % (speed / 1000) % (speed / 100 % 10)).str();
+	}
+	return _("PAUSE");
+}
+
+}  // namespace
+
+InteractiveGameBase::InteractiveGameBase(Widelands::Game& g,
+                                         Section& global_s,
+                                         PlayerType pt,
+                                         bool const chatenabled,
+                                         bool const multiplayer)
+   : InteractiveBase(g, global_s),
+     chat_provider_(nullptr),
+     chatenabled_(chatenabled),
+     multiplayer_(multiplayer),
+     playertype_(pt),
+
+#define INIT_BTN(picture, name, tooltip)                                                           \
+	TOOLBAR_BUTTON_COMMON_PARAMETERS(name), g_gr->images().get("images/" picture ".png"), tooltip
+
+     toggle_buildhelp_(INIT_BTN(
+        "wui/menus/menu_toggle_buildhelp", "buildhelp", _("Show Building Spaces (on/off)"))),
+     reset_zoom_(INIT_BTN("wui/menus/menu_reset_zoom", "reset_zoom", _("Reset zoom"))) {
+	toggle_buildhelp_.sigclicked.connect(boost::bind(&InteractiveGameBase::toggle_buildhelp, this));
+	reset_zoom_.sigclicked.connect(
+	   [this] { zoom_around(1.f, Vector2f(get_w() / 2.f, get_h() / 2.f)); });
+}
 
 /// \return a pointer to the running \ref Game instance.
-Widelands::Game * Interactive_GameBase::get_game() const
-{
-	return dynamic_cast<Widelands::Game *>(&egbase());
+Widelands::Game* InteractiveGameBase::get_game() const {
+	return dynamic_cast<Widelands::Game*>(&egbase());
 }
 
-
-Widelands::Game & Interactive_GameBase::    game() const
-{
-	return ref_cast<Widelands::Game, Widelands::Editor_Game_Base>(egbase());
+Widelands::Game& InteractiveGameBase::game() const {
+	return dynamic_cast<Widelands::Game&>(egbase());
 }
 
-void Interactive_GameBase::set_chat_provider(ChatProvider & chat)
-{
-	m_chatProvider = &chat;
-	m_chatOverlay->setChatProvider(chat);
+void InteractiveGameBase::set_chat_provider(ChatProvider& chat) {
+	chat_provider_ = &chat;
+	chat_overlay_->set_chat_provider(chat);
 
-	m_chatenabled = true;
+	chatenabled_ = true;
 }
 
-ChatProvider * Interactive_GameBase::get_chat_provider()
-{
-	return m_chatProvider;
+ChatProvider* InteractiveGameBase::get_chat_provider() {
+	return chat_provider_;
+}
+
+void InteractiveGameBase::draw_overlay(RenderTarget& dst) {
+	InteractiveBase::draw_overlay(dst);
+
+	GameController* game_controller = game().game_controller();
+	// Display the gamespeed.
+	if (game_controller != nullptr) {
+		std::string game_speed;
+		uint32_t const real = game_controller->real_speed();
+		uint32_t const desired = game_controller->desired_speed();
+		if (real == desired) {
+			if (real != 1000) {
+				game_speed = as_condensed(speed_string(real));
+			}
+		} else {
+			game_speed = as_condensed((boost::format
+			                           /** TRANSLATORS: actual_speed (desired_speed) */
+			                           (_("%1$s (%2$s)")) %
+			                           speed_string(real) % speed_string(desired))
+			                             .str());
+		}
+
+		if (!game_speed.empty()) {
+			dst.blit(Vector2f(get_w() - 5, 5), UI::g_fh1->render(game_speed), BlendMode::UseAlpha,
+			         UI::Align::kTopRight);
+		}
+	}
+}
+
+/**
+ * Called for every game after loading (from a savegame or just from a map
+ * during single/multiplayer/scenario).
+ */
+void InteractiveGameBase::postload() {
+	Widelands::Map& map = egbase().map();
+	auto* overlay_manager = mutable_field_overlay_manager();
+	show_buildhelp(false);
+	toggle_buildhelp_.set_perm_pressed(buildhelp());
+
+	overlay_manager->register_overlay_callback_function(
+	   boost::bind(&InteractiveGameBase::calculate_buildcaps, this, _1));
+
+	// Recalc whole map for changed owner stuff
+	map.recalc_whole_map(egbase().world());
+
+	// Close game-relevant UI windows (but keep main menu open)
+	delete fieldaction_.window;
+	fieldaction_.window = nullptr;
+
+	hide_minimap();
+}
+
+void InteractiveGameBase::on_buildhelp_changed(const bool value) {
+	toggle_buildhelp_.set_perm_pressed(value);
 }
 
 /**
  * See if we can reasonably open a ship window at the current selection position.
  * If so, do it and return true; otherwise, return false.
  */
-bool Interactive_GameBase::try_show_ship_window()
-{
-	Widelands::Map & map(game().map());
+bool InteractiveGameBase::try_show_ship_window() {
+	Widelands::Map& map(game().map());
 	Widelands::Area<Widelands::FCoords> area(map.get_fcoords(get_sel_pos().node), 1);
 
 	if (!(area.field->nodecaps() & Widelands::MOVECAPS_SWIM))
 		return false;
 
-	std::vector<Widelands::Bob *> ships;
+	std::vector<Widelands::Bob*> ships;
 	if (!map.find_bobs(area, &ships, Widelands::FindBobShip()))
 		return false;
 
-	container_iterate_const(std::vector<Widelands::Bob *>, ships, it) {
-		if (upcast(Widelands::Ship, ship, *it.current)) {
+	for (Widelands::Bob* temp_ship : ships) {
+		if (upcast(Widelands::Ship, ship, temp_ship)) {
 			if (can_see(ship->get_owner()->player_number())) {
-				ship->show_window(*this);
+				new ShipWindow(*this, *ship);
 				return true;
 			}
 		}
 	}
 
 	return false;
+}
+
+void InteractiveGameBase::show_game_summary() {
+	game().game_controller()->set_desired_speed(0);
+	if (game_summary_.window) {
+		game_summary_.window->set_visible(true);
+		game_summary_.window->think();
+		return;
+	}
+	new GameSummaryScreen(this, &game_summary_);
 }

@@ -17,34 +17,35 @@
  *
  */
 
-#ifndef CMD_LUASCRIPT_H
-#define CMD_LUASCRIPT_H
+#ifndef WL_LOGIC_CMD_LUASCRIPT_H
+#define WL_LOGIC_CMD_LUASCRIPT_H
 
 #include <string>
 
-#include "cmd_queue.h"
+#include "logic/cmd_queue.h"
 
 namespace Widelands {
 
-struct Cmd_LuaScript : public GameLogicCommand {
-	Cmd_LuaScript() : GameLogicCommand(0) {} // For savegame loading
-	Cmd_LuaScript
-		(int32_t const _duetime, std::string ns, std::string script) :
-		GameLogicCommand(_duetime), m_ns(ns), m_script(script) {}
+struct CmdLuaScript : public GameLogicCommand {
+	CmdLuaScript() : GameLogicCommand(0) {
+	}  // For savegame loading
+	CmdLuaScript(uint32_t const init_duetime, const std::string& script)
+	   : GameLogicCommand(init_duetime), script_(script) {
+	}
 
 	// Write these commands to a file (for savegames)
-	void Write(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	void Read (FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
 
-	virtual uint8_t id() const {return QUEUE_CMD_LUASCRIPT;}
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kLuaScript;
+	}
 
-	virtual void execute(Game &);
+	void execute(Game&) override;
 
 private:
-	std::string m_ns;
-	std::string m_script;
+	std::string script_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_CMD_LUASCRIPT_H

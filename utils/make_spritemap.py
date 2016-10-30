@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from glob import glob
-from itertools import chain, combinations, permutations
-import re
 import argparse
+import math
+import md5
 import os
+import re
+import subprocess
 import sys
 import ConfigParser
 
-import Image
+from scipy import ndimage
 import numpy as np
 from scipy import ndimage
 
@@ -363,8 +364,8 @@ def output_results(anim, img_name, dimensions, regions, offsets_by_id, args):
     config.set(section, "base_offset", "%i %i" % offsets_by_id[anim, -1, -1])
 
     for ridx, r in enumerate(regions):
-        config.set(section, "region_%02i" % ridx, "%i %i %i %i:%s" % 
-                   (r.left, r.top, r.right - r.left + 1, 
+        config.set(section, "region_%02i" % ridx, "%i %i %i %i:%s" %
+                   (r.left, r.top, r.right - r.left + 1,
                     r.bottom - r.top + 1, _find_offsets(anim, ridx)))
 
     if args.fps:
@@ -375,10 +376,10 @@ def output_results(anim, img_name, dimensions, regions, offsets_by_id, args):
 
 # NOCOM(#sirver): support for dirpics.
 def parse_args():
-    p = argparse.ArgumentParser(description = 
+    p = argparse.ArgumentParser(description =
         "Creates a Spritemap of the animation pictures found in the current directory."
     )
-    
+
     p.add_argument("-d", "--dir", type = str, default = os.getcwd() , help = "Use this directory instead of current dir.")
     p.add_argument("-o", "--output", type = str, default = None, help = "Output picture name. Default is <current dir>.png")
     p.add_argument("-f", "--fps", type = str, default = None, help = "Specify frames per second for all the animations. This will be outputted into the conf file and is just there to spare typing.")
@@ -395,10 +396,10 @@ def parse_args():
     args.anim = sorted(anims)
 
     if args.output is None:
-        args.output = os.path.join(args.dir, os.path.basename(args.dir) + '.png')        
+        args.output = os.path.join(args.dir, os.path.basename(args.dir) + '.png')
     else:
         args.output = os.path.join(args.dir, args.output + ".png")
-            
+
     return args
 
 def main():
@@ -433,8 +434,5 @@ def main():
         pc_fn = os.path.splitext(args.output)[0] + "_pc.png"
         Image.fromarray(pc_result_img).save(pc_fn)
 
-
 if __name__ == '__main__':
     main()
-
-

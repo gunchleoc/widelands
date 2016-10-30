@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2002, 2006-2013 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,41 +17,31 @@
  *
  */
 
-// NOCOM(#sirver): check for ME also in conf files and therelike.
+#include "graphic/animation.h"
+
 #include <cassert>
+#include <cstdio>
+#include <limits>
+#include <memory>
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
 
-#include "constants.h"
-#include "helper.h"
-#include "io/fileread.h"
-#include "io/filewrite.h"
-
-#include "io/basic_filewrite.h"
+#include "base/i18n.h"
+#include "base/log.h"
+#include "base/macros.h"
+#include "base/wexception.h"
+#include "graphic/diranimations.h"
+#include "graphic/graphic.h"
+#include "graphic/image.h"
+#include "graphic/image_cache.h"
+#include "graphic/playercolor.h"
+#include "graphic/surface.h"
+#include "graphic/texture.h"
 #include "io/filesystem/layered_filesystem.h"
-#include "log.h"
-#include "profile/profile.h"
+#include "scripting/lua_table.h"
 #include "sound/sound_handler.h"
-#include "wexception.h"
-
-#include "diranimations.h"
-#include "graphic.h"
-#include "image.h"
-#include "image_cache.h"
-#include "image_transformations.h"
-#include "logic/instances.h"  // For Map_Object_Descr.
-#include "surface.h"
-#include "surface_cache.h"
-
-#include "animation.h"
 
 using namespace std;
-
 
 namespace  {
 
@@ -325,7 +315,7 @@ void PackedAnimation::blit
 	target->blit
 		(dst, use_image->surface(), Rect(base_offset_.x + srcrc.x, base_offset_.y + srcrc.y, srcrc.w, srcrc.h));
 
-	BOOST_FOREACH(const Region& r, regions_) {
+	for (const Region& r : regions_) {
 		Rect rsrc = Rect(r.source_offsets[framenumber], r.w, r.h);
 		Point rdst = dst + r.target_offset - srcrc;
 
@@ -352,6 +342,17 @@ void PackedAnimation::blit
 
 		target->blit(rdst, use_image->surface(), rsrc);
 	}
+
+}
+
+// Parses an array { 12, 23 } into a point.
+void get_point(const LuaTable& table, Vector2i* p) {
+	std::vector<int> pts = table.array_entries<int>();
+	if (pts.size() != 2) {
+		throw wexception("Expected 2 entries, but got %" PRIuS ".", pts.size());
+	}
+	p->x = pts[0];
+	p->y = pts[1];
 }
 
 /**
@@ -360,154 +361,220 @@ void PackedAnimation::blit
  */
 class NonPackedAnimation : public Animation {
 public:
-	virtual ~NonPackedAnimation() {}
-	NonPackedAnimation(const string& directory, Section & s);
+	virtual ~NonPackedAnimation() {
+	}
+	NonPackedAnimation(const LuaTable& table);
 
 	// Implements Animation.
-	virtual uint16_t width() const {return frames_[0]->width();}
-	virtual uint16_t height() const {return frames_[0]->height();}
-	virtual uint16_t nr_frames() const {return frames_.size();}
-	virtual uint32_t frametime() const {return frametime_;}
-	virtual const Point& hotspot() const {return hotspot_;};
-	virtual const Image& representative_image(const RGBColor& clr) const {return get_frame(0, &clr);}
-	void blit(uint32_t time, const Point&, const Rect& srcrc, const RGBColor* clr, Surface*) const;
-	virtual void trigger_soundfx(uint32_t framenumber, uint32_t stereo_position) const;
+	uint16_t width() const override;
+	uint16_t height() const override;
+	uint16_t nr_frames() const override;
+	uint32_t frametime() const override;
+	const Vector2i& hotspot() const override;
+	Image* representative_image(const RGBColor* clr) const override;
+	const std::string& representative_image_filename() const override;
+	virtual void blit(uint32_t time,
+	                  const Rectf& dstrc,
+	                  const Rectf& srcrc,
+	                  const RGBColor* clr,
+	                  Surface*) const override;
+	void trigger_sound(uint32_t framenumber, uint32_t stereo_position) const override;
 
 private:
-	// Returns the given frame image with the given clr (if not NULL).
-	const Image& get_frame(uint32_t time, const RGBColor* playercolor = NULL) const;
+	// Loads the graphics if they are not yet loaded.
+	void ensure_graphics_are_loaded() const;
+
+	// Load the needed graphics from disk.
+	void load_graphics();
+
+	uint32_t current_frame(uint32_t time) const;
 
 	uint32_t frametime_;
-	Point hotspot_;
+	Vector2i hotspot_;
 	bool hasplrclrs_;
+	std::vector<std::string> image_files_;
+	std::vector<std::string> pc_mask_image_files_;
 
 	vector<const Image*> frames_;
 	vector<const Image*> pcmasks_;
 
-	/// mapping of soundeffect name to frame number, indexed by frame number .
-	map<uint32_t, string> sfx_cues;
+	// name of sound effect that will be played at frame 0.
+	// TODO(sirver): this should be done using play_sound in a program instead of
+	// binding it to the animation.
+	string sound_effect_;
+	bool play_once_;
 };
 
-NonPackedAnimation::NonPackedAnimation(const string& directory, Section& s)
-		: frametime_(FRAME_LENGTH),
-		  hasplrclrs_(false) {
-	// Read mapping from frame numbers to sound effect names and load effects
-	while (Section::Value * const v = s.get_next_val("sfx")) {
-		char * parameters = v->get_string(), * endp;
-		unsigned long long int const value = strtoull(parameters, &endp, 0);
-		const uint32_t frame_number = value;
-		try {
-			if (endp == parameters or frame_number != value)
-				throw wexception("expected %s but found \"%s\"", "frame number", parameters);
-			parameters = endp;
-			force_skip(parameters);
-			g_sound_handler.load_fx(directory, parameters);
-			map<uint32_t, string>::const_iterator const it =
-				sfx_cues.find(frame_number);
-			if (it != sfx_cues.end())
-				throw wexception
-					("redefinition for frame %u to \"%s\" (previously defined to "
-					 "\"%s\")",
-					 frame_number, parameters, it->second.c_str());
-		} catch (const _wexception & e) {
-			throw wexception("sfx: %s", e.what());
+NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
+   : frametime_(FRAME_LENGTH), hasplrclrs_(false), play_once_(false) {
+	try {
+		get_point(*table.get_table("hotspot"), &hotspot_);
+
+		if (table.has_key("sound_effect")) {
+			std::unique_ptr<LuaTable> sound_effects = table.get_table("sound_effect");
+
+			const std::string name = sound_effects->get_string("name");
+			const std::string directory = sound_effects->get_string("directory");
+			sound_effect_ = directory + g_fs->file_separator() + name;
+			g_sound_handler.load_fx_if_needed(directory, name, sound_effect_);
 		}
-		sfx_cues[frame_number] = parameters;
+
+		if (table.has_key("play_once")) {
+			play_once_ = table.get_bool("play_once");
+		}
+
+		image_files_ = table.get_table("pictures")->array_entries<std::string>();
+
+		if (image_files_.empty()) {
+			throw wexception("Animation without pictures. The template should look similar to this:"
+			                 " 'directory/idle_??.png' for 'directory/idle_00.png' etc.");
+		} else if (table.has_key("fps")) {
+			if (image_files_.size() == 1) {
+				throw wexception(
+				   "Animation with one picture %s must not have 'fps'", image_files_[0].c_str());
+			}
+			frametime_ = 1000 / get_positive_int(table, "fps");
+		}
+
+		for (std::string image_file : image_files_) {
+			boost::replace_all(image_file, ".png", "_pc.png");
+			if (g_fs->file_exists(image_file)) {
+				hasplrclrs_ = true;
+				pc_mask_image_files_.push_back(image_file);
+			} else if (hasplrclrs_) {
+				throw wexception("Animation is missing player color file: %s", image_file.c_str());
+			}
+		}
+		assert(!image_files_.empty());
+		assert(pc_mask_image_files_.size() == image_files_.size() || pc_mask_image_files_.empty());
+
+	} catch (const LuaError& e) {
+		throw wexception("Error in animation table: %s", e.what());
 	}
+}
 
-	int32_t const fps = s.get_int("fps");
-	if (fps < 0)
-		throw wexception("fps is %i, must be non-negative", fps);
-	if (fps > 0)
-		frametime_ = 1000 / fps;
-
-	hotspot_ = s.get_Point("hotspot");
-
-	//  In the filename template, the last sequence of '?' characters (if any)
-	//  is replaced with a number, for example the template "idle_??" is
-	//  replaced with "idle_00". Then the code looks if there is a PNG with that
-	//  name, increments the number and continues . on until it can not find any
-	//  file. Then it is assumed that there are no more frames in the animation.
-	string picnametempl;
-	if (char const * const pics = s.get_string("pics")) {
-		picnametempl = directory + pics;
-	} else {
-		picnametempl = directory + s.get_name();
+void NonPackedAnimation::ensure_graphics_are_loaded() const {
+	if (frames_.empty()) {
+		const_cast<NonPackedAnimation*>(this)->load_graphics();
 	}
-	// Strip the .png extension if it has one.
-	boost::replace_all(picnametempl, ".png", "");
+}
 
-	NumberGlob glob(picnametempl);
-	string filename_wo_ext;
-	while (glob.next(&filename_wo_ext)) {
-		const string filename = filename_wo_ext + ".png";
-		if (!g_fs->FileExists(filename))
-			break;
+void NonPackedAnimation::load_graphics() {
+	if (image_files_.empty())
+		throw wexception("animation without pictures.");
 
+	if (pc_mask_image_files_.size() && pc_mask_image_files_.size() != image_files_.size())
+		throw wexception("animation has %" PRIuS " frames but playercolor mask has %" PRIuS " frames",
+		                 image_files_.size(), pc_mask_image_files_.size());
+
+	for (const std::string& filename : image_files_) {
 		const Image* image = g_gr->images().get(filename);
-		if
-			(frames_.size() &&
-			 (frames_[0]->width() != image->width() or frames_[0]->height() != image->height()))
-					throw wexception
-						("wrong size: (%u, %u), should be (%u, %u) like the first frame",
-						 image->width(), image->height(), frames_[0]->width(), frames_[0]->height());
-		frames_.push_back(image);
-
-		//TODO Do not load playercolor mask as opengl texture or use it as
-		//     opengl texture.
-		const string pc_filename = filename_wo_ext + "_pc.png";
-		if (g_fs->FileExists(pc_filename)) {
-			hasplrclrs_ = true;
-			const Image* pc_image = g_gr->images().get(pc_filename);
-			if (frames_[0]->width() != pc_image->width() or frames_[0]->height() != pc_image->height())
-				throw wexception
-					("playercolor mask has wrong size: (%u, %u), should "
-					 "be (%u, %u) like the animation frame",
-					 pc_image->width(), pc_image->height(), frames_[0]->width(), frames_[0]->height());
-			pcmasks_.push_back(pc_image);
+		if (frames_.size() &&
+		    (frames_[0]->width() != image->width() || frames_[0]->height() != image->height())) {
+			throw wexception("wrong size: (%u, %u), should be (%u, %u) like the first frame",
+			                 image->width(), image->height(), frames_[0]->width(),
+			                 frames_[0]->height());
 		}
+		frames_.push_back(image);
 	}
 
-	if (frames_.empty())
-		throw wexception("animation %s has no frames", picnametempl.c_str());
-
-	if (pcmasks_.size() and pcmasks_.size() != frames_.size())
-		throw wexception
-			("animation has %"PRIuS" frames but playercolor mask has %"PRIuS" frames",
-			 frames_.size(), pcmasks_.size());
+	for (const std::string& filename : pc_mask_image_files_) {
+		// TODO(unknown): Do not load playercolor mask as opengl texture or use it as
+		//     opengl texture.
+		const Image* pc_image = g_gr->images().get(filename);
+		if (frames_[0]->width() != pc_image->width() || frames_[0]->height() != pc_image->height()) {
+			// TODO(unknown): see bug #1324642
+			throw wexception("playercolor mask has wrong size: (%u, %u), should "
+			                 "be (%u, %u) like the animation frame",
+			                 pc_image->width(), pc_image->height(), frames_[0]->width(),
+			                 frames_[0]->height());
+		}
+		pcmasks_.push_back(pc_image);
+	}
 }
 
-void NonPackedAnimation::trigger_soundfx
-	(uint32_t time, uint32_t stereo_position) const {
-	const uint32_t framenumber = time / frametime_ % nr_frames();
-	const map<uint32_t, string>::const_iterator sfx_cue = sfx_cues.find(framenumber);
-	if (sfx_cue != sfx_cues.end())
-		g_sound_handler.play_fx(sfx_cue->second, stereo_position, 1);
+uint16_t NonPackedAnimation::width() const {
+	ensure_graphics_are_loaded();
+	return frames_[0]->width();
 }
 
-void NonPackedAnimation::blit
-	(uint32_t time, const Point& dst, const Rect& srcrc, const RGBColor* clr, Surface* target) const
-{
+uint16_t NonPackedAnimation::height() const {
+	ensure_graphics_are_loaded();
+	return frames_[0]->height();
+}
+
+uint16_t NonPackedAnimation::nr_frames() const {
+	ensure_graphics_are_loaded();
+	return frames_.size();
+}
+
+uint32_t NonPackedAnimation::frametime() const {
+	return frametime_;
+}
+
+const Vector2i& NonPackedAnimation::hotspot() const {
+	return hotspot_;
+}
+
+Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
+	assert(!image_files_.empty());
+	const Image* image = g_gr->images().get(image_files_[0]);
+
+	if (!hasplrclrs_ || clr == nullptr) {
+		// No player color means we simply want an exact copy of the original image.
+		const int w = image->width();
+		const int h = image->height();
+		Texture* rv = new Texture(w, h);
+		rv->blit(Rectf(0, 0, w, h), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		return rv;
+	} else {
+		return playercolor_image(clr, image, g_gr->images().get(pc_mask_image_files_[0]));
+	}
+}
+
+const std::string& NonPackedAnimation::representative_image_filename() const {
+	return image_files_[0];
+}
+
+uint32_t NonPackedAnimation::current_frame(uint32_t time) const {
+	if (nr_frames() > 1) {
+		return (play_once_ && time / frametime_ > static_cast<uint32_t>(nr_frames() - 1)) ?
+		          static_cast<uint32_t>(nr_frames() - 1) :
+		          time / frametime_ % nr_frames();
+	}
+	return 0;
+}
+
+void NonPackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) const {
+	if (sound_effect_.empty()) {
+		return;
+	}
+
+	const uint32_t framenumber = current_frame(time);
+
+	if (framenumber == 0) {
+		g_sound_handler.play_fx(sound_effect_, stereo_position, 1);
+	}
+}
+
+void NonPackedAnimation::blit(uint32_t time,
+                              const Rectf& dstrc,
+                              const Rectf& srcrc,
+                              const RGBColor* clr,
+                              Surface* target) const {
 	assert(target);
 
-	const Image& frame = get_frame(time, clr);
-	target->blit(dst, frame.surface(), srcrc);
-}
+	const uint32_t idx = current_frame(time);
+	assert(idx < nr_frames());
 
-const Image& NonPackedAnimation::get_frame(uint32_t time, const RGBColor* playercolor) const {
-	const uint32_t framenumber = time / frametime_ % nr_frames();
-	assert(framenumber < nr_frames());
-	const Image* original = frames_[framenumber];
-
-	if (!hasplrclrs_ || !playercolor)
-		return *original;
-
-	assert(frames_.size() == pcmasks_.size());
-	return *ImageTransformations::player_colored(*playercolor, original, pcmasks_[framenumber]);
+	if (!hasplrclrs_ || clr == nullptr) {
+		target->blit(dstrc, *frames_.at(idx), srcrc, 1., BlendMode::UseAlpha);
+	} else {
+		target->blit_blended(dstrc, *frames_.at(idx), *pcmasks_.at(idx), srcrc, *clr);
+	}
 }
 
 }  // namespace
-
 
 /*
 ==============================================================================
@@ -517,102 +584,14 @@ DirAnimations IMPLEMENTAION
 ==============================================================================
 */
 
-DirAnimations::DirAnimations
-	(uint32_t dir1,
-	 uint32_t dir2,
-	 uint32_t dir3,
-	 uint32_t dir4,
-	 uint32_t dir5,
-	 uint32_t dir6)
-{
-	m_animations[0] = dir1;
-	m_animations[1] = dir2;
-	m_animations[2] = dir3;
-	m_animations[3] = dir4;
-	m_animations[4] = dir5;
-	m_animations[5] = dir6;
-}
-
-
-/*
-===============
-Parse an animation from the given directory and config.
-sectnametempl is of the form "foowalk_??", where ?? will be replaced with
-nw, ne, e, se, sw and w to get the section names for the animations.
-
-If defaults is not zero, the additional sections are not actually necessary.
-If they don't exist, the data is taken from defaults and the bitmaps
-foowalk_??_nn.png are used.
-===============
-*/
-// NOCOM(#sirver): eventually kill this method as well - it seems unnecessary when
-// so much data has to be given for each walk animation anyway.
-void DirAnimations::parse
-	(Widelands::Map_Object_Descr & b,
-	 const string & directory,
-	 Profile & prof,
-	 char const * const sectnametempl,
-	 Section * const defaults)
-{
-	char dirpictempl[256];
-	char sectnamebase[256];
-	char * repl;
-
-	if (strchr(sectnametempl, '%'))
-		throw wexception("sectnametempl %s contains %%", sectnametempl);
-
-	snprintf(sectnamebase, sizeof(sectnamebase), "%s", sectnametempl);
-	repl = strstr(sectnamebase, "??");
-	if (!repl)
-		throw wexception
-			("DirAnimations section name template %s does not contain %%s",
-			 sectnametempl);
-
-	strncpy(repl, "%s", 2);
-
-	if
-		(char const * const string =
-		 defaults ? defaults->get_string("dirpics", 0) : 0)
-	{
-		snprintf(dirpictempl, sizeof(dirpictempl), "%s", string);
-		repl = strstr(dirpictempl, "!!");
-		if (!repl)
-			throw wexception
-				("DirAnimations dirpics name templates %s does not contain !!",
-				 dirpictempl);
-
-		strncpy(repl, "%s", 2);
-	} else {
-		snprintf(dirpictempl, sizeof(dirpictempl), "%s_??", sectnamebase);
-	}
-
-	for (int32_t dir = 0; dir < 6; ++dir) {
-		static char const * const dirstrings[6] =
-			{"ne", "e", "se", "sw", "w", "nw"};
-		char sectname[300];
-
-		snprintf(sectname, sizeof(sectname), sectnamebase, dirstrings[dir]);
-
-		string const anim_name = sectname;
-
-		Section * s = prof.get_section(sectname);
-		if (!s) {
-			if (!defaults)
-				throw wexception
-					("Section [%s] missing and no default supplied",
-					 sectname);
-
-			s = defaults;
-		}
-
-		snprintf(sectname, sizeof(sectname), dirpictempl, dirstrings[dir]);
-
-		// Fake the section name here, so that the animation loading code is
-		// using the correct glob pattern to load the images from.
-		s->set_name(sectname);
-		m_animations[dir] = g_gr->animations().load(directory, *s);
-		b.add_animation(anim_name.c_str(), m_animations[dir]);
-	}
+DirAnimations::DirAnimations(
+   uint32_t dir1, uint32_t dir2, uint32_t dir3, uint32_t dir4, uint32_t dir5, uint32_t dir6) {
+	animations_[0] = dir1;
+	animations_[1] = dir2;
+	animations_[2] = dir3;
+	animations_[3] = dir4;
+	animations_[4] = dir5;
+	animations_[5] = dir6;
 }
 
 /*
@@ -623,24 +602,23 @@ AnimationManager IMPLEMENTATION
 ==============================================================================
 */
 
-uint32_t AnimationManager::load(const string& directory, Section & s) {
-	if (s.get_bool("packed", false)) {
-		m_animations.push_back(new PackedAnimation(directory, s));
-	} else {
-		m_animations.push_back(new NonPackedAnimation(directory, s));
-	}
-	const uint32_t id = m_animations.size();
-
-	return id;
+uint32_t AnimationManager::load(const LuaTable& table) {
+	animations_.push_back(std::unique_ptr<Animation>(new NonPackedAnimation(table)));
+	return animations_.size();
 }
 
-const Animation& AnimationManager::get_animation(uint32_t id) const
-{
-	if (!id || id > m_animations.size())
+const Animation& AnimationManager::get_animation(uint32_t id) const {
+	if (!id || id > animations_.size())
 		throw wexception("Requested unknown animation with id: %i", id);
 
-	return *m_animations[id - 1];
+	return *animations_[id - 1].get();
 }
 
-
-
+const Image* AnimationManager::get_representative_image(uint32_t id, const RGBColor* clr) {
+	if (representative_images_.count(id) != 1) {
+		representative_images_.insert(std::make_pair(
+		   id,
+		   std::unique_ptr<Image>(g_gr->animations().get_animation(id).representative_image(clr))));
+	}
+	return representative_images_.at(id).get();
+}

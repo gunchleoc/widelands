@@ -17,37 +17,40 @@
  *
  */
 
-#ifndef CMD_LUACOROUTINE_H
-#define CMD_LUACOROUTINE_H
+#ifndef WL_LOGIC_CMD_LUACOROUTINE_H
+#define WL_LOGIC_CMD_LUACOROUTINE_H
 
 #include <string>
 
-#include "cmd_queue.h"
-#include "scripting/scripting.h"
+#include "logic/cmd_queue.h"
+#include "scripting/lua_coroutine.h"
 
 namespace Widelands {
 
-struct Cmd_LuaCoroutine : public GameLogicCommand {
-	Cmd_LuaCoroutine() : GameLogicCommand(0), m_cr(0) {} // For savegame loading
-	Cmd_LuaCoroutine(int32_t const _duetime, LuaCoroutine * const cr) :
-		GameLogicCommand(_duetime), m_cr(cr) {}
+struct CmdLuaCoroutine : public GameLogicCommand {
+	CmdLuaCoroutine() : GameLogicCommand(0), cr_(nullptr) {
+	}  // For savegame loading
+	CmdLuaCoroutine(uint32_t const init_duetime, LuaCoroutine* const cr)
+	   : GameLogicCommand(init_duetime), cr_(cr) {
+	}
 
-	~Cmd_LuaCoroutine() {
-		delete m_cr;
+	~CmdLuaCoroutine() {
+		delete cr_;
 	}
 
 	// Write these commands to a file (for savegames)
-	void Write(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	void Read (FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
 
-	virtual uint8_t id() const {return QUEUE_CMD_LUACOROUTINE;}
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kLuaCoroutine;
+	}
 
-	virtual void execute(Game &);
+	void execute(Game&) override;
 
 private:
-	LuaCoroutine * m_cr;
+	LuaCoroutine* cr_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_CMD_LUACOROUTINE_H

@@ -17,36 +17,39 @@
  *
  */
 
-#ifndef SOUND_HANDLER_H
-#define SOUND_HANDLER_H
+#ifndef WL_SOUND_SOUND_HANDLER_H
+#define WL_SOUND_SOUND_HANDLER_H
 
-#include "io/fileread.h"
-#include "fxset.h"
-#include "logic/widelands_geometry.h"
-#include "random.h"
-
-#include <map>
-#include <string>
 #include <cstring>
+#include <map>
+#include <memory>
+#include <string>
 #include <vector>
 
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
-namespace Widelands {struct Editor_Game_Base;}
+#include "logic/widelands_geometry.h"
+#include "random/random.h"
+#include "sound/fxset.h"
+
+namespace Widelands {
+class EditorGameBase;
+}
 struct Songset;
 struct SDL_mutex;
+class FileRead;
 
 /// How many milliseconds in the past to consider for
-/// Sound_Handler::play_or_not()
+/// SoundHandler::play_or_not()
 #define SLIDING_WINDOW_SIZE 20000
 
-extern class Sound_Handler g_sound_handler;
+extern class SoundHandler g_sound_handler;
 
 /** The 'sound server' for Widelands.
  *
- * Sound_Handler collects all functions for dealing with music and sound effects
+ * SoundHandler collects all functions for dealing with music and sound effects
  * in one class. It is similar in task - though not in scope - to well known
  * sound servers like gstreamer, EsounD or aRts. For the moment (and probably
  * forever), the only backend supported is SDL_mixer.
@@ -85,7 +88,7 @@ extern class Sound_Handler g_sound_handler;
  * \par Sound effects
  *
  * Buildings and workers can use sound effects in their programs. To do so, use
- * e.g. "playFX blacksmith_hammer" in the appropriate conf file. The conf file
+ * e.g. "play_sound blacksmith_hammer" in the appropriate conf file. The conf file
  * parser will then load one or more audio files for 'hammering blacksmith'
  * from the building's/worker's configuration directory and store them in an
  * FXset for later access, similar to the way music is stored in songsets.
@@ -155,139 +158,134 @@ extern class Sound_Handler g_sound_handler;
  * but also in start_music(), which causes the seemingly recursive call to
  * change_music() from inside start_music(). It really is not recursive, trust
  * me :-)
- *
- * \todo DOC: priorities
- * \todo DOC: play-or-not algorithm
- * \todo Environmental sound effects (e.g. wind)
- * \todo repair and reenable animation sound effects for 1-pic-animations
- * \todo accommodate runtime changes of i18n language
- * \todo ? accommodate sound activation if it was disabled at the beginning
-*/
-class Sound_Handler
-{
+ */
+// TODO(unknown): DOC: priorities
+// TODO(unknown): DOC: play-or-not algorithm
+// TODO(unknown): Environmental sound effects (e.g. wind)
+// TODO(unknown): repair and reenable animation sound effects for 1-pic-animations
+// TODO(unknown): accommodate runtime changes of i18n language
+// TODO(unknown): accommodate sound activation if it was disabled at the beginning
+
+// This is used for SDL UserEvents to be handled in the main loop.
+enum { CHANGE_MUSIC };
+class SoundHandler {
 	friend struct Songset;
 	friend struct FXset;
+
 public:
-	Sound_Handler();
-	~Sound_Handler();
+	SoundHandler();
+	~SoundHandler();
 
 	void init();
 	void shutdown();
 	void read_config();
 	void load_system_sounds();
 
-	void load_fx
-		(const std::string & dir,
-		 const std::string & basename,
-		 bool                recursive = false);
-	void play_fx
-		(const std::string & fx_name,
-		 Widelands::Coords   map_position,
-		 uint8_t             priority = PRIO_ALLOW_MULTIPLE + PRIO_MEDIUM);
-	void play_fx
-		(const std::string & fx_name,
-		 int32_t             stereo_position,
-		 uint8_t             priority = PRIO_ALLOW_MULTIPLE + PRIO_MEDIUM);
+	void load_fx_if_needed(const std::string& dir,
+	                       const std::string& basename,
+	                       const std::string& fx_name);
+	void play_fx(const std::string& fx_name,
+	             Widelands::Coords map_position,
+	             uint8_t priority = PRIO_ALLOW_MULTIPLE + PRIO_MEDIUM);
+	void play_fx(const std::string& fx_name,
+	             int32_t stereo_position,
+	             uint8_t priority = PRIO_ALLOW_MULTIPLE + PRIO_MEDIUM);
 
-	void register_song
-		(const std::string & dir,
-		 const std::string & basename,
-		 bool                recursive = false);
-	void start_music(const std::string & songset_name, int32_t fadein_ms = 0);
+	void register_song(const std::string& dir, const std::string& basename);
+	void start_music(const std::string& songset_name, int32_t fadein_ms = 0);
 	void stop_music(int32_t fadeout_ms = 0);
-	void change_music
-		(const std::string & songset_name = std::string(),
-		 int32_t             fadeout_ms   = 0,
-		 int32_t             fadein_ms    = 0);
+	void change_music(const std::string& songset_name = std::string(),
+	                  int32_t fadeout_ms = 0,
+	                  int32_t fadein_ms = 0);
 
 	static void music_finished_callback();
 	static void fx_finished_callback(int32_t channel);
 	void handle_channel_finished(uint32_t channel);
 
-	bool get_disable_music() const throw ();
-	bool get_disable_fx   () const throw ();
-	int32_t  get_music_volume () const throw ();
-	int32_t  get_fx_volume    () const throw ();
+	bool get_disable_music() const;
+	bool get_disable_fx() const;
+	int32_t get_music_volume() const;
+	int32_t get_fx_volume() const;
 	void set_disable_music(bool disable);
-	void set_disable_fx   (bool disable);
-	void set_music_volume (int32_t volume);
-	void set_fx_volume    (int32_t volume);
+	void set_disable_fx(bool disable);
+	void set_music_volume(int32_t volume);
+	void set_fx_volume(int32_t volume);
 
 	/**
 	 * Return the max value for volume settings. We use a function to hide
 	 * SDL_mixer constants outside of sound_handler.
 	 */
-	int32_t get_max_volume() const throw () {return MIX_MAX_VOLUME;}
+	int32_t get_max_volume() const {
+		return MIX_MAX_VOLUME;
+	}
 
 	/** The game logic where we can get a mapping from logical to screen
 	 * coordinates and vice vers
 	*/
-	Widelands::Editor_Game_Base * m_egbase;
+	Widelands::EditorGameBase* egbase_;
 
 	/** Only for buffering the command line option --nosound until real initialization is done.
-	 *  And disabling sound on dedicated servers
-	 * \see Sound_Handler::Sound_Handler()
-	 * \see Sound_Handler::init()
-	 * \todo This is ugly. Find a better way to do it
-	*/
-	bool m_nosound;
+	 * \see SoundHandler::SoundHandler()
+	 * \see SoundHandler::init()
+	 */
+	// TODO(unknown): This is ugly. Find a better way to do it
+	bool nosound_;
 
-	/** Can m_disable_music and m_disable_fx be changed?
+	/** Can disable_music_ and disable_fx_ be changed?
 	 * true = they mustn't be changed (e.g. because hardware is missing)
 	 * false = can be changed at user request
 	*/
-	bool m_lock_audio_disabling;
+	bool lock_audio_disabling_;
 
 protected:
-	Mix_Chunk * RWopsify_MixLoadWAV(FileRead &);
-	void load_one_fx(const char * filename, const std::string & fx_name);
+	// Prints an error and disables the sound system.
+	void initialization_error(const std::string& msg);
+
+	void load_one_fx(const std::string& path, const std::string& fx_name);
 	int32_t stereo_position(Widelands::Coords position);
-	bool play_or_not
-		(const std::string & fx_name,
-		 int32_t             stereo_position,
-		 uint8_t             priority);
+	bool play_or_not(const std::string& fx_name, int32_t stereo_position, uint8_t priority);
 
 	/// Whether to disable background music
-	bool m_disable_music;
+	bool disable_music_;
 	/// Whether to disable sound effects
-	bool m_disable_fx;
+	bool disable_fx_;
 	/// Volume of music (from 0 to get_max_volume())
-	int32_t m_music_volume;
+	int32_t music_volume_;
 	/// Volume of sound effects (from 0 to get_max_volume())
-	int32_t m_fx_volume;
+	int32_t fx_volume_;
 
 	/** Whether to play music in random order
 	 * \note Sound effects will \e always be selected at random (inside
 	 * their FXset, of course.
 	*/
-	bool m_random_order;
+	bool random_order_;
 
 	/// A collection of songsets
-	typedef std::map<std::string, Songset *> Songset_map;
-	Songset_map m_songs;
+	using SongsetMap = std::map<std::string, std::unique_ptr<Songset>>;
+	SongsetMap songs_;
 
 	/// A collection of effect sets
-	typedef std::map<std::string, FXset *> FXset_map;
-	FXset_map m_fxs;
+	using FXsetMap = std::map<std::string, std::unique_ptr<FXset>>;
+	FXsetMap fxs_;
 
 	/// List of currently playing effects, and the channel each one is on
-	/// Access to this variable is protected through m_fx_lock mutex.
-	typedef std::map<uint32_t, std::string> Activefx_map;
-	Activefx_map m_active_fx;
+	/// Access to this variable is protected through fx_lock_ mutex.
+	using ActivefxMap = std::map<uint32_t, std::string>;
+	ActivefxMap active_fx_;
 
 	/** Which songset we are currently selecting songs from - not regarding
 	 * if there actually is a song playing \e right \e now.
 	*/
-	std::string m_current_songset;
+	std::string current_songset_;
 
 	/** The random number generator.
 	 * \note The RNG here \e must \e not be the same as the one for the game
 	 * logic!
 	*/
-	RNG m_rng;
+	RNG rng_;
 
-	/// Protects access to m_active_fx between callbacks and main code.
-	SDL_mutex * m_fx_lock;
+	/// Protects access to active_fx_ between callbacks and main code.
+	SDL_mutex* fx_lock_;
 };
 
-#endif
+#endif  // end of include guard: WL_SOUND_SOUND_HANDLER_H

@@ -17,57 +17,33 @@
  *
  */
 
-#ifndef GAME_OPTIONS_MENU_H
-#define GAME_OPTIONS_MENU_H
+#ifndef WL_WUI_GAME_OPTIONS_MENU_H
+#define WL_WUI_GAME_OPTIONS_MENU_H
 
-#include "interactive_gamebase.h"
-
+#include "ui_basic/box.h"
 #include "ui_basic/button.h"
+#include "ui_basic/messagebox.h"
 #include "ui_basic/textarea.h"
 #include "ui_basic/unique_window.h"
+#include "wui/interactive_gamebase.h"
 
 // The GameOptionsMenu is a rather dumb window with lots of buttons
 struct GameOptionsMenu : public UI::UniqueWindow {
-	GameOptionsMenu
-		(Interactive_GameBase &,
-		 UI::UniqueWindow::Registry &,
-		 Interactive_GameBase::Game_Main_Menu_Windows &);
+	GameOptionsMenu(InteractiveGameBase&,
+	                UI::UniqueWindow::Registry&,
+	                InteractiveGameBase::GameMainMenuWindows&);
 
 private:
-	Interactive_GameBase                         & m_gb;
-	Interactive_GameBase::Game_Main_Menu_Windows & m_windows;
-	UI::Button readme;
-	UI::Button license;
-	UI::Button authors;
-	UI::Button sound;
-	UI::Button save_game;
-	UI::Button exit_game;
+	InteractiveGameBase& igb_;
+	InteractiveGameBase::GameMainMenuWindows& windows_;
+	UI::Box box_;
+	UI::Button sound_;
+	UI::Button save_game_;
+	UI::Button exit_game_;
 
-	/** Returns the horizontal/vertical spacing between buttons. */
-	uint32_t hspacing() const {return 5;};
-	uint32_t vspacing() const {return 5;};
-
-	/** Returns the horizontal/vertical margin between edge and buttons. */
-	uint32_t hmargin() const {return 2 * hspacing();}
-	uint32_t vmargin() const {return 2 * vspacing();}
-	uint32_t vgap()    const {return 8;}
-
-	/** Returns the width of a button in a row with nr_buttons buttons. */
-	uint32_t buttonw(const uint32_t nr_buttons) const {
-		return
-			static_cast<uint32_t>
-			((get_inner_w() * 1.45 - (nr_buttons + 3) * hspacing()) / nr_buttons);
-	}
-
-	/// Returns the x coordinate of the (left edge of) button number nr in a row
-	/// with nr_buttons buttons.
-	uint32_t posx(uint32_t const nr, uint32_t const nr_buttons) const {
-		return hmargin() + nr * (buttonw(nr_buttons) + hspacing());
-	}
-
-	void clicked_sound    ();
+	void clicked_sound();
 	void clicked_save_game();
 	void clicked_exit_game();
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_GAME_OPTIONS_MENU_H

@@ -17,12 +17,12 @@
  *
  */
 
-#ifndef CHATOVERLAY_H
-#define CHATOVERLAY_H
+#ifndef WL_WUI_CHATOVERLAY_H
+#define WL_WUI_CHATOVERLAY_H
+
+#include <memory>
 
 #include "ui_basic/panel.h"
-
-#include <boost/scoped_ptr.hpp>
 
 struct ChatProvider;
 
@@ -32,16 +32,19 @@ struct ChatProvider;
  * \see GameChatPanel, GameChatMenu
  */
 struct ChatOverlay : public UI::Panel {
-	ChatOverlay(UI::Panel * parent, int32_t x, int32_t y, int32_t w, int32_t h);
+	ChatOverlay(UI::Panel* parent, int32_t x, int32_t y, int32_t w, int32_t h);
 	~ChatOverlay();
 
-	void setChatProvider(ChatProvider &);
-	virtual void draw(RenderTarget &);
-	virtual void think();
+	void set_chat_provider(ChatProvider&);
+	void draw(RenderTarget&) override;
+	void think() override;
+
+	// Check is position and size is still correct.
+	void recompute();
 
 private:
 	struct Impl;
-	boost::scoped_ptr<Impl> m;
+	std::unique_ptr<Impl> m;
 };
 
-#endif // CHATOVERLAY_H
+#endif  // end of include guard: WL_WUI_CHATOVERLAY_H

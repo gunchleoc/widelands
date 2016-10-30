@@ -17,33 +17,34 @@
  *
  */
 
-#ifndef CMD_INCORPORATE_H
-#define CMD_INCORPORATE_H
+#ifndef WL_LOGIC_CMD_INCORPORATE_H
+#define WL_LOGIC_CMD_INCORPORATE_H
 
-#include "cmd_queue.h"
-#include "worker.h"
+#include "logic/cmd_queue.h"
+#include "logic/map_objects/tribes/worker.h"
 
 namespace Widelands {
 
-#define CMD_INCORPORATE_VERSION 1
+struct CmdIncorporate : public GameLogicCommand {
+	CmdIncorporate() : GameLogicCommand(0), worker(nullptr) {
+	}  // For savegame loading
+	CmdIncorporate(uint32_t const t, Worker* const w) : GameLogicCommand(t), worker(w) {
+	}
 
-struct Cmd_Incorporate : public GameLogicCommand {
-	Cmd_Incorporate() : GameLogicCommand(0), worker(0) {} // For savegame loading
-	Cmd_Incorporate (int32_t const t, Worker * const w)
-		: GameLogicCommand(t), worker(w)
-	{}
+	void execute(Game& game) override {
+		worker->incorporate(game);
+	}
 
-	void execute (Game & game) {worker->incorporate(game);}
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
 
-	void Write(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	void Read (FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
-
-	virtual uint8_t id() const {return QUEUE_CMD_INCORPORATE;}
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kIncorporate;
+	}
 
 private:
-	Worker * worker;
+	Worker* worker;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_CMD_INCORPORATE_H

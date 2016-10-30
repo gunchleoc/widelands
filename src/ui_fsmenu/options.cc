@@ -17,735 +17,579 @@
  *
  */
 
-#include "options.h"
+#include "ui_fsmenu/options.h"
 
-#include "constants.h"
-#include "io/filesystem/layered_filesystem.h"
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
+
+#include "base/i18n.h"
+#include "base/log.h"
+#include "base/wexception.h"
+#include "graphic/default_resolution.h"
+#include "graphic/font_handler1.h"
 #include "graphic/graphic.h"
-#include "i18n.h"
+#include "graphic/text/bidi.h"
+#include "graphic/text/font_set.h"
+#include "graphic/text_constants.h"
+#include "helper.h"
+#include "io/filesystem/layered_filesystem.h"
+#include "logic/save_handler.h"
 #include "profile/profile.h"
-#include "save_handler.h"
+#include "scripting/lua_interface.h"
+#include "scripting/lua_table.h"
 #include "sound/sound_handler.h"
 #include "wlapplication.h"
 
-#include <libintl.h>
+namespace {
 
-#include <cstdio>
-#include <iostream>
+// Data model for the entries in the language selection list.
+struct LanguageEntry {
+	LanguageEntry(const std::string& init_localename,
+	              const std::string& init_descname,
+	              const std::string& init_sortname)
+	   : localename(init_localename), descname(init_descname), sortname(init_sortname) {
+	}
 
-Fullscreen_Menu_Options::Fullscreen_Menu_Options
-		(Options_Ctrl::Options_Struct opt)
-	:
-	Fullscreen_Menu_Base("optionsmenu.jpg"),
+	bool operator<(const LanguageEntry& other) const {
+		return sortname < other.sortname;
+	}
 
-// Values for alignment and size
-	m_vbutw(get_h() * 333 / 10000),
-	m_butw (get_w() / 4),
-	m_buth (get_h() * 9 / 200),
+	std::string localename;  // ISO code for the locale
+	std::string descname;    // Native language name
+	std::string sortname;    // ASCII Language name used for sorting
+};
 
-// Buttons
-	m_advanced_options
-		(this, "advanced_options",
-		 get_w() * 9 / 80, get_h() * 19 / 20, m_butw, m_buth,
-		 g_gr->images().get("pics/but2.png"),
-		 _("Advanced Options"), std::string(), true, false),
-	m_cancel
-		(this, "cancel",
-		 get_w() * 51 / 80, get_h() * 19 / 20, m_butw, m_buth,
-		 g_gr->images().get("pics/but0.png"),
-		 _("Cancel"), std::string(), true, false),
-	m_apply
-		(this, "apply",
-		 get_w() * 3 / 8, get_h() * 19 / 20, m_butw, m_buth,
-		 g_gr->images().get("pics/but2.png"),
-		 _("Apply"), std::string(), true, false),
-
-// Spinboxes
-	m_sb_maxfps
-		(this,
-		 (get_w() / 2) - (m_vbutw * 2), get_h() * 3833 / 10000, get_w() / 5, m_vbutw,
-		 opt.maxfps, 0, 100, "",
-		 g_gr->images().get("pics/but1.png")),
-	m_sb_autosave
-		(this,
-		 get_w() * 6767 / 10000, get_h() * 8167 / 10000, get_w() / 4, m_vbutw,
-		 opt.autosave / 60, 0, 100, _("min."),
-		 g_gr->images().get("pics/but1.png"), true),
-
-	m_sb_remove_replays
-		(this,
-		 get_w() * 6767 / 10000, get_h() * 8631 / 10000, get_w() / 4, m_vbutw,
-		 opt.remove_replays, 0, 365, _("days"),
-		 g_gr->images().get("pics/but1.png"), true),
-
-// Title
-	m_title
-		(this,
-		 get_w() / 2, get_h() / 40,
-		 _("General Options"), UI::Align_HCenter),
-
-// First options block 'general options'
-	m_fullscreen (this, Point(get_w() * 3563 / 10000, get_h() * 1667 / 10000)),
-	m_label_fullscreen
-		(this,
-		 get_w() * 1969 / 5000, get_h() * 1833 / 10000,
-		 _("Fullscreen"), UI::Align_VCenter),
-
-	m_inputgrab (this, Point(get_w() * 3563 / 10000, get_h() * 2167 / 10000)),
-	m_label_inputgrab
-		(this,
-		 get_w() * 1969 / 5000, get_h() * 2333 / 10000,
-		 _("Grab Input"), UI::Align_VCenter),
-
-	m_music (this, Point(get_w() * 3563 / 10000, get_h() * 2667 / 10000)),
-	m_label_music
-		(this,
-		 get_w() * 1969 / 5000, get_h() * 2833 / 10000,
-		 _("Enable Music"), UI::Align_VCenter),
-
-	m_fx (this, Point(get_w() * 3563 / 10000, get_h() * 3167 / 10000)),
-	m_label_fx
-		(this,
-		 get_w() * 1969 / 5000, get_h() * 3333 / 10000,
-		 _("Enable Sound"), UI::Align_VCenter),
-
-	m_label_maxfps
-		(this,
-		 get_w() * 3563 / 10000, get_h() * 2 / 5,
-		 _("Maximum FPS:"), UI::Align_VCenter),
-
-	m_reslist
-		(this,
-		 get_w()      / 10, get_h() * 1667 / 10000,
-		 get_w() * 19 / 80, get_h() * 2833 / 10000,
-		 UI::Align_Left, true),
-	m_label_resolution
-		(this,
-		 get_w() * 1063 / 10000, get_h() * 1417 / 10000,
-		 _("In-game resolution"), UI::Align_VCenter),
-
-	m_label_language
-		(this,
-		 get_w() * 133 / 200, get_h() * 1417 / 10000,
-		 _("Language"), UI::Align_VCenter),
-	m_language_list
-		(this,
-		 get_w() * 6563 / 10000, get_h() * 1667 / 10000,
-		 get_w() *   21 /    80, get_h() * 2833 / 10000,
-		 UI::Align_Left, true),
-
-// Title 2
-	m_label_game_options
-		(this,
-		 get_w() / 2, get_h() / 2,
-		 _("In-game Options"), UI::Align_HCenter),
-
-// Second options block 'In-game options'
-	m_single_watchwin (this, Point(get_w() * 19 / 200, get_h() * 5833 / 10000)),
-	m_label_single_watchwin
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 3 / 5,
-		 _("Use single Watchwindow Mode"), UI::Align_VCenter),
-
-	m_auto_roadbuild_mode (this, Point(get_w() * 19 / 200, get_h() * 63 / 100)),
-	m_label_auto_roadbuild_mode
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 6467 / 10000,
-		 _("Start roadbuilding after placing flag"), UI::Align_VCenter),
-
-	m_show_workarea_preview
-		(this, Point(get_w() * 19 / 200, get_h() * 6767 / 10000)),
-	m_label_show_workarea_preview
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 6933 / 10000,
-		 _("Show buildings area preview"), UI::Align_VCenter),
-
-	m_snap_windows_only_when_overlapping
-		(this, Point(get_w() * 19 / 200, get_h() * 7233 / 10000)),
-	m_label_snap_windows_only_when_overlapping
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 37 / 50,
-		 _("Snap windows only when overlapping"), UI::Align_VCenter),
-
-	m_dock_windows_to_edges (this, Point(get_w() * 19 / 200, get_h() * 77 / 100)),
-	m_label_dock_windows_to_edges
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 7867 / 10000,
-		 _("Dock windows to edges"), UI::Align_VCenter),
-
-	m_label_autosave
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 8333 / 10000,
-		 _("Save game automatically every"), UI::Align_VCenter),
-	m_label_remove_replays
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 8799 / 10000,
-		 _("Remove Replays older than:"), UI::Align_VCenter),
-
-	os(opt)
-{
-	m_advanced_options.sigclicked.connect
-		(boost::bind(&Fullscreen_Menu_Options::advanced_options, boost::ref(*this)));
-	m_cancel.sigclicked.connect
-		(boost::bind(&Fullscreen_Menu_Options::end_modal, this, static_cast<int32_t>(om_cancel)));
-	m_apply.sigclicked.connect
-		(boost::bind(&Fullscreen_Menu_Options::end_modal, this, static_cast<int32_t>(om_ok)));
-
-	m_advanced_options.set_font(font_small());
-	m_apply.set_font(font_small());
-	m_cancel.set_font(font_small());
-
-	m_sb_autosave     .add_replacement(0, _("Off"));
-	m_sb_remove_replays.add_replacement(0, _("Never"));
-	m_sb_remove_replays.add_replacement(1, _("1 day"));
-
-	m_sb_maxfps       .set_font(ui_fn(), fs_small(), UI_FONT_CLR_FG);
-	m_sb_autosave     .set_font(ui_fn(), fs_small(), UI_FONT_CLR_FG);
-	m_sb_remove_replays.set_font(ui_fn(), fs_small(), UI_FONT_CLR_FG);
-	m_title           .set_textstyle(ts_big());
-	m_label_fullscreen.set_textstyle(ts_small());
-	m_fullscreen      .set_state(opt.fullscreen);
-	m_label_inputgrab .set_textstyle(ts_small());
-	m_inputgrab       .set_state(opt.inputgrab);
-	m_label_music     .set_textstyle(ts_small());
-	m_music           .set_state(opt.music);
-	m_music           .set_enabled(not g_sound_handler.m_lock_audio_disabling);
-	m_label_fx        .set_textstyle(ts_small());
-	m_fx              .set_state(opt.fx);
-	m_fx              .set_enabled(not g_sound_handler.m_lock_audio_disabling);
-	m_label_maxfps    .set_textstyle(ts_small());
-	m_label_resolution.set_textstyle(ts_small());
-	m_reslist         .set_font(ui_fn(), fs_small());
-	m_label_language  .set_textstyle(ts_small());
-	m_language_list   .set_font(ui_fn(), fs_small());
-
-	m_label_game_options             .set_textstyle(ts_big());
-	m_label_single_watchwin          .set_textstyle(ts_small());
-	m_single_watchwin                .set_state(opt.single_watchwin);
-	m_label_auto_roadbuild_mode      .set_textstyle(ts_small());
-	m_auto_roadbuild_mode            .set_state(opt.auto_roadbuild_mode);
-	m_label_show_workarea_preview    .set_textstyle(ts_small());
-	m_show_workarea_preview          .set_state(opt.show_warea);
-	m_label_snap_windows_only_when_overlapping.set_textstyle(ts_small());
-	m_snap_windows_only_when_overlapping.set_state
-		(opt.snap_windows_only_when_overlapping);
-	m_label_dock_windows_to_edges    .set_textstyle(ts_small());
-	m_dock_windows_to_edges          .set_state(opt.dock_windows_to_edges);
-	m_label_autosave                 .set_textstyle(ts_small());
-	m_label_remove_replays           .set_textstyle(ts_small());
-
-	//  GRAPHIC_TODO: this shouldn't be here List all resolutions
-	// take a copy to not change real video info structure
-	SDL_PixelFormat fmt = *SDL_GetVideoInfo()->vfmt;
-
-	fmt.BitsPerPixel = 16;
-	for
-		(const SDL_Rect * const * modes = SDL_ListModes(&fmt, SDL_SWSURFACE | SDL_FULLSCREEN);
-		 modes && *modes;
-		 ++modes)
-	{
-		const SDL_Rect & mode = **modes;
-		if (640 <= mode.w and 480 <= mode.h)
-		{
-			const Resolution this_res = {mode.w, mode.h, fmt.BitsPerPixel};
-			if
-				(m_resolutions.empty()
-				 || this_res.xres != m_resolutions.rbegin()->xres
-				 || this_res.yres != m_resolutions.rbegin()->yres)
-			{
-				m_resolutions.push_back(this_res);
+// Locale identifiers can look like this: ca_ES@valencia.UTF-8
+// The contents of 'selected_locale' will be changed to match the 'current_locale'
+void find_selected_locale(std::string* selected_locale, const std::string& current_locale) {
+	if (selected_locale->empty()) {
+		std::vector<std::string> parts;
+		boost::split(parts, current_locale, boost::is_any_of("."));
+		if (current_locale == parts[0]) {
+			*selected_locale = current_locale;
+		} else {
+			boost::split(parts, parts[0], boost::is_any_of("@"));
+			if (current_locale == parts[0]) {
+				*selected_locale = current_locale;
+			} else {
+				boost::split(parts, parts[0], boost::is_any_of("_"));
+				if (current_locale == parts[0]) {
+					*selected_locale = current_locale;
+				}
 			}
 		}
 	}
+}
 
-	fmt.BitsPerPixel = 32;
-	for
-		(const SDL_Rect * const * modes = SDL_ListModes(&fmt, SDL_SWSURFACE | SDL_FULLSCREEN);
-		 modes && *modes;
-		 ++modes)
-	{
-		const SDL_Rect & mode = **modes;
-		if (640 <= mode.w and 480 <= mode.h)
-		{
-			const Resolution this_res = {mode.w, mode.h, fmt.BitsPerPixel};
-			if
-				(m_resolutions.empty()
-				 || this_res.xres != m_resolutions.rbegin()->xres
-				 || this_res.yres != m_resolutions.rbegin()->yres)
-			{
-				m_resolutions.push_back(this_res);
+}  // namespace
+
+// TODO(GunChleoc): Arabic: This doesn't fit the window in Arabic.
+FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
+   : FullscreenMenuBase("images/ui_fsmenu/ui_fsmenu.jpg"),
+
+     // Values for alignment and size
+     butw_(get_w() / 5),
+     buth_(get_h() * 9 / 200),
+     hmargin_(get_w() * 19 / 200),
+     padding_(10),
+     tab_panel_width_(get_inner_w() - 2 * hmargin_),
+     column_width_(tab_panel_width_ - padding_),
+     tab_panel_y_(get_h() * 14 / 100),
+
+     // Title
+     title_(this, get_w() / 2, buth_, _("Options"), UI::Align::kHCenter),
+
+     // Buttons
+     cancel_(
+        this,
+        "cancel",
+        UI::g_fh1->fontset()->is_rtl() ? get_w() * 3 / 4 - butw_ / 2 : get_w() * 1 / 4 - butw_ / 2,
+        get_inner_h() - hmargin_,
+        butw_,
+        buth_,
+        g_gr->images().get("images/ui_basic/but0.png"),
+        _("Cancel")),
+     apply_(this,
+            "apply",
+            get_w() * 2 / 4 - butw_ / 2,
+            get_inner_h() - hmargin_,
+            butw_,
+            buth_,
+            g_gr->images().get("images/ui_basic/but0.png"),
+            _("Apply")),
+     ok_(this,
+         "ok",
+         UI::g_fh1->fontset()->is_rtl() ? get_w() * 1 / 4 - butw_ / 2 : get_w() * 3 / 4 - butw_ / 2,
+         get_inner_h() - hmargin_,
+         butw_,
+         buth_,
+         g_gr->images().get("images/ui_basic/but2.png"),
+         _("OK")),
+
+     tabs_(this,
+           hmargin_,
+           0,
+           tab_panel_width_,
+           get_inner_h() - tab_panel_y_ - buth_ - hmargin_,
+           g_gr->images().get("images/ui_basic/but1.png"),
+           UI::TabPanel::Type::kBorder),
+
+     box_interface_(&tabs_, 0, 0, UI::Box::Vertical, 0, 0, padding_),
+     box_windows_(&tabs_, 0, 0, UI::Box::Vertical, 0, 0, padding_),
+     box_sound_(&tabs_, 0, 0, UI::Box::Vertical, 0, 0, padding_),
+     box_saving_(&tabs_, 0, 0, UI::Box::Vertical, 0, 0, padding_),
+     box_game_(&tabs_, 0, 0, UI::Box::Vertical, 0, 0, padding_),
+
+     // Interface options
+     language_dropdown_(&box_interface_,
+                        0,
+                        0,
+                        column_width_ / 2,
+                        get_inner_h() - tab_panel_y_ - buth_ - hmargin_ - 4 * padding_,
+                        _("Language")),
+     resolution_dropdown_(&box_interface_,
+                          0,
+                          0,
+                          column_width_ / 2,
+                          get_inner_h() - tab_panel_y_ - 2 * buth_ - hmargin_ - 5 * padding_,
+                          _("In-game resolution")),
+
+     fullscreen_(&box_interface_, Vector2i(0, 0), _("Fullscreen"), "", column_width_),
+     inputgrab_(&box_interface_, Vector2i(0, 0), _("Grab Input"), "", column_width_),
+
+     sb_maxfps_(&box_interface_,
+                0,
+                0,
+                column_width_ / 2,
+                column_width_ / 4,
+                opt.maxfps,
+                0,
+                99,
+                _("Maximum FPS:")),
+
+     // Windows options
+     snap_win_overlap_only_(
+        &box_windows_, Vector2i(0, 0), _("Snap windows only when overlapping"), "", column_width_),
+     dock_windows_to_edges_(
+        &box_windows_, Vector2i(0, 0), _("Dock windows to edges"), "", column_width_),
+
+     sb_dis_panel_(&box_windows_,
+                   0,
+                   0,
+                   column_width_,
+                   200,
+                   opt.panel_snap_distance,
+                   0,
+                   99,
+                   _("Distance for windows to snap to other panels:"),
+                   UI::SpinBox::Units::kPixels),
+
+     sb_dis_border_(&box_windows_,
+                    0,
+                    0,
+                    column_width_,
+                    200,
+                    opt.border_snap_distance,
+                    0,
+                    99,
+                    _("Distance for windows to snap to borders:"),
+                    UI::SpinBox::Units::kPixels),
+
+     // Sound options
+     music_(&box_sound_, Vector2i(0, 0), _("Enable Music"), "", column_width_),
+     fx_(&box_sound_, Vector2i(0, 0), _("Enable Sound Effects"), "", column_width_),
+     message_sound_(
+        &box_sound_, Vector2i(0, 0), _("Play a sound at message arrival"), "", column_width_),
+
+     // Saving options
+     sb_autosave_(&box_saving_,
+                  0,
+                  0,
+                  column_width_,
+                  250,
+                  opt.autosave / 60,
+                  0,
+                  100,
+                  _("Save game automatically every:"),
+                  UI::SpinBox::Units::kMinutes,
+                  g_gr->images().get("images/ui_basic/but3.png"),
+                  UI::SpinBox::Type::kBig),
+
+     sb_rolling_autosave_(&box_saving_,
+                          0,
+                          0,
+                          column_width_,
+                          250,
+                          opt.rolling_autosave,
+                          1,
+                          20,
+                          _("Maximum number of autosave files:"),
+                          UI::SpinBox::Units::kNone,
+                          g_gr->images().get("images/ui_basic/but3.png"),
+                          UI::SpinBox::Type::kBig),
+
+     zip_(&box_saving_,
+          Vector2i(0, 0),
+          _("Compress widelands data files (maps, replays and savegames)"),
+          "",
+          column_width_),
+     write_syncstreams_(&box_saving_,
+                        Vector2i(0, 0),
+                        _("Write syncstreams in network games to debug desyncs"),
+                        "",
+                        column_width_),
+
+     // Game options
+     auto_roadbuild_mode_(
+        &box_game_, Vector2i(0, 0), _("Start building road after placing a flag")),
+     show_workarea_preview_(&box_game_, Vector2i(0, 0), _("Show buildings area preview")),
+     transparent_chat_(&box_game_,
+                       Vector2i(0, 0),
+                       _("Show in-game chat with transparent background"),
+                       "",
+                       column_width_),
+
+     /** TRANSLATORS: A watchwindow is a window where you keep watching an object or a map region,*/
+     /** TRANSLATORS: and it also lets you jump to it on the map. */
+     single_watchwin_(&box_game_, Vector2i(0, 0), _("Use single watchwindow mode")),
+
+     os_(opt) {
+	// Set up UI Elements
+	title_.set_fontsize(UI_FONT_SIZE_BIG);
+
+	tabs_.add("options_interface", _("Interface"), &box_interface_, "");
+	tabs_.add("options_windows", _("Windows"), &box_windows_, "");
+	tabs_.add("options_sound", _("Sound"), &box_sound_, "");
+	tabs_.add("options_saving", _("Saving"), &box_saving_, "");
+	tabs_.add("options_game", _("Game"), &box_game_, "");
+
+	// We want the last active tab when "Apply" was clicked.
+	if (os_.active_tab < tabs_.tabs().size()) {
+		tabs_.activate(os_.active_tab);
+	}
+
+	tabs_.set_pos(Vector2i(hmargin_, tab_panel_y_));
+
+	box_interface_.set_size(tabs_.get_inner_w(), tabs_.get_inner_h());
+	box_windows_.set_size(tabs_.get_inner_w(), tabs_.get_inner_h());
+	box_sound_.set_size(tabs_.get_inner_w(), tabs_.get_inner_h());
+	box_saving_.set_size(tabs_.get_inner_w(), tabs_.get_inner_h());
+	box_game_.set_size(tabs_.get_inner_w(), tabs_.get_inner_h());
+
+	// Interface
+	box_interface_.add(&language_dropdown_, UI::Align::kLeft);
+	box_interface_.add(&resolution_dropdown_, UI::Align::kLeft);
+	box_interface_.add(&fullscreen_, UI::Align::kLeft);
+	box_interface_.add(&inputgrab_, UI::Align::kLeft);
+	box_interface_.add(&sb_maxfps_, UI::Align::kLeft);
+
+	// Windows
+	box_windows_.add(&snap_win_overlap_only_, UI::Align::kLeft);
+	box_windows_.add(&dock_windows_to_edges_, UI::Align::kLeft);
+	box_windows_.add(&sb_dis_panel_, UI::Align::kLeft);
+	box_windows_.add(&sb_dis_border_, UI::Align::kLeft);
+
+	// Sound
+	box_sound_.add(&music_, UI::Align::kLeft);
+	box_sound_.add(&fx_, UI::Align::kLeft);
+	box_sound_.add(&message_sound_, UI::Align::kLeft);
+
+	// Saving
+	box_saving_.add(&sb_autosave_, UI::Align::kLeft);
+	box_saving_.add(&sb_rolling_autosave_, UI::Align::kLeft);
+	box_saving_.add(&zip_, UI::Align::kLeft);
+	box_saving_.add(&write_syncstreams_, UI::Align::kLeft);
+
+	// Game
+	box_game_.add(&auto_roadbuild_mode_, UI::Align::kLeft);
+	box_game_.add(&show_workarea_preview_, UI::Align::kLeft);
+	box_game_.add(&transparent_chat_, UI::Align::kLeft);
+	box_game_.add(&single_watchwin_, UI::Align::kLeft);
+
+	// Bind actions
+	cancel_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_back, this));
+	apply_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_apply, this));
+	ok_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_ok, this));
+
+	/** TRANSLATORS Options: Save game automatically every: */
+	sb_autosave_.add_replacement(0, _("Off"));
+
+	// Fill in data
+	// Interface options
+	for (int modes = 0; modes < SDL_GetNumDisplayModes(0); ++modes) {
+		SDL_DisplayMode mode;
+		SDL_GetDisplayMode(0, modes, &mode);
+		if (800 <= mode.w && 600 <= mode.h &&
+		    (SDL_BITSPERPIXEL(mode.format) == 32 || SDL_BITSPERPIXEL(mode.format) == 24)) {
+			ScreenResolution this_res = {
+			   mode.w, mode.h, static_cast<int32_t>(SDL_BITSPERPIXEL(mode.format))};
+			if (this_res.depth == 24)
+				this_res.depth = 32;
+			if (resolutions_.empty() || this_res.xres != resolutions_.rbegin()->xres ||
+			    this_res.yres != resolutions_.rbegin()->yres) {
+				resolutions_.push_back(this_res);
 			}
 		}
 	}
 
 	bool did_select_a_res = false;
-	for (uint32_t i = 0; i < m_resolutions.size(); ++i) {
-		char buf[32];
-		sprintf
-			(buf, _("%ix%i %i bit"), m_resolutions[i].xres,
-			 m_resolutions[i].yres, m_resolutions[i].depth);
-		const bool selected =
-			m_resolutions[i].xres  == opt.xres and
-			m_resolutions[i].yres  == opt.yres and
-			m_resolutions[i].depth == opt.depth;
+	for (uint32_t i = 0; i < resolutions_.size(); ++i) {
+		const bool selected = resolutions_[i].xres == opt.xres && resolutions_[i].yres == opt.yres;
 		did_select_a_res |= selected;
-		m_reslist.add(buf, 0, NULL, selected);
+		resolution_dropdown_.add(
+		   /** TRANSLATORS: Screen resolution, e.g. 800 x 600*/
+		   (boost::format(_("%1% x %2%")) % resolutions_[i].xres % resolutions_[i].yres).str(), i,
+		   nullptr, selected);
 	}
-	if (not did_select_a_res) {
-		char buf[32];
-		sprintf(buf, "%ix%i %i bit", opt.xres, opt.yres, opt.depth);
-		m_reslist.add(buf, 0, NULL, true);
-		uint32_t entry = m_resolutions.size();
-		m_resolutions.resize(entry + 1);
-		m_resolutions[entry].xres  = opt.xres;
-		m_resolutions[entry].yres  = opt.yres;
-		m_resolutions[entry].depth = opt.depth;
+	if (!did_select_a_res) {
+		uint32_t entry = resolutions_.size();
+		resolutions_.resize(entry + 1);
+		resolutions_[entry].xres = opt.xres;
+		resolutions_[entry].yres = opt.yres;
+		resolution_dropdown_.add(
+		   (boost::format(_("%1% x %2%")) % opt.xres % opt.yres).str(), entry, nullptr, true);
 	}
 
-	// Fill language list
-	m_language_list.add
-		(_("Try system language"), "", // "try", as many translations are missing.
-		 NULL, "" == opt.language);
+	fullscreen_.set_state(opt.fullscreen);
+	inputgrab_.set_state(opt.inputgrab);
 
-	m_language_list.add
-		("English", "en",
-		 NULL, "en" == opt.language);
+	// Windows options
+	snap_win_overlap_only_.set_state(opt.snap_win_overlap_only);
+	dock_windows_to_edges_.set_state(opt.dock_windows_to_edges);
 
-	filenameset_t files;
-	Section * s = &g_options.pull_section("global");
-	g_fs->FindFiles(s->get_string("localedir", INSTALL_LOCALEDIR), "*", &files);
-	Profile ln("txts/languages");
-	s = &ln.pull_section("languages");
-	bool own_selected = "" == opt.language || "en" == opt.language;
+	// Sound options
+	music_.set_state(opt.music);
+	music_.set_enabled(!g_sound_handler.lock_audio_disabling_);
+	fx_.set_state(opt.fx);
+	fx_.set_enabled(!g_sound_handler.lock_audio_disabling_);
+	message_sound_.set_state(opt.message_sound);
+
+	// Saving options
+	zip_.set_state(opt.zip);
+	write_syncstreams_.set_state(opt.write_syncstreams);
+
+	// Game options
+	auto_roadbuild_mode_.set_state(opt.auto_roadbuild_mode);
+	show_workarea_preview_.set_state(opt.show_warea);
+	transparent_chat_.set_state(opt.transparent_chat);
+	single_watchwin_.set_state(opt.single_watchwin);
+
+	// Language options
+	add_languages_to_list(opt.language);
+}
+
+void FullscreenMenuOptions::add_languages_to_list(const std::string& current_locale) {
+
+	// We want these two entries on top - the most likely user's choice and the default.
+	language_dropdown_.add(_("Try system language"), "", nullptr, current_locale == "");
+	language_dropdown_.add("English", "en", nullptr, current_locale == "en");
 
 	// Add translation directories to the list
-	for
-		(filenameset_t::iterator pname = files.begin();
-		 pname != files.end();
-		 ++pname)
-	{
-		char const * const path = pname->c_str();
+	std::vector<LanguageEntry> entries;
+	std::string selected_locale;
 
-		if
-			(!strcmp(FileSystem::FS_Filename(path), ".") ||
-			 !strcmp(FileSystem::FS_Filename(path), "..") ||
-			 !g_fs->IsDirectory(path))
-			continue;
+	try {  // Begin read locales table
+		LuaInterface lua;
+		std::unique_ptr<LuaTable> all_locales(lua.run_script("i18n/locales.lua"));
+		all_locales->do_not_warn_about_unaccessed_keys();  // We are only reading partial information
+		                                                   // as needed
 
-		char const * const abbrev = FileSystem::FS_Filename(path);
-		m_language_list.add
-			(s->get_string(abbrev, abbrev), abbrev,
-			 NULL, abbrev == opt.language);
-		own_selected |= abbrev == opt.language;
+		// We start with the locale directory so we can pick up locales
+		// that don't have a configuration file yet.
+		std::unique_ptr<FileSystem> fs(&FileSystem::create(i18n::get_localedir()));
+		FilenameSet files = fs->list_directory(".");
+
+		for (const std::string& localename : files) {  // Begin scan locales directory
+			const char* path = localename.c_str();
+			if (!strcmp(FileSystem::fs_filename(path), ".") ||
+			    !strcmp(FileSystem::fs_filename(path), "..") || !fs->is_directory(path)) {
+				continue;
+			}
+
+			try {  // Begin read locale from table
+				std::unique_ptr<LuaTable> table = all_locales->get_table(localename);
+				table->do_not_warn_about_unaccessed_keys();
+
+				std::string name = i18n::make_ligatures(table->get_string("name").c_str());
+				const std::string sortname = table->get_string("sort_name");
+				entries.push_back(LanguageEntry(localename, name, sortname));
+
+				if (localename == current_locale) {
+					selected_locale = current_locale;
+				}
+
+			} catch (const WException&) {
+				log("Could not read locale for: %s\n", localename.c_str());
+				entries.push_back(LanguageEntry(localename, localename, localename));
+			}  // End read locale from table
+		}     // End scan locales directory
+	} catch (const LuaError& err) {
+		log("Could not read locales information from file: %s\n", err.what());
+		return;  // Nothing more can be done now.
+	}           // End read locales table
+
+	find_selected_locale(&selected_locale, current_locale);
+	std::sort(entries.begin(), entries.end());
+	for (const LanguageEntry& entry : entries) {
+		language_dropdown_.add(entry.descname.c_str(), entry.localename, nullptr,
+		                       entry.localename == selected_locale, "");
 	}
-	// Add currently used language manually
-	if (!own_selected)
-		m_language_list.add
-			(s->get_string(opt.language.c_str(), opt.language.c_str()),
-			 opt.language, NULL, true);
 }
 
-void Fullscreen_Menu_Options::advanced_options() {
-	Fullscreen_Menu_Advanced_Options aom(os);
-	if (aom.run() == Fullscreen_Menu_Advanced_Options::om_ok) {
-		os = aom.get_values();
-		end_modal(om_restart);
-	}
+void FullscreenMenuOptions::clicked_apply() {
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kApplyOptions);
 }
 
-bool Fullscreen_Menu_Options::handle_key(bool down, SDL_keysym code)
-{
-	if (down) {
-		switch (code.sym) {
-			case SDLK_KP_ENTER:
-			case SDLK_RETURN:
-				end_modal(static_cast<int32_t>(om_ok));
-				return true;
-			case SDLK_ESCAPE:
-				end_modal(static_cast<int32_t>(om_cancel));
-				return true;
-			default:
-				break; // not handled
-		}
-	}
-
-	return Fullscreen_Menu_Base::handle_key(down, code);
-}
-
-Options_Ctrl::Options_Struct Fullscreen_Menu_Options::get_values() {
-	const uint32_t res_index = m_reslist.selection_index();
-
+OptionsCtrl::OptionsStruct FullscreenMenuOptions::get_values() {
 	// Write all data from UI elements
-	os.xres                  = m_resolutions[res_index].xres;
-	os.yres                  = m_resolutions[res_index].yres;
-	os.depth                 = m_resolutions[res_index].depth;
-	os.inputgrab             = m_inputgrab.get_state();
-	os.fullscreen            = m_fullscreen.get_state();
-	os.single_watchwin       = m_single_watchwin.get_state();
-	os.auto_roadbuild_mode   = m_auto_roadbuild_mode.get_state();
-	os.show_warea            = m_show_workarea_preview.get_state();
-	os.snap_windows_only_when_overlapping
-		= m_snap_windows_only_when_overlapping.get_state();
-	os.dock_windows_to_edges = m_dock_windows_to_edges.get_state();
-	os.music                 = m_music.get_state();
-	os.fx                    = m_fx.get_state();
-	if (m_language_list.has_selection())
-		os.language      = m_language_list.get_selected();
-	os.autosave              = m_sb_autosave.getValue();
-	os.maxfps                = m_sb_maxfps.getValue();
-	os.remove_replays        = m_sb_remove_replays.getValue();
-
-	return os;
-}
-
-
-/**
- * The advanced option menu
- */
-Fullscreen_Menu_Advanced_Options::Fullscreen_Menu_Advanced_Options
-	(Options_Ctrl::Options_Struct const opt)
-	:
-	Fullscreen_Menu_Base("optionsmenu.jpg"),
-
-// Values for alignment and size
-	m_vbutw (get_h() * 333 / 10000),
-	m_butw  (get_w() / 4),
-	m_buth  (get_h() * 9 / 200),
-
-// Buttons
-	m_cancel
-		(this, "cancel",
-		 get_w() * 41 / 80, get_h() * 19 / 20, m_butw, m_buth,
-		 g_gr->images().get("pics/but0.png"),
-		 _("Cancel"), std::string(), true, false),
-	m_apply
-		(this, "apply",
-		 get_w() / 4,   get_h() * 19 / 20, m_butw, m_buth,
-		 g_gr->images().get("pics/but2.png"),
-		 _("Apply"), std::string(), true, false),
-
-// Spinboxes
-	m_sb_speed
-		(this,
-		 get_w() * 18 / 25, get_h() * 63 / 100, get_w() / 4, m_vbutw,
-		 opt.speed_of_new_game / 1000, 0, 100, _("x"),
-		 g_gr->images().get("pics/but1.png")),
-	m_sb_dis_panel
-		(this,
-		 get_w() * 18 / 25, get_h() * 6768 / 10000, get_w() / 4, m_vbutw,
-		 opt.panel_snap_distance, 0, 100, _("px."),
-		 g_gr->images().get("pics/but1.png")),
-	m_sb_dis_border
-		(this,
-		 get_w() * 18 / 25, get_h() * 7235 / 10000, get_w() / 4, m_vbutw,
-		 opt.border_snap_distance, 0, 100, _("px."),
-		 g_gr->images().get("pics/but1.png")),
-
-
-// Title
-	m_title
-		(this,
-		 get_w() / 2, get_h() / 40,
-		 _("Advanced Options"), UI::Align_HCenter),
-
-// First options block
-	m_ui_font_list
-		(this,
-		 get_w() / 10, get_h() * 1667 / 10000,
-		 get_w() /  4, get_h() * 2833 / 10000,
-		 UI::Align_Left, true),
-	m_label_ui_font
-		(this,
-		 get_w() * 1063 / 10000, get_h() * 1417 / 10000,
-		 _("Main menu font:"), UI::Align_VCenter),
-	m_message_sound
-		(this, Point(get_w() * 29 / 80, get_h() * 171 / 1000)),
-	m_label_message_sound
-		(this,
-		 get_w() * 4 / 10, get_h() * 1883 / 10000,
-		 _("Play a sound at message arrival."),
-		 UI::Align_VCenter),
-
-// Second options block
-	m_nozip (this, Point(get_w() * 19 / 200, get_h() * 5833 / 10000)),
-	m_label_nozip
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 3 / 5,
-		 _("Do not zip widelands data files (maps, replays and savegames)."),
-		 UI::Align_VCenter),
-	m_label_speed
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 6467 / 10000,
-		 _("Speed of a new game:"), UI::Align_VCenter),
-	m_label_snap_dis_panel
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 6933 / 10000,
-		 _("Distance for windows to snap to other panels:"), UI::Align_VCenter),
-	m_label_snap_dis_border
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 37 / 50,
-		 _("Distance for windows to snap to borders:"), UI::Align_VCenter),
-
-	m_remove_syncstreams (this, Point(get_w() * 19 / 200, get_h() * 7715 / 10000)),
-	m_label_remove_syncstreams
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 7865 / 10000,
-		 _("Remove Syncstream dumps on startup"), UI::Align_VCenter),
-
-	m_opengl (this, Point(get_w() * 19 / 200, get_h() * 8180 / 10000)),
-	m_label_opengl
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 8330 / 10000,
-		 _("OpenGL rendering"), UI::Align_VCenter),
-	m_transparent_chat (this, Point(get_w() * 19 / 200, get_h() * 8645 / 10000)),
-	m_label_transparent_chat
-		(this,
-		 get_w() * 1313 / 10000, get_h() * 8795 / 10000,
-		 _("Show in game chat with transparent background"), UI::Align_VCenter),
-
-	os(opt)
-{
-	m_cancel.sigclicked.connect
-		(boost::bind
-			(&Fullscreen_Menu_Advanced_Options::end_modal,
-			 boost::ref(*this),
-			 static_cast<int32_t>(om_cancel)));
-	m_apply.sigclicked.connect
-		(boost::bind
-			(&Fullscreen_Menu_Advanced_Options::end_modal,
-			 boost::ref(*this),
-			 static_cast<int32_t>(om_ok)));
-
-	m_cancel.set_font(font_small());
-	m_apply.set_font(font_small());
-
-	m_title                .set_textstyle(ts_big());
-	m_label_message_sound  .set_textstyle(ts_small());
-	m_message_sound        .set_state(opt.message_sound);
-	m_label_nozip          .set_textstyle(ts_small());
-	m_nozip                .set_state(opt.nozip);
-	m_label_speed          .set_textstyle(ts_small());
-	m_label_snap_dis_border.set_textstyle(ts_small());
-	m_label_snap_dis_panel .set_textstyle(ts_small());
-	m_label_remove_syncstreams.set_textstyle(ts_small());
-	m_remove_syncstreams   .set_state(opt.remove_syncstreams);
-	m_label_opengl         .set_textstyle(ts_small());
-	m_opengl               .set_state(opt.opengl);
-#ifndef USE_OPENGL
-	m_opengl               .set_enabled(false);
-#endif
-	m_label_transparent_chat.set_textstyle(ts_small());
-	m_transparent_chat     .set_state(opt.transparent_chat);
-	m_sb_speed             .set_textstyle(ts_small());
-	m_sb_dis_border        .set_textstyle(ts_small());
-	m_sb_dis_panel         .set_textstyle(ts_small());
-
-	m_sb_speed.add_replacement(0, _("Pause"));
-
-	m_label_ui_font.set_textstyle(ts_small());
-	m_ui_font_list .set_font(ui_fn(), fs_small());
-
-	// Fill the font list.
-	{ // For use of string ui_font take a look at fullscreen_menu_base.cc
-		bool did_select_a_font = false;
-		bool cmpbool = !strcmp("serif", opt.ui_font.c_str());
-		did_select_a_font = cmpbool;
-		m_ui_font_list.add
-			(_("DejaVuSerif (Default)"), "serif", NULL, cmpbool);
-		cmpbool = !strcmp("sans", opt.ui_font.c_str());
-		did_select_a_font |= cmpbool;
-		m_ui_font_list.add
-			("DejaVuSans", "sans", NULL, cmpbool);
-		cmpbool = !strcmp(UI_FONT_NAME_WIDELANDS, opt.ui_font.c_str());
-		did_select_a_font |= cmpbool;
-		m_ui_font_list.add
-			("Widelands", UI_FONT_NAME_WIDELANDS, NULL, cmpbool);
-
-		// Fill with all left *.ttf files we find in fonts
-		filenameset_t files;
-		g_fs->FindFiles("fonts/", "*.ttf", &files);
-
-		for
-			(filenameset_t::iterator pname = files.begin();
-			 pname != files.end();
-			 ++pname)
-		{
-			char const * const path = pname->c_str();
-			char const * const name = FileSystem::FS_Filename(path);
-			if (!strcmp(name, UI_FONT_NAME_SERIF))
-				continue;
-			if (!strcmp(name, UI_FONT_NAME_SANS))
-				continue;
-			if (g_fs->IsDirectory(name))
-				continue;
-			cmpbool = !strcmp(name, opt.ui_font.c_str());
-			did_select_a_font |= cmpbool;
-			m_ui_font_list.add
-				(name, name, NULL, cmpbool);
-		}
-
-		if (!did_select_a_font)
-			m_ui_font_list.select(0);
+	// Interface options
+	if (language_dropdown_.has_selection()) {
+		os_.language = language_dropdown_.get_selected();
 	}
-}
-
-bool Fullscreen_Menu_Advanced_Options::handle_key(bool down, SDL_keysym code)
-{
-	if (down) {
-		switch (code.sym) {
-			case SDLK_KP_ENTER:
-			case SDLK_RETURN:
-				end_modal(static_cast<int32_t>(om_ok));
-				return true;
-			case SDLK_ESCAPE:
-				end_modal(static_cast<int32_t>(om_cancel));
-				return true;
-			default:
-				break; // not handled
-		}
+	if (resolution_dropdown_.has_selection()) {
+		const uint32_t res_index = resolution_dropdown_.get_selected();
+		os_.xres = resolutions_[res_index].xres;
+		os_.yres = resolutions_[res_index].yres;
 	}
+	os_.fullscreen = fullscreen_.get_state();
+	os_.inputgrab = inputgrab_.get_state();
+	os_.maxfps = sb_maxfps_.get_value();
 
-	return Fullscreen_Menu_Base::handle_key(down, code);
+	// Windows options
+	os_.snap_win_overlap_only = snap_win_overlap_only_.get_state();
+	os_.dock_windows_to_edges = dock_windows_to_edges_.get_state();
+	os_.panel_snap_distance = sb_dis_panel_.get_value();
+	os_.border_snap_distance = sb_dis_border_.get_value();
+
+	// Sound options
+	os_.music = music_.get_state();
+	os_.fx = fx_.get_state();
+	os_.message_sound = message_sound_.get_state();
+
+	// Saving options
+	os_.autosave = sb_autosave_.get_value();
+	os_.rolling_autosave = sb_rolling_autosave_.get_value();
+	os_.zip = zip_.get_state();
+	os_.write_syncstreams = write_syncstreams_.get_state();
+
+	// Game options
+	os_.auto_roadbuild_mode = auto_roadbuild_mode_.get_state();
+	os_.show_warea = show_workarea_preview_.get_state();
+	os_.transparent_chat = transparent_chat_.get_state();
+	os_.single_watchwin = single_watchwin_.get_state();
+
+	// Last tab for reloading the options menu
+	os_.active_tab = tabs_.active();
+	return os_;
 }
-
-
-Options_Ctrl::Options_Struct Fullscreen_Menu_Advanced_Options::get_values() {
-	// Write all remaining data from UI elements
-	os.message_sound        = m_message_sound.get_state();
-	os.nozip                = m_nozip.get_state();
-	os.ui_font              = m_ui_font_list.get_selected();
-	os.speed_of_new_game    = m_sb_speed.getValue() * 1000;
-	os.panel_snap_distance  = m_sb_dis_panel.getValue();
-	os.border_snap_distance = m_sb_dis_border.getValue();
-	os.remove_syncstreams   = m_remove_syncstreams.get_state();
-#ifdef USE_OPENGL
-	os.opengl               = m_opengl.get_state();
-#else
-	os.opengl               = false;
-#endif
-	os.transparent_chat     = m_transparent_chat.get_state();
-	return os;
-}
-
 
 /**
  * Handles communication between window class and options
  */
-Options_Ctrl::Options_Ctrl(Section & s)
-: m_opt_section(s), m_opt_dialog(new Fullscreen_Menu_Options(options_struct()))
-{
+OptionsCtrl::OptionsCtrl(Section& s)
+   : opt_section_(s),
+     opt_dialog_(
+        std::unique_ptr<FullscreenMenuOptions>(new FullscreenMenuOptions(options_struct(0)))) {
 	handle_menu();
 }
 
-Options_Ctrl::~Options_Ctrl() {
-	delete m_opt_dialog;
-}
-
-void Options_Ctrl::handle_menu()
-{
-	int32_t i = m_opt_dialog->run();
-	if (i != Fullscreen_Menu_Options::om_cancel)
+void OptionsCtrl::handle_menu() {
+	FullscreenMenuBase::MenuTarget i = opt_dialog_->run<FullscreenMenuBase::MenuTarget>();
+	if (i != FullscreenMenuBase::MenuTarget::kBack)
 		save_options();
-	if (i == Fullscreen_Menu_Options::om_restart) {
-		delete m_opt_dialog;
-		m_opt_dialog = new Fullscreen_Menu_Options(options_struct());
-		handle_menu(); // Restart general options menu
+	if (i == FullscreenMenuBase::MenuTarget::kApplyOptions) {
+		uint32_t active_tab = opt_dialog_->get_values().active_tab;
+		g_gr->change_resolution(opt_dialog_->get_values().xres, opt_dialog_->get_values().yres);
+		g_gr->set_fullscreen(opt_dialog_->get_values().fullscreen);
+		opt_dialog_.reset(new FullscreenMenuOptions(options_struct(active_tab)));
+		handle_menu();  // Restart general options menu
 	}
 }
 
-Options_Ctrl::Options_Struct Options_Ctrl::options_struct() {
-	Options_Struct opt;
-	opt.xres                = m_opt_section.get_int
-		("xres",                XRES);
-	opt.yres                = m_opt_section.get_int
-		("yres",                YRES);
-	opt.depth               = m_opt_section.get_int
-		("depth",                 16);
-	opt.inputgrab           = m_opt_section.get_bool
-		("inputgrab",          false);
-	opt.fullscreen          = m_opt_section.get_bool
-		("fullscreen",         false);
-	opt.single_watchwin     = m_opt_section.get_bool
-		("single_watchwin",    false);
-	opt.auto_roadbuild_mode = m_opt_section.get_bool
-		("auto_roadbuild_mode", true);
-	opt.show_warea          = m_opt_section.get_bool
-		("workareapreview",    true);
-	opt.snap_windows_only_when_overlapping
-		= m_opt_section.get_bool
-			("snap_windows_only_when_overlapping",      false);
-	opt.dock_windows_to_edges
-		= m_opt_section.get_bool
-			("dock_windows_to_edges",                   false);
-	opt.language              =  m_opt_section.get_string
-		("language",         "");
-	opt.music                 = !m_opt_section.get_bool
-		("disable_music",   false);
-	opt.fx                    = !m_opt_section.get_bool
-		("disable_fx",      false);
-	opt.autosave
-		= m_opt_section.get_int
-			("autosave",        DEFAULT_AUTOSAVE_INTERVAL * 60);
-	opt.maxfps                =  m_opt_section.get_int
-		("maxfps",              25);
+OptionsCtrl::OptionsStruct OptionsCtrl::options_struct(uint32_t active_tab) {
+	OptionsStruct opt;
+	// Interface options
+	opt.xres = opt_section_.get_int("xres", DEFAULT_RESOLUTION_W);
+	opt.yres = opt_section_.get_int("yres", DEFAULT_RESOLUTION_H);
+	opt.fullscreen = opt_section_.get_bool("fullscreen", false);
+	opt.inputgrab = opt_section_.get_bool("inputgrab", false);
+	opt.maxfps = opt_section_.get_int("maxfps", 25);
 
-	opt.message_sound         =  m_opt_section.get_bool
-		("sound_at_message", true);
-	opt.nozip                 =  m_opt_section.get_bool
-		("nozip",            false);
-	opt.ui_font               =  m_opt_section.get_string
-		("ui_font",     "serif");
-	opt.speed_of_new_game     =  m_opt_section.get_int
-		("speed_of_new_game", 1000);
-	opt.border_snap_distance  =  m_opt_section.get_int
-		("border_snap_distance", 0);
-	opt.panel_snap_distance   =  m_opt_section.get_int
-		("panel_snap_distance",  0);
-	opt.remove_replays        = m_opt_section.get_int
-		("remove_replays", 0);
-	opt.remove_syncstreams    = m_opt_section.get_bool
-		("remove_syncstreams", true);
-	opt.opengl                = m_opt_section.get_bool
-		("opengl", true);
-	opt.transparent_chat      = m_opt_section.get_bool
-		("transparent_chat", true);
+	// Windows options
+	opt.snap_win_overlap_only = opt_section_.get_bool("snap_windows_only_when_overlapping", false);
+	opt.dock_windows_to_edges = opt_section_.get_bool("dock_windows_to_edges", false);
+	opt.panel_snap_distance = opt_section_.get_int("panel_snap_distance", 0);
+	opt.border_snap_distance = opt_section_.get_int("border_snap_distance", 0);
+
+	// Sound options
+	opt.music = !opt_section_.get_bool("disable_music", false);
+	opt.fx = !opt_section_.get_bool("disable_fx", false);
+	opt.message_sound = opt_section_.get_bool("sound_at_message", true);
+
+	// Saving options
+	opt.autosave = opt_section_.get_int("autosave", DEFAULT_AUTOSAVE_INTERVAL * 60);
+	opt.rolling_autosave = opt_section_.get_int("rolling_autosave", 5);
+	opt.zip = !opt_section_.get_bool("nozip", false);
+	opt.write_syncstreams = opt_section_.get_bool("write_syncstreams", true);
+
+	// Game options
+	opt.auto_roadbuild_mode = opt_section_.get_bool("auto_roadbuild_mode", true);
+	opt.show_warea = opt_section_.get_bool("workareapreview", true);
+	opt.transparent_chat = opt_section_.get_bool("transparent_chat", true);
+	opt.single_watchwin = opt_section_.get_bool("single_watchwin", false);
+
+	// Language options
+	opt.language = opt_section_.get_string("language", "");
+
+	// Last tab for reloading the options menu
+	opt.active_tab = active_tab;
 	return opt;
 }
 
-void Options_Ctrl::save_options() {
-	Options_Ctrl::Options_Struct opt = m_opt_dialog->get_values();
-	m_opt_section.set_int ("xres",                  opt.xres);
-	m_opt_section.set_int ("yres",                  opt.yres);
-	m_opt_section.set_bool("fullscreen",            opt.fullscreen);
-	m_opt_section.set_bool("inputgrab",             opt.inputgrab);
-	m_opt_section.set_bool("single_watchwin",       opt.single_watchwin);
-	m_opt_section.set_bool("auto_roadbuild_mode",   opt.auto_roadbuild_mode);
-	m_opt_section.set_bool("workareapreview",       opt.show_warea);
-	m_opt_section.set_bool
-		("snap_windows_only_when_overlapping",
-		 opt.snap_windows_only_when_overlapping);
-	m_opt_section.set_bool("dock_windows_to_edges", opt.dock_windows_to_edges);
-	m_opt_section.set_int ("depth",                 opt.depth);
-	m_opt_section.set_bool("disable_music",        !opt.music);
-	m_opt_section.set_bool("disable_fx",           !opt.fx);
-	m_opt_section.set_string("language",            opt.language);
-	m_opt_section.set_int("autosave",               opt.autosave * 60);
-	m_opt_section.set_int("maxfps",                 opt.maxfps);
+void OptionsCtrl::save_options() {
+	OptionsCtrl::OptionsStruct opt = opt_dialog_->get_values();
 
-	m_opt_section.set_bool("sound_at_message",      opt.message_sound);
-	m_opt_section.set_bool("nozip",                 opt.nozip);
-	m_opt_section.set_string("ui_font",             opt.ui_font);
-	m_opt_section.set_int("speed_of_new_game",      opt.speed_of_new_game);
-	m_opt_section.set_int("border_snap_distance",   opt.border_snap_distance);
-	m_opt_section.set_int("panel_snap_distance",    opt.panel_snap_distance);
+	// Interface options
+	opt_section_.set_int("xres", opt.xres);
+	opt_section_.set_int("yres", opt.yres);
+	opt_section_.set_bool("fullscreen", opt.fullscreen);
+	opt_section_.set_bool("inputgrab", opt.inputgrab);
+	opt_section_.set_int("maxfps", opt.maxfps);
 
-	m_opt_section.set_int("remove_replays",         opt.remove_replays);
-	m_opt_section.set_bool("remove_syncstreams",    opt.remove_syncstreams);
-	m_opt_section.set_bool("opengl",                opt.opengl);
-	m_opt_section.set_bool("transparent_chat",      opt.transparent_chat);
+	// Windows options
+	opt_section_.set_bool("snap_windows_only_when_overlapping", opt.snap_win_overlap_only);
+	opt_section_.set_bool("dock_windows_to_edges", opt.dock_windows_to_edges);
+	opt_section_.set_int("panel_snap_distance", opt.panel_snap_distance);
+	opt_section_.set_int("border_snap_distance", opt.border_snap_distance);
+
+	// Sound options
+	opt_section_.set_bool("disable_music", !opt.music);
+	opt_section_.set_bool("disable_fx", !opt.fx);
+	opt_section_.set_bool("sound_at_message", opt.message_sound);
+
+	// Saving options
+	opt_section_.set_int("autosave", opt.autosave * 60);
+	opt_section_.set_int("rolling_autosave", opt.rolling_autosave);
+	opt_section_.set_bool("nozip", !opt.zip);
+	opt_section_.set_bool("write_syncstreams", opt.write_syncstreams);
+
+	// Game options
+	opt_section_.set_bool("auto_roadbuild_mode", opt.auto_roadbuild_mode);
+	opt_section_.set_bool("workareapreview", opt.show_warea);
+	opt_section_.set_bool("transparent_chat", opt.transparent_chat);
+	opt_section_.set_bool("single_watchwin", opt.single_watchwin);
+
+	// Language options
+	opt_section_.set_string("language", opt.language);
 
 	WLApplication::get()->set_input_grab(opt.inputgrab);
 	i18n::set_locale(opt.language);
+	UI::g_fh1->reinitialize_fontset();
 	g_sound_handler.set_disable_music(!opt.music);
 	g_sound_handler.set_disable_fx(!opt.fx);
 }

@@ -17,17 +17,24 @@
  *
  */
 
-#ifndef WUI_PORTDOCKWARES_DISPLAY_H
-#define WUI_PORTDOCKWARES_DISPLAY_H
+#ifndef WL_WUI_PORTDOCKWARESDISPLAY_H
+#define WL_WUI_PORTDOCKWARESDISPLAY_H
 
-#include "waresdisplay.h"
+#include "ui_basic/box.h"
+#include "wui/interactive_gamebase.h"
+#include "wui/waresdisplay.h"
 
 namespace Widelands {
-struct PortDock;
+class PortDock;
 }
 
-AbstractWaresDisplay * create_portdock_wares_display
-	(UI::Panel * parent, uint32_t width, Widelands::PortDock & pd,
-	 Widelands::WareWorker type);
+AbstractWaresDisplay* create_portdock_wares_display(UI::Panel* parent,
+                                                    uint32_t width,
+                                                    Widelands::PortDock& pd,
+                                                    Widelands::WareWorker type);
 
-#endif // WUI_PORTDOCKWARES_DISPLAY_H
+UI::Box* create_portdock_expedition_display(UI::Panel* parent,
+                                            Widelands::Warehouse& wh,
+                                            InteractiveGameBase&);
+
+#endif  // end of include guard: WL_WUI_PORTDOCKWARESDISPLAY_H

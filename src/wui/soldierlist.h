@@ -17,22 +17,20 @@
  *
  */
 
-#ifndef _SOLDIERLIST_H_
-#define _SOLDIERLIST_H_
+#ifndef WL_WUI_SOLDIERLIST_H
+#define WL_WUI_SOLDIERLIST_H
 
-class Interactive_GameBase;
+class InteractiveGameBase;
 
 namespace UI {
-struct Panel;
+class Panel;
 }
 
 namespace Widelands {
 class Building;
 }
 
-UI::Panel * create_soldier_list
-	(UI::Panel & parent,
-	 Interactive_GameBase & igb,
-	 Widelands::Building & building);
+UI::Panel*
+create_soldier_list(UI::Panel& parent, InteractiveGameBase& igb, Widelands::Building& building);
 
-#endif // _SOLDIERLIST_H_
+#endif  // end of include guard: WL_WUI_SOLDIERLIST_H

@@ -17,32 +17,30 @@
  *
  */
 
-#ifndef CMD_CALCULATE_STATISTICS_H
-#define CMD_CALCULATE_STATISTICS_H
+#ifndef WL_LOGIC_CMD_CALCULATE_STATISTICS_H
+#define WL_LOGIC_CMD_CALCULATE_STATISTICS_H
 
 #include <string>
 
-#include "cmd_queue.h"
-#include "scripting/scripting.h"
+#include "logic/cmd_queue.h"
 
 namespace Widelands {
 
-struct Cmd_CalculateStatistics : public GameLogicCommand {
-	Cmd_CalculateStatistics() : GameLogicCommand(0) {} // For savegame loading
-	Cmd_CalculateStatistics(int32_t const _duetime) :
-		GameLogicCommand(_duetime) {}
+struct CmdCalculateStatistics : public GameLogicCommand {
+	CmdCalculateStatistics() : GameLogicCommand(0) {
+	}  // For savegame loading
+	CmdCalculateStatistics(uint32_t const init_duetime) : GameLogicCommand(init_duetime) {
+	}
 
 	// Write these commands to a file (for savegames)
-	void Write(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	void Read (FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
 
-	virtual uint8_t id() const {return QUEUE_CMD_CALCULATE_STATISTICS;}
-	virtual void execute(Game &);
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kCalculateStatistics;
+	}
+	void execute(Game&) override;
 };
-
 }
 
-
-
-#endif /* end of include guard: CMD_CALCULATE_STATISTICS_H */
-
+#endif  // end of include guard: WL_LOGIC_CMD_CALCULATE_STATISTICS_H

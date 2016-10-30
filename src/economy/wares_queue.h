@@ -17,82 +17,88 @@
  *
  */
 
-#ifndef WARES_QUEUE_H
-#define WARES_QUEUE_H
+#ifndef WL_ECONOMY_WARES_QUEUE_H
+#define WL_ECONOMY_WARES_QUEUE_H
 
-// Needed for Ware_Index
+#include "logic/map_objects/immovable.h"
 #include "logic/widelands.h"
-#include "logic/immovable.h"
 
 namespace Widelands {
 
-struct Economy;
-struct Editor_Game_Base;
-struct Game;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Saver;
-struct Player;
-struct Request;
-struct WaresQueue;
+class Economy;
+class EditorGameBase;
+class Game;
+class MapObjectLoader;
+struct MapObjectSaver;
+class Player;
+class Request;
 class Worker;
 
 /**
  * This micro storage room can hold any number of items of a fixed ware.
  */
-struct WaresQueue {
-	typedef void (callback_t)
-		(Game &, WaresQueue *, Ware_Index ware, void * data);
+class WaresQueue {
+public:
+	using CallbackFn = void(Game&, WaresQueue*, DescriptionIndex ware, void* data);
 
-	WaresQueue(PlayerImmovable &, Ware_Index, uint8_t size);
+	WaresQueue(PlayerImmovable&, DescriptionIndex, uint8_t size);
 
 #ifndef NDEBUG
-	~WaresQueue() {assert(not m_ware);}
+	~WaresQueue() {
+		assert(ware_ == INVALID_INDEX);
+	}
 #endif
 
-	Ware_Index get_ware() const {return m_ware;}
-	uint32_t get_max_fill    () const throw () {return m_max_fill;}
-	uint32_t get_max_size        () const throw () {return m_max_size;}
-	uint32_t get_filled          () const throw () {return m_filled;}
+	DescriptionIndex get_ware() const {
+		return ware_;
+	}
+	Quantity get_max_fill() const {
+		return max_fill_;
+	}
+	Quantity get_max_size() const {
+		return max_size_;
+	}
+	Quantity get_filled() const {
+		return filled_;
+	}
 
 	void cleanup();
 
-	void set_callback(callback_t *, void * data);
+	void set_callback(CallbackFn*, void* data);
 
-	void remove_from_economy(Economy &);
-	void add_to_economy(Economy &);
+	void remove_from_economy(Economy&);
+	void add_to_economy(Economy&);
 
-	void set_max_size        (uint32_t) throw ();
-	void set_max_fill        (uint32_t) throw ();
-	void set_filled          (uint32_t) throw ();
-	void set_consume_interval(uint32_t) throw ();
+	void set_max_size(Quantity);
+	void set_max_fill(Quantity);
+	void set_filled(Quantity);
+	void set_consume_interval(uint32_t);
 
-	Player & owner() const throw () {return m_owner.owner();}
+	Player& owner() const {
+		return owner_.owner();
+	}
 
-	void Read (FileRead  &, Game &, Map_Map_Object_Loader &);
-	void Write(FileWrite &, Game &, Map_Map_Object_Saver  &);
+	void read(FileRead&, Game&, MapObjectLoader&);
+	void write(FileWrite&, Game&, MapObjectSaver&);
 
 private:
-	static void request_callback
-		(Game &, Request &, Ware_Index, Worker *, PlayerImmovable &);
+	static void request_callback(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
 	void update();
 
-	PlayerImmovable & m_owner;
-	Ware_Index        m_ware;    ///< ware ID
-	uint32_t m_max_size;         ///< nr of items that fit into the queue maximum
-	uint32_t m_max_fill;         ///< nr of wares that should be ideally in this queue
-	uint32_t m_filled;           ///< nr of items that are currently in the queue
+	PlayerImmovable& owner_;
+	DescriptionIndex ware_;  ///< ware ID
+	Quantity max_size_;      ///< nr of items that fit into the queue maximum
+	Quantity max_fill_;      ///< nr of wares that should be ideally in this queue
+	Quantity filled_;        ///< nr of items that are currently in the queue
 
 	///< time in ms between consumption at full speed
-	uint32_t m_consume_interval;
+	uint32_t consume_interval_;
 
-	Request         * m_request; ///< currently pending request
+	Request* request_;  ///< currently pending request
 
-	callback_t      * m_callback_fn;
-	void            * m_callback_data;
+	CallbackFn* callback_fn_;
+	void* callback_data_;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_WARES_QUEUE_H

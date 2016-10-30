@@ -17,24 +17,25 @@
  *
  */
 
-#ifndef RT_ERRORS_IMPL_H
-#define RT_ERRORS_IMPL_H
+#ifndef WL_GRAPHIC_TEXT_RT_ERRORS_IMPL_H
+#define WL_GRAPHIC_TEXT_RT_ERRORS_IMPL_H
 
-#include "rt_errors.h"
+#include <boost/format.hpp>
+
+#include "graphic/text/rt_errors.h"
 
 namespace RT {
 
-struct SyntaxError_Impl : public SyntaxError {
-	SyntaxError_Impl(size_t line, size_t col, std::string expected, std::string got, std::string next_chars)
-		: SyntaxError
-		  ((boost::format("Syntax error at %1%:%2%: expected %3%, got '%4%'. String continues with: '%5%'")
-					% line % col % expected % got % next_chars)
-			.str())
-	{}
+struct SyntaxErrorImpl : public SyntaxError {
+	SyntaxErrorImpl(
+	   size_t line, size_t col, std::string expected, std::string got, std::string next_chars)
+	   : SyntaxError(
+	        (boost::format(
+	            "Syntax error at %1%:%2%: expected %3%, got '%4%'. String continues with: '%5%'") %
+	         line % col % expected % got % next_chars)
+	           .str()) {
+	}
 };
 }
 
-#endif /* end of include guard: RT_ERRORS_IMPL_H */
-
-
-
+#endif  // end of include guard: WL_GRAPHIC_TEXT_RT_ERRORS_IMPL_H

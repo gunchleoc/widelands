@@ -17,30 +17,51 @@
  *
  */
 
-#include "portdock.h"
+#include "economy/portdock.h"
 
-#include "container_iterate.h"
-#include "fleet.h"
-#include "log.h"
+#include <memory>
+
+#include <boost/format.hpp>
+
+#include "base/log.h"
+#include "base/macros.h"
+#include "economy/expedition_bootstrap.h"
+#include "economy/fleet.h"
+#include "economy/ware_instance.h"
+#include "economy/wares_queue.h"
+#include "io/filewrite.h"
 #include "logic/game.h"
 #include "logic/game_data_error.h"
+#include "logic/map_objects/tribes/ship.h"
+#include "logic/map_objects/tribes/warehouse.h"
 #include "logic/player.h"
-#include "logic/ship.h"
-#include "logic/warehouse.h"
-#include "map_io/widelands_map_map_object_loader.h"
-#include "map_io/widelands_map_map_object_saver.h"
-#include "ware_instance.h"
+#include "logic/widelands_geometry_io.h"
+#include "map_io/map_object_loader.h"
+#include "map_io/map_object_saver.h"
+#include "wui/interactive_gamebase.h"
 
 namespace Widelands {
 
-Map_Object_Descr portdock_descr("portdock", "Port Dock");
+PortdockDescr g_portdock_descr("portdock", "Port Dock");
 
-PortDock::PortDock() :
-	PlayerImmovable(portdock_descr),
-	m_fleet(0),
-	m_warehouse(0),
-	m_need_ship(false)
-{
+const PortdockDescr& PortDock::descr() const {
+	return g_portdock_descr;
+}
+
+PortdockDescr::PortdockDescr(char const* const init_name, char const* const init_descname)
+   : MapObjectDescr(MapObjectType::PORTDOCK, init_name, init_descname) {
+}
+
+PortDock::PortDock(Warehouse* wh)
+   : PlayerImmovable(g_portdock_descr),
+     fleet_(nullptr),
+     warehouse_(wh),
+     need_ship_(false),
+     expedition_ready_(false) {
+}
+
+PortDock::~PortDock() {
+	assert(expedition_bootstrap_.get() == nullptr);
 }
 
 /**
@@ -53,19 +74,12 @@ PortDock::PortDock() :
  *
  * @note This only works properly when called before @ref init
  */
-void PortDock::add_position(Coords where)
-{
-	m_dockpoints.push_back(where);
+void PortDock::add_position(Coords where) {
+	dockpoints_.push_back(where);
 }
 
-/**
- * Set the @ref Warehouse buddy of this dock. May only be called once.
- */
-void PortDock::set_warehouse(Warehouse * wh)
-{
-	assert(!m_warehouse);
-
-	m_warehouse = wh;
+Warehouse* PortDock::get_warehouse() const {
+	return warehouse_;
 }
 
 /**
@@ -73,51 +87,34 @@ void PortDock::set_warehouse(Warehouse * wh)
  *
  * @warning This should only be called via @ref Fleet itself.
  */
-void PortDock::set_fleet(Fleet * fleet)
-{
-	m_fleet = fleet;
+void PortDock::set_fleet(Fleet* fleet) {
+	fleet_ = fleet;
 }
 
-int32_t PortDock::get_size() const throw ()
-{
+int32_t PortDock::get_size() const {
 	return SMALL;
 }
 
-bool PortDock::get_passable() const throw ()
-{
+bool PortDock::get_passable() const {
 	return true;
 }
 
-int32_t PortDock::get_type() const throw ()
-{
-	return PORTDOCK;
+PortDock::PositionList PortDock::get_positions(const EditorGameBase&) const {
+	return dockpoints_;
 }
 
-char const * PortDock::type_name() const throw ()
-{
-	return "portdock";
-}
-
-PortDock::PositionList PortDock::get_positions
-	(const Editor_Game_Base &) const throw ()
-{
-	return m_dockpoints;
-}
-
-Flag & PortDock::base_flag()
-{
-	return m_warehouse->base_flag();
+Flag& PortDock::base_flag() {
+	return warehouse_->base_flag();
 }
 
 /**
  * Return the dock that has the given flag as its base, or 0 if no dock of our fleet
  * has the given flag.
  */
-PortDock * PortDock::get_dock(Flag & flag) const
-{
-	if (m_fleet)
-		return m_fleet->get_dock(flag);
-	return 0;
+PortDock* PortDock::get_dock(Flag& flag) const {
+	if (fleet_)
+		return fleet_->get_dock(flag);
+	return nullptr;
 }
 
 /**
@@ -126,41 +123,33 @@ PortDock * PortDock::get_dock(Flag & flag) const
  * Called by @ref Warehouse::set_economy, and responsible for forwarding the
  * change to @ref Fleet.
  */
-void PortDock::set_economy(Economy * e)
-{
+void PortDock::set_economy(Economy* e) {
 	if (e == get_economy())
 		return;
 
 	PlayerImmovable::set_economy(e);
-	if (m_fleet)
-		m_fleet->set_economy(e);
+	if (fleet_)
+		fleet_->set_economy(e);
 
 	if (upcast(Game, game, &owner().egbase())) {
-		container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-			it->set_economy(*game, e);
+		for (ShippingItem& shipping_item : waiting_) {
+			shipping_item.set_economy(*game, e);
 		}
 	}
+
+	if (expedition_bootstrap_)
+		expedition_bootstrap_->set_economy(e);
 }
 
-
-void PortDock::draw
-		(const Editor_Game_Base &, RenderTarget &, const FCoords, const Point)
-{
+void PortDock::draw(uint32_t, const TextToDraw, const Vector2f&, float, RenderTarget*) {
 	// do nothing
 }
 
-const std::string & PortDock::name() const throw ()
-{
-	static const std::string name_("portdock");
-	return name_;
-}
-
-void PortDock::init(Editor_Game_Base & egbase)
-{
+void PortDock::init(EditorGameBase& egbase) {
 	PlayerImmovable::init(egbase);
 
-	container_iterate_const(PositionList, m_dockpoints, it) {
-		set_position(egbase, *it.current);
+	for (const Coords& coords : dockpoints_) {
+		set_position(egbase, coords);
 	}
 
 	init_fleet(egbase);
@@ -170,50 +159,85 @@ void PortDock::init(Editor_Game_Base & egbase)
  * Create our initial singleton @ref Fleet. The fleet code ensures
  * that we merge with a larger fleet when possible.
  */
-void PortDock::init_fleet(Editor_Game_Base & egbase)
-{
-	Fleet * fleet = new Fleet(owner());
+void PortDock::init_fleet(EditorGameBase& egbase) {
+	Fleet* fleet = new Fleet(owner());
 	fleet->add_port(egbase, this);
 	fleet->init(egbase);
 	// Note: the Fleet calls our set_fleet automatically
 }
 
-void PortDock::cleanup(Editor_Game_Base & egbase)
-{
-	if (m_warehouse)
-		m_warehouse->m_portdock = 0;
+void PortDock::cleanup(EditorGameBase& egbase) {
+
+	Warehouse* wh = nullptr;
+
+	if (egbase.objects().object_still_available(warehouse_)) {
+
+		// We need to remember this for possible recreation of portdock
+		wh = warehouse_;
+
+		// Transfer all our wares into the warehouse.
+		if (upcast(Game, game, &egbase)) {
+			for (ShippingItem& shipping_item : waiting_) {
+				WareInstance* ware;
+				shipping_item.get(*game, &ware, nullptr);
+				if (ware) {
+					ware->cancel_moving();
+					warehouse_->incorporate_ware(*game, ware);
+				} else {
+					shipping_item.set_location(*game, warehouse_);
+					shipping_item.end_shipping(*game);
+				}
+			}
+		}
+		waiting_.clear();
+		warehouse_->portdock_ = nullptr;
+	}
 
 	if (upcast(Game, game, &egbase)) {
-		container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-			it.current->remove(*game);
+		for (ShippingItem& shipping_item : waiting_) {
+			shipping_item.remove(*game);
 		}
 	}
 
-	if (m_fleet)
-		m_fleet->remove_port(egbase, this);
+	if (fleet_)
+		fleet_->remove_port(egbase, this);
 
-	container_iterate_const(PositionList, m_dockpoints, it) {
-		unset_position(egbase, *it.current);
+	for (const Coords& coords : dockpoints_) {
+		unset_position(egbase, coords);
+	}
+
+	if (expedition_bootstrap_) {
+		expedition_bootstrap_->cleanup(egbase);
+		expedition_bootstrap_.reset(nullptr);
 	}
 
 	PlayerImmovable::cleanup(egbase);
+
+	// Now let's attempt to recreate the portdock.
+	if (wh) {
+		if (!wh->cleanup_in_progress_) {
+			if (upcast(Game, game, &egbase)) {
+				if (game->is_loaded()) {  // Do not attempt when shutting down
+					wh->restore_portdock_or_destroy(egbase);
+				}
+			}
+		}
+	}
 }
 
 /**
  * Add the flags of all ports that can be reached via this dock.
  */
-void PortDock::add_neighbours(std::vector<RoutingNodeNeighbour> & neighbours)
-{
-	if (m_fleet && m_fleet->active())
-		m_fleet->add_neighbours(*this, neighbours);
+void PortDock::add_neighbours(std::vector<RoutingNodeNeighbour>& neighbours) {
+	if (fleet_ && fleet_->active())
+		fleet_->add_neighbours(*this, neighbours);
 }
 
 /**
  * The given @p ware enters the dock, waiting to be transported away.
  */
-void PortDock::add_shippingitem(Game & game, WareInstance & ware)
-{
-	m_waiting.push_back(ShippingItem(ware));
+void PortDock::add_shippingitem(Game& game, WareInstance& ware) {
+	waiting_.push_back(ShippingItem(ware));
 	ware.set_location(game, this);
 	ware.update(game);
 }
@@ -222,11 +246,12 @@ void PortDock::add_shippingitem(Game & game, WareInstance & ware)
  * The given @p ware, which is assumed to be inside the dock, has updated
  * its route.
  */
-void PortDock::update_shippingitem(Game & game, WareInstance & ware)
-{
-	container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-		if (it.current->m_object.serial() == ware.serial()) {
-			_update_shippingitem(game, it.current);
+void PortDock::update_shippingitem(Game& game, WareInstance& ware) {
+	for (std::vector<ShippingItem>::iterator item_iter = waiting_.begin();
+	     item_iter != waiting_.end(); ++item_iter) {
+
+		if (item_iter->object_.serial() == ware.serial()) {
+			update_shippingitem(game, item_iter);
 			return;
 		}
 	}
@@ -235,9 +260,8 @@ void PortDock::update_shippingitem(Game & game, WareInstance & ware)
 /**
  * The given @p worker enters the dock, waiting to be transported away.
  */
-void PortDock::add_shippingitem(Game & game, Worker & worker)
-{
-	m_waiting.push_back(ShippingItem(worker));
+void PortDock::add_shippingitem(Game& game, Worker& worker) {
+	waiting_.push_back(ShippingItem(worker));
 	worker.set_location(this);
 	update_shippingitem(game, worker);
 }
@@ -246,32 +270,33 @@ void PortDock::add_shippingitem(Game & game, Worker & worker)
  * The given @p worker, which is assumed to be inside the dock, has
  * updated its route.
  */
-void PortDock::update_shippingitem(Game & game, Worker & worker)
-{
-	container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-		if (it.current->m_object.serial() == worker.serial()) {
-			_update_shippingitem(game, it.current);
+void PortDock::update_shippingitem(Game& game, Worker& worker) {
+	for (std::vector<ShippingItem>::iterator item_iter = waiting_.begin();
+	     item_iter != waiting_.end(); ++item_iter) {
+
+		if (item_iter->object_.serial() == worker.serial()) {
+			update_shippingitem(game, item_iter);
 			return;
 		}
 	}
 }
 
-void PortDock::_update_shippingitem(Game & game, std::vector<ShippingItem>::iterator it)
-{
-	it->fetch_destination(game, *this);
+void PortDock::update_shippingitem(Game& game, std::vector<ShippingItem>::iterator it) {
+	it->update_destination(game, *this);
 
-	PortDock * dst = it->get_destination(game);
+	PortDock* dst = it->get_destination(game);
 	assert(dst != this);
 
-	if (dst) {
+	// Destination might have vanished or be in another economy altogether.
+	if (dst && dst->get_economy() == get_economy()) {
 		set_need_ship(game, true);
 	} else {
-		it->set_location(game, m_warehouse);
+		it->set_location(game, warehouse_);
 		it->end_shipping(game);
-		*it = m_waiting.back();
-		m_waiting.pop_back();
+		*it = waiting_.back();
+		waiting_.pop_back();
 
-		if (m_waiting.empty())
+		if (waiting_.empty())
 			set_need_ship(game, false);
 	}
 }
@@ -280,60 +305,96 @@ void PortDock::_update_shippingitem(Game & game, std::vector<ShippingItem>::iter
  * A ship has arrived at the dock. Clear all items designated for this dock,
  * and load the ship.
  */
-void PortDock::ship_arrived(Game & game, Ship & ship)
-{
-	std::vector<ShippingItem> items;
-	ship.withdraw_items(game, *this, items);
+void PortDock::ship_arrived(Game& game, Ship& ship) {
+	std::vector<ShippingItem> items_brought_by_ship;
+	ship.withdraw_items(game, *this, items_brought_by_ship);
 
-	container_iterate(std::vector<ShippingItem>, items, it) {
-		it->set_location(game, m_warehouse);
-		it->end_shipping(game);
+	for (ShippingItem& shipping_item : items_brought_by_ship) {
+		shipping_item.set_location(game, warehouse_);
+		shipping_item.end_shipping(game);
 	}
 
-	if (ship.get_nritems() < ship.get_capacity() && !m_waiting.empty()) {
-		uint32_t nrload = std::min<uint32_t>(m_waiting.size(), ship.get_capacity() - ship.get_nritems());
+	if (expedition_ready_) {
+		assert(expedition_bootstrap_.get() != nullptr);
+
+		// Only use an empty ship.
+		if (ship.get_nritems() < 1) {
+			// Load the ship
+			std::vector<Worker*> workers;
+			std::vector<WareInstance*> wares;
+			expedition_bootstrap_->get_waiting_workers_and_wares(
+			   game, owner().tribe(), &workers, &wares);
+
+			for (Worker* worker : workers) {
+				ship.add_item(game, ShippingItem(*worker));
+			}
+			for (WareInstance* ware : wares) {
+				ship.add_item(game, ShippingItem(*ware));
+			}
+
+			ship.start_task_expedition(game);
+
+			// The expedition goods are now on the ship, so from now on it is independent from the port
+			// and thus we switch the port to normal, so we could even start a new expedition,
+			cancel_expedition(game);
+			Notifications::publish(NoteShipWindow(ship.serial(), NoteShipWindow::Action::kRefresh));
+			return fleet_->update(game);
+		}
+	}
+
+	if (ship.get_nritems() < ship.descr().get_capacity() && !waiting_.empty()) {
+		uint32_t nrload =
+		   std::min<uint32_t>(waiting_.size(), ship.descr().get_capacity() - ship.get_nritems());
 
 		while (nrload--) {
-			ship.add_item(game, m_waiting.back());
-			m_waiting.pop_back();
+			// Check if the item has still a valid destination
+			if (waiting_.back().get_destination(game)) {
+				// Destination is valid, so we load the item onto the ship
+				ship.add_item(game, waiting_.back());
+			} else {
+				// The item has no valid destination anymore, so we just carry it
+				// back in the warehouse
+				waiting_.back().set_location(game, warehouse_);
+				waiting_.back().end_shipping(game);
+			}
+			waiting_.pop_back();
 		}
 
-		if (m_waiting.empty())
+		if (waiting_.empty()) {
 			set_need_ship(game, false);
+		}
 	}
 
-	m_fleet->update(game);
+	fleet_->update(game);
 }
 
-void PortDock::set_need_ship(Game & game, bool need)
-{
+void PortDock::set_need_ship(Game& game, bool need) {
 	molog("set_need_ship(%s)\n", need ? "true" : "false");
 
-	if (need == m_need_ship)
+	if (need == need_ship_)
 		return;
 
-	m_need_ship = need;
+	need_ship_ = need;
 
-	if (m_fleet) {
+	if (fleet_) {
 		molog("... trigger fleet update\n");
-		m_fleet->update(game);
+		fleet_->update(game);
 	}
 }
 
 /**
  * Return the number of wares or workers of the given type that are waiting at the dock.
  */
-uint32_t PortDock::count_waiting(WareWorker waretype, Ware_Index wareindex)
-{
+uint32_t PortDock::count_waiting(WareWorker waretype, DescriptionIndex wareindex) {
 	uint32_t count = 0;
 
-	container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-		WareInstance * ware;
-		Worker * worker;
-		it.current->get(owner().egbase(), ware, worker);
+	for (ShippingItem& shipping_item : waiting_) {
+		WareInstance* ware;
+		Worker* worker;
+		shipping_item.get(owner().egbase(), &ware, &worker);
 
 		if (waretype == wwWORKER) {
-			if (worker && worker->worker_index() == wareindex)
+			if (worker && worker->descr().worker_index() == wareindex)
 				count++;
 		} else {
 			if (ware && ware->descr_index() == wareindex)
@@ -344,127 +405,165 @@ uint32_t PortDock::count_waiting(WareWorker waretype, Ware_Index wareindex)
 	return count;
 }
 
-void PortDock::log_general_info(const Editor_Game_Base & egbase)
-{
+/**
+ * Return the number of wares or workers waiting at the dock.
+ */
+uint32_t PortDock::count_waiting() {
+	return waiting_.size();
+}
+
+/// \returns whether an expedition was started or is even ready
+bool PortDock::expedition_started() {
+	return (expedition_bootstrap_.get() != nullptr) || expedition_ready_;
+}
+
+/// Start an expedition
+void PortDock::start_expedition() {
+	assert(!expedition_bootstrap_);
+	expedition_bootstrap_.reset(new ExpeditionBootstrap(this));
+	expedition_bootstrap_->start();
+}
+
+ExpeditionBootstrap* PortDock::expedition_bootstrap() {
+	return expedition_bootstrap_.get();
+}
+
+void PortDock::expedition_bootstrap_complete(Game& game) {
+	expedition_ready_ = true;
+	get_fleet()->update(game);
+}
+
+void PortDock::cancel_expedition(Game& game) {
+	// Reset
+	expedition_ready_ = false;
+
+	expedition_bootstrap_->cancel(game);
+	expedition_bootstrap_.reset(nullptr);
+}
+
+void PortDock::log_general_info(const EditorGameBase& egbase) {
 	PlayerImmovable::log_general_info(egbase);
 
-	Coords pos(m_warehouse->get_position());
-	molog
-		("PortDock for warehouse %u (at %i,%i) in fleet %u, need_ship: %s, waiting: %"PRIuS"\n",
-		 m_warehouse ? m_warehouse->serial() : 0, pos.x, pos.y,
-		 m_fleet ? m_fleet->serial() : 0,
-		 m_need_ship ? "true" : "false",
-		 m_waiting.size());
+	if (warehouse_) {
+		Coords pos(warehouse_->get_position());
+		molog("PortDock for warehouse %u (at %i,%i) in fleet %u, need_ship: %s, waiting: %" PRIuS
+		      "\n",
+		      warehouse_->serial(), pos.x, pos.y, fleet_ ? fleet_->serial() : 0,
+		      need_ship_ ? "true" : "false", waiting_.size());
+	} else {
+		molog("PortDock without a warehouse in fleet %u, need_ship: %s, waiting: %" PRIuS "\n",
+		      fleet_ ? fleet_->serial() : 0, need_ship_ ? "true" : "false", waiting_.size());
+	}
 
-	container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-		molog
-			("  IT %u, destination %u\n",
-			 it.current->m_object.serial(),
-			 it.current->m_destination_dock.serial());
+	for (ShippingItem& shipping_item : waiting_) {
+		molog("  IT %u, destination %u\n", shipping_item.object_.serial(),
+		      shipping_item.destination_dock_.serial());
 	}
 }
 
-#define PORTDOCK_SAVEGAME_VERSION 2
+constexpr uint8_t kCurrentPacketVersion = 3;
 
-PortDock::Loader::Loader() : m_warehouse(0)
-{
+PortDock::Loader::Loader() : warehouse_(0) {
 }
 
-void PortDock::Loader::load(FileRead & fr, uint8_t version)
-{
+void PortDock::Loader::load(FileRead& fr) {
 	PlayerImmovable::Loader::load(fr);
 
-	PortDock & pd = get<PortDock>();
+	PortDock& pd = get<PortDock>();
 
-	m_warehouse = fr.Unsigned32();
-	uint16_t nrdockpoints = fr.Unsigned16();
+	warehouse_ = fr.unsigned_32();
+	uint16_t nrdockpoints = fr.unsigned_16();
 
-	pd.m_dockpoints.resize(nrdockpoints);
+	pd.dockpoints_.resize(nrdockpoints);
 	for (uint16_t i = 0; i < nrdockpoints; ++i) {
-		pd.m_dockpoints[i] = fr.Coords32(egbase().map().extent());
-		pd.set_position(egbase(), pd.m_dockpoints[i]);
+		pd.dockpoints_[i] = read_coords_32(&fr, egbase().map().extent());
+		pd.set_position(egbase(), pd.dockpoints_[i]);
 	}
 
-	if (version >= 2) {
-		pd.m_need_ship = fr.Unsigned8();
+	pd.need_ship_ = fr.unsigned_8();
 
-		m_waiting.resize(fr.Unsigned32());
-		container_iterate(std::vector<ShippingItem::Loader>, m_waiting, it) {
-			it->load(fr);
-		}
+	waiting_.resize(fr.unsigned_32());
+	for (ShippingItem::Loader& shipping_loader : waiting_) {
+		shipping_loader.load(fr);
 	}
+
+	// All the other expedition specific stuff is saved in the warehouse.
+	if (fr.unsigned_8()) {  // Do we have an expedition?
+		pd.expedition_bootstrap_.reset(new ExpeditionBootstrap(&pd));
+	}
+	pd.expedition_ready_ = (fr.unsigned_8() == 1) ? true : false;
 }
 
-void PortDock::Loader::load_pointers()
-{
+void PortDock::Loader::load_pointers() {
 	PlayerImmovable::Loader::load_pointers();
 
-	PortDock & pd = get<PortDock>();
-	pd.m_warehouse = &mol().get<Warehouse>(m_warehouse);
+	PortDock& pd = get<PortDock>();
+	pd.warehouse_ = &mol().get<Warehouse>(warehouse_);
 
-	pd.m_waiting.resize(m_waiting.size());
-	for (uint32_t i = 0; i < m_waiting.size(); ++i) {
-		pd.m_waiting[i] = m_waiting[i].get(mol());
+	pd.waiting_.resize(waiting_.size());
+	for (uint32_t i = 0; i < waiting_.size(); ++i) {
+		pd.waiting_[i] = waiting_[i].get(mol());
 	}
 }
 
-void PortDock::Loader::load_finish()
-{
+void PortDock::Loader::load_finish() {
 	PlayerImmovable::Loader::load_finish();
 
-	PortDock & pd = get<PortDock>();
+	PortDock& pd = get<PortDock>();
 
-	if (pd.m_warehouse->get_portdock() != &pd) {
+	if (pd.warehouse_->get_portdock() != &pd) {
 		log("Inconsistent PortDock <> Warehouse link\n");
 		if (upcast(Game, game, &egbase()))
 			pd.schedule_destroy(*game);
 	}
 
 	// This shouldn't be necessary, but let's check just in case
-	if (!pd.m_fleet)
+	if (!pd.fleet_)
 		pd.init_fleet(egbase());
 }
 
-Map_Object::Loader * PortDock::load
-	(Editor_Game_Base & egbase, Map_Map_Object_Loader & mol, FileRead & fr)
-{
-	std::auto_ptr<Loader> loader(new Loader);
+MapObject::Loader* PortDock::load(EditorGameBase& egbase, MapObjectLoader& mol, FileRead& fr) {
+	std::unique_ptr<Loader> loader(new Loader);
 
 	try {
 		// The header has been peeled away by the caller
 
-		uint8_t const version = fr.Unsigned8();
-		if (1 <= version && version <= PORTDOCK_SAVEGAME_VERSION) {
-			loader->init(egbase, mol, *new PortDock);
-			loader->load(fr, version);
-		} else
-			throw game_data_error(_("unknown/unhandled version %u"), version);
-	} catch (const std::exception & e) {
-		throw wexception(_("loading portdock: %s"), e.what());
+		uint8_t const packet_version = fr.unsigned_8();
+		if (packet_version == kCurrentPacketVersion) {
+			loader->init(egbase, mol, *new PortDock(nullptr));
+			loader->load(fr);
+		} else {
+			throw UnhandledVersionError("PortDock", packet_version, kCurrentPacketVersion);
+		}
+	} catch (const std::exception& e) {
+		throw wexception("loading portdock: %s", e.what());
 	}
 
 	return loader.release();
 }
 
-void PortDock::save(Editor_Game_Base & egbase, Map_Map_Object_Saver & mos, FileWrite & fw)
-{
-	fw.Unsigned8(header_PortDock);
-	fw.Unsigned8(PORTDOCK_SAVEGAME_VERSION);
+void PortDock::save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw) {
+	fw.unsigned_8(HeaderPortDock);
+	fw.unsigned_8(kCurrentPacketVersion);
 
 	PlayerImmovable::save(egbase, mos, fw);
 
-	fw.Unsigned32(mos.get_object_file_index(*m_warehouse));
-	fw.Unsigned16(m_dockpoints.size());
-	container_iterate_const(PositionList, m_dockpoints, it) {
-		fw.Coords32(*it);
+	fw.unsigned_32(mos.get_object_file_index(*warehouse_));
+	fw.unsigned_16(dockpoints_.size());
+	for (const Coords& coords : dockpoints_) {
+		write_coords_32(&fw, coords);
 	}
 
-	fw.Unsigned8(m_need_ship);
+	fw.unsigned_8(need_ship_);
 
-	fw.Unsigned32(m_waiting.size());
-	container_iterate(std::vector<ShippingItem>, m_waiting, it) {
-		it->save(egbase, mos, fw);
+	fw.unsigned_32(waiting_.size());
+	for (ShippingItem& shipping_item : waiting_) {
+		shipping_item.save(egbase, mos, fw);
 	}
+
+	// Expedition specific stuff
+	fw.unsigned_8(expedition_bootstrap_.get() != nullptr ? 1 : 0);
+	fw.unsigned_8(expedition_ready_ ? 1 : 0);
 }
 
-} // namespace Widelands
+}  // namespace Widelands

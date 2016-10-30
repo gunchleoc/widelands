@@ -17,23 +17,19 @@
  *
  */
 
-#ifndef RENDERTARGET_H
-#define RENDERTARGET_H
+#ifndef WL_GRAPHIC_RENDERTARGET_H
+#define WL_GRAPHIC_RENDERTARGET_H
 
 #include <vector>
 
-#include "align.h"
-#include "rect.h"
-#include "rgbcolor.h"
+#include "base/rect.h"
+#include "graphic/align.h"
+#include "graphic/blend_mode.h"
+#include "graphic/color.h"
+#include "graphic/image.h"
 
-#include "compositemode.h"
-#include "image.h"
-
+class Animation;
 class Surface;
-
-namespace Widelands {
-struct Player;
-};
 
 /**
  * This class represents anything that can be rendered to.
@@ -50,45 +46,108 @@ struct Player;
  * \note If the sub-window would be empty/invisible, \ref enter_window() returns
  * false and doesn't change the window state at all.
 */
+// TODO(sirver): remove window functions and merge with surface once
+// the old richtext renderer is gone.
 class RenderTarget {
 public:
 	RenderTarget(Surface*);
-	void set_window(const Rect& rc, const Point& ofs);
-	bool enter_window(const Rect& rc, Rect* previous, Point* prevofs);
+	void set_window(const Recti& rc, const Vector2i& ofs);
+	bool enter_window(const Recti& rc, Recti* previous, Vector2i* prevofs);
 
 	int32_t width() const;
 	int32_t height() const;
 
-	void draw_line
-		(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const RGBColor& color, uint8_t width = 1);
-	void draw_rect(const Rect&, const RGBColor&);
-	void fill_rect(const Rect&, const RGBAColor&);
-	void brighten_rect(const Rect&, int32_t factor);
+	void draw_line_strip(const std::vector<Vector2f>& points, const RGBColor& color, float width);
+	void draw_rect(const Rectf&, const RGBColor&);
+	void fill_rect(const Rectf&, const RGBAColor&, BlendMode blend_mode = BlendMode::Copy);
+	void brighten_rect(const Rectf&, int32_t factor);
 
-	void blit(const Point& dst, const Image* image, Composite cm = CM_Normal, UI::Align = UI::Align_TopLeft);
-	void blitrect(const Point& dst, const Image* image, const Rect& src, Composite cm = CM_Normal);
-	void tile(const Rect&, const Image* image, const Point& ofs, Composite cm = CM_Normal);
+	void blit(const Vector2f& dst,
+	          const Image* image,
+	          BlendMode blend_mode = BlendMode::UseAlpha,
+	          UI::Align = UI::Align::kTopLeft);
 
-	void drawanim(const Point& dst, uint32_t animation, uint32_t time, const Widelands::Player* = 0);
-	void drawanimrect
-		(const Point& dst, uint32_t animation, uint32_t time, const Widelands::Player*, const Rect& srcrc);
+	// Like blit. See MonochromeBlitProgram for details.
+	void blit_monochrome(const Vector2f& dst,
+	                     const Image* image,
+	                     const RGBAColor& blend_mode,
+	                     UI::Align = UI::Align::kTopLeft);
+
+	void blitrect(const Vector2f& dst,
+	              const Image* image,
+	              const Recti& src,
+	              BlendMode blend_mode = BlendMode::UseAlpha);
+
+	// Blits the 'source_rect' from 'image' into the
+	// 'destination_rect' in this rendertarget. All alpha values are
+	// multiplied with 'opacity' before blitting. The 'blend_mode'
+	// defines if values are blended with whats already there or just
+	// copied over.
+	// Takes by value on purpose.
+	void blitrect_scale(Rectf destination_rect,
+	                    const Image* image,
+	                    Recti source_rect,
+	                    float opacity,
+	                    BlendMode blend_mode);
+
+	// Like blitrect_scale. See MonochromeBlitProgram for details. Takes by
+	// value on purpose.
+	void blitrect_scale_monochrome(Rectf destination_rect,
+	                               const Image* image,
+	                               Recti source_rect,
+	                               const RGBAColor& blend);
+
+	void tile(const Recti&,
+	          const Image* image,
+	          const Vector2i& ofs,
+	          BlendMode blend_mode = BlendMode::UseAlpha);
+
+	// Draw the 'animation' as it should appear at 'time' in this target at
+	// 'dst'. Optionally, the animation is tinted with 'player_color' and
+	// cropped to 'source_rect'.
+	void blit_animation(const Vector2f& dst, float scale, uint32_t animation, uint32_t time);
+	void blit_animation(const Vector2f& dst,
+	                    float scale,
+	                    uint32_t animation,
+	                    uint32_t time,
+	                    const RGBColor& player_color);
+	void blit_animation(const Vector2f& dst,
+	                    float scale,
+	                    uint32_t animation,
+	                    uint32_t time,
+	                    const RGBColor& player_color,
+	                    const Recti& source_rect);
 
 	void reset();
 
-	Surface* get_surface() const {return m_surface;}
-	const Rect& get_rect() const {return m_rect;}
-	const Point& get_offset() const {return m_offset;}
+	Surface* get_surface() const {
+		return surface_;
+	}
+	const Recti& get_rect() const {
+		return rect_;
+	}
+	const Vector2i& get_offset() const {
+		return offset_;
+	}
 
 protected:
-	bool clip(Rect & r) const;
-	bool to_surface_geometry(Point* dst, Rect* srcrc) const;
+	bool clip(Rectf& r) const;
+	bool to_surface_geometry(Rectf* destination_rect, Rectf* source_rect) const;
 
-	///The target surface
-	Surface* m_surface;
-	///The current clip rectangle
-	Rect m_rect;
-	///Drawing offset
-	Point m_offset;
+	// Does the actual blitting.
+	void do_blit_animation(const Vector2f& dst,
+	                       const float scale,
+	                       const Animation& animation,
+	                       uint32_t time,
+	                       const RGBColor* player_color,
+	                       const Recti& source_rect);
+
+	/// The target surface
+	Surface* surface_;
+	/// The current clip rectangle
+	Recti rect_;
+	/// Drawing offset
+	Vector2i offset_;
 };
 
-#endif
+#endif  // end of include guard: WL_GRAPHIC_RENDERTARGET_H

@@ -17,24 +17,25 @@
  *
  */
 
-#ifndef REQUEST_H
-#define REQUEST_H
+#ifndef WL_ECONOMY_REQUEST_H
+#define WL_ECONOMY_REQUEST_H
 
-#include "logic/requirements.h"
-#include "trackptr.h"
-#include "logic/wareworker.h"
+#include "economy/trackptr.h"
+#include "logic/map_objects/tribes/requirements.h"
+#include "logic/map_objects/tribes/wareworker.h"
 #include "logic/widelands.h"
-#include "logic/widelands_fileread.h"
-#include "logic/widelands_filewrite.h"
+
+class FileRead;
+class FileWrite;
 
 namespace Widelands {
 
-struct Economy;
-struct Editor_Game_Base;
+class Economy;
+class EditorGameBase;
 struct Flag;
-struct Game;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Saver;
+class Game;
+class MapObjectLoader;
+struct MapObjectSaver;
 struct PlayerImmovable;
 class RequestList;
 struct Requirements;
@@ -57,88 +58,113 @@ class ConstructionSite;
  * left, a transfer may be initiated.
  * The required time has no meaning for idle requests.
  */
-struct Request : public Trackable {
-	friend struct Economy;
+class Request : public Trackable {
+public:
+	friend class Economy;
 	friend class RequestList;
 
-	typedef void (*callback_t)
-		(Game &, Request &, Ware_Index, Worker *, PlayerImmovable &);
+	using CallbackFn = void (*)(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
 
-	Request(PlayerImmovable & target, Ware_Index, callback_t, WareWorker);
+	Request(PlayerImmovable& target, DescriptionIndex, CallbackFn, WareWorker);
 	~Request();
 
-	PlayerImmovable & target() const throw () {return m_target;}
-	Ware_Index get_index() const {return m_index;}
-	WareWorker get_type() const {return m_type;}
-	uint32_t get_count() const {return m_count;}
-	uint32_t get_open_count() const {return m_count - m_transfers.size();}
-	bool is_open() const {return m_transfers.size() < m_count;}
-	Economy * get_economy() const throw () {return m_economy;}
+	PlayerImmovable& target() const {
+		return target_;
+	}
+	DescriptionIndex get_index() const {
+		return index_;
+	}
+	WareWorker get_type() const {
+		return type_;
+	}
+	Quantity get_count() const {
+		return count_;
+	}
+	uint32_t get_open_count() const {
+		return count_ - transfers_.size();
+	}
+	bool is_open() const {
+		return transfers_.size() < count_;
+	}
+	Economy* get_economy() const {
+		return economy_;
+	}
 	int32_t get_required_time() const;
-	int32_t get_last_request_time() const {return m_last_request_time;}
+	int32_t get_last_request_time() const {
+		return last_request_time_;
+	}
 	int32_t get_priority(int32_t cost) const;
 	uint32_t get_transfer_priority() const;
-	uint32_t get_num_transfers() const {return m_transfers.size();}
+	uint32_t get_num_transfers() const {
+		return transfers_.size();
+	}
 
-	Flag & target_flag() const;
+	Flag& target_flag() const;
 
-	void set_economy(Economy *);
-	void set_count(uint32_t);
+	void set_economy(Economy*);
+	void set_count(Quantity);
 	void set_required_time(int32_t time);
 	void set_required_interval(int32_t interval);
 
-	void set_last_request_time(int32_t const time) {m_last_request_time = time;}
+	void set_last_request_time(int32_t const time) {
+		last_request_time_ = time;
+	}
 
-	void start_transfer(Game &, Supply &);
+	void start_transfer(Game&, Supply&);
 
-	void Read (FileRead  &, Game &, Map_Map_Object_Loader &);
-	void Write(FileWrite &, Game &, Map_Map_Object_Saver  &) const;
-	Worker * get_transfer_worker();
+	void read(FileRead&, Game&, MapObjectLoader&);
+	void write(FileWrite&, Game&, MapObjectSaver&) const;
+	Worker* get_transfer_worker();
 
 	//  callbacks for WareInstance/Worker code
-	void transfer_finish(Game &, Transfer &);
-	void transfer_fail  (Game &, Transfer &);
+	void transfer_finish(Game&, Transfer&);
+	void transfer_fail(Game&, Transfer&);
 
-	void set_requirements (const Requirements & r) {m_requirements = r;}
-	const Requirements & get_requirements () const {return m_requirements;}
+	void set_requirements(const Requirements& r) {
+		requirements_ = r;
+	}
+	const Requirements& get_requirements() const {
+		return requirements_;
+	}
 
 private:
-	int32_t get_base_required_time(Editor_Game_Base &, uint32_t nr) const;
+	int32_t get_base_required_time(EditorGameBase&, uint32_t nr) const;
+
 public:
 	void cancel_transfer(uint32_t idx);
+
 private:
 	void remove_transfer(uint32_t idx);
-	uint32_t find_transfer(Transfer &);
+	uint32_t find_transfer(Transfer&);
 
-	typedef std::vector<Transfer *> TransferList;
+	using TransferList = std::vector<Transfer*>;
 
-	WareWorker m_type;
+	WareWorker type_;
 
-	PlayerImmovable & m_target;            //  who requested it?
-	//  Copies of m_target of various pointer types, to avoid expensive
+	PlayerImmovable& target_;  //  who requested it?
+	//  Copies of target_ of various pointer types, to avoid expensive
 	//  dynamic casting at runtime. Variables with an incompatible type
 	//  are filled with nulls.
-	Building        * m_target_building;
-	ProductionSite  * m_target_productionsite;
-	Warehouse       * m_target_warehouse;
-	ConstructionSite * m_target_constructionsite;
+	Building* target_building_;
+	ProductionSite* target_productionsite_;
+	Warehouse* target_warehouse_;
+	ConstructionSite* target_constructionsite_;
 
-	Economy         * m_economy;
-	Ware_Index        m_index;             //  the index of the ware descr
-	uint32_t          m_count;             //  how many do we need in total
+	Economy* economy_;
+	DescriptionIndex index_;  //  the index of the ware descr
+	Quantity count_;          //  how many do we need in total
 
-	callback_t        m_callbackfn;        //  called on request success
+	CallbackFn callbackfn_;  //  called on request success
 
 	//  when do we need the first ware (can be in the past)
-	int32_t           m_required_time;
-	int32_t           m_required_interval; //  time between items
-	int32_t           m_last_request_time;
+	int32_t required_time_;
+	int32_t required_interval_;  //  time between wares
+	int32_t last_request_time_;
 
-	TransferList      m_transfers;         //  maximum size is m_count
+	TransferList transfers_;  //  maximum size is count_
 
-	Requirements m_requirements;
+	Requirements requirements_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_ECONOMY_REQUEST_H

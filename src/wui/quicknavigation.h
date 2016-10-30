@@ -1,8 +1,5 @@
-
-namespace Widelands {
-struct Map;}
 /*
- * Copyright (C) 2010 by the Widelands Development Team
+ * Copyright (C) 2010-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,75 +17,80 @@ struct Map;}
  *
  */
 
-#ifndef QUICKNAVIGATION_H
-#define QUICKNAVIGATION_H
+#ifndef WL_WUI_QUICKNAVIGATION_H
+#define WL_WUI_QUICKNAVIGATION_H
 
-#include <boost/function.hpp>
-#include <stdint.h>
 #include <vector>
 
 #include <SDL_keyboard.h>
+#include <boost/function.hpp>
+#include <stdint.h>
 
-#include "point.h"
+#include "base/vector.h"
+#include "wui/mapview.h"
 
 namespace Widelands {
-struct Editor_Game_Base;
+class EditorGameBase;
 }
 
 /**
  * Provide quick navigation shortcuts.
  *
- * \note This functionality is really only used by \ref Interactive_Base,
+ * \note This functionality is really only used by \ref InteractiveBase,
  * but it is moved in its own structure to avoid overloading that class.
  */
 struct QuickNavigation {
-	typedef boost::function<void (Point)> SetViewFn;
+	struct View {
+		Vector2f viewpoint;
+		float zoom;
+	};
 
-	QuickNavigation(const Widelands::Editor_Game_Base & egbase, uint32_t screenwidth, uint32_t screenheight);
+	struct Landmark {
+		View view;
+		bool set;
 
-	void set_setview(const SetViewFn & fn);
+		Landmark() : set(false) {
+		}
+	};
 
-	void view_changed(Point point, bool jump);
+	QuickNavigation(const Widelands::EditorGameBase& egbase,
+	                MapView* map_view);
 
-	bool handle_key(bool down, SDL_keysym key);
+	// Set the landmark for 'index' to 'view'. 'index' must be < 10.
+	void set_landmark(size_t index, const View& view);
+
+	// Returns a pointer to the first element in the landmarks array
+	const std::vector<Landmark>& landmarks() const {
+		return landmarks_;
+	}
+
+	bool handle_key(bool down, SDL_Keysym key);
 
 private:
-	void setview(Point where);
+	void setview(const View& where);
+	void view_changed(bool jump);
 
-	const Widelands::Editor_Game_Base & m_egbase;
-	uint32_t m_screenwidth;
-	uint32_t m_screenheight;
+	const Widelands::EditorGameBase& egbase_;
+	MapView* map_view_;
 
-	/**
-	 * This is the callback function that we call to request a change in view position.
-	 */
-	SetViewFn m_setview;
-
-	bool m_havefirst;
-	bool m_update;
-	Point m_anchor;
-	Point m_current;
+	bool havefirst_;
+	bool update_;
+	Vector2f anchor_;  // center of last view in mappixel.
+	View current_;
 
 	/**
 	 * Keeps track of what the player has looked at to allow jumping back and forth
 	 * in the history.
 	 */
 	/*@{*/
-	std::vector<Point> m_history;
-	std::vector<Point>::size_type m_history_index;
+	std::vector<View> history_;
+	size_t history_index_;
 	/*@}*/
-
-	struct Landmark {
-		Point point;
-		bool set;
-
-		Landmark() : set(false) {}
-	};
 
 	/**
 	 * Landmarks that were set explicitly by the player, mapped on the 0-9 keys.
 	 */
-	Landmark m_landmarks[10];
+	std::vector<Landmark> landmarks_;
 };
 
-#endif // QUICKNAVIGATION_H
+#endif  // end of include guard: WL_WUI_QUICKNAVIGATION_H

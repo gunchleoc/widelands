@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 by the Widelands Development Team
+ * Copyright (C) 2010-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,18 +17,20 @@
  *
  */
 
-#ifndef MULTIPLAYERSETUPGROUP_H
-#define MULTIPLAYERSETUPGROUP_H
+#ifndef WL_WUI_MULTIPLAYERSETUPGROUP_H
+#define WL_WUI_MULTIPLAYERSETUPGROUP_H
 
 #include <map>
+#include <memory>
 #include <string>
 
-#include "constants.h"
+#include "graphic/font_handler1.h"
+#include "graphic/text/font_set.h"
+#include "graphic/text_constants.h"
+#include "network/network_player_settings_backend.h"
 #include "ui_basic/box.h"
 #include "ui_basic/panel.h"
 #include "ui_basic/textarea.h"
-
-#define MAXCLIENTS 64
 
 struct GameSettingsProvider;
 struct MultiPlayerSetupGroupOptions;
@@ -43,30 +45,30 @@ struct MultiPlayerPlayerGroup;
  *
  */
 struct MultiPlayerSetupGroup : public UI::Panel {
-	MultiPlayerSetupGroup
-		(UI::Panel * parent,
-		 int32_t x, int32_t y, int32_t w, int32_t h,
-		 GameSettingsProvider * settings,
-		 uint32_t butw, uint32_t buth,
-		 const std::string & fname = UI_FONT_NAME,
-		 uint32_t fsize = UI_FONT_SIZE_SMALL);
+	MultiPlayerSetupGroup(UI::Panel* parent,
+	                      int32_t x,
+	                      int32_t y,
+	                      int32_t w,
+	                      int32_t h,
+	                      GameSettingsProvider* settings,
+	                      uint32_t butw,
+	                      uint32_t buth);
 	~MultiPlayerSetupGroup();
 
 	void refresh();
 
 private:
-	GameSettingsProvider   * const s;
-	std::vector<MultiPlayerClientGroup *> c;
-	std::vector<MultiPlayerPlayerGroup *> p;
-	UI::Box                  clientbox, playerbox;
-	std::vector<UI::Textarea *> labels;
+	GameSettingsProvider* const s;
+	std::unique_ptr<NetworkPlayerSettingsBackend> npsb;
+	std::vector<MultiPlayerClientGroup*> multi_player_client_groups;  // not owned
+	std::vector<MultiPlayerPlayerGroup*> multi_player_player_groups;  // not owned
+	UI::Box clientbox, playerbox;
+	std::vector<UI::Textarea*> labels;
 
-	uint32_t    m_buth, m_fsize;
-	std::string m_fname;
+	uint32_t buth_;
 
-	std::map<std::string, const Image* > m_tribepics;
-	std::map<std::string, std::string> m_tribenames;
+	std::map<std::string, const Image*> tribepics_;
+	std::map<std::string, std::string> tribenames_;
 };
 
-
-#endif
+#endif  // end of include guard: WL_WUI_MULTIPLAYERSETUPGROUP_H

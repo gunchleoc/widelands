@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2008 by the Widelands Development Team
+ * Copyright (C) 2007-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,39 +17,38 @@
  *
  */
 
-#ifndef GAME_TIPS_H
-#define GAME_TIPS_H
+#ifndef WL_WUI_GAME_TIPS_H
+#define WL_WUI_GAME_TIPS_H
+
+#include <cstring>
+#include <string>
+#include <vector>
 
 #include "ui_basic/progresswindow.h"
 
-#include <string>
-#include <cstring>
-#include <vector>
-
 /// Displays game tips in progress window
 struct GameTips : public UI::IProgressVisualization {
-	GameTips
-		(UI::ProgressWindow & progressWindow, const std::vector<std::string>&);
+	GameTips(UI::ProgressWindow& progressWindow, const std::vector<std::string>&);
 	virtual ~GameTips();
 
-	virtual void update(bool repaint);
-	virtual void stop();
+	void update(bool repaint) override;
+	void stop() override;
 
 private:
 	struct Tip {
-		std::string  text;
-		int32_t          interval;
+		std::string text;
+		int32_t interval;
 	};
 	void load_tips(std::string);
 	void show_tip(int32_t index);
 
-	uint32_t             m_lastUpdated;
-	uint32_t             m_updateAfter;
-	UI::ProgressWindow & m_progressWindow;
-	bool                 m_registered;
-	uint32_t             m_lastTip;
+	uint32_t lastUpdated_;
+	uint32_t updateAfter_;
+	UI::ProgressWindow& progressWindow_;
+	bool registered_;
+	uint32_t lastTip_;
 
-	std::vector<Tip>     m_tips;
+	std::vector<Tip> tips_;
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_GAME_TIPS_H

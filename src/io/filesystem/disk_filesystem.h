@@ -17,57 +17,53 @@
  *
  */
 
-#ifndef DISK_FILESYSTEM_H
-#define DISK_FILESYSTEM_H
+#ifndef WL_IO_FILESYSTEM_DISK_FILESYSTEM_H
+#define WL_IO_FILESYSTEM_DISK_FILESYSTEM_H
 
-#include "filesystem.h"
-
-#include <string>
 #include <cstring>
+#include <string>
 
-/// \todo const correctness
+#include "io/filesystem/filesystem.h"
+
+// TODO(unknown): const correctness
 class RealFSImpl : public FileSystem {
 public:
-	RealFSImpl(const std::string & Directory);
+	RealFSImpl(const std::string& Directory);
 
-	virtual int32_t FindFiles
-		(const std::string & path,
-		 const std::string & pattern,
-		 filenameset_t     * results,
-		 uint32_t            depth = 0);
+	std::set<std::string> list_directory(const std::string& path) override;
 
-	virtual bool IsWritable() const;
-	bool FileIsWriteable(const std::string & path);
-	virtual bool FileExists (const std::string & path);
-	virtual bool IsDirectory(const std::string & path);
-	virtual void EnsureDirectoryExists(const std::string & dirname);
-	virtual void MakeDirectory        (const std::string & dirname);
+	bool is_writable() const override;
+	bool file_is_writeable(const std::string& path);
+	bool file_exists(const std::string& path) override;
+	bool is_directory(const std::string& path) override;
+	void ensure_directory_exists(const std::string& fs_dirname) override;
+	void make_directory(const std::string& fs_dirname) override;
 
-	virtual void * Load(const std::string & fname, size_t & length);
-	virtual void * fastLoad
-		(const std::string & fname, size_t & length, bool & fast);
+	void* load(const std::string& fname, size_t& length) override;
 
+	void write(const std::string& fname, void const* data, int32_t length, bool append);
+	void write(const std::string& fname, void const* data, int32_t length) override {
+		write(fname, data, length, false);
+	}
 
-	void Write(const std::string & fname, void const * data, int32_t length, bool append);
-	virtual void Write(const std::string & fname, void const * data, int32_t length)
-		{Write(fname, data, length, false);}
+	StreamRead* open_stream_read(const std::string& fname) override;
+	StreamWrite* open_stream_write(const std::string& fname) override;
 
-	virtual StreamRead  * OpenStreamRead (const std::string & fname);
-	virtual StreamWrite * OpenStreamWrite(const std::string & fname);
+	FileSystem* make_sub_file_system(const std::string& fs_dirname) override;
+	FileSystem* create_sub_file_system(const std::string& fs_dirname, Type) override;
+	void fs_unlink(const std::string& file) override;
+	void fs_rename(const std::string& old_name, const std::string& new_name) override;
 
-	virtual FileSystem * MakeSubFileSystem(const std::string & dirname);
-	virtual FileSystem * CreateSubFileSystem(const std::string & dirname, Type);
-	virtual void Unlink(const std::string & file);
-	virtual void Rename(const std::string & old_name, const std::string & new_name);
-
-	virtual std::string getBasename() {return m_directory;};
-	virtual unsigned long long DiskSpace();
+	std::string get_basename() override {
+		return directory_;
+	}
+	unsigned long long disk_space() override;
 
 private:
-	void m_unlink_directory(const std::string & file);
-	void m_unlink_file     (const std::string & file);
+	void unlink_directory(const std::string& file);
+	void unlink_file(const std::string& file);
 
-	std::string m_directory;
+	std::string directory_;
 };
 
-#endif
+#endif  // end of include guard: WL_IO_FILESYSTEM_DISK_FILESYSTEM_H

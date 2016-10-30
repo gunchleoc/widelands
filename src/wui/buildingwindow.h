@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,46 +17,54 @@
  *
  */
 
-#ifndef _BUILDINGWINDOW_H_
-#define _BUILDINGWINDOW_H_
+#ifndef WL_WUI_BUILDINGWINDOW_H
+#define WL_WUI_BUILDINGWINDOW_H
 
 #include <cstdlib>
+#include <memory>
 
-#include "interactive_gamebase.h"
+#include "economy/expedition_bootstrap.h"
 #include "ui_basic/button.h"
 #include "ui_basic/window.h"
-#include "waresdisplay.h"
+#include "wui/field_overlay_manager.h"
+#include "wui/interactive_gamebase.h"
+#include "wui/waresdisplay.h"
 
 /**
  * Base class for all building windows.
  *
  * This class is sub-classed for all building types to provide something useful.
  */
-struct Building_Window : public UI::Window {
-	friend struct TrainingSite_Window;
-	friend struct MilitarySite_Window;
+struct BuildingWindow : public UI::Window {
+	friend struct TrainingSiteWindow;
+	friend struct MilitarySiteWindow;
 	enum {
-		Width = 4 * 34 //  4 normally sized buttons
+		Width = 4 * 34  //  4 normally sized buttons
 	};
 
-	Building_Window
-		(Interactive_GameBase & parent, Widelands::Building &, UI::Window * & registry);
+	BuildingWindow(InteractiveGameBase& parent, Widelands::Building&, UI::Window*& registry);
 
-	virtual ~Building_Window();
+	virtual ~BuildingWindow();
 
-	Widelands::Building & building() {return m_building;}
-
-	Interactive_GameBase & igbase() const {
-		return ref_cast<Interactive_GameBase, UI::Panel>(*get_parent());
+	Widelands::Building& building() {
+		return building_;
 	}
 
-	virtual void draw(RenderTarget &);
-	virtual void think();
+	InteractiveGameBase& igbase() const {
+		return dynamic_cast<InteractiveGameBase&>(*get_parent());
+	}
+
+	void draw(RenderTarget&) override;
+	void think() override;
+	void set_avoid_fastclick(bool afc) {
+		avoid_fastclick_ = afc;
+	}
 
 protected:
-	UI::Tab_Panel * get_tabs() {return m_tabs;}
+	UI::TabPanel* get_tabs() {
+		return tabs_;
+	}
 
-	void help_clicked();
 	void act_bulldoze();
 	void act_dismantle();
 	void act_debug();
@@ -65,32 +73,39 @@ protected:
 	void toggle_workarea();
 	void configure_workarea_button();
 	void act_start_stop();
-	void act_enhance(Widelands::Building_Index);
+	void act_start_or_cancel_expedition();
+	void act_enhance(Widelands::DescriptionIndex);
 	void clicked_goto();
 
-	void create_ware_queue_panel
-		(UI::Box *, Widelands::Building &, Widelands::WaresQueue *, bool = false);
+	void
+	create_ware_queue_panel(UI::Box*, Widelands::Building&, Widelands::WaresQueue*, bool = false);
 
-	virtual void create_capsbuttons(UI::Box * buttons);
+	virtual void create_capsbuttons(UI::Box* buttons);
 
-	UI::Window * & m_registry;
+	UI::Window*& registry_;
 
 private:
-	UI::UniqueWindow::Registry m_helpwindow_registry;
-	Widelands::Building & m_building;
+	Widelands::Building& building_;
 
-	UI::Tab_Panel * m_tabs;
+	UI::TabPanel* tabs_;
 
-	UI::Box * m_capsbuttons; ///< \ref UI::Box that contains capabilities buttons
-	UI::Button * m_toggle_workarea;
+	UI::Box* capsbuttons_;  ///< \ref UI::Box that contains capabilities buttons
+	UI::Button* toggle_workarea_;
 
 	//  capabilities that were last used in setting up the caps panel
-	uint32_t m_capscache;
-	Widelands::Player_Number m_capscache_player_number;
-	bool m_caps_setup;
+	uint32_t capscache_;
+	Widelands::PlayerNumber capscache_player_number_;
+	bool caps_setup_;
 
-	Overlay_Manager::Job_Id m_workarea_job_id;
-	const Image* workarea_cumulative_pic[NUMBER_OF_WORKAREA_PICS];
+	FieldOverlayManager::OverlayId workarea_overlay_id_;
+	bool avoid_fastclick_;
+
+	// For ports only.
+	void update_expedition_button(bool expedition_was_canceled);
+
+	UI::Button* expeditionbtn_;
+	std::unique_ptr<Notifications::Subscriber<Widelands::NoteExpeditionCanceled>>
+	   expedition_canceled_subscriber_;
 };
 
-#endif // _BUILDINGWINDOW_H_
+#endif  // end of include guard: WL_WUI_BUILDINGWINDOW_H

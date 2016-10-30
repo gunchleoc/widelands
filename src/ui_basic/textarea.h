@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006, 2008 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,14 +17,12 @@
  *
  */
 
-#ifndef UI_TEXTAREA_H
-#define UI_TEXTAREA_H
+#ifndef WL_UI_BASIC_TEXTAREA_H
+#define WL_UI_BASIC_TEXTAREA_H
 
-#include "align.h"
-#include "constants.h"
-#include "graphic/font.h"
-
-#include "panel.h"
+#include "graphic/align.h"
+#include "graphic/text_layout.h"
+#include "ui_basic/panel.h"
 
 namespace UI {
 
@@ -47,63 +45,62 @@ namespace UI {
  * Finally, there is static mode, which does not change desired or actual
  * size in any way based on the text.
  *
- * A multiline Textarea differs from a \ref Multiline_Textarea in that
+ * A multiline Textarea differs from a \ref MultilineTextarea in that
  * the latter provides scrollbars.
  */
 struct Textarea : public Panel {
-	enum LayoutMode {
-		AutoMove,
-		Layouted,
-		Static
-	};
+	Textarea(Panel* parent,
+	         int32_t x,
+	         int32_t y,
+	         const std::string& text = std::string(),
+	         Align align = UI::Align::kLeft);
+	Textarea(
+	   Panel* parent, int32_t x, int32_t y, uint32_t w, uint32_t h, Align align = UI::Align::kLeft);
+	Textarea(Panel* const parent,
+	         int32_t x,
+	         int32_t y,
+	         uint32_t w,
+	         uint32_t h,
+	         const std::string& text,
+	         Align align = UI::Align::kLeft);
+	Textarea(Panel* parent, const std::string& text = std::string(), Align align = UI::Align::kLeft);
 
-	Textarea
-		(Panel * parent,
-		 int32_t x, int32_t y,
-		 const std::string & text = std::string(),
-		 Align align = Align_Left);
-	Textarea
-		(Panel * parent,
-		 int32_t x, int32_t y, uint32_t w, uint32_t h,
-		 Align align = Align_Left);
-	Textarea
-		(Panel *  const parent,
-		 int32_t x, int32_t y, uint32_t w, uint32_t h,
-		 const std::string & text,
-		 Align align = Align_Left);
-	Textarea
-		(Panel * parent,
-		 const std::string & text = std::string(),
-		 Align align = Align_Left, uint32_t width = 0);
+	/**
+	 * If fixed_width > 0, the Textarea will not change its width.
+	 * Use this if you need a Textarea that keeps changing its contents, but you don't want the
+	 * surrounding elements to shift, e.g. in a Box.
+	 */
+	void set_fixed_width(int w);
 
-	void set_layout_mode(LayoutMode lm);
-	void set_fixed_size(const std::string & text);
-	void set_text(const std::string &);
-	std::string get_text();
-	void set_align(Align);
+	void set_text(const std::string&);
+	const std::string& get_text();
 
 	// Drawing and event handlers
-	void draw(RenderTarget &);
+	void draw(RenderTarget&) override;
 
-	void set_textstyle(const TextStyle & style);
-	const TextStyle & get_textstyle() const {return m_textstyle;}
-
-	void set_font(const std::string & name, int size, RGBColor clr);
+	void set_color(RGBColor color);
+	void set_fontsize(int fontsize);
 
 protected:
-	virtual void update_desired_size();
+	void update_desired_size() override;
 
 private:
+	enum LayoutMode { AutoMove, Layouted, Static };
+
 	void init();
 	void collapse();
 	void expand();
+	void update();
 
-	LayoutMode m_layoutmode;
-	std::string m_text;
-	Align m_align;
-	TextStyle m_textstyle;
+	LayoutMode layoutmode_;
+	std::string text_;
+	const Image* rendered_text_;
+	Align align_;
+	RGBColor color_;
+	int fontsize_;
+
+	int fixed_width_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_TEXTAREA_H

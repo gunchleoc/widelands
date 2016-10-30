@@ -17,22 +17,34 @@
  *
  */
 
-#ifndef FLAG_H
-#define FLAG_H
+#ifndef WL_ECONOMY_FLAG_H
+#define WL_ECONOMY_FLAG_H
 
-#include <vector>
 #include <list>
+#include <vector>
 
-#include "logic/immovable.h"
-#include "routing_node.h"
+#include "base/macros.h"
+#include "economy/routing_node.h"
+#include "logic/map_objects/draw_text.h"
+#include "logic/map_objects/immovable.h"
 
 namespace Widelands {
 class Building;
-struct Request;
+class Request;
 struct Road;
 class WareInstance;
 
+class FlagDescr : public MapObjectDescr {
+public:
+	FlagDescr(char const* const init_name, char const* const init_descname)
+	   : MapObjectDescr(MapObjectType::FLAG, init_name, init_descname) {
+	}
+	~FlagDescr() override {
+	}
 
+private:
+	DISALLOW_COPY_AND_ASSIGN(FlagDescr);
+};
 
 /**
  * Flag represents a flag, obviously.
@@ -46,126 +58,141 @@ class WareInstance;
  * worker is to execute. Once execution of the program has finished, the worker
  * will return to a warehouse.
  *
- * Important: Do not access m_roads directly. get_road() and others use
+ * Important: Do not access roads_ directly. get_road() and others use
  * WALK_xx in all "direction" parameters.
  */
 struct Flag : public PlayerImmovable, public RoutingNode {
-	typedef std::vector<const WareInstance *> Wares;
+	using Wares = std::vector<const WareInstance*>;
 
-	friend struct Economy;
-	friend struct Router;
+	friend class Economy;
 	friend class FlagQueue;
-	friend struct Map_Ware_Data_Packet;     // has to look at pending items
-	friend struct Map_Waredata_Data_Packet; // has to look at pending items
-	friend struct Map_Flagdata_Data_Packet; // has to read/write this to a file
+	friend class MapFlagdataPacket;   // has to read/write this to a file
+	friend struct MapWarePacket;      // has to look at pending wares
+	friend struct MapWaredataPacket;  // has to look at pending wares
+	friend struct Router;
 
-	Flag(); /// empty flag for savegame loading
-	Flag(Editor_Game_Base &, Player & owner, Coords); /// create a new flag
-	virtual ~Flag();
+	const FlagDescr& descr() const;
 
-	void load_finish(Editor_Game_Base &);
-	virtual void destroy(Editor_Game_Base &);
+	Flag();                                               /// empty flag for savegame loading
+	Flag(EditorGameBase&, Player& owner, const Coords&);  /// create a new flag
+	~Flag() override;
 
-	virtual int32_t  get_type    () const throw ();
-	char const * type_name() const throw () {return "flag";}
-	virtual int32_t  get_size    () const throw ();
-	virtual bool get_passable() const throw ();
-	const std::string & name() const throw ();
+	void load_finish(EditorGameBase&) override;
+	void destroy(EditorGameBase&) override;
 
-	virtual Flag & base_flag();
+	int32_t get_size() const override;
+	bool get_passable() const override;
 
-	const Coords & get_position() const {return m_position;}
-	virtual PositionList get_positions (const Editor_Game_Base &) const throw ();
-	void get_neighbours(WareWorker type, RoutingNodeNeighbours &);
-	int32_t get_waitcost() const {return m_item_filled;}
+	Flag& base_flag() override;
 
-	virtual void set_economy(Economy *);
+	const Coords& get_position() const override {
+		return position_;
+	}
+	PositionList get_positions(const EditorGameBase&) const override;
+	void get_neighbours(WareWorker type, RoutingNodeNeighbours&) override;
+	int32_t get_waitcost() const {
+		return ware_filled_;
+	}
 
-	Building * get_building() const {return m_building;}
-	void attach_building(Editor_Game_Base &, Building &);
-	void detach_building(Editor_Game_Base &);
+	void set_economy(Economy*) override;
+
+	Building* get_building() const {
+		return building_;
+	}
+	void attach_building(EditorGameBase&, Building&);
+	void detach_building(EditorGameBase&);
 
 	bool has_road() const {
-		return
-			m_roads[0] or m_roads[1] or m_roads[2] or
-			m_roads[3] or m_roads[4] or m_roads[5];
+		return roads_[0] || roads_[1] || roads_[2] || roads_[3] || roads_[4] || roads_[5];
 	}
-	Road * get_road(uint8_t const dir) const {return m_roads[dir - 1];}
+	Road* get_road(uint8_t const dir) const {
+		return roads_[dir - 1];
+	}
 	uint8_t nr_of_roads() const;
-	void attach_road(int32_t dir, Road *);
+	void attach_road(int32_t dir, Road*);
 	void detach_road(int32_t dir);
 
-	Road * get_road(Flag &);
+	Road* get_road(Flag&);
 
 	bool is_dead_end() const;
 
 	bool has_capacity() const;
-	uint32_t total_capacity() {return m_item_capacity;}
-	uint32_t current_items() const {return m_item_filled;}
-	void wait_for_capacity(Game &, Worker &);
-	void skip_wait_for_capacity(Game &, Worker &);
-	void add_item(Editor_Game_Base &, WareInstance &);
-	bool has_pending_item(Game &, Flag & destflag);
-	bool ack_pickup(Game &, Flag & destflag);
-	bool cancel_pickup(Game &, Flag & destflag);
-	WareInstance * fetch_pending_item(Game &, PlayerImmovable & dest);
-	Wares get_items();
+	uint32_t total_capacity() {
+		return ware_capacity_;
+	}
+	uint32_t current_wares() const {
+		return ware_filled_;
+	}
+	void wait_for_capacity(Game&, Worker&);
+	void skip_wait_for_capacity(Game&, Worker&);
+	void add_ware(EditorGameBase&, WareInstance&);
+	bool has_pending_ware(Game&, Flag& destflag);
+	bool ack_pickup(Game&, Flag& destflag);
+	bool cancel_pickup(Game&, Flag& destflag);
+	WareInstance* fetch_pending_ware(Game&, PlayerImmovable& dest);
+	Wares get_wares();
 
-	void call_carrier(Game &, WareInstance &, PlayerImmovable * nextstep);
-	void update_items(Game &, Flag * other);
+	void call_carrier(Game&, WareInstance&, PlayerImmovable* nextstep);
+	void update_wares(Game&, Flag* other);
 
-	void remove_item(Editor_Game_Base &, WareInstance * const);
+	void remove_ware(EditorGameBase&, WareInstance* const);
 
-	void add_flag_job(Game &, Ware_Index workerware, const std::string & programname);
+	void add_flag_job(Game&, DescriptionIndex workerware, const std::string& programname);
 
-	virtual void log_general_info(const Editor_Game_Base &);
+	void log_general_info(const EditorGameBase&) override;
 
 protected:
-	virtual void init(Editor_Game_Base &);
-	virtual void cleanup(Editor_Game_Base &);
+	void init(EditorGameBase&) override;
+	void cleanup(EditorGameBase&) override;
 
-	virtual void draw(const Editor_Game_Base &, RenderTarget &, FCoords, Point);
+	void draw(uint32_t gametime,
+	          TextToDraw draw_text,
+	          const Vector2f& point_on_dst,
+				 float scale,
+	          RenderTarget* dst) override;
 
-	void wake_up_capacity_queue(Game &);
+	void wake_up_capacity_queue(Game&);
 
-	static void flag_job_request_callback(Game &, Request &, Ware_Index, Worker *, PlayerImmovable &);
+	static void
+	flag_job_request_callback(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
 
 	void set_flag_position(Coords coords);
 
 private:
-	struct PendingItem {
-		WareInstance    * item;     ///< the item itself
-		bool              pending;  ///< if the item is pending
-		int32_t           priority;  ///< carrier prefers the item with highest priority
-		OPtr<PlayerImmovable> nextstep; ///< next step that this item is sent to
+	struct PendingWare {
+		WareInstance* ware;              ///< the ware itself
+		bool pending;                    ///< if the ware is pending
+		int32_t priority;                ///< carrier prefers the ware with highest priority
+		OPtr<PlayerImmovable> nextstep;  ///< next step that this ware is sent to
 	};
 
 	struct FlagJob {
-		Request *   request;
+		Request* request;
 		std::string program;
 	};
 
-	Coords       m_position;
-	int32_t      m_animstart;
+	Coords position_;
+	int32_t animstart_;
 
-	Building    * m_building; ///< attached building (replaces road WALK_NW)
-	Road        * m_roads[6]; ///< WALK_xx - 1 as index
+	Building* building_;  ///< attached building (replaces road WALK_NW)
+	Road* roads_[6];      ///< WALK_xx - 1 as index
 
-	int32_t      m_item_capacity; ///< size of m_items array
-	int32_t      m_item_filled; ///< number of items currently on the flag
-	PendingItem * m_items;    ///< items currently on the flag
+	int32_t ware_capacity_;  ///< size of wares_ array
+	int32_t ware_filled_;    ///< number of wares currently on the flag
+	PendingWare* wares_;     ///< wares currently on the flag
 
 	/// call_carrier() will always call a carrier when the destination is
 	/// the given flag
-	Flag        * m_always_call_for_flag;
+	Flag* always_call_for_flag_;
 
-	typedef std::vector<OPtr<Worker> > CapacityWaitQueue;
-	CapacityWaitQueue m_capacity_wait; ///< workers waiting for capacity
+	using CapacityWaitQueue = std::vector<OPtr<Worker>>;
+	CapacityWaitQueue capacity_wait_;  ///< workers waiting for capacity
 
-	typedef std::list<FlagJob> FlagJobs;
-	FlagJobs m_flag_jobs;
+	using FlagJobs = std::list<FlagJob>;
+	FlagJobs flag_jobs_;
 };
 
+extern FlagDescr g_flag_descr;
 }
 
-#endif
+#endif  // end of include guard: WL_ECONOMY_FLAG_H

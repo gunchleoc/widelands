@@ -17,23 +17,21 @@
  *
  */
 
-#ifndef PLAYER_AREA_H
-#define PLAYER_AREA_H
+#ifndef WL_LOGIC_PLAYER_AREA_H
+#define WL_LOGIC_PLAYER_AREA_H
 
-#include "widelands_geometry.h"
-
-#include "widelands.h"
+#include "logic/widelands.h"
+#include "logic/widelands_geometry.h"
 
 namespace Widelands {
 
-template <typename Area_type = Area<> > struct Player_Area : public Area_type {
-	Player_Area() : player_number(0) {}
-	Player_Area(const Player_Number pn, const Area_type area)
-		: Area_type(area), player_number(pn)
-	{}
-	Player_Number player_number;
+template <typename AreaType = Area<>> struct PlayerArea : public AreaType {
+	PlayerArea() : player_number(0) {
+	}
+	PlayerArea(const PlayerNumber pn, const AreaType area) : AreaType(area), player_number(pn) {
+	}
+	PlayerNumber player_number;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_PLAYER_AREA_H

@@ -17,34 +17,33 @@
  *
  */
 
-#include "supply_list.h"
+#include "economy/supply_list.h"
 
-#include "container_iterate.h"
-#include "request.h"
-#include "supply.h"
-#include "wexception.h"
+#include "base/wexception.h"
+#include "economy/request.h"
+#include "economy/supply.h"
 
 namespace Widelands {
 
 /**
  * Add a supply to the list.
 */
-void SupplyList::add_supply(Supply & supp)
-{
-	m_supplies.push_back(&supp);
+void SupplyList::add_supply(Supply& supp) {
+	supplies_.push_back(&supp);
 }
 
 /**
  * Remove a supply from the list.
 */
-void SupplyList::remove_supply(Supply & supp)
-{
-	container_iterate(Supplies, m_supplies, i)
-		if (*i.current == &supp) {
-			*i.current = *(i.get_end() - 1);
-			return m_supplies.pop_back();
-		}
+void SupplyList::remove_supply(Supply& supp) {
+	for (Supplies::iterator item_iter = supplies_.begin(); item_iter != supplies_.end();
+	     ++item_iter) {
 
+		if (*item_iter == &supp) {
+			*item_iter = *(supplies_.end() - 1);
+			return supplies_.pop_back();
+		}
+	}
 	throw wexception("SupplyList::remove: not in list");
 }
 
@@ -52,14 +51,11 @@ void SupplyList::remove_supply(Supply & supp)
  * Return whether there is at least one available
  * supply that can match the given request.
  */
-bool SupplyList::have_supplies(Game & game, const Request & req)
-{
-	for (size_t i = 0; i < m_supplies.size(); ++i)
-		if (m_supplies[i]->nr_supplies(game, req))
+bool SupplyList::have_supplies(Game& game, const Request& req) {
+	for (size_t i = 0; i < supplies_.size(); ++i)
+		if (supplies_[i]->nr_supplies(game, req))
 			return true;
 
 	return false;
 }
-
 }
-

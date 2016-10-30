@@ -17,20 +17,21 @@
  *
  */
 
-#ifndef INTERNET_GAMING_MESSAGES_H
-#define INTERNET_GAMING_MESSAGES_H
+#ifndef WL_NETWORK_NETWORK_GAMING_MESSAGES_H
+#define WL_NETWORK_NETWORK_GAMING_MESSAGES_H
 
 #include <string>
 
 struct NetworkGamingMessages {
 public:
 	// Before calling this function the first time, keep in mind to first fill_map()
-	static const std::string get_message(const std::string & code);
-	static const std::string get_message
-		(const std::string & code,
-		 const std::string & arg1, const std::string & arg2 = "", const std::string & arg3 = "");
+	static const std::string get_message(const std::string& code);
+	static const std::string get_message(const std::string& code,
+	                                     const std::string& arg1,
+	                                     const std::string& arg2 = "",
+	                                     const std::string& arg3 = "");
 
 	static void fill_map();
 };
 
-#endif
+#endif  // end of include guard: WL_NETWORK_NETWORK_GAMING_MESSAGES_H

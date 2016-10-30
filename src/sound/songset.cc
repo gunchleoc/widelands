@@ -17,28 +17,29 @@
  *
  */
 
-#include "songset.h"
+#include "sound/songset.h"
 
+#include <utility>
+
+#include "base/log.h"
 #include "io/fileread.h"
 #include "io/filesystem/layered_filesystem.h"
-#include "sound_handler.h"
-
-#include "log.h"
+#include "sound/sound_handler.h"
 
 /// Prepare infrastructure for reading song files from disk
-Songset::Songset() : m_m(0), m_rwops(0) {}
+Songset::Songset() : m_(nullptr), rwops_(nullptr) {
+}
 
 /// Close and delete all songs to avoid memory leaks.
-Songset::~Songset()
-{
-	m_songs.clear();
+Songset::~Songset() {
+	songs_.clear();
 
-	if (m_m)
-		Mix_FreeMusic(m_m);
+	if (m_)
+		Mix_FreeMusic(m_);
 
-	if (m_rwops) {
-		SDL_FreeRW(m_rwops);
-		m_fr.Close();
+	if (rwops_) {
+		SDL_FreeRW(rwops_);
+		fr_.close();
 	}
 }
 
@@ -48,64 +49,62 @@ Songset::~Songset()
  * first song. If you do not want to disturb the (linear) playback order then
  * \ref register_song() all songs before you start playing
  */
-void Songset::add_song(const std::string & filename) {
-	m_songs.push_back(filename);
-	m_current_song = m_songs.begin();
+void Songset::add_song(const std::string& filename) {
+	songs_.push_back(filename);
+	current_song_ = songs_.begin();
 }
 
 /** Get a song from the songset. Depending on
- * \ref Sound_Handler::sound_random_order, the selection will either be random
+ * \ref SoundHandler::sound_random_order, the selection will either be random
  * or linear (after last song, will start again with first).
  * \return  a pointer to the chosen song; 0 if none was found, music is disabled
  *          or an error occurred
  */
-Mix_Music * Songset::get_song()
-{
+Mix_Music* Songset::get_song() {
 	std::string filename;
 
-	if (g_sound_handler.get_disable_music() || m_songs.empty())
-		return 0;
+	if (g_sound_handler.get_disable_music() || songs_.empty())
+		return nullptr;
 
-	if (g_sound_handler.m_random_order)
-		filename = m_songs.at(g_sound_handler.m_rng.rand() % m_songs.size());
+	if (g_sound_handler.random_order_)
+		filename = songs_.at(g_sound_handler.rng_.rand() % songs_.size());
 	else {
-		if (m_current_song == m_songs.end())
-			m_current_song = m_songs.begin();
+		if (current_song_ == songs_.end())
+			current_song_ = songs_.begin();
 
-		filename = *(m_current_song++);
+		filename = *(current_song_++);
 	}
 
-	//first, close the previous song and remove it from memory
-	if (m_m) {
-		Mix_FreeMusic(m_m);
-		m_m = 0;
+	// First, close the previous song and remove it from memory
+	if (m_) {
+		Mix_FreeMusic(m_);
+		m_ = nullptr;
 	}
 
-	if (m_rwops) {
-		SDL_FreeRW(m_rwops);
-		m_rwops = 0;
-		m_fr.Close();
+	if (rwops_) {
+		SDL_FreeRW(rwops_);
+		rwops_ = nullptr;
+		fr_.close();
 	}
 
-	//then open the new song
-	if (m_fr.TryOpen(*g_fs, filename.c_str())) {
-		if (!(m_rwops = SDL_RWFromMem(m_fr.Data(0), m_fr.GetSize()))) {
-			m_fr.Close();  // m_fr should be Open iff m_rwops != 0
-			return 0;
+	// Then open the new song
+	if (fr_.try_open(*g_fs, filename)) {
+		if (!(rwops_ = SDL_RWFromMem(fr_.data(0), fr_.get_size()))) {
+			fr_.close();  // fr_ should be Open iff rwops_ != 0
+			return nullptr;
 		}
-	}
-	else
-		return 0;
+	} else
+		return nullptr;
 
-	if (m_rwops)
-		m_m = Mix_LoadMUS_RW(m_rwops);
+	if (rwops_)
+		m_ = Mix_LoadMUS_RW(rwops_, 0);
 
-	if (m_m)
-		log("Sound_Handler: loaded song \"%s\"\n", filename.c_str());
+	if (m_)
+		log("SoundHandler: loaded song \"%s\"\n", filename.c_str());
 	else {
-		log("Sound_Handler: loading song \"%s\" failed!\n", filename.c_str());
-		log("Sound_Handler: %s\n", Mix_GetError());
+		log("SoundHandler: loading song \"%s\" failed!\n", filename.c_str());
+		log("SoundHandler: %s\n", Mix_GetError());
 	}
 
-	return m_m;
+	return m_;
 }

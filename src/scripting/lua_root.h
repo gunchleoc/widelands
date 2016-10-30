@@ -17,65 +17,77 @@
  *
  */
 
-#ifndef LUA_ROOT_H
-#define LUA_ROOT_H
+#ifndef WL_SCRIPTING_LUA_ROOT_H
+#define WL_SCRIPTING_LUA_ROOT_H
 
-#include <lua.hpp>
-
-#include "luna.h"
+#include "scripting/lua.h"
+#include "scripting/lua_bases.h"
+#include "scripting/luna.h"
 
 namespace LuaRoot {
 
 /*
  * Base class for all classes in wl
  */
-class L_RootModuleClass : public LunaClass {
-	public:
-		const char * get_modulename() {return "";}
+class LuaRootModuleClass : public LunaClass {
+public:
+	const char* get_modulename() override {
+		return "";
+	}
 };
 
-class L_Game : public LuaBases::L_EditorGameBase {
+class LuaGame : public LuaBases::LuaEditorGameBase {
 public:
-	LUNA_CLASS_HEAD(L_Game);
-	const char * get_modulename() {return "";}
+	LUNA_CLASS_HEAD(LuaGame);
+	const char* get_modulename() override {
+		return "";
+	}
 
-	L_Game() {}
-	L_Game(lua_State * L);
+	LuaGame() {
+	}
+	LuaGame(lua_State* L);
 
-	virtual void __persist(lua_State * L);
-	virtual void __unpersist(lua_State * L);
+	void __persist(lua_State* L) override;
+	void __unpersist(lua_State* L) override;
 
 	/*
 	 * Properties
 	 */
-	int get_time(lua_State *);
-	int get_desired_speed(lua_State *);
-	int set_desired_speed(lua_State *);
-	int get_allow_autosaving(lua_State *);
-	int set_allow_autosaving(lua_State *);
+	int get_real_speed(lua_State* L);
+	int get_time(lua_State*);
+	int get_desired_speed(lua_State*);
+	int set_desired_speed(lua_State*);
+	int get_allow_autosaving(lua_State*);
+	int set_allow_autosaving(lua_State*);
+	int get_allow_saving(lua_State*);
+	int set_allow_saving(lua_State*);
 
 	/*
 	 * Lua methods
 	 */
-	int launch_coroutine(lua_State *);
-	int save(lua_State *);
+	int launch_coroutine(lua_State*);
+	int save(lua_State*);
 
 	/*
 	 * C methods
 	 */
 };
 
-class L_Editor : public LuaBases::L_EditorGameBase {
+class LuaEditor : public LuaBases::LuaEditorGameBase {
 public:
-	LUNA_CLASS_HEAD(L_Editor);
-	const char * get_modulename() {return "";}
+	LUNA_CLASS_HEAD(LuaEditor);
+	const char* get_modulename() override {
+		return "";
+	}
 
-	L_Editor() {}
-	L_Editor(lua_State * L);
-	virtual ~L_Editor() {}
+	LuaEditor() {
+	}
+	LuaEditor(lua_State* L);
+	virtual ~LuaEditor() {
+	}
 
-	virtual void __persist(lua_State * L);
-	virtual void __unpersist(lua_State * L);
+	void __persist(lua_State* L) override;
+	void __unpersist(lua_State* L) override;
 
 	/*
 	 * Properties
@@ -90,9 +102,82 @@ public:
 	 */
 };
 
-void luaopen_wlroot(lua_State *, bool in_editor);
+class LuaWorld : public LuaRootModuleClass {
+public:
+	LUNA_CLASS_HEAD(LuaWorld);
+	const char* get_modulename() override {
+		return "";
+	}
 
-#endif
+	LuaWorld() {
+	}
+	LuaWorld(lua_State* L);
+
+	void __persist(lua_State* L) override;
+	void __unpersist(lua_State* L) override;
+
+	/*
+	 * Properties
+	 */
+	int get_immovable_descriptions(lua_State* L);
+	int get_terrain_descriptions(lua_State* L);
+
+	/*
+	 * Lua methods
+	 */
+	int new_critter_type(lua_State* L);
+	int new_editor_immovable_category(lua_State* L);
+	int new_editor_terrain_category(lua_State* L);
+	int new_immovable_type(lua_State* L);
+	int new_resource_type(lua_State* L);
+	int new_terrain_type(lua_State* L);
+
+	/*
+	 * C methods
+	 */
 };
 
+class LuaTribes : public LuaRootModuleClass {
+public:
+	LUNA_CLASS_HEAD(LuaTribes);
+	const char* get_modulename() override {
+		return "";
+	}
 
+	LuaTribes() {
+	}
+	LuaTribes(lua_State* L);
+
+	void __persist(lua_State* L) override;
+	void __unpersist(lua_State* L) override;
+
+	/*
+	 * Properties
+	 */
+
+	/*
+	 * Lua methods
+	 */
+	int new_constructionsite_type(lua_State* L);
+	int new_dismantlesite_type(lua_State* L);
+	int new_militarysite_type(lua_State* L);
+	int new_productionsite_type(lua_State* L);
+	int new_trainingsite_type(lua_State* L);
+	int new_warehouse_type(lua_State* L);
+	int new_immovable_type(lua_State* L);
+	int new_ship_type(lua_State* L);
+	int new_ware_type(lua_State* L);
+	int new_carrier_type(lua_State* L);
+	int new_soldier_type(lua_State* L);
+	int new_worker_type(lua_State* L);
+	int new_tribe(lua_State* L);
+
+	/*
+	 * C methods
+	 */
+};
+
+void luaopen_wlroot(lua_State*, bool in_editor);
+
+#endif  // end of include guard: WL_SCRIPTING_LUA_ROOT_H
+}

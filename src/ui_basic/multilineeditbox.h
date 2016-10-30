@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006, 2008-2011 by Widelands Development Team
+ * Copyright (C) 2002-2016 by Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,13 +17,15 @@
  *
  */
 
-#ifndef UI_MULTILINEEDITBOX_H
-#define UI_MULTILINEEDITBOX_H
+#ifndef WL_UI_BASIC_MULTILINEEDITBOX_H
+#define WL_UI_BASIC_MULTILINEEDITBOX_H
 
-#include "panel.h"
+#include <memory>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
+
+#include "graphic/graphic.h"
+#include "ui_basic/panel.h"
 
 namespace UI {
 
@@ -31,36 +33,39 @@ struct TextStyle;
 
 /**
  * A panel that allows entering multi-line string, i.e. like a hybrid between
- * @ref Editbox and @ref Multiline_Textarea
+ * @ref Editbox and @ref MultilineTextarea
  */
-struct Multiline_Editbox : public Panel {
-	Multiline_Editbox
-		(Panel *, int32_t x, int32_t y, uint32_t w, uint32_t h, const std::string & text);
+struct MultilineEditbox : public Panel {
+	MultilineEditbox(Panel*,
+	                 int32_t x,
+	                 int32_t y,
+	                 uint32_t w,
+	                 uint32_t h,
+	                 const std::string& text,
+	                 const Image* background = g_gr->images().get("images/ui_basic/but2.png"));
 
-	boost::signal<void ()> changed;
+	boost::signals2::signal<void()> changed;
 
-	const std::string & get_text() const;
-	void set_text(const std::string &);
-	void set_textstyle(const TextStyle &);
+	const std::string& get_text() const;
+	void set_text(const std::string&);
 
 	void set_maximum_bytes(uint32_t n);
 	uint32_t get_maximum_bytes() const;
 
-protected:
-	void draw(RenderTarget &);
+	void focus(bool topcaller = true) override;
 
-	bool handle_mousepress  (Uint8 btn, int32_t x, int32_t y);
-	bool handle_mouserelease(Uint8 btn, int32_t x, int32_t y);
-	bool handle_key(bool down, SDL_keysym);
+protected:
+	void draw(RenderTarget&) override;
+
+	bool handle_key(bool down, SDL_Keysym) override;
+	bool handle_textinput(const std::string& text) override;
 
 private:
 	void scrollpos_changed(int32_t);
-	void insert(SDL_keysym code);
 
 	struct Data;
-	boost::scoped_ptr<Data> d;
+	std::unique_ptr<Data> d_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_MULTILINEEDITBOX_H

@@ -17,26 +17,24 @@
  *
  */
 
-#ifndef NETWORK_SYSTEM_H
-#define NETWORK_SYSTEM_H
+#ifndef WL_NETWORK_NETWORK_SYSTEM_H
+#define WL_NETWORK_NETWORK_SYSTEM_H
 
 #include <stdint.h>
-
-#ifndef WIN32
-
+#ifndef _WIN32
 // These includes work on Linux and should be fine on any other Unix-alike.
 // If not, this is the right place to conditionally include what is needed.
-#include <sys/types.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <netdb.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 // be compatible to microsoft
 #define closesocket close
-#define DATATYPE    void
+#define DATATYPE void
 
 #else
 
@@ -44,10 +42,10 @@
 // at msdn.microsoft.com
 #include <winsock2.h>
 
-#define DATATYPE    char
+#define DATATYPE char
 // microsoft doesn't have these
-typedef uint16_t in_port_t;
-typedef uint32_t in_addr_t;
+using in_port_t = uint16_t;
+using in_addr_t = uint32_t;
 
 #ifndef s_addr
 #define s_addr S_addr
@@ -58,4 +56,4 @@ typedef uint32_t in_addr_t;
 
 #endif
 
-#endif
+#endif  // end of include guard: WL_NETWORK_NETWORK_SYSTEM_H

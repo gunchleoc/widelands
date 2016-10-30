@@ -17,17 +17,15 @@
  *
  */
 
-#ifndef RICHTEXT_H
-#define RICHTEXT_H
+#ifndef WL_GRAPHIC_RICHTEXT_H
+#define WL_GRAPHIC_RICHTEXT_H
 
 #include <limits>
+#include <memory>
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
-
-#include "point.h"
-#include "rgbcolor.h"
-
+#include "base/vector.h"
+#include "graphic/color.h"
 
 class RenderTarget;
 
@@ -51,13 +49,13 @@ struct RichText {
 	uint32_t width();
 	uint32_t height();
 
-	void parse(const std::string & text);
-	void draw(RenderTarget & dst, Point offset, bool background = false);
+	void parse(const std::string& text);
+	void draw(RenderTarget& dst, const Vector2i& offset, bool background = false);
 
 private:
-	boost::scoped_ptr<RichTextImpl> m;
+	std::unique_ptr<RichTextImpl> m;
 };
 
-} // namespace UI
+}  // namespace UI
 
-#endif // RICHTEXT_H
+#endif  // end of include guard: WL_GRAPHIC_RICHTEXT_H

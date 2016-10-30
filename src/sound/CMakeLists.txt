@@ -1,0 +1,25 @@
+wl_library(sound
+  SRCS
+    fxset.cc
+    fxset.h
+    songset.cc
+    songset.h
+    sound_handler.cc
+    sound_handler.h
+  USES_BOOST_REGEX
+  USES_SDL2
+  USES_SDL2_MIXER
+  DEPENDS
+    base_i18n
+    base_log
+    graphic
+    helper
+    io_fileread
+    io_filesystem
+    logic
+    logic_widelands_geometry
+    random
+    wui
+    wui_mapview_pixelfunctions
+    wui_mapview
+)

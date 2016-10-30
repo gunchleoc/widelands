@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2003, 2006-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,79 +17,86 @@
  *
  */
 
-#ifndef INTERACTIVE_GAMEBASE_H
-#define INTERACTIVE_GAMEBASE_H
+#ifndef WL_WUI_INTERACTIVE_GAMEBASE_H
+#define WL_WUI_INTERACTIVE_GAMEBASE_H
 
-#include "interactive_base.h"
 #include "logic/game.h"
-#include "general_statistics_menu.h"
+#include "profile/profile.h"
+#include "wui/general_statistics_menu.h"
+#include "wui/interactive_base.h"
 
-struct ChatOverlay;
 struct ChatProvider;
 
-enum PlayerType {NONE, OBSERVER, PLAYING, VICTORIOUS, DEFEATED};
+enum PlayerType { NONE, OBSERVER, PLAYING, VICTORIOUS, DEFEATED };
 
-class Interactive_GameBase : public Interactive_Base {
+class InteractiveGameBase : public InteractiveBase {
 public:
-	class Game_Main_Menu_Windows {
-	public:
+	struct GameMainMenuWindows {
 		UI::UniqueWindow::Registry loadgame;
 		UI::UniqueWindow::Registry savegame;
 		UI::UniqueWindow::Registry readme;
 		UI::UniqueWindow::Registry keys;
-		UI::UniqueWindow::Registry authors;
+		UI::UniqueWindow::Registry help;
 		UI::UniqueWindow::Registry license;
 		UI::UniqueWindow::Registry sound_options;
 
 		UI::UniqueWindow::Registry building_stats;
-		General_Statistics_Menu::Registry general_stats;
+		GeneralStatisticsMenu::Registry general_stats;
 		UI::UniqueWindow::Registry ware_stats;
 		UI::UniqueWindow::Registry stock;
 	};
 
-	Interactive_GameBase
-		(Widelands::Game &,
-		 Section         & global_s,
-		 PlayerType        pt          = NONE,
-		 bool              chatenabled = false);
-	Widelands::Game * get_game() const;
-	Widelands::Game &     game() const;
+	InteractiveGameBase(Widelands::Game&,
+	                    Section& global_s,
+	                    PlayerType pt = NONE,
+	                    bool chatenabled = false,
+	                    bool multiplayer = false);
+	Widelands::Game* get_game() const;
+	Widelands::Game& game() const;
 
 	// Chat messages
-	void set_chat_provider(ChatProvider &);
-	ChatProvider * get_chat_provider();
+	void set_chat_provider(ChatProvider&);
+	ChatProvider* get_chat_provider();
 
-	const std::string & building_census_format      () const {
-		return m_building_census_format;
-	}
-	const std::string & building_statistics_format  () const {
-		return m_building_statistics_format;
-	}
-	const std::string & building_tooltip_format     () const {
-		return m_building_tooltip_format;
-	}
-
-	virtual bool can_see(Widelands::Player_Number) const = 0;
-	virtual bool can_act(Widelands::Player_Number) const = 0;
-	virtual Widelands::Player_Number player_number() const = 0;
+	virtual bool can_see(Widelands::PlayerNumber) const = 0;
+	virtual bool can_act(Widelands::PlayerNumber) const = 0;
+	virtual Widelands::PlayerNumber player_number() const = 0;
 
 	virtual void node_action() = 0;
-	const PlayerType & get_playertype()const {return m_playertype;}
-	void set_playertype(const PlayerType & pt) {m_playertype = pt;}
+	const PlayerType& get_playertype() const {
+		return playertype_;
+	}
+	void set_playertype(const PlayerType& pt) {
+		playertype_ = pt;
+	}
 
 	bool try_show_ship_window();
+	bool is_multiplayer() {
+		return multiplayer_;
+	}
+
+	void show_game_summary();
+	void postload() override;
+	void start() override {
+	}
 
 protected:
-	Game_Main_Menu_Windows m_mainm_windows;
-	ChatProvider           * m_chatProvider;
-	ChatOverlay            * m_chatOverlay;
-	std::string              m_building_census_format;
-	std::string              m_building_statistics_format;
-	std::string              m_building_tooltip_format;
-	bool                     m_chatenabled;
+	void draw_overlay(RenderTarget&) override;
+	virtual int32_t calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords>& c) = 0;
 
-	PlayerType m_playertype;
-	UI::UniqueWindow::Registry m_fieldaction;
+	GameMainMenuWindows main_windows_;
+	ChatProvider* chat_provider_;
+	bool chatenabled_;
+	bool multiplayer_;
+	PlayerType playertype_;
+	UI::UniqueWindow::Registry fieldaction_;
+	UI::UniqueWindow::Registry game_summary_;
+
+	UI::Button toggle_buildhelp_;
+	UI::Button reset_zoom_;
+
+private:
+	void on_buildhelp_changed(const bool value) override;
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_INTERACTIVE_GAMEBASE_H

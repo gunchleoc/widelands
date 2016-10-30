@@ -17,45 +17,54 @@
  *
  */
 
-#ifndef IMAGE_CACHE_H
-#define IMAGE_CACHE_H
+#ifndef WL_GRAPHIC_IMAGE_CACHE_H
+#define WL_GRAPHIC_IMAGE_CACHE_H
 
+#include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <boost/utility.hpp>
 
-#include "image.h"
-class IImageLoader;
-class SurfaceCache;
+#include "base/macros.h"
+#include "graphic/image.h"
+#include "graphic/texture_atlas.h"
 
 // For historic reasons, most part of the Widelands code base expect that an
 // Image stays valid for the whole duration of the program run. This class is
-// the one that keeps ownership of all Images to ensure that this is true. Also
-// for historic reasons, this class will try to load in Image from disk when
-// its hash is not found. Other parts of Widelands will create images when they
-// do not exist in the cache yet and then put it into the cache and therefore
-// releasing their ownership.
-class ImageCache : boost::noncopyable {
+// the one that keeps ownership of all Images to ensure that this is true.
+// Other parts of Widelands will create images when they do not exist in the
+// cache yet and then put it into the cache and therefore releasing their
+// ownership.
+class ImageCache {
 public:
-	virtual ~ImageCache() {}
+	ImageCache();
+	~ImageCache();
 
-	// Insert the given Image into the cache. The hash is defined by Image's hash()
-	// function. Ownership of the Image is taken. Will return a pointer to the freshly inserted
+	// Insert the 'image' into the cache and returns a pointer to the inserted
 	// image for convenience.
-	virtual const Image* insert(const Image*) = 0;
+	const Image* insert(const std::string& hash, std::unique_ptr<const Image> image);
 
-	// Returns the image associated with the given hash. If no image by this
-	// hash is known, it will try to load one from disk with the filename =
-	// hash. If this fails, it will throw an error.
-	virtual const Image* get(const std::string& hash) = 0;
+	// Returns the image associated with the 'hash'. If no image by this hash is
+	// known, it will try to load one from disk with the filename = hash. If
+	// this fails, it will throw an error.
+	const Image* get(const std::string& hash);
 
-	// Returns true if the given hash is stored in the cache.
-	virtual bool has(const std::string& hash) const = 0;
+	// Returns true if the 'hash' is stored in the cache.
+	bool has(const std::string& hash) const;
 
+	// Fills the image cache with the hash -> Texture map 'textures_in_atlas'
+	// and take ownership of 'texture_atlases' so that the textures stay valid.
+	void
+	fill_with_texture_atlases(std::vector<std::unique_ptr<Texture>> texture_atlases,
+	                          std::map<std::string, std::unique_ptr<Texture>> textures_in_atlas);
+
+private:
+	std::vector<std::unique_ptr<Texture>> texture_atlases_;
+	std::map<std::string, std::unique_ptr<const Image>> images_;
+
+	DISALLOW_COPY_AND_ASSIGN(ImageCache);
 };
 
-// Create a new ImageCache. Takes no ownership.
-ImageCache* create_image_cache(IImageLoader*, SurfaceCache*);
-
-#endif /* end of include guard: IMAGE_CACHE_H */
-
+#endif  // end of include guard: WL_GRAPHIC_IMAGE_CACHE_H

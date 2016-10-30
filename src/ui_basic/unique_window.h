@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006, 2008-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,30 +17,35 @@
  *
  */
 
-#ifndef UI_UNIQUE_WINDOW_H
-#define UI_UNIQUE_WINDOW_H
+#ifndef WL_UI_BASIC_UNIQUE_WINDOW_H
+#define WL_UI_BASIC_UNIQUE_WINDOW_H
 
-#include "window.h"
-#include "button.h"
+#include <functional>
 
-#include <boost/function.hpp>
-
+#include "ui_basic/button.h"
+#include "ui_basic/window.h"
 
 namespace UI {
-struct Panel;
-
+class Panel;
 
 /**
  * Can only be created once, when it is requested to
  * open a second one, it will implicitly kill the old one
 */
 struct UniqueWindow : public Window {
-
 	struct Registry {
-		UniqueWindow * window;
-		boost::function<void()> onCreate;
-		boost::function<void()> onDelete;
-		boost::function<void()> constr;
+		UniqueWindow* window;
+
+		// Whenever Registry::toggle() is called, a window will be created using
+		// 'open_window' or if one is open already, the existing one will be
+		// closed.
+		std::function<void()> open_window;
+
+		// Called when the window opens.
+		std::function<void()> on_create;
+
+		// Called when the window is deleted (i.e. closed).
+		std::function<void()> on_delete;
 
 		void create();
 		void destroy();
@@ -49,25 +54,30 @@ struct UniqueWindow : public Window {
 		int32_t x, y;
 		bool valid_pos;
 
-		Registry() : window(0), x(0), y(0), valid_pos(false) {}
+		Registry(const Registry&) = default;
+		Registry& operator=(const Registry&) = default;
+
+		Registry() : window(nullptr), x(0), y(0), valid_pos(false) {
+		}
 		~Registry();
 	};
 
-	UniqueWindow
-		(Panel             * parent,
-		 const std::string & name,
-		 Registry          *,
-		 int32_t w, int32_t h,
-		 const std::string & title);
+	UniqueWindow(Panel* parent,
+	             const std::string& name,
+	             Registry*,
+	             int32_t w,
+	             int32_t h,
+	             const std::string& title);
 	virtual ~UniqueWindow();
 
-	bool get_usedefaultpos() {return m_usedefaultpos;}
+	bool get_usedefaultpos() {
+		return usedefaultpos_;
+	}
 
 private:
-	Registry * m_registry;
-	bool       m_usedefaultpos;
+	Registry* registry_;
+	bool usedefaultpos_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_UNIQUE_WINDOW_H

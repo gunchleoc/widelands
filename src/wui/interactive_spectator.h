@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2003, 2006-2008 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,15 +17,18 @@
  *
  */
 
-#ifndef INTERACTIVE_SPECTATOR_H
-#define INTERACTIVE_SPECTATOR_H
+#ifndef WL_WUI_INTERACTIVE_SPECTATOR_H
+#define WL_WUI_INTERACTIVE_SPECTATOR_H
 
-#include "ui_basic/button.h"
-
-#include "interactive_gamebase.h"
 #include <SDL_keyboard.h>
 
-namespace Widelands {struct Game;}
+#include "profile/profile.h"
+#include "ui_basic/button.h"
+#include "wui/interactive_gamebase.h"
+
+namespace Widelands {
+class Game;
+}
 
 /**
  * This class shows a game for somebody who is only a spectator.
@@ -34,17 +37,14 @@ namespace Widelands {struct Game;}
  *
  * This class provides the UI, runs the game logic, etc.
  */
-struct Interactive_Spectator : public Interactive_GameBase {
-	Interactive_Spectator
-		(Widelands::Game &, Section & global_s, bool multiplayer = false);
+struct InteractiveSpectator : public InteractiveGameBase {
+	InteractiveSpectator(Widelands::Game&, Section& global_s, bool multiplayer = false);
 
-	~Interactive_Spectator();
+	~InteractiveSpectator();
 
-	void start();
+	Widelands::Player* get_player() const override;
 
-	Widelands::Player * get_player() const throw ();
-
-	bool handle_key(bool down, SDL_keysym);
+	bool handle_key(bool down, SDL_Keysym) override;
 
 private:
 	void toggle_chat();
@@ -52,23 +52,22 @@ private:
 	void toggle_statistics();
 	void exit_btn();
 	void save_btn();
-	virtual bool can_see(Widelands::Player_Number) const;
-	virtual bool can_act(Widelands::Player_Number) const;
-	virtual Widelands::Player_Number player_number() const;
-	virtual void node_action();
+	int32_t calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords>& c) override;
+	bool can_see(Widelands::PlayerNumber) const override;
+	bool can_act(Widelands::PlayerNumber) const override;
+	Widelands::PlayerNumber player_number() const override;
+	void node_action() override;
 
 private:
-	UI::Button m_toggle_chat;
-	UI::Button m_exit;
-	UI::Button m_save;
-	UI::Button m_toggle_options_menu;
-	UI::Button m_toggle_statistics;
-	UI::Button m_toggle_minimap;
+	UI::Button toggle_chat_;
+	UI::Button exit_;
+	UI::Button save_;
+	UI::Button toggle_options_menu_;
+	UI::Button toggle_statistics_;
+	UI::Button toggle_minimap_;
 
-
-	UI::UniqueWindow::Registry m_chat;
-	UI::UniqueWindow::Registry m_options;
+	UI::UniqueWindow::Registry chat_;
+	UI::UniqueWindow::Registry options_;
 };
 
-
-#endif
+#endif  // end of include guard: WL_WUI_INTERACTIVE_SPECTATOR_H

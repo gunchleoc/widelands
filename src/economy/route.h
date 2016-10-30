@@ -17,23 +17,20 @@
  *
  */
 
-#ifndef ROUTE_H
-#define ROUTE_H
+#ifndef WL_ECONOMY_ROUTE_H
+#define WL_ECONOMY_ROUTE_H
 
 #include <vector>
 
-// Needed for OPtr
-#include "logic/instances.h"
-
-#include "iroute.h"
-
+#include "economy/iroute.h"
+#include "logic/map_objects/map_object.h"
 
 namespace Widelands {
 
 struct Flag;
-struct Editor_Game_Base;
-struct Map_Map_Object_Saver;
-struct Map_Map_Object_Loader;
+class EditorGameBase;
+struct MapObjectSaver;
+class MapObjectLoader;
 struct RoutingNode;
 
 /**
@@ -42,34 +39,37 @@ struct RoutingNode;
  */
 struct Route : public IRoute {
 	friend struct Router;
-	friend struct Request;
+	friend class Request;
 
 	Route();
 
-	void init(int32_t);
+	void init(int32_t) override;
 
-	int32_t get_totalcost() const {return m_totalcost;}
-	int32_t get_nrsteps() const {return m_route.size() - 1;}
-	Flag & get_flag(Editor_Game_Base &, std::vector<Flag *>::size_type);
+	int32_t get_totalcost() const {
+		return totalcost_;
+	}
+	int32_t get_nrsteps() const {
+		return route_.size() - 1;
+	}
+	Flag& get_flag(EditorGameBase&, std::vector<Flag*>::size_type);
 
-	void starttrim(int32_t count);
+	void trim_start(int32_t count);
 	void truncate(int32_t count);
 
 	struct LoadData {
 		std::vector<uint32_t> flags;
 	};
 
-	void load(LoadData &, FileRead &);
-	void load_pointers(const LoadData &, Map_Map_Object_Loader &);
-	void save(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver &);
+	void load(LoadData&, FileRead&);
+	void load_pointers(const LoadData&, MapObjectLoader&);
+	void save(FileWrite&, EditorGameBase&, MapObjectSaver&);
 
-	void insert_as_first(RoutingNode * node);
+	void insert_as_first(RoutingNode* node) override;
 
 private:
-	int32_t                     m_totalcost;
-	std::vector<OPtr<Flag> > m_route; ///< includes start and end flags
+	int32_t totalcost_;
+	std::vector<OPtr<Flag>> route_;  ///< includes start and end flags
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_ECONOMY_ROUTE_H

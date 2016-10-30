@@ -16,18 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-#ifndef ROUTER_H
-#define ROUTER_H
+#ifndef WL_ECONOMY_ROUTER_H
+#define WL_ECONOMY_ROUTER_H
 
-#include <stdint.h>
 #include <vector>
-#include <boost/function.hpp>
 
-#include "logic/wareworker.h"
+#include <boost/function.hpp>
+#include <stdint.h>
+
+#include "logic/map_objects/tribes/wareworker.h"
 
 namespace Widelands {
+class ITransportCostCalculator;
 struct IRoute;
-struct ITransportCostCalculator;
 struct RoutingNode;
 
 /**
@@ -35,24 +36,21 @@ struct RoutingNode;
  * The functionality was split from Economy
  */
 struct Router {
-	typedef boost::function<void ()> ResetCycleFn;
+	using ResetCycleFn = boost::function<void()>;
 
-	Router(const ResetCycleFn & reset);
+	Router(const ResetCycleFn& reset);
 
-	bool find_route
-		(RoutingNode & start, RoutingNode & end,
-		 IRoute * route,
-		 WareWorker type,
-		 int32_t cost_cutoff,
-		 ITransportCostCalculator   & cost_calculator);
+	bool find_route(RoutingNode& start,
+	                RoutingNode& end,
+	                IRoute* route,
+	                WareWorker type,
+	                int32_t cost_cutoff,
+	                ITransportCostCalculator& cost_calculator);
 	uint32_t assign_cycle();
 
 private:
-	ResetCycleFn m_reset;
-	uint32_t mpf_cycle;       ///< pathfinding cycle, see Flag::mpf_cycle
+	ResetCycleFn reset_;
+	uint32_t mpf_cycle;  ///< pathfinding cycle, see Flag::mpf_cycle
 };
-
 }
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_ROUTER_H

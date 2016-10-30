@@ -17,41 +17,54 @@
  *
  */
 
-#ifndef FONT_HANDLER1_H // TODO: rename
-#define FONT_HANDLER1_H
+// TODO(unknown): rename
+#ifndef WL_GRAPHIC_FONT_HANDLER1_H
+#define WL_GRAPHIC_FONT_HANDLER1_H
 
+#include <memory>
 #include <string>
 
-#include <boost/noncopyable.hpp>
-
-#include "point.h"
-#include "align.h"
+#include "base/macros.h"
+#include "base/vector.h"
+#include "graphic/align.h"
+#include "graphic/text/font_set.h"
 
 class FileSystem;
 class Image;
-class Graphic;
+class ImageCache;
 
 namespace UI {
 
 /**
  * Main class for string rendering. Manages the cache of pre-rendered strings.
  */
-class IFont_Handler1 : boost::noncopyable {
+class IFontHandler1 {
 public:
-	virtual ~IFont_Handler1() {};
+	IFontHandler1() = default;
+	virtual ~IFontHandler1() {
+	}
 
 	/*
 	 * Renders the given text into an image. The image is cached and therefore
 	 * ownership remains with this class. Will throw on error.
 	 */
 	virtual const Image* render(const std::string& text, uint16_t w = 0) = 0;
+
+	/// Returns the font handler's current FontSet
+	virtual UI::FontSet const* fontset() const = 0;
+
+	/// Loads the FontSet for the currently active locale into the
+	/// font handler. This needs to be called after the language of the
+	/// game has changed.
+	virtual void reinitialize_fontset() = 0;
+
+	DISALLOW_COPY_AND_ASSIGN(IFontHandler1);
 };
 
-// Create a new Font_Handler1. Ownership for the objects is not taken.
-IFont_Handler1 * create_fonthandler(Graphic* gr, FileSystem* fs);
+// Create a new FontHandler1.
+IFontHandler1* create_fonthandler(ImageCache* image_cache);
 
-extern IFont_Handler1 * g_fh1;
-
+extern IFontHandler1* g_fh1;
 }
 
-#endif
+#endif  // end of include guard: WL_GRAPHIC_FONT_HANDLER1_H

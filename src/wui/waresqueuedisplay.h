@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2013 by the Widelands Development Team
+ * Copyright (C) 2010-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,27 +17,29 @@
  *
  */
 
-#ifndef _WARESQUEUEDISPLAY_H_
-#define _WARESQUEUEDISPLAY_H_
+#ifndef WL_WUI_WARESQUEUEDISPLAY_H
+#define WL_WUI_WARESQUEUEDISPLAY_H
 
 #include <cstdlib>
+
 #include <stdint.h>
 
-#include "logic/item_ware_descr.h"
+#include "logic/map_objects/tribes/ware_descr.h"
+#include "logic/map_objects/tribes/wareworker.h"
+#include "ui_basic/button.h"
 #include "ui_basic/panel.h"
 #include "ui_basic/radiobutton.h"
-#include "ui_basic/button.h"
 
-class Interactive_GameBase;
+class InteractiveGameBase;
 
 namespace UI {
-struct Panel;
+class Panel;
 struct Radiogroup;
 }
 
 namespace Widelands {
 class Building;
-struct WaresQueue;
+class WaresQueue;
 }
 
 /**
@@ -45,46 +47,38 @@ struct WaresQueue;
  * and shows priority buttons that can be manipulated.
  * It updates itself automatically through think().
  */
-struct WaresQueueDisplay : public UI::Panel {
-	enum {
-		CellWidth = WARE_MENU_PIC_WIDTH,
-		CellSpacing = 2,
-		Border = 4,
-		PriorityButtonSize = 10
-	};
-
+class WaresQueueDisplay : public UI::Panel {
 public:
-	WaresQueueDisplay
-		(UI::Panel             * parent,
-		 int32_t x, int32_t y,
-		 Interactive_GameBase  & igb,
-		 Widelands::Building   & building,
-		 Widelands::WaresQueue * queue,
-		 bool = false);
+	enum { CellWidth = WARE_MENU_PIC_WIDTH, CellSpacing = 2, Border = 4, PriorityButtonSize = 10 };
+
+	WaresQueueDisplay(UI::Panel* parent,
+	                  int32_t x,
+	                  int32_t y,
+	                  InteractiveGameBase& igb,
+	                  Widelands::Building& building,
+	                  Widelands::WaresQueue* queue,
+	                  bool = false);
 	~WaresQueueDisplay();
 
-	virtual void think();
-	virtual void draw(RenderTarget &);
+	void think() override;
+	void draw(RenderTarget&) override;
 
 private:
-	Interactive_GameBase  & m_igb;
-	Widelands::Building   & m_building;
-	Widelands::WaresQueue * m_queue;
-	UI::Radiogroup        * m_priority_radiogroup;
-	UI::Button   * m_increase_max_fill;
-	UI::Button   * m_decrease_max_fill;
-	Widelands::Ware_Index   m_ware_index;
-	int32_t          m_ware_type;
-	const Image* m_icon;            //< Index to ware's picture
-	const Image* m_icon_grey;
-	const Image* m_max_fill_indicator;
+	InteractiveGameBase& igb_;
+	Widelands::Building& building_;
+	Widelands::WaresQueue* queue_;
+	UI::Radiogroup* priority_radiogroup_;
+	UI::Button* increase_max_fill_;
+	UI::Button* decrease_max_fill_;
+	Widelands::DescriptionIndex ware_index_;
+	Widelands::WareWorker ware_type_;
+	const Image* icon_;  //< Index to ware's picture
+	const Image* max_fill_indicator_;
 
-
-	uint32_t         m_cache_size;
-	uint32_t         m_cache_filled;
-	uint32_t         m_cache_max_fill;
-	uint32_t         m_total_height;
-	bool             m_show_only;
+	uint32_t cache_size_;
+	uint32_t cache_max_fill_;
+	uint32_t total_height_;
+	bool show_only_;
 
 	virtual void max_size_changed();
 	void update_priority_buttons();
@@ -96,4 +90,4 @@ private:
 	void compute_max_fill_buttons_enabled_state();
 };
 
-#endif // _WARESQUEUEDISPLAY_H_
+#endif  // end of include guard: WL_WUI_WARESQUEUEDISPLAY_H

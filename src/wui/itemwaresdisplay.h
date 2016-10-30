@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 by the Widelands Development Team
+ * Copyright (C) 2011-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,14 +17,16 @@
  *
  */
 
-#ifndef WUI_ITEMWARESDISPLAY_H
-#define WUI_ITEMWARESDISPLAY_H
+#ifndef WL_WUI_ITEMWARESDISPLAY_H
+#define WL_WUI_ITEMWARESDISPLAY_H
+
+#include <vector>
 
 #include "logic/widelands.h"
 #include "ui_basic/panel.h"
 
 namespace Widelands {
-struct Player;
+class Player;
 }
 
 /**
@@ -32,33 +34,39 @@ struct Player;
  * as seen in the @ref ShipWindow.
  */
 struct ItemWaresDisplay : UI::Panel {
-	ItemWaresDisplay(UI::Panel * parent, const Widelands::Player & player);
+	ItemWaresDisplay(UI::Panel* parent, const Widelands::Player& player);
 
-	const Widelands::Player & player() const {return m_player;}
+	const Widelands::Player& player() const {
+		return player_;
+	}
 
-	uint32_t capacity() const {return m_capacity;}
+	uint32_t capacity() const {
+		return capacity_;
+	}
 	void set_capacity(uint32_t cap);
 
-	uint32_t itemsperrow() const {return m_itemsperrow;}
-	void set_itemsperrow(uint32_t nr);
+	uint32_t items_per_row() const {
+		return items_per_row_;
+	}
+	void set_items_per_row(uint32_t nr);
 
 	void clear();
-	void add(bool worker, Widelands::Ware_Index index);
+	void add(bool worker, Widelands::DescriptionIndex index);
 
-	virtual void draw(RenderTarget &);
+	void draw(RenderTarget&) override;
 
 private:
 	struct Item {
 		bool worker;
-		Widelands::Ware_Index index;
+		Widelands::DescriptionIndex index;
 	};
 
 	void recalc_desired_size();
 
-	const Widelands::Player & m_player;
-	uint32_t m_capacity;
-	uint32_t m_itemsperrow;
-	std::vector<Item> m_items;
+	const Widelands::Player& player_;
+	uint32_t capacity_;
+	uint32_t items_per_row_;
+	std::vector<Item> items_;
 };
 
-#endif // WUI_ITEMWARESDISPLAY_H
+#endif  // end of include guard: WL_WUI_ITEMWARESDISPLAY_H

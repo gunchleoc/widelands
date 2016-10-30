@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Tries to find out the repository revision of the current working directory
-# using bzr or git
+# using bzr or debian/changelog
 
 import os
 import sys
@@ -33,16 +33,27 @@ def detect_debian_version():
         return None
     f = open(fname)
     version = f.readline()
-    #bzr5905+trunk+
-    pattern = re.compile("bzr[0-9]+\+.+\+")
+    #bzr5905-210307251546
+    pattern = re.compile("bzr[0-9]+-[0-9]+")
     m = pattern.search(version)
     if m == None:
         return None
     version = version[m.start():m.end()]
-    version = string.replace(version, '+', '[', 1)
-    version = string.replace(version, '+', ']', 1)
     return version
 
+def detect_git_revision():
+    if not sys.platform.startswith('linux') and \
+       not sys.platform.startswith('darwin'):
+        git_revnum=os.popen('git show --pretty=format:%h | head -n 1').read().rstrip()
+        if git_revnum:
+            return 'unofficial-git-%s' % (git_revnum,)
+        else:
+            return None
+
+    is_git_workdir=os.system('git show >/dev/null 2>&1')==0
+    if is_git_workdir:
+        git_revnum=os.popen('git show --pretty=format:%h | head -n 1').read().rstrip()
+        return 'unofficial-git-%s' % (git_revnum,)
 
 
 def check_for_explicit_version():
@@ -53,26 +64,6 @@ def check_for_explicit_version():
     fname = p.join(base_path, "WL_RELEASE")
     if os.path.exists(fname):
         return open(fname).read().strip()
-
-def detect_git_revision():
-    if not sys.platform.startswith('linux') and \
-       not sys.platform.startswith('darwin'):
-        return None
-
-    is_git_workdir=os.system('git show >/dev/null 2>&1')==0
-    if is_git_workdir:
-        git_revnum=os.popen('git show --pretty=format:%h | head -n 1').read().rstrip()
-        is_pristine=os.popen('git show --pretty=format:%b | grep ^git-svn-id\\:').read().find("git-svn-id:") == 0
-        common_ancestor=os.popen('git show-branch --sha1-name refs/remotes/git-svn HEAD | tail -n 1 | sed "s@++ \\[\\([0-9a-f]*\\)\\] .*@\\1@"').read().rstrip()
-        svn_revnum=os.popen('git show --pretty=format:%b%n '+common_ancestor+' | grep ^git-svn-id\\: -m 1 | sed "sM.*@\\([0-9]*\\) .*M\\1M"').read().rstrip()
-
-        if svn_revnum=='':
-            return 'unofficial-git-%s' % (git_revnum,)
-        elif is_pristine:
-            return 'unofficial-git-%s(svn%s)' % (git_revnum, svn_revnum)
-        else:
-            return 'unofficial-git-%s(svn%s+changes)' % (git_revnum, svn_revnum)
-
 
 def detect_bzr_revision():
     if __has_bzrlib:
@@ -105,4 +96,3 @@ def detect_revision():
 
 if __name__ == "__main__":
     print(detect_revision())
-

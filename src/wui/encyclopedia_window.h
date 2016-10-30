@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2009 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,50 +17,60 @@
  *
  */
 
-#ifndef ENCYCLOPEDIA_WINDOW_H
-#define ENCYCLOPEDIA_WINDOW_H
+#ifndef WL_WUI_ENCYCLOPEDIA_WINDOW_H
+#define WL_WUI_ENCYCLOPEDIA_WINDOW_H
 
+#include <map>
+#include <memory>
+#include <vector>
+
+#include "scripting/lua_interface.h"
+#include "scripting/lua_table.h"
+#include "ui_basic/box.h"
 #include "ui_basic/listselect.h"
-#include "ui_basic/window.h"
-#include "ui_basic/unique_window.h"
-#include "ui_basic/table.h"
 #include "ui_basic/multilinetextarea.h"
+#include "ui_basic/table.h"
+#include "ui_basic/tabpanel.h"
+#include "ui_basic/unique_window.h"
 
-#include "logic/item_ware_descr.h"
+class InteractiveBase;
 
-namespace Widelands {
-struct Item_Ware_Descr;
-struct Tribe_Descr;
-};
-
-struct Interactive_Player;
+namespace UI {
 
 struct EncyclopediaWindow : public UI::UniqueWindow {
-	EncyclopediaWindow(Interactive_Player &, UI::UniqueWindow::Registry &);
-private:
-	struct Ware {
-		Ware(Widelands::Ware_Index i, const Widelands::Item_Ware_Descr * descr)
-			:
-			m_i(i),
-			m_descr(descr)
-			{}
-		Widelands::Ware_Index m_i;
-		const Widelands::Item_Ware_Descr * m_descr;
+	EncyclopediaWindow(InteractiveBase&, UI::UniqueWindow::Registry&, LuaInterface* const lua);
 
-		bool operator<(const Ware o) const {
-			return m_descr->descname() < o.m_descr->descname();
+protected:
+	void init(InteractiveBase& parent, std::unique_ptr<LuaTable> table);
+
+	LuaInterface* const lua_;
+
+private:
+	struct EncyclopediaEntry {
+		EncyclopediaEntry(const std::string& init_script_path,
+		                  const std::vector<std::string>& init_script_parameters)
+		   : script_path(init_script_path), script_parameters(init_script_parameters) {
 		}
+		const std::string script_path;
+		const std::vector<std::string> script_parameters;
 	};
 
-	Interactive_Player & iaplayer() const;
-	UI::Listselect<Widelands::Ware_Index> wares;
-	UI::Listselect<Widelands::Building_Index> prodSites;
-	UI::Table     <uintptr_t>                 condTable;
-	UI::Multiline_Textarea    descrTxt;
-	Widelands::Item_Ware_Descr const * selectedWare;
-	void fillWares();
-	void wareSelected(uint32_t);
-	void prodSiteSelected(uint32_t);
+	// Update contents when an entry is selected
+	void entry_selected(const std::string& tab_name);
+
+	// UI elements
+	UI::TabPanel tabs_;
+
+	// Wrapper boxes so we can add some padding
+	std::map<std::string, std::unique_ptr<UI::Box>> wrapper_boxes_;
+	// Main contents boxes for each tab
+	std::map<std::string, std::unique_ptr<UI::Box>> boxes_;
+	// A tab's table of contents
+	std::map<std::string, std::unique_ptr<UI::Listselect<EncyclopediaEntry>>> lists_;
+	// The contents shown when an entry is selected in a tab
+	std::map<std::string, std::unique_ptr<UI::MultilineTextarea>> contents_;
 };
 
-#endif
+}  // namespace UI
+
+#endif  // end of include guard: WL_WUI_ENCYCLOPEDIA_WINDOW_H

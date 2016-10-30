@@ -17,102 +17,79 @@
  *
  */
 
-#include "base.h"
-
-#include "constants.h"
-#include "graphic/font.h"
-#include "graphic/graphic.h"
-#include "graphic/image_transformations.h"
-#include "graphic/rendertarget.h"
-#include "io/filesystem/filesystem.h"
-#include "log.h"
-#include "profile/profile.h"
-#include "wexception.h"
-#include "wlapplication.h"
+#include "ui_fsmenu/base.h"
 
 #include <cstdio>
+
+#include "base/log.h"
+#include "base/wexception.h"
+#include "graphic/graphic.h"
+#include "graphic/image.h"
+#include "graphic/rendertarget.h"
+#include "graphic/text_constants.h"
+#include "io/filesystem/filesystem.h"
+#include "wlapplication.h"
 
 /*
 ==============================================================================
 
-Fullscreen_Menu_Base
+FullscreenMenuBase
 
 ==============================================================================
 */
 
-struct Fullscreen_Menu_Base::Data {
-	const Image* res_background;
-	UI::TextStyle textstyle_small;
-	UI::TextStyle textstyle_big;
-};
+FullscreenMenuBase::FullscreenMenuBase() : FullscreenMenuBase("images/ui_fsmenu/ui_fsmenu.jpg") {
+}
 
 /**
  * Initialize a pre-game menu
  *
  * Args: bgpic  name of the background picture
  */
-Fullscreen_Menu_Base::Fullscreen_Menu_Base(char const * const bgpic)
-	: UI::Panel(0, 0, 0, gr_x(), gr_y()),
-	d(new Data)
-{
-	// Load background graphics
-	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "pics/%s", bgpic);
-	d->res_background = ImageTransformations::resize(g_gr->images().get(buffer), get_w(), get_h());
-
-	d->textstyle_small = UI::TextStyle::ui_small();
-	d->textstyle_small.font = UI::Font::get(ui_fn(), fs_small());
-
-	d->textstyle_big = UI::TextStyle::ui_big();
-	d->textstyle_big.font = UI::Font::get(ui_fn(), fs_big());
+FullscreenMenuBase::FullscreenMenuBase(const std::string& bgpic)
+   : UI::Panel(nullptr, 0, 0, g_gr->get_xres(), g_gr->get_yres()), background_image_(bgpic) {
 }
 
-Fullscreen_Menu_Base::~Fullscreen_Menu_Base()
-{
+FullscreenMenuBase::~FullscreenMenuBase() {
 }
-
 
 /**
  * Draw the background / splash screen
 */
-void Fullscreen_Menu_Base::draw(RenderTarget & dst) {
-	dst.blit(Point(0, 0), d->res_background);
+void FullscreenMenuBase::draw(RenderTarget& dst) {
+	const Image* bg = g_gr->images().get(background_image_);
+	dst.blitrect_scale(Rectf(0, 0, get_w(), get_h()), bg, Recti(0, 0, bg->width(), bg->height()), 1.,
+	                   BlendMode::UseAlpha);
 }
 
-
-uint32_t Fullscreen_Menu_Base::gr_x() {
-	return g_gr->get_xres();
-}
-
-uint32_t Fullscreen_Menu_Base::gr_y() {
-	return g_gr->get_yres();
-}
-
-
-uint32_t Fullscreen_Menu_Base::fs_small() {
+int FullscreenMenuBase::fs_small() {
 	return UI_FONT_SIZE_SMALL * get_h() / 600;
 }
 
-uint32_t Fullscreen_Menu_Base::fs_big() {
+int FullscreenMenuBase::fs_big() {
 	return UI_FONT_SIZE_BIG * get_h() / 600;
 }
 
-UI::TextStyle & Fullscreen_Menu_Base::ts_small()
-{
-	return d->textstyle_small;
+bool FullscreenMenuBase::handle_key(bool down, SDL_Keysym code) {
+	if (down) {
+		switch (code.sym) {
+		case SDLK_KP_ENTER:
+		case SDLK_RETURN:
+			clicked_ok();
+			return true;
+		case SDLK_ESCAPE:
+			clicked_back();
+			return true;
+		default:
+			break;  // not handled
+		}
+	}
+	return UI::Panel::handle_key(down, code);
 }
 
-UI::TextStyle & Fullscreen_Menu_Base::ts_big()
-{
-	return d->textstyle_big;
+void FullscreenMenuBase::clicked_back() {
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kBack);
 }
-
-UI::Font * Fullscreen_Menu_Base::font_small()
-{
-	return d->textstyle_small.font;
-}
-
-UI::Font * Fullscreen_Menu_Base::font_big()
-{
-	return d->textstyle_big.font;
+void FullscreenMenuBase::clicked_ok() {
+	end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kOk);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004, 2006, 2008-2011 by the Widelands Development Team
+ * Copyright (C) 2004-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,34 +17,36 @@
  *
  */
 
-#ifndef UI_RADIOBUTTON_H
-#define UI_RADIOBUTTON_H
-
-#include "point.h"
-
-#include "checkbox.h"
+#ifndef WL_UI_BASIC_RADIOBUTTON_H
+#define WL_UI_BASIC_RADIOBUTTON_H
 
 #include <stdint.h>
 
+#include "base/vector.h"
+#include "ui_basic/checkbox.h"
+
 namespace UI {
 
-struct Panel;
+class Panel;
 
 struct Radiogroup;
 
 struct Radiobutton : public Statebox {
 	friend struct Radiogroup;
 
-	Radiobutton
-		(Panel * parent, Point, const Image* pic, Radiogroup &, int32_t id);
+	Radiobutton(Panel* parent, Vector2i, const Image* pic, Radiogroup&, int32_t id);
 	~Radiobutton();
 
-private:
-	void clicked();
+	Radiobutton* next_button() {
+		return nextbtn_;
+	}
 
-	Radiobutton * m_nextbtn;
-	Radiogroup  & m_group;
-	int32_t           m_id;
+private:
+	void clicked() override;
+
+	Radiobutton* nextbtn_;
+	Radiogroup& group_;
+	int32_t id_;
 };
 
 /**
@@ -57,23 +59,30 @@ struct Radiogroup {
 	Radiogroup();
 	~Radiogroup();
 
-	boost::signal<void ()> changed;
-	boost::signal<void (int32_t)> changedto;
-	boost::signal<void ()> clicked; //  clicked without things changed
+	boost::signals2::signal<void()> changed;
+	boost::signals2::signal<void(int32_t)> changedto;
+	boost::signals2::signal<void()> clicked;  //  clicked without things changed
 
-	int32_t add_button
-		(Panel * parent, Point, const Image* pic, const std::string& tooltip = "", Radiobutton ** = NULL);
+	int32_t add_button(Panel* parent,
+	                   Vector2i,
+	                   const Image* pic,
+	                   const std::string& tooltip = "",
+	                   Radiobutton** = nullptr);
 
-	int32_t get_state() const throw () {return m_state;}
+	int32_t get_state() const {
+		return state_;
+	}
 	void set_state(int32_t state);
 	void set_enabled(bool);
-	Radiobutton * get_button(int32_t id);
-private:
-	Radiobutton * m_buttons; //  linked list of buttons (not sorted)
-	int32_t           m_highestid;
-	int32_t           m_state;   //  -1: none
-};
+	Radiobutton* get_first_button() {
+		return buttons_;
+	}
 
+private:
+	Radiobutton* buttons_;  //  linked list of buttons (not sorted)
+	int32_t highestid_;
+	int32_t state_;  //  -1: none
+};
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_RADIOBUTTON_H

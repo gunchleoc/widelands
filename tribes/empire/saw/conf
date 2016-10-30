@@ -1,6 +1,0 @@
-[global]
-help=_This saw is needed by the sawyer. It is produced by the toolsmith.
-
-[idle]
-pics=idle.png
-hotspot=7 5

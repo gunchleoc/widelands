@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2008, 2010-2011 by the Widelands Development Team
+ * Copyright (C) 2007-2015 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,29 +17,30 @@
  *
  */
 
-#ifndef WIDELANDS_H
-#define WIDELANDS_H
+#ifndef WL_LOGIC_WIDELANDS_H
+#define WL_LOGIC_WIDELANDS_H
 
-#ifdef _MSC_VER
-#define __attribute__(x)
-#endif
 #include <cassert>
 #include <cstddef>
-#include <stdint.h>
 #include <limits>
+
+#include <stdint.h>
+
+#include "base/macros.h"
 
 namespace Widelands {
 
 //  Type definitions for the game logic.
+using MilitaryInfluence = uint16_t;
 
-typedef uint8_t Tribe_Index;
-
-typedef uint16_t Military_Influence;
-
-typedef uint8_t  Player_Number; /// 5 bits used, so 0 .. 31
-inline Player_Number Neutral() throw () {return 0;}
-#define iterate_player_numbers(p, nr_players) \
-   for (Widelands::Player_Number p = 1; p < nr_players + 1; ++p)
+/// 5 bits used, so 0 .. 31
+/// Data type must match kMaxPlayers in graphics/playercolor.h
+using PlayerNumber = uint8_t;
+inline PlayerNumber neutral() {
+	return 0;
+}
+#define iterate_player_numbers(p, nr_players)                                                      \
+	for (Widelands::PlayerNumber p = 1; p < nr_players + 1; ++p)
 
 /**
  * Every player has a team number. Team number 0 is special,
@@ -47,109 +48,59 @@ inline Player_Number Neutral() throw () {return 0;}
  *
  * Players having the same positive team number are allied.
  */
-typedef uint8_t TeamNumber;
+using TeamNumber = uint8_t;
 
-typedef uint8_t  Terrain_Index;   /// 4 bits used, so 0 .. 15.
-typedef uint8_t  Resource_Index;  /// 4 bits used, so 0 .. 15.
-typedef uint8_t  Resource_Amount; /// 4 bits used, so 0 .. 15.
+/** This is used as index for wares, workers, terrain and other Descriptions.
+ *
+ * So we can have at most 254 types of these,
+ * as some are predefined as invalid by the declarations below.
+ *
+ * A DescriptionMaintainer can be used to lookup the actual item.
+ * See TerrainDescription, WareDescr, WorkerDescr
+ * EditorCategory, BuildingDescr, ImmovableDescr, ShipDescr, TribeDescr
+ * and others.
+ */
+using DescriptionIndex = uint8_t;
 
-typedef uint16_t Vision;
+constexpr uint8_t INVALID_INDEX = std::numeric_limits<uint8_t>::max();
+constexpr DescriptionIndex kInvalidWare = INVALID_INDEX - 1;
+constexpr DescriptionIndex kNoResource = INVALID_INDEX - 1;
 
-typedef int32_t Time; // FIXME should be unsigned
-inline Time Never() throw () {return 0xffffffff;}
+using ResourceAmount = uint8_t;  /// 4 bits used, so 0 .. 15.
 
-typedef uint32_t Duration;
-inline Duration Forever() throw () {return 0xffffffff;}
+using Quantity = uint32_t;  // e.g. the number of a type of ware in a warehouse.
 
-typedef uint32_t Serial; /// Serial number for Map_Object.
+using Vision = uint16_t;
 
-/// Index for ware (and worker), building and other game object types.
-/// Boxed for type-safety. Has a special null value to indicate invalidity.
-/// Has operator bool so that an index can be tested for validity with code
-/// like "if (index) ...". Operator bool asserts that the index is not null.
-/// The null value is guaranteed to be greater than any valid value. Therefore
-/// validity and upper limit can be tested using "if (index < nrItems)".
-template <typename T> struct _Index {
-	typedef uint8_t value_t;
-	_Index(const _Index & other = Null()) : i(other.i) {}
-	explicit _Index(value_t const I) : i(I) {}
-	explicit _Index(size_t  const I)
-		: i(static_cast<value_t>(I))
-	{
-		assert(I < std::numeric_limits<value_t>::max());
+using Time = int32_t;  // TODO(unknown): should be unsigned
+inline Time never() {
+	return 0xffffffff;
+}
+
+using Duration = uint32_t;
+inline Duration endless() {
+	return 0xffffffff;
+}
+
+using Serial = uint32_t;  /// Serial number for MapObject.
+
+using Direction = uint8_t;
+
+struct SoldierStrength {
+	uint8_t health, attack, defense, evade;
+	bool operator==(const SoldierStrength& other) const {
+		return health == other.health && attack == other.attack && defense == other.defense &&
+		       evade == other.evade;
 	}
-
-	/// For compatibility with old code that use int32_t for building index
-	/// and use -1 to indicate invalidity.
-
-	static T First() {return T(static_cast<value_t>(0));}
-
-	/// Returns a special value indicating invalidity.
-	static T Null() {return T(std::numeric_limits<value_t>::max());}
-
-	///  Get a value for array subscripting.
-	value_t value() const {assert(*this); return i;}
-
-	bool operator== (_Index const other) const {return i == other.i;}
-	bool operator!= (_Index const other) const {return i != other.i;}
-	bool operator<  (_Index const other) const {return i <  other.i;}
-	bool operator<= (_Index const other) const {return i <=  other.i;}
-
-	T operator++ () {return T(++i);}
-	T operator-- () {return T(--i);}
-
-	operator bool() const throw () {return operator!= (Null());}
-
-	/// Implicit conversion to size_t type for array indexing.
-	operator size_t() const throw () {return static_cast<size_t>(i);}
-
-	// DO NOT REMOVE THE DECLARATION OF operator int32_t
-	// Rationale: If only operator bool() is present, the compiler may
-	// choose to use it in an implied cast when a user of this class
-	// forgets to use value() in order to obtain a value_t. As long as
-	// the declaration of operator int32_t is present, the compile will
-	// fail with an ambiguous operator overload error instead of
-	// producing erroneous code.
-	operator int32_t() const __attribute__((deprecated));
-
-private:
-	value_t i;
-};
-
-#define DEFINE_INDEX(NAME)                                                    \
-   struct NAME : public _Index<NAME> {                                        \
-      NAME(const NAME & other = Null()) : _Index<NAME>(other) {}              \
-      explicit NAME(value_t const I) : _Index<NAME>(I) {}                     \
-      explicit NAME(size_t  const I) : _Index<NAME>(I) {}                     \
-      explicit NAME(int32_t const I) __attribute__((deprecated));             \
-   };                                                                         \
-
-DEFINE_INDEX(Building_Index)
-DEFINE_INDEX(Ware_Index)
-
-typedef uint8_t Direction;
-
-struct Soldier_Strength {
-	uint8_t hp, attack, defense, evade;
-	bool operator== (const Soldier_Strength & other) const {
-		return
-			hp      == other.hp      and
-			attack  == other.attack  and
-			defense == other.defense and
-			evade   == other.evade;
-	}
-	bool operator<  (const Soldier_Strength & other) const {
-		return
-			hp      <  other.hp or
-			(hp      == other.hp and
-			 (attack  <  other.attack or
-			  (attack  == other.attack and
-			   (defense <  other.defense or
-			    (defense == other.defense and
-			     evade    <  other.evade)))));
+	bool operator<(const SoldierStrength& other) const {
+		return health < other.health ||
+		       (health == other.health &&
+		        (attack < other.attack ||
+		         (attack == other.attack &&
+		          (defense < other.defense || (defense == other.defense && evade < other.evade)))));
 	}
 };
 
-} // namespace Widelands
+}  // namespace Widelands
 
-#endif
+#endif  // end of include guard: WL_LOGIC_WIDELANDS_H

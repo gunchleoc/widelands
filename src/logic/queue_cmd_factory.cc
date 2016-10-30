@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2008-2010 by the Widelands Development Team
+ * Copyright (C) 2002-2004, 2008-2010, 2015 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,81 +17,101 @@
  *
  */
 
-#include "queue_cmd_factory.h"
+#include "logic/queue_cmd_factory.h"
 
-#include "cmd_calculate_statistics.h"
-#include "cmd_incorporate.h"
-#include "cmd_luacoroutine.h"
-#include "cmd_luascript.h"
+#include "base/wexception.h"
 #include "economy/cmd_call_economy_balance.h"
-#include "instances.h"
-#include "playercommand.h"
-#include "queue_cmd_ids.h"
-#include "wexception.h"
+#include "logic/cmd_calculate_statistics.h"
+#include "logic/cmd_incorporate.h"
+#include "logic/cmd_luacoroutine.h"
+#include "logic/cmd_luascript.h"
+#include "logic/map_objects/map_object.h"
+#include "logic/playercommand.h"
 
 namespace Widelands {
 
-GameLogicCommand & Queue_Cmd_Factory::create_correct_queue_command
-	(uint32_t const id)
-{
+GameLogicCommand& QueueCmdFactory::create_correct_queue_command(QueueCommandTypes const id) {
 	switch (id) {
-	case QUEUE_CMD_BUILD:
-		return *new Cmd_Build                ();
-	case QUEUE_CMD_FLAG:
-		return *new Cmd_BuildFlag            ();
-	case QUEUE_CMD_BUILDROAD:
-		return *new Cmd_BuildRoad            ();
-	case QUEUE_CMD_FLAGACTION:
-		return *new Cmd_FlagAction           ();
-	case QUEUE_CMD_STOPBUILDING:
-		return *new Cmd_StartStopBuilding    ();
-	case QUEUE_CMD_ENHANCEBUILDING:
-		return *new Cmd_EnhanceBuilding      ();
-	case QUEUE_CMD_BULLDOZE:
-		return *new Cmd_Bulldoze             ();
-	case QUEUE_CMD_DROPSOLDIER:
-		return *new Cmd_DropSoldier          ();
-	case QUEUE_CMD_CHANGESOLDIERCAPACITY:
-		return *new Cmd_ChangeSoldierCapacity();
-	case QUEUE_CMD_ENEMYFLAGACTION:
-		return *new Cmd_EnemyFlagAction      ();
-	case QUEUE_CMD_SETWAREPRIORITY:
-		return *new Cmd_SetWarePriority      ();
-	case QUEUE_CMD_SETWARETARGETQUANTITY:
-		return *new Cmd_SetWareTargetQuantity    ();
-	case QUEUE_CMD_RESETWARETARGETQUANTITY:
-		return *new Cmd_ResetWareTargetQuantity  ();
-	case QUEUE_CMD_SETWORKERTARGETQUANTITY:
-		return *new Cmd_SetWorkerTargetQuantity  ();
-	case QUEUE_CMD_RESETWORKERTARGETQUANTITY:
-		return *new Cmd_ResetWorkerTargetQuantity();
-	case QUEUE_CMD_CHANGEMILITARYCONFIG:
-		return *new Cmd_ChangeMilitaryConfig     ();
-	case QUEUE_CMD_MESSAGESETSTATUSREAD:
-		return *new Cmd_MessageSetStatusRead     ();
-	case QUEUE_CMD_MESSAGESETSTATUSARCHIVED:
-		return *new Cmd_MessageSetStatusArchived ();
-	case QUEUE_CMD_DESTROY_MAPOBJECT:
-		return *new Cmd_Destroy_Map_Object   ();
-	case QUEUE_CMD_ACT:
-		return *new Cmd_Act                  ();
-	case QUEUE_CMD_INCORPORATE:
-		return *new Cmd_Incorporate          ();
-	case QUEUE_CMD_LUASCRIPT:
-		return *new Cmd_LuaScript();
-	case QUEUE_CMD_LUACOROUTINE:
-		return *new Cmd_LuaCoroutine ();
-	case QUEUE_CMD_CALCULATE_STATISTICS :
-		return *new Cmd_CalculateStatistics ();
-	case QUEUE_CMD_CALL_ECONOMY_BALANCE:
-		return *new Cmd_Call_Economy_Balance ();
-	case QUEUE_CMD_SETWAREMAXFILL:
-		return *new Cmd_SetWareMaxFill();
-	case QUEUE_CMD_DISMANTLEBUILDING:
-		return *new Cmd_DismantleBuilding();
-	default:
-		throw wexception("Unknown Queue_Cmd_Id in file: %u", id);
+	case QueueCommandTypes::kBuild:
+		return *new CmdBuild();
+	case QueueCommandTypes::kFlag:
+		return *new CmdBuildFlag();
+	case QueueCommandTypes::kBuildRoad:
+		return *new CmdBuildRoad();
+	case QueueCommandTypes::kFlagAction:
+		return *new CmdFlagAction();
+	case QueueCommandTypes::kStopBuilding:
+		return *new CmdStartStopBuilding();
+	case QueueCommandTypes::kEnhanceBuilding:
+		return *new CmdEnhanceBuilding();
+	case QueueCommandTypes::kBulldoze:
+		return *new CmdBulldoze();
+	case QueueCommandTypes::kChangeTrainingOptions:
+		return *new CmdChangeTrainingOptions();
+	case QueueCommandTypes::kDropSoldier:
+		return *new CmdDropSoldier();
+	case QueueCommandTypes::kChangeSoldierCapacity:
+		return *new CmdChangeSoldierCapacity();
+	case QueueCommandTypes::kEnemyFlagAction:
+		return *new CmdEnemyFlagAction();
+	case QueueCommandTypes::kSetWarePriority:
+		return *new CmdSetWarePriority();
+	case QueueCommandTypes::kSetWareTargetQuantity:
+		return *new CmdSetWareTargetQuantity();
+	case QueueCommandTypes::kResetWareTargetQuantity:
+		return *new CmdResetWareTargetQuantity();
+	case QueueCommandTypes::kSetWorkerTargetQuantity:
+		return *new CmdSetWorkerTargetQuantity();
+	case QueueCommandTypes::kResetWorkerTargetQuantity:
+		return *new CmdResetWorkerTargetQuantity();
+	case QueueCommandTypes::kSetWareMaxFill:
+		return *new CmdSetWareMaxFill();
+	case QueueCommandTypes::kMessageSetStatusRead:
+		return *new CmdMessageSetStatusRead();
+	case QueueCommandTypes::kMessageSetStatusArchived:
+		return *new CmdMessageSetStatusArchived();
+	case QueueCommandTypes::kSetStockPolicy:
+		return *new CmdSetStockPolicy();
+	case QueueCommandTypes::kDismantleBuilding:
+		return *new CmdDismantleBuilding();
+	case QueueCommandTypes::kEvictWorker:
+		return *new CmdEvictWorker();
+	case QueueCommandTypes::kMilitarysiteSetSoldierPreference:
+		return *new CmdMilitarySiteSetSoldierPreference();
+	case QueueCommandTypes::kSinkShip:
+		return *new CmdShipSink();
+	case QueueCommandTypes::kShipCancelExpedition:
+		return *new CmdShipCancelExpedition();
+	case QueueCommandTypes::kPortStartExpedition:
+		return *new CmdStartOrCancelExpedition();
+	case QueueCommandTypes::kShipConstructPort:
+		return *new CmdShipConstructPort();
+	case QueueCommandTypes::kShipScout:
+		return *new CmdShipScoutDirection();
+	case QueueCommandTypes::kShipExplore:
+		return *new CmdShipExploreIsland();
+	case QueueCommandTypes::kDestroyMapObject:
+		return *new CmdDestroyMapObject();
+	case QueueCommandTypes::kAct:
+		return *new CmdAct();
+	case QueueCommandTypes::kIncorporate:
+		return *new CmdIncorporate();
+	case QueueCommandTypes::kLuaScript:
+		return *new CmdLuaScript();
+	case QueueCommandTypes::kLuaCoroutine:
+		return *new CmdLuaCoroutine();
+	case QueueCommandTypes::kCalculateStatistics:
+		return *new CmdCalculateStatistics();
+	case QueueCommandTypes::kCallEconomyBalance:
+		return *new CmdCallEconomyBalance();
+	case QueueCommandTypes::kDeleteMessage:  // Not a logic command
+	case QueueCommandTypes::kNetCheckSync:
+	case QueueCommandTypes::kReplaySyncWrite:
+	case QueueCommandTypes::kReplaySyncRead:
+	case QueueCommandTypes::kReplayEnd:
+	case QueueCommandTypes::kNone:
+		throw wexception("Unknown Queue_Cmd_Id in file: %u", static_cast<unsigned int>(id));
 	}
+	NEVER_HERE();
 }
-
 }

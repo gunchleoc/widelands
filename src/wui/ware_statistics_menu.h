@@ -17,66 +17,68 @@
  *
  */
 
-#ifndef WARE_STATISTICS_MENU_H
-#define WARE_STATISTICS_MENU_H
-
-#include "logic/widelands.h"
-#include "ui_basic/unique_window.h"
-#include "plot_area.h"
-#include "differential_plot_area.h"
+#ifndef WL_WUI_WARE_STATISTICS_MENU_H
+#define WL_WUI_WARE_STATISTICS_MENU_H
 
 #include <vector>
 
-struct Interactive_Player;
-struct WUIPlot_Area;
+#include "logic/widelands.h"
+#include "ui_basic/slider.h"
+#include "ui_basic/unique_window.h"
+#include "wui/plot_area.h"
 
-struct Ware_Statistics_Menu : public UI::UniqueWindow {
+struct DifferentialPlotArea;
+class InteractivePlayer;
+struct WuiPlotArea;
+
+struct WareStatisticsMenu : public UI::UniqueWindow {
 public:
-	Ware_Statistics_Menu(Interactive_Player &, UI::UniqueWindow::Registry &);
+	WareStatisticsMenu(InteractivePlayer&, UI::UniqueWindow::Registry&);
 	void set_time(int32_t);
 
 private:
-	Interactive_Player * m_parent;
-	WUIPlot_Area       * m_plot_production;
-	WUIPlot_Area       * m_plot_consumption;
-	WUIPlot_Area       * m_plot_stock;
-	DifferentialPlot_Area       * m_plot_economy;
-	std::vector<uint8_t> m_color_map; //maps ware index to colors
-	std::vector<bool> m_active_colors;
+	InteractivePlayer* parent_;
+	WuiPlotArea* plot_production_;
+	WuiPlotArea* plot_consumption_;
+	WuiPlotArea* plot_stock_;
+	DifferentialPlotArea* plot_economy_;
+	std::vector<uint8_t> color_map_;  // Maps ware index to colors
+	std::vector<bool> active_colors_;
 
 	void clicked_help();
-	void cb_changed_to(Widelands::Ware_Index, bool);
+	void cb_changed_to(Widelands::DescriptionIndex, bool);
 };
-
-
 
 /**
  * A discrete slider with plot time steps preconfigured, automatic signal
- * setup and the set_time callback function from Ware_Statistics_Menu.
+ * setup and the set_time callback function from WareStatisticsMenu.
  *
  */
-struct WUIPlot_Generic_Area_Slider : public UI::DiscreteSlider {
-	WUIPlot_Generic_Area_Slider
-		(Panel * const parent,
-		 WUIPlot_Area & plot_area,
-		 Ware_Statistics_Menu * signal_listener,
-		 const int32_t x, const int32_t y, const uint32_t w, const uint32_t h,
-		 const Image* background_picture_id,
-		 const std::string & tooltip_text = std::string(),
-		 const uint32_t cursor_size = 20,
-		 const bool enabled = true)
-	: DiscreteSlider
-		(parent,
-		 x, y, w, h,
-		 plot_area.get_labels(),
-		 plot_area.get_time_id(),
-		 background_picture_id,
-		 tooltip_text,
-		 cursor_size,
-		 enabled)
-	{
-		changedto.connect(boost::bind(&Ware_Statistics_Menu::set_time, signal_listener, _1));
+struct WuiPlotGenericAreaSlider : public UI::DiscreteSlider {
+	WuiPlotGenericAreaSlider(Panel* const parent,
+	                         WuiPlotArea& plot_area,
+	                         WareStatisticsMenu* signal_listener,
+	                         const int32_t x,
+	                         const int32_t y,
+	                         const int w,
+	                         const int h,
+	                         const Image* background_picture_id,
+	                         const std::string& tooltip_text = std::string(),
+	                         const uint32_t cursor_size = 20,
+	                         const bool enabled = true)
+	   : DiscreteSlider(parent,
+	                    x,
+	                    y,
+	                    w,
+	                    h,
+	                    plot_area.get_labels(),
+	                    plot_area.get_time_id(),
+	                    background_picture_id,
+	                    tooltip_text,
+	                    cursor_size,
+	                    enabled) {
+		changedto.connect(boost::bind(&WareStatisticsMenu::set_time, signal_listener, _1));
 	}
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_WARE_STATISTICS_MENU_H

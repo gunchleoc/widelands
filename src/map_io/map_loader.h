@@ -17,14 +17,16 @@
  *
  */
 
-#ifndef MAP_LOADER_H
-#define MAP_LOADER_H
+#ifndef WL_MAP_IO_MAP_LOADER_H
+#define WL_MAP_IO_MAP_LOADER_H
 
 #include "logic/map.h"
 
+class LuaInterface;
+
 namespace Widelands {
 
-struct Editor_Game_Base;
+class EditorGameBase;
 
 /// Loads a map from a file. It firsts only loads small chunks of information
 /// like size, nr of players for the map select dialog. For this loading
@@ -32,32 +34,36 @@ struct Editor_Game_Base;
 /// selected, the Map is completely filled with objects and information. When
 /// now the player selects another map, this Map must be destroyed, a new one
 /// must be selected.
-struct Map_Loader {
-	Map_Loader(char const * const filename, Map & M)
-		: m_map(M), m_s(STATE_INIT) {m_map.set_filename(filename);}
-	virtual ~Map_Loader() {};
+class MapLoader {
+public:
+	enum class LoadType { kGame, kScenario, kEditor };
+
+	MapLoader(const std::string& filename, Map& M) : map_(M), state_(STATE_INIT) {
+		map_.set_filename(filename);
+	}
+	virtual ~MapLoader() {
+	}
 
 	virtual int32_t preload_map(bool as_scenario) = 0;
-	virtual void load_world() = 0;
-	virtual int32_t load_map_complete(Editor_Game_Base &, bool as_scenario) = 0;
+	virtual int32_t load_map_complete(EditorGameBase&, MapLoader::LoadType) = 0;
 
-	Map & map() {return m_map;}
+	Map& map() {
+		return map_;
+	}
 
 protected:
-	enum State {
-		STATE_INIT,
-		STATE_PRELOADED,
-		STATE_WORLD_LOADED,
-		STATE_LOADED
-	};
-	void set_state(State const s) {m_s = s;}
-	State get_state() const {return m_s;}
-	Map & m_map;
+	enum State { STATE_INIT, STATE_PRELOADED, STATE_LOADED };
+	void set_state(State const s) {
+		state_ = s;
+	}
+	State get_state() const {
+		return state_;
+	}
+	Map& map_;
 
 private:
-	State m_s;
+	State state_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_MAP_IO_MAP_LOADER_H

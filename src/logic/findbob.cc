@@ -17,34 +17,33 @@
  *
  */
 
-#include "findbob.h"
+#include "logic/findbob.h"
 
-#include "player.h"
-#include "soldier.h"
-#include "upcast.h"
+#include "base/macros.h"
+#include "logic/map_objects/tribes/soldier.h"
+#include "logic/player.h"
 
 namespace Widelands {
 
-bool FindBobAttribute::accept(Bob * const bob) const
-{
-	return bob->has_attribute(m_attrib);
+bool FindBobAttribute::accept(Bob* const bob) const {
+	return bob->has_attribute(attrib);
 }
 
-bool FindBobEnemySoldier::accept(Bob * const imm) const
-{
+bool FindBobEnemySoldier::accept(Bob* const imm) const {
 	if (upcast(Soldier, soldier, imm))
-		if
-			(soldier->isOnBattlefield() &&
-			 (!player || soldier->owner().is_hostile(*player)) &&
-			 soldier->get_current_hitpoints())
+		if (soldier->is_on_battlefield() && (!player || soldier->owner().is_hostile(*player)) &&
+		    soldier->get_current_health())
 			return true;
 
 	return false;
 }
 
-bool FindBobShip::accept(Bob * bob) const
-{
-	return bob->get_bob_type() == Bob::SHIP;
+bool FindBobShip::accept(Bob* bob) const {
+	return bob->descr().type() == MapObjectType::SHIP;
 }
 
-} // namespace Widelands
+bool FindBobCritter::accept(Bob* bob) const {
+	return bob->descr().type() == MapObjectType::CRITTER;
+}
+
+}  // namespace Widelands

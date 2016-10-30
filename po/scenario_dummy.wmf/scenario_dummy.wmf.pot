@@ -1,12 +1,12 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2013 Widelands Development Team
+# Copyright (C) 2005-2016 Widelands Development Team
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands svnVERSION\n"
-"Report-Msgid-Bugs-To: widelands-public@lists.sourceforge.net\n"
-"POT-Creation-Date: 2013-01-25 07:23+0000\n"
+"Report-Msgid-Bugs-To: https://bugs.launchpad.net/widelands\n"
+"POT-Creation-Date: 2016-10-17 22:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <widelands-public@lists.sourceforge.net>\n"
@@ -14,15 +14,21 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../../campaigns/dummy.wmf/elemental:7
-#: ../../campaigns/dummy.wmf/scripting/init.lua:10
-msgid ""
-"Not yet implemented"
+#: ../../data/campaigns/dummy.wmf/scripting/init.lua:11
+msgid "Not yet implemented"
 msgstr ""
 
-#: ../../campaigns/dummy.wmf/elemental:9
-#: ../../campaigns/dummy.wmf/scripting/init.lua:11
-msgid ""
-"Sorry, this map is not yet implemented."
+#: ../../data/campaigns/dummy.wmf/scripting/init.lua:12
+msgid "Sorry, this map is not yet implemented."
 msgstr ""
 
+#: ../../data/scripting/format_scenario.lua:36
+#, lua-format
+msgid "“%s”"
+msgstr ""
+
+#: ../../data/scripting/format_scenario.lua:96
+msgid "New Objective"
+msgid_plural "New Objectives"
+msgstr[0] ""
+msgstr[1] ""

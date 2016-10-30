@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 by the Widelands Development Team
+ * Copyright (C) 2010-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,36 +17,53 @@
  *
  */
 
+#include "ui_basic/icon.h"
+
 #include "graphic/image.h"
 #include "graphic/rendertarget.h"
-#include "icon.h"
 
 namespace UI {
 
-Icon::Icon
-	(Panel * const parent,
-	 const int32_t x, const int32_t y, const int32_t w, const int32_t h,
-	 const Image* picture_id)
-	:
-	Panel(parent, x, y, w, h),
-	m_pic(picture_id),
-	m_w(w),
-	m_h(h)
-{
+Icon::Icon(Panel* const parent,
+           const int32_t x,
+           const int32_t y,
+           const int32_t w,
+           const int32_t h,
+           const Image* picture_id)
+   : Panel(parent, x, y, w, h), pic_(picture_id), draw_frame_(false) {
 	set_handle_mouse(false);
-	set_think(false);
+	set_thinks(false);
 }
 
-void Icon::setIcon(const Image* picture_id) {
-	m_pic = picture_id;
-	update();
+void Icon::set_icon(const Image* picture_id) {
+	pic_ = picture_id;
 }
 
-void Icon::draw(RenderTarget & dst) {
-	assert(m_pic);
-	int32_t w = (m_w - m_pic->width()) / 2;
-	int32_t h = (m_h - m_pic->height()) / 2;
-	dst.blit(Point(w, h), m_pic);
+void Icon::set_frame(const RGBColor& color) {
+	draw_frame_ = true;
+	framecolor_.r = color.r;
+	framecolor_.g = color.g;
+	framecolor_.b = color.b;
 }
 
+void Icon::set_no_frame() {
+	draw_frame_ = false;
+}
+
+void Icon::draw(RenderTarget& dst) {
+	if (pic_) {
+		const float scale = std::min(1.f, std::min(static_cast<float>(get_w()) / pic_->width(),
+		                                           static_cast<float>(get_h()) / pic_->height()));
+
+		const float width = scale * get_w();
+		const float height = scale * get_h();
+		const float x = (get_w() - width) / 2.f;
+		const float y = (get_h() - height) / 2.f;
+		dst.blitrect_scale(Rectf(x, y, width, height), pic_,
+		                   Recti(0, 0, pic_->width(), pic_->height()), 1., BlendMode::UseAlpha);
+	}
+	if (draw_frame_) {
+		dst.draw_rect(Rectf(0.f, 0.f, get_w(), get_h()), framecolor_);
+	}
+}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2010, 2012 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,85 +17,83 @@
  *
  */
 
-#include "multiplayer.h"
+#include "ui_fsmenu/multiplayer.h"
 
-#include "constants.h"
-#include "i18n.h"
+#include "base/i18n.h"
+#include "graphic/text_constants.h"
+#include "network/internet_gaming.h"
 #include "profile/profile.h"
+#include "ui_basic/messagebox.h"
 #include "wui/login_box.h"
 
-Fullscreen_Menu_MultiPlayer::Fullscreen_Menu_MultiPlayer() :
-	Fullscreen_Menu_Base("singleplmenu.jpg"),
+FullscreenMenuMultiPlayer::FullscreenMenuMultiPlayer()
+   : FullscreenMenuMainMenu(),
 
-// Values for alignment and size
-	m_butw (get_w() * 7 / 20),
-	m_buth (get_h() * 19 / 400),
-	m_butx ((get_w() - m_butw) / 2),
-	m_fs   (fs_small()),
-	m_fn   (ui_fn()),
+     // Title
+     title(this, get_w() / 2, title_y_, _("Choose game type"), UI::Align::kHCenter),
 
-// Title
-	title
-		(this,
-		 get_w() / 2, get_h() * 3 / 40,
-		 _("Choose game type"), UI::Align_HCenter),
+     // Buttons
+     vbox(this, box_x_, box_y_, UI::Box::Vertical, butw_, get_h() - box_y_, padding_),
+     metaserver(&vbox,
+                "metaserver",
+                0,
+                0,
+                butw_,
+                buth_,
+                g_gr->images().get(button_background_),
+                _("Internet game")),
+     lan(&vbox,
+         "lan",
+         0,
+         0,
+         butw_,
+         buth_,
+         g_gr->images().get(button_background_),
+         _("LAN / Direct IP")),
+     back(&vbox, "back", 0, 0, butw_, buth_, g_gr->images().get(button_background_), _("Back")) {
+	metaserver.sigclicked.connect(
+	   boost::bind(&FullscreenMenuMultiPlayer::internet_login, boost::ref(*this)));
 
-// Buttons
-	metaserver
-		(this, "metaserver",
-		 m_butx, get_h() * 6 / 25, m_butw, m_buth,
-		 g_gr->images().get("pics/but1.png"),
-		 _("Internet game"), std::string(), true, false),
-	lan
-		(this, "lan",
-		 m_butx, get_h() * 61 / 200, m_butw, m_buth,
-		 g_gr->images().get("pics/but1.png"),
-		 _("LAN / Direct IP"), std::string(), true, false),
-	back
-		(this, "back",
-		 m_butx, get_h() * 3 / 4, m_butw, m_buth,
-		 g_gr->images().get("pics/but0.png"),
-		 _("Back"), std::string(), true, false)
-{
-	metaserver.sigclicked.connect(boost::bind(&Fullscreen_Menu_MultiPlayer::internetLogin, boost::ref(*this)));
-	metaserver.set_font(font_small());
-	lan.set_font(font_small());
-	lan.sigclicked.connect
-		(boost::bind
-			 (&Fullscreen_Menu_MultiPlayer::end_modal, boost::ref(*this),
-			  static_cast<int32_t>(Lan)));
-	back.set_font(font_small());
-	back.sigclicked.connect
-		(boost::bind
-			 (&Fullscreen_Menu_MultiPlayer::end_modal, boost::ref(*this),
-			  static_cast<int32_t>(Back)));
+	lan.sigclicked.connect(
+	   boost::bind(&FullscreenMenuMultiPlayer::end_modal<FullscreenMenuBase::MenuTarget>,
+	               boost::ref(*this), FullscreenMenuBase::MenuTarget::kLan));
 
-	title.set_font(m_fn, fs_big(), UI_FONT_CLR_FG);
+	back.sigclicked.connect(
+	   boost::bind(&FullscreenMenuMultiPlayer::end_modal<FullscreenMenuBase::MenuTarget>,
+	               boost::ref(*this), FullscreenMenuBase::MenuTarget::kBack));
 
-	Section & s = g_options.pull_section("global");
-	m_auto_log = s.get_bool("auto_log", false);
-	if (m_auto_log) {
+	title.set_fontsize(fs_big());
+
+	vbox.add(&metaserver, UI::Align::kHCenter);
+	vbox.add(&lan, UI::Align::kHCenter);
+
+	// Multiple add_space calls to get the same height for the back button as in the single player
+	// menu
+	vbox.add_space(buth_);
+	vbox.add_space(buth_);
+	vbox.add_space(6 * buth_);
+
+	vbox.add(&back, UI::Align::kHCenter);
+
+	vbox.set_size(butw_, get_h() - vbox.get_y());
+
+	Section& s = g_options.pull_section("global");
+	auto_log_ = s.get_bool("auto_log", false);
+	if (auto_log_) {
 		showloginbox =
-			new UI::Button
-				(this, "login_dialog",
-				 m_butx + m_butw + m_buth / 4, get_h() * 6 / 25, m_buth, m_buth,
-				 g_gr->images().get("pics/but1.png"),
-				 g_gr->images().get("pics/continue.png"),
-				 _("Show login dialog"), true, false);
-		showloginbox->sigclicked.connect
-			(boost::bind
-				(&Fullscreen_Menu_MultiPlayer::showInternetLogin, boost::ref(*this)));
-		showloginbox->set_font(font_small());
+		   new UI::Button(this, "login_dialog", box_x_ + butw_ + buth_ / 4, get_h() * 6 / 25, buth_,
+		                  buth_, g_gr->images().get("images/ui_basic/but1.png"),
+		                  g_gr->images().get("images/ui_basic/continue.png"), _("Show login dialog"));
+		showloginbox->sigclicked.connect(
+		   boost::bind(&FullscreenMenuMultiPlayer::show_internet_login, boost::ref(*this)));
 	}
 }
 
-
 /// called if the showloginbox button was pressed
-void Fullscreen_Menu_MultiPlayer::showInternetLogin() {
-	m_auto_log = false;
-	internetLogin();
+void FullscreenMenuMultiPlayer::show_internet_login() {
+	auto_log_ = false;
+	internet_login();
 }
-
 
 /**
  * Called if "Internet" button was pressed.
@@ -109,25 +107,47 @@ void Fullscreen_Menu_MultiPlayer::showInternetLogin() {
  *
  * In both cases this fullscreen menu ends it's modality.
  */
-void Fullscreen_Menu_MultiPlayer::internetLogin() {
-	Section & s = g_options.pull_section("global");
-	if (m_auto_log) {
-		m_nickname = s.get_string("nickname", _("nobody"));
-		m_password = s.get_string("password", "nobody");
-		m_register = s.get_bool("registered", false);
-		end_modal(Metaserver);
-		return;
+void FullscreenMenuMultiPlayer::internet_login() {
+	Section& s = g_options.pull_section("global");
+	if (auto_log_) {
+		nickname_ = s.get_string("nickname", _("nobody"));
+		password_ = s.get_string("password", "nobody");
+		register_ = s.get_bool("registered", false);
+	} else {
+		LoginBox lb(*this);
+		if (lb.run<UI::Panel::Returncodes>() == UI::Panel::Returncodes::kOk) {
+			nickname_ = lb.get_nickname();
+			password_ = lb.get_password();
+			register_ = lb.registered();
+
+			s.set_bool("registered", lb.registered());
+			s.set_bool("auto_log", lb.set_automaticlog());
+		} else {
+			return;
+		}
 	}
 
-	LoginBox lb(*this);
-	if (lb.run()) {
-		m_nickname = lb.get_nickname();
-		m_password = lb.get_password();
-		m_register = lb.registered();
+	// Try to connect to the metaserver
+	const std::string& meta = s.get_string("metaserver", INTERNET_GAMING_METASERVER.c_str());
+	uint32_t port = s.get_natural("metaserverport", INTERNET_GAMING_PORT);
+	InternetGaming::ref().login(nickname_, password_, register_, meta, port);
 
-		s.set_bool("registered", lb.registered());
-		s.set_bool("auto_log", lb.set_automaticlog());
+	// Check whether metaserver send some data
+	if (InternetGaming::ref().logged_in())
+		end_modal<FullscreenMenuBase::MenuTarget>(FullscreenMenuBase::MenuTarget::kMetaserver);
+	else {
+		// something went wrong -> show the error message
+		ChatMessage msg = InternetGaming::ref().get_messages().back();
+		UI::WLMessageBox wmb(this, _("Error!"), msg.msg, UI::WLMessageBox::MBoxType::kOk);
+		wmb.run<UI::Panel::Returncodes>();
 
-		end_modal(Metaserver);
+		// Reset InternetGaming and passwort and show internet login again
+		InternetGaming::ref().reset();
+		s.set_string("password", "");
+		show_internet_login();
 	}
+}
+
+void FullscreenMenuMultiPlayer::clicked_ok() {
+	internet_login();
 }

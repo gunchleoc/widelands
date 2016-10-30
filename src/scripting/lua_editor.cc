@@ -17,15 +17,12 @@
  *
  */
 
-#include <lua.hpp>
+#include "scripting/lua_editor.h"
 
-#include "c_utils.h"
-#include "log.h"
+#include "base/log.h"
 #include "logic/game.h"
 #include "logic/player.h"
 #include "wui/interactive_player.h"
-
-#include "lua_editor.h"
 
 namespace LuaEditor {
 
@@ -45,7 +42,6 @@ editor. This module is not loaded inside the game, that is if wl.editor is
 :const:`nil` the script is run inside a game, else in the editor.
 */
 
-
 /*
  * ========================================================================
  *                         MODULE CLASSES
@@ -58,28 +54,26 @@ Module Classes
 
 */
 
-
 /* RST
 Player
 ------
 
 .. class:: Player
 
-	Child of: :class:`wl.bases.PlayerBase`
+   Child of: :class:`wl.bases.PlayerBase`
 
-	This class represents one of the players in the editor.
-	Note that you cannot instantiate a class of this type directly, use the
-	:attr:`wl.Editor.players`.
+   This class represents one of the players in the editor.
+   Note that you cannot instantiate a class of this type directly, use the
+   :attr:`wl.Editor.players`.
 
 */
-const char L_Player::className[] = "Player";
-const MethodType<L_Player> L_Player::Methods[] = {
-	{0, 0},
+const char LuaPlayer::className[] = "Player";
+const MethodType<LuaPlayer> LuaPlayer::Methods[] = {
+   {nullptr, nullptr},
 };
-const PropertyType<L_Player> L_Player::Properties[] = {
-	{0, 0, 0},
+const PropertyType<LuaPlayer> LuaPlayer::Properties[] = {
+   {nullptr, nullptr, nullptr},
 };
-
 
 /*
  * ========================================================================
@@ -87,18 +81,17 @@ const PropertyType<L_Player> L_Player::Properties[] = {
  * ========================================================================
  */
 
-const static struct luaL_reg wleditor [] = {
-	{0, 0}
-};
+const static struct luaL_Reg wleditor[] = {{nullptr, nullptr}};
 
-void luaopen_wleditor(lua_State * const L) {
-	luaL_register(L, "wl.editor", wleditor);
-	lua_pop(L, 1); // pop the table from the stack again
+void luaopen_wleditor(lua_State* const L) {
+	lua_getglobal(L, "wl");       // S: wl_table
+	lua_pushstring(L, "editor");  // S: wl_table "editor"
+	luaL_newlib(L, wleditor);     // S: wl_table "editor" wl.editor_table
+	lua_settable(L, -3);          // S: wl_table
+	lua_pop(L, 1);                // S:
 
-	register_class<L_Player>(L, "editor", true);
-	add_parent<L_Player, LuaBases::L_PlayerBase>(L);
-	lua_pop(L, 1); // Pop the meta table
+	register_class<LuaPlayer>(L, "editor", true);
+	add_parent<LuaPlayer, LuaBases::LuaPlayerBase>(L);
+	lua_pop(L, 1);  // Pop the meta table
 }
-
-};
-
+}

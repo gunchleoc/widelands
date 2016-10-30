@@ -17,13 +17,15 @@
  *
  */
 
-#ifndef FONT_HANDLER_H
-#define FONT_HANDLER_H
+#ifndef WL_GRAPHIC_FONT_HANDLER_H
+#define WL_GRAPHIC_FONT_HANDLER_H
 
-#include <boost/scoped_ptr.hpp>
+#include <limits>
+#include <memory>
+#include <string>
 
-#include "point.h"
-#include "align.h"
+#include "base/vector.h"
+#include "graphic/align.h"
 
 class RenderTarget;
 
@@ -34,55 +36,40 @@ struct TextStyle;
 /**
  * Main class for string rendering. Manages the cache of pre-rendered strings.
  */
-struct Font_Handler {
-	Font_Handler();
-	~Font_Handler();
+struct FontHandler {
+	FontHandler();
+	~FontHandler();
 
-	void draw_text
-		(RenderTarget &,
-		 const TextStyle &,
-		 Point dstpoint,
-		 const std::string & text,
-		 Align align = Align_CenterLeft,
-		 uint32_t caret = std::numeric_limits<uint32_t>::max());
-	void draw_text_shadow
-		(RenderTarget &,
-		 const TextStyle &,
-		 Point dstpoint,
-		 const std::string & text,
-		 Align align = Align_CenterLeft,
-		 uint32_t caret = std::numeric_limits<uint32_t>::max());
-	uint32_t draw_text_raw(RenderTarget &, const TextStyle &, Point dstpoint, const std::string & text);
+	void draw_text(RenderTarget&,
+	               const TextStyle&,
+	               Vector2i dstpoint,
+	               const std::string& text,
+	               Align align = UI::Align::kCenterLeft,
+	               uint32_t caret = std::numeric_limits<uint32_t>::max());
+	uint32_t draw_text_raw(RenderTarget&, const TextStyle&, Vector2i dstpoint, const std::string& text);
 
-	void get_size
-		(const TextStyle &,
-		 const std::string & text,
-		 uint32_t & w, uint32_t & h,
-		 uint32_t wrap = std::numeric_limits<uint32_t>::max());
-	void get_size
-		(const std::string & fontname, int32_t size,
-		 const std::string & text,
-		 uint32_t & w, uint32_t & h,
-		 uint32_t wrap = std::numeric_limits<uint32_t>::max());
-	uint32_t get_fontheight(const std::string & name, int32_t size);
-	void do_align
-		(Align, int32_t & dstx, int32_t & dsty, int32_t w, int32_t h);
+	void get_size(const TextStyle&,
+	              const std::string& text,
+	              uint32_t& w,
+	              uint32_t& h,
+	              uint32_t wrap = std::numeric_limits<uint32_t>::max());
+	void get_size(const std::string& fontname,
+	              int32_t size,
+	              const std::string& text,
+	              uint32_t& w,
+	              uint32_t& h,
+	              uint32_t wrap = std::numeric_limits<uint32_t>::max());
+	uint32_t get_fontheight(const std::string& name, int32_t size);
+
+	// Delete the whole cache.
+	void flush();
 
 private:
 	struct Data;
-	boost::scoped_ptr<Data> d;
-
-private:
-	void draw_caret
-		(RenderTarget &,
-		 const TextStyle &,
-		 Point dstpoint,
-		 const std::string & text,
-		 uint32_t caret);
+	std::unique_ptr<Data> d;
 };
 
-extern Font_Handler * g_fh;
-
+extern FontHandler* g_fh;
 }
 
-#endif
+#endif  // end of include guard: WL_GRAPHIC_FONT_HANDLER_H

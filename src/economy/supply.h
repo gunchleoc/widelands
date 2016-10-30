@@ -17,22 +17,23 @@
  *
  */
 
-#ifndef S__SUPPLY_H
-#define S__SUPPLY_H
+#ifndef WL_ECONOMY_SUPPLY_H
+#define WL_ECONOMY_SUPPLY_H
 
-#include "trackptr.h"
-
-#include "logic/wareworker.h"
+#include "economy/trackptr.h"
+#include "logic/map_objects/tribes/wareworker.h"
+#include "logic/widelands.h"
 
 namespace Widelands {
 
 struct PlayerImmovable;
-struct Game;
-struct Request;
+class Game;
+class Request;
 class Warehouse;
-struct Ware_Index;
 class WareInstance;
 class Worker;
+
+enum class SupplyProviders { kWarehouse, kFlagOrRoad, kShip };
 
 /**
  * A Supply is a virtual base class representing something that can offer
@@ -49,13 +50,19 @@ class Worker;
  * changes.
  */
 struct Supply : public Trackable {
-	virtual PlayerImmovable * get_position(Game &) = 0;
+	virtual PlayerImmovable* get_position(Game&) = 0;
 
 	/**
 	 * Indicates whether this supply is active as explained above (out
 	 * on the road network).
 	 */
-	virtual bool is_active() const throw () = 0;
+	virtual bool is_active() const = 0;
+
+	/**
+	 * Return the type of player im/movable where the ware is now (warehouse,
+	 * flag or ship).
+	 */
+	virtual SupplyProviders provider_type(Game*) const = 0;
 
 	/**
 	 * Indicates whether this supply is in storage or on its way to
@@ -63,14 +70,14 @@ struct Supply : public Trackable {
 	 *
 	 * If this is \c false, somebody needs to find this supply a warehouse.
 	 */
-	virtual bool has_storage() const throw () = 0;
+	virtual bool has_storage() const = 0;
 
 	/**
 	 * Gets the ware type of this supply.
 	 *
 	 * \note This is only valid if \ref has_storage returns \c false.
 	 */
-	virtual void get_ware_type(WareWorker & type, Ware_Index & ware) const = 0;
+	virtual void get_ware_type(WareWorker& type, DescriptionIndex& ware) const = 0;
 
 	/**
 	 * Send this to the given warehouse.
@@ -78,35 +85,32 @@ struct Supply : public Trackable {
 	 * Sets up all the required transfers; assumes that \ref has_storage
 	 * returns \c false.
 	 */
-	virtual void send_to_storage(Game &, Warehouse * wh) = 0;
+	virtual void send_to_storage(Game&, Warehouse* wh) = 0;
 
 	/**
-	 * \return the number of items or workers that can be launched right
+	 * \return the number of wares or workers that can be launched right
 	 * now for the thing requested by the given request
 	 */
-	virtual uint32_t nr_supplies(const Game &, const Request &) const = 0;
+	virtual uint32_t nr_supplies(const Game&, const Request&) const = 0;
 
 	/**
-	 * Prepare an item to satisfy the given request. Note that the caller
-	 * must assign a transfer to the launched item.
+	 * Prepare an ware to satisfy the given request. Note that the caller
+	 * must assign a transfer to the launched ware.
 	 *
-	 * \throw wexception if the request is not an item request or no such
-	 * item is available in the supply.
+	 * \throw wexception if the request is not an ware request or no such
+	 * ware is available in the supply.
 	 */
-	virtual WareInstance & launch_item(Game &, const Request &) = 0;
+	virtual WareInstance& launch_ware(Game&, const Request&) = 0;
 
 	/**
 	 * Prepare a worker to satisfy the given request. Note that the caller
-	 * must assign a transfer to the launched item.
+	 * must assign a transfer to the launched ware.
 	 *
 	 * \throw wexception if the request is not a worker request or no such
 	 * worker is available in the supply.
 	 */
-	virtual Worker & launch_worker(Game &, const Request &) = 0;
+	virtual Worker& launch_worker(Game&, const Request&) = 0;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_SUPPLY_H

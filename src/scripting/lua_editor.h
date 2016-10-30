@@ -17,26 +17,29 @@
  *
  */
 
-#ifndef LUA_EDITOR_H
-#define LUA_EDITOR_H
+#ifndef WL_SCRIPTING_LUA_EDITOR_H
+#define WL_SCRIPTING_LUA_EDITOR_H
 
-#include <lua.hpp>
-
-#include "lua_bases.h"
+#include "scripting/lua.h"
+#include "scripting/lua_bases.h"
 
 namespace LuaEditor {
 
-class L_Player : public LuaBases::L_PlayerBase {
+class LuaPlayer : public LuaBases::LuaPlayerBase {
 public:
-	// Overwritten from L_PlayerBase, avoid ambiguity when deriving from
-	// L_GameModuleClass and L_PlayerBase
-	const char * get_modulename() {return "game";}
+	// Overwritten from LuaPlayerBase, avoid ambiguity when deriving from
+	// LuaGameModuleClass and LuaPlayerBase
+	const char* get_modulename() override {
+		return "game";
+	}
 
-	LUNA_CLASS_HEAD(L_Player);
+	LUNA_CLASS_HEAD(LuaPlayer);
 
-	L_Player() : LuaBases::L_PlayerBase() {}
-	L_Player(Widelands::Player_Number n) : LuaBases::L_PlayerBase(n)  {}
-	L_Player(lua_State * L) {
+	LuaPlayer() : LuaBases::LuaPlayerBase() {
+	}
+	LuaPlayer(Widelands::PlayerNumber n) : LuaBases::LuaPlayerBase(n) {
+	}
+	LuaPlayer(lua_State* L) {
 		report_error(L, "Cannot instantiate a 'Player' directly!");
 	}
 
@@ -54,9 +57,7 @@ public:
 private:
 };
 
-void luaopen_wleditor(lua_State *);
+void luaopen_wleditor(lua_State*);
+}
 
-};
-
-
-#endif
+#endif  // end of include guard: WL_SCRIPTING_LUA_EDITOR_H

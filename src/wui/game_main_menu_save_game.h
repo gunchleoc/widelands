@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2008-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,9 +17,10 @@
  *
  */
 
-#ifndef GAME_MAIN_MENU_SAVE_GAME_H
-#define GAME_MAIN_MENU_SAVE_GAME_H
+#ifndef WL_WUI_GAME_MAIN_MENU_SAVE_GAME_H
+#define WL_WUI_GAME_MAIN_MENU_SAVE_GAME_H
 
+#include "base/i18n.h"
 #include "ui_basic/button.h"
 #include "ui_basic/editbox.h"
 #include "ui_basic/listselect.h"
@@ -27,38 +28,40 @@
 #include "ui_basic/textarea.h"
 #include "ui_basic/unique_window.h"
 
-#include "i18n.h"
-
-#include "ref_cast.h"
-
-class Interactive_GameBase;
+class InteractiveGameBase;
 
 struct SaveWarnMessageBox;
-struct Game_Main_Menu_Save_Game : public UI::UniqueWindow {
+struct GameMainMenuSaveGame : public UI::UniqueWindow {
 	friend struct SaveWarnMessageBox;
-	Game_Main_Menu_Save_Game
-		(Interactive_GameBase &, UI::UniqueWindow::Registry & registry);
+	GameMainMenuSaveGame(InteractiveGameBase&, UI::UniqueWindow::Registry& registry);
 
 	void fill_list();
+	void select_by_name(std::string name);
+
+protected:
+	void die() override;
+
 private:
-	Interactive_GameBase & igbase();
-	void die() {UI::UniqueWindow::die();}
-	void selected      (uint32_t);
+	InteractiveGameBase& igbase();
+	void selected(uint32_t);
 	void double_clicked(uint32_t);
 	void edit_box_changed();
 	void ok();
 	void delete_clicked();
 
 	bool save_game(std::string);
+	void pause_game(bool paused);
 
-	UI::Listselect<std::string> m_ls;
-	UI::EditBox * m_editbox;
-	UI::Textarea m_name_label, m_name, m_gametime_label, m_gametime;
-	UI::Button * m_button_ok;
-	std::string m_curdir;
-	std::string m_parentdir;
-	std::string m_filename;
-	bool m_overwrite;
+	UI::EditBox editbox_;
+	UI::Listselect<std::string> ls_;
+
+	UI::Textarea name_label_, mapname_, gametime_label_, gametime_, players_label_,
+	   win_condition_label_, win_condition_;
+	UI::Button* button_ok_;
+	std::string curdir_;
+	std::string parentdir_;
+	std::string filename_;
+	bool overwrite_;
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_GAME_MAIN_MENU_SAVE_GAME_H

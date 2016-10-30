@@ -17,31 +17,40 @@
  *
  */
 
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef WL_GRAPHIC_IMAGE_H
+#define WL_GRAPHIC_IMAGE_H
 
-#include <stdint.h>
 #include <string>
 
-#include <boost/noncopyable.hpp>
+#include <stdint.h>
+
+#include "base/macros.h"
+#include "base/rect.h"
+#include "graphic/gl/blit_data.h"
+
+class Texture;
 
 /**
  * Interface to a bitmap that can act as the source of a rendering
  * operation.
  */
-class Surface;
-
-class Image : boost::noncopyable {
+class Image {
 public:
-	virtual ~Image() {}
+	Image() = default;
+	virtual ~Image() {
+	}
 
-	virtual uint16_t width() const = 0;
-	virtual uint16_t height() const = 0;
+	// Dimensions of this Image in pixels.
+	virtual int width() const = 0;
+	virtual int height() const = 0;
 
-	// Internal functions needed for caching.
-	virtual Surface* surface() const = 0;
-	virtual const std::string& hash() const = 0;
+	// OpenGL texture and texture coordinates backing this Image. This can
+	// change at any time, so do not hold one to this value for more than one
+	// frame.
+	virtual const BlitData& blit_data() const = 0;
+
+private:
+	DISALLOW_COPY_AND_ASSIGN(Image);
 };
 
-
-#endif
+#endif  // end of include guard: WL_GRAPHIC_IMAGE_H

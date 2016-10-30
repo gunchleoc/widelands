@@ -17,122 +17,102 @@
  *
  */
 
-#include "replay.h"
+#include "logic/replay.h"
 
-#include "game.h"
-#include "game_data_error.h"
+#include "base/log.h"
+#include "base/md5.h"
+#include "base/wexception.h"
 #include "game_io/game_loader.h"
-#include "gamecontroller.h"
 #include "io/filesystem/layered_filesystem.h"
-#include "md5.h"
-#include "playercommand.h"
-#include "random.h"
-#include "save_handler.h"
+#include "io/streamread.h"
 #include "io/streamwrite.h"
-#include "wexception.h"
-
-#include "log.h"
+#include "logic/game.h"
+#include "logic/game_controller.h"
+#include "logic/game_data_error.h"
+#include "logic/playercommand.h"
+#include "logic/save_handler.h"
+#include "random/random.h"
 
 namespace Widelands {
 
 // File format definitions
-#define REPLAY_MAGIC 0x2E21A101
-#define REPLAY_VERSION 2
+constexpr uint32_t kReplayMagic = 0x2E21A101;
+constexpr uint8_t kCurrentPacketVersion = 2;
+constexpr uint32_t kSyncInterval = 200;
 
-enum {
-	pkt_end = 2,
-	pkt_playercommand = 3,
-	pkt_syncreport = 4
-};
+enum { pkt_end = 2, pkt_playercommand = 3, pkt_syncreport = 4 };
 
-#define SYNC_INTERVAL 200
-
-
-class Cmd_ReplaySyncRead : public Command {
+class CmdReplaySyncRead : public Command {
 public:
-	Cmd_ReplaySyncRead(const uint32_t _duetime, const md5_checksum & hash)
-		: Command(_duetime), m_hash(hash)
-	{}
+	CmdReplaySyncRead(const uint32_t init_duetime, const Md5Checksum& hash)
+	   : Command(init_duetime), hash_(hash) {
+	}
 
-	virtual uint8_t id() const {return QUEUE_CMD_REPLAYSYNCREAD;}
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kReplaySyncRead;
+	}
 
-	void execute(Game & game)
-	{
-		const md5_checksum myhash = game.get_sync_hash();
+	void execute(Game& game) override {
+		const Md5Checksum myhash = game.get_sync_hash();
 
-		if (m_hash != myhash) {
-			log
-				("REPLAY: Lost synchronization at time %u\n"
-				 "I have:     %s\n"
-				 "Replay has: %s\n",
-				 duetime(), myhash.str().c_str(), m_hash.str().c_str());
+		if (hash_ != myhash) {
+			log("REPLAY: Lost synchronization at time %u\n"
+			    "I have:     %s\n"
+			    "Replay has: %s\n",
+			    duetime(), myhash.str().c_str(), hash_.str().c_str());
 
 			// In case syncstream logging is on, save it for analysis
 			game.save_syncstream(true);
 
 			// There has to be a better way to do this.
-			game.gameController()->setDesiredSpeed(0);
-		} else {
-			log("REPLAY: Sync checked successfully.\n");
+			game.game_controller()->set_desired_speed(0);
 		}
 	}
 
 private:
-	md5_checksum m_hash;
+	Md5Checksum hash_;
 };
-
 
 /**
  * Load the savegame part of the given replay and open the command log.
  */
-ReplayReader::ReplayReader(Game & game, const std::string & filename)
-{
-	m_replaytime = 0;
+ReplayReader::ReplayReader(Game& game, const std::string& filename) {
+	replaytime_ = 0;
 
 	{
-		Game_Loader gl(filename + WLGF_SUFFIX, game);
+		GameLoader gl(filename + WLGF_SUFFIX, game);
 		gl.load_game();
 	}
 
-	m_cmdlog =
-		static_cast<Widelands::StreamRead *>(g_fs->OpenStreamRead(filename));
+	cmdlog_ = g_fs->open_stream_read(filename);
 
 	try {
-		const uint32_t magic = m_cmdlog->Unsigned32();
+		const uint32_t magic = cmdlog_->unsigned_32();
 		if (magic == 0x2E21A100)
 			// Note: This was never released as part of a build
-			throw wexception
-				("%s is a replay from a version that is known to have desync "
-				 "problems",
-				 filename.c_str());
-		if (magic != REPLAY_MAGIC)
-			throw wexception
-				("%s apparently not a valid replay file", filename.c_str());
+			throw wexception("%s is a replay from a version that is known to have desync "
+			                 "problems",
+			                 filename.c_str());
+		if (magic != kReplayMagic)
+			throw wexception("%s apparently not a valid replay file", filename.c_str());
 
-		const uint8_t version = m_cmdlog->Unsigned8();
-		if (version < REPLAY_VERSION)
-			throw wexception
-				("Replay of version %u is known to have desync problems", version);
-		if (version != REPLAY_VERSION)
-			throw game_data_error(_("unknown/unhandled version %u"), version);
-
-		game.rng().ReadState(*m_cmdlog);
-	}
-	catch (...) {
-		delete m_cmdlog;
+		const uint8_t packet_version = cmdlog_->unsigned_8();
+		if (packet_version != kCurrentPacketVersion) {
+			throw UnhandledVersionError("ReplayReader", packet_version, kCurrentPacketVersion);
+		}
+		game.rng().read_state(*cmdlog_);
+	} catch (...) {
+		delete cmdlog_;
 		throw;
 	}
 }
 
-
 /**
  * Cleanup after replays
  */
-ReplayReader::~ReplayReader()
-{
-	delete m_cmdlog;
+ReplayReader::~ReplayReader() {
+	delete cmdlog_;
 }
-
 
 /**
  * Retrieve the next command, until no more commands before the given
@@ -141,85 +121,82 @@ ReplayReader::~ReplayReader()
  * \return a \ref Command that should be enqueued in the command queue
  * or 0 if there are no remaining commands before the given time.
  */
-Command * ReplayReader::GetNextCommand(const uint32_t time)
-{
-	if (!m_cmdlog)
-		return 0;
+Command* ReplayReader::get_next_command(const uint32_t time) {
+	if (!cmdlog_)
+		return nullptr;
 
-	if (static_cast<int32_t>(m_replaytime - time) > 0)
-		return 0;
+	if (static_cast<int32_t>(replaytime_ - time) > 0)
+		return nullptr;
 
 	try {
-		uint8_t pkt = m_cmdlog->Unsigned8();
+		uint8_t pkt = cmdlog_->unsigned_8();
 
 		switch (pkt) {
 		case pkt_playercommand: {
-			m_replaytime = m_cmdlog->Unsigned32();
+			replaytime_ = cmdlog_->unsigned_32();
 
-			uint32_t duetime = m_cmdlog->Unsigned32();
-			uint32_t cmdserial = m_cmdlog->Unsigned32();
-			PlayerCommand & cmd = *PlayerCommand::deserialize(*m_cmdlog);
-			cmd.set_duetime  (duetime);
+			uint32_t duetime = cmdlog_->unsigned_32();
+			uint32_t cmdserial = cmdlog_->unsigned_32();
+			PlayerCommand& cmd = *PlayerCommand::deserialize(*cmdlog_);
+			cmd.set_duetime(duetime);
 			cmd.set_cmdserial(cmdserial);
 
 			return &cmd;
 		}
 
 		case pkt_syncreport: {
-			uint32_t duetime = m_cmdlog->Unsigned32();
-			md5_checksum hash;
-			m_cmdlog->Data(hash.data, sizeof(hash.data));
+			uint32_t duetime = cmdlog_->unsigned_32();
+			Md5Checksum hash;
+			cmdlog_->data(hash.data, sizeof(hash.data));
 
-			return new Cmd_ReplaySyncRead(duetime, hash);
+			return new CmdReplaySyncRead(duetime, hash);
 		}
 
 		case pkt_end: {
-			uint32_t endtime = m_cmdlog->Unsigned32();
+			uint32_t endtime = cmdlog_->unsigned_32();
 			log("REPLAY: End of replay (gametime: %u)\n", endtime);
-			delete m_cmdlog;
-			m_cmdlog = 0;
-			return 0;
-			break;
+			delete cmdlog_;
+			cmdlog_ = nullptr;
+			return nullptr;
 		}
 
 		default:
 			throw wexception("Unknown packet %u", pkt);
 		}
-	} catch (const _wexception & e) {
+	} catch (const WException& e) {
 		log("REPLAY: Caught exception %s\n", e.what());
-		delete m_cmdlog;
-		m_cmdlog = 0;
+		delete cmdlog_;
+		cmdlog_ = nullptr;
 	}
 
-	return 0;
+	return nullptr;
 }
-
 
 /**
  * \return \c true if the end of the replay was reached
  */
-bool ReplayReader::EndOfReplay()
-{
-	return m_cmdlog == 0;
+bool ReplayReader::end_of_replay() {
+	return cmdlog_ == nullptr;
 }
-
 
 /**
  * Command / timer that regularly inserts synchronization hashes into
  * the replay.
  */
-class Cmd_ReplaySyncWrite : public Command {
+class CmdReplaySyncWrite : public Command {
 public:
-	Cmd_ReplaySyncWrite(const uint32_t _duetime) : Command(_duetime) {}
+	CmdReplaySyncWrite(const uint32_t init_duetime) : Command(init_duetime) {
+	}
 
-	virtual uint8_t id() const {return QUEUE_CMD_REPLAYSYNCWRITE;}
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kReplaySyncWrite;
+	}
 
-	void execute(Game & game) {
-		if (ReplayWriter * const rw = game.get_replaywriter()) {
-			rw->SendSync (game.get_sync_hash());
+	void execute(Game& game) override {
+		if (ReplayWriter* const rw = game.get_replaywriter()) {
+			rw->send_sync(game.get_sync_hash());
 
-			game.enqueue_command
-				(new Cmd_ReplaySyncWrite(duetime() + SYNC_INTERVAL));
+			game.enqueue_command(new CmdReplaySyncWrite(duetime() + kSyncInterval));
 		}
 	}
 };
@@ -231,77 +208,67 @@ public:
  * This is expected to be called just after game load has completed
  * and the game has changed into running state.
  */
-ReplayWriter::ReplayWriter(Game & game, const std::string & filename)
-	: m_game(game), m_filename(filename)
-{
-	g_fs->EnsureDirectoryExists(REPLAY_DIR);
+ReplayWriter::ReplayWriter(Game& game, const std::string& filename)
+   : game_(game), filename_(filename) {
+	g_fs->ensure_directory_exists(REPLAY_DIR);
 
-	SaveHandler & save_handler = m_game.save_handler();
+	SaveHandler& save_handler = game_.save_handler();
 
 	std::string error;
-	if (!save_handler.save_game(m_game, m_filename + WLGF_SUFFIX, &error))
+	if (!save_handler.save_game(game_, filename_ + WLGF_SUFFIX, &error))
 		throw wexception("Failed to save game for replay: %s", error.c_str());
 
 	log("Reloading the game from replay\n");
 	game.cleanup_for_load();
 	{
-		Game_Loader gl(m_filename + WLGF_SUFFIX, game);
+		GameLoader gl(filename_ + WLGF_SUFFIX, game);
 		gl.load_game();
 	}
 	game.postload();
 	log("Done reloading the game from replay\n");
 
-	game.enqueue_command
-		(new Cmd_ReplaySyncWrite(game.get_gametime() + SYNC_INTERVAL));
+	game.enqueue_command(new CmdReplaySyncWrite(game.get_gametime() + kSyncInterval));
 
-	m_cmdlog =
-		static_cast<Widelands::StreamWrite *>(g_fs->OpenStreamWrite(filename));
-	m_cmdlog->Unsigned32(REPLAY_MAGIC);
-	m_cmdlog->Unsigned8(REPLAY_VERSION);
+	cmdlog_ = g_fs->open_stream_write(filename);
+	cmdlog_->unsigned_32(kReplayMagic);
+	cmdlog_->unsigned_8(kCurrentPacketVersion);
 
-	game.rng().WriteState(*m_cmdlog);
+	game.rng().write_state(*cmdlog_);
 }
-
 
 /**
  * Close the command log
  */
-ReplayWriter::~ReplayWriter()
-{
-	m_cmdlog->Unsigned8(pkt_end);
-	m_cmdlog->Unsigned32(m_game.get_gametime());
+ReplayWriter::~ReplayWriter() {
+	cmdlog_->unsigned_8(pkt_end);
+	cmdlog_->unsigned_32(game_.get_gametime());
 
-	delete m_cmdlog;
+	delete cmdlog_;
 }
-
 
 /**
  * Call this whenever a new player command has entered the command queue.
  */
-void ReplayWriter::SendPlayerCommand(PlayerCommand * cmd)
-{
-	m_cmdlog->Unsigned8(pkt_playercommand);
+void ReplayWriter::send_player_command(PlayerCommand* cmd) {
+	cmdlog_->unsigned_8(pkt_playercommand);
 	// The semantics of the timestamp is
 	// "There will be no more player commands that are due *before* the
 	// given time".
-	m_cmdlog->Unsigned32(m_game.get_gametime());
-	m_cmdlog->Unsigned32(cmd->duetime());
-	m_cmdlog->Unsigned32(cmd->cmdserial());
-	cmd->serialize(*m_cmdlog);
+	cmdlog_->unsigned_32(game_.get_gametime());
+	cmdlog_->unsigned_32(cmd->duetime());
+	cmdlog_->unsigned_32(cmd->cmdserial());
+	cmd->serialize(*cmdlog_);
 
-	m_cmdlog->Flush();
+	cmdlog_->flush();
 }
-
 
 /**
  * Store a synchronization hash for the current game time in the replay.
  */
-void ReplayWriter::SendSync(const md5_checksum & hash)
-{
-	m_cmdlog->Unsigned8(pkt_syncreport);
-	m_cmdlog->Unsigned32(m_game.get_gametime());
-	m_cmdlog->Data(hash.data, sizeof(hash.data));
-	m_cmdlog->Flush();
+void ReplayWriter::send_sync(const Md5Checksum& hash) {
+	cmdlog_->unsigned_8(pkt_syncreport);
+	cmdlog_->unsigned_32(game_.get_gametime());
+	cmdlog_->data(hash.data, sizeof(hash.data));
+	cmdlog_->flush();
 }
-
 }

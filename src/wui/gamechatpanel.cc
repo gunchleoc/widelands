@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2011 by the Widelands Development Team
+ * Copyright (C) 2008, 2011, 2013 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,75 +17,99 @@
  *
  */
 
-#include "gamechatpanel.h"
+#include "wui/gamechatpanel.h"
 
+#include <limits>
+#include <string>
+
+#include "wui/chat_msg_layout.h"
 
 /**
  * Create a game chat panel
  */
-GameChatPanel::GameChatPanel
-	(UI::Panel * parent,
-	 int32_t const x, int32_t const y, uint32_t const w, uint32_t const h,
-	 ChatProvider & chat)
-	:
-	UI::Panel(parent, x, y, w, h),
-	m_chat   (chat),
-	chatbox  (this, 0, 0, w, h - 25, "", UI::Align_Left, 1),
-	editbox  (this, 0, h - 20, w,  20)
-{
-	chatbox.set_scrollmode(UI::Multiline_Textarea::ScrollLog);
-	editbox.ok.connect(boost::bind(&GameChatPanel::keyEnter, this));
-	editbox.cancel.connect(boost::bind(&GameChatPanel::keyEscape, this));
-	editbox.setAlign(UI::Align_Left);
+GameChatPanel::GameChatPanel(UI::Panel* parent,
+                             int32_t const x,
+                             int32_t const y,
+                             uint32_t const w,
+                             uint32_t const h,
+                             ChatProvider& chat)
+   : UI::Panel(parent, x, y, w, h),
+     chat_(chat),
+     chatbox(this,
+             0,
+             0,
+             w,
+             h - 25,
+             "",
+             UI::Align::kLeft,
+             UI::MultilineTextarea::ScrollMode::kScrollLogForced),
+     editbox(this, 0, h - 20, w, 20, 2),
+     chat_message_counter(std::numeric_limits<uint32_t>::max()) {
+	editbox.ok.connect(boost::bind(&GameChatPanel::key_enter, this));
+	editbox.cancel.connect(boost::bind(&GameChatPanel::key_escape, this));
 	editbox.activate_history(true);
 
-	connect(m_chat);
+	set_handle_mouse(true);
+	set_can_focus(true);
+
+	chat_message_subscriber_ =
+	   Notifications::subscribe<ChatMessage>([this](const ChatMessage&) { recalculate(); });
 	recalculate();
 }
 
 /**
  * Updates the chat message area.
  */
-void GameChatPanel::recalculate()
-{
-	const std::vector<ChatMessage> msgs = m_chat.getMessages();
+void GameChatPanel::recalculate() {
+	const std::vector<ChatMessage> msgs = chat_.get_messages();
 
 	std::string str = "<rt>";
 	for (uint32_t i = 0; i < msgs.size(); ++i) {
-		str += msgs[i].toPrintable();
+		str += format_as_old_richtext(msgs[i]);
 		str += '\n';
 	}
 	str += "</rt>";
 
 	chatbox.set_text(str);
+
+	// If there are new messages, play a sound
+	if (0 < msgs.size() && msgs.size() != chat_message_counter) {
+		// computer generated ones are ignored
+		// Note: if many messages arrive simultaneously,
+		// the latest is a system message and some others
+		// are not, then this act wrong!
+		if (!msgs.back().sender.empty() && !chat_.sound_off()) {
+			// The latest message is not a system message
+			if (std::string::npos == msgs.back().sender.find("(IRC)") &&
+			    chat_message_counter < msgs.size()) {
+				// The latest message was not relayed from IRC.
+				// The above built-in string constant should match
+				// that of the IRC bridge.
+				play_new_chat_message();
+			}
+		}
+		chat_message_counter = msgs.size();
+	}
 }
 
 /**
  * Put the focus on the message input panel.
  */
-void GameChatPanel::focusEdit()
-{
+void GameChatPanel::focus_edit() {
 	editbox.focus();
 }
 
-void GameChatPanel::receive(const ChatMessage &)
-{
-	recalculate();
-}
-
-void GameChatPanel::keyEnter()
-{
-	const std::string & str = editbox.text();
+void GameChatPanel::key_enter() {
+	const std::string& str = editbox.text();
 
 	if (str.size())
-		m_chat.send(str);
+		chat_.send(str);
 
-	editbox.setText("");
+	editbox.set_text("");
 	sent();
 }
 
-void GameChatPanel::keyEscape()
-{
-	editbox.setText("");
+void GameChatPanel::key_escape() {
+	editbox.set_text("");
 	aborted();
 }

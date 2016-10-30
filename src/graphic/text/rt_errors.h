@@ -17,8 +17,10 @@
  *
  */
 
-#ifndef RT_ERRORS_H
-#define RT_ERRORS_H
+#ifndef WL_GRAPHIC_TEXT_RT_ERRORS_H
+#define WL_GRAPHIC_TEXT_RT_ERRORS_H
+
+#include "base/wexception.h"
 
 #include <exception>
 
@@ -26,34 +28,33 @@ namespace RT {
 
 class Exception : public std::exception {
 public:
-	Exception(std::string msg) : std::exception() {
-		m_msg = msg;
+	Exception(std::string msg) : std::exception(), msg_(msg) {
 	}
-	virtual ~Exception() throw () {}
-	virtual const char* what() const throw () {return m_msg.c_str();}
+	const char* what() const noexcept override {
+		return msg_.c_str();
+	}
 
 private:
-	std::string m_msg;
+	std::string msg_;
 };
 
-#define DEF_ERR(name) class name : public Exception { \
-public: \
-		  name(std::string msg) : Exception(msg) {} \
-};
+#define DEF_ERR(Name)                                                                              \
+	class Name : public Exception {                                                                 \
+	public:                                                                                         \
+		Name(std::string msg) : Exception(msg) {                                                     \
+		}                                                                                            \
+	};
 
-DEF_ERR(AttributeNotFound);
-DEF_ERR(BadFont);
-DEF_ERR(BadImage);
-DEF_ERR(EOT);
-DEF_ERR(InvalidColor);
-DEF_ERR(RenderError);
-DEF_ERR(SyntaxError);
-DEF_ERR(WidthTooSmall);
+DEF_ERR(AttributeNotFound)
+DEF_ERR(BadFont)
+DEF_ERR(EndOfText)
+DEF_ERR(InvalidColor)
+DEF_ERR(RenderError)
+DEF_ERR(SyntaxError)
+DEF_ERR(TextureTooBig)
+DEF_ERR(WidthTooSmall)
 
 #undef DEF_ERR
+}
 
-
-};
-
-#endif /* end of include guard: RT_ERRORS_H */
-
+#endif  // end of include guard: WL_GRAPHIC_TEXT_RT_ERRORS_H

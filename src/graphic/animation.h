@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2002, 2006-2013 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,21 +17,28 @@
  *
  */
 
-#ifndef ANIMATION_H
-#define ANIMATION_H
+#ifndef WL_GRAPHIC_ANIMATION_H
+#define WL_GRAPHIC_ANIMATION_H
 
+#include <cstring>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <boost/utility.hpp>
 
-#include "point.h"
-#include "rect.h"
+#include "base/macros.h"
+#include "base/rect.h"
+#include "base/vector.h"
 
 class Image;
+class LuaTable;
 class Surface;
 struct RGBColor;
-struct Section;
+
+/// FRAME_LENGTH is the default animation speed
+constexpr int FRAME_LENGTH = 250;
 
 /**
  * Representation of an Animation in the game. An animation is a looping set of
@@ -42,10 +49,12 @@ struct Section;
  * The dimensions of an animation is constant and can not change from frame to
  * frame.
  */
-class Animation : boost::noncopyable {
+class Animation {
 public:
-	Animation() {}
-	virtual ~Animation() {}
+	Animation() {
+	}
+	virtual ~Animation() {
+	}
 
 	/// The dimensions of this animation.
 	virtual uint16_t width() const = 0;
@@ -59,48 +68,60 @@ public:
 
 	/// The hotspot of this animation. Note that this is ignored when blitting,
 	/// so the caller has to adjust for the hotspot himself.
-	virtual const Point& hotspot() const = 0;
+	virtual const Vector2i& hotspot() const = 0;
 
-	/// An image frame that shows a singular animation frame. This can be used in
-	/// the UI (e.g. buildingwindow to represent this image.
-	virtual const Image& representative_image(const RGBColor& clr) const = 0;
+	/// An image of the first frame, blended with the given player color.
+	/// The 'clr' is the player color used for blending - the parameter can be
+	/// 'nullptr', in which case the neutral image will be returned.
+	virtual Image* representative_image(const RGBColor* clr) const = 0;
+	/// The filename of the image used for the first frame, without player color.
+	virtual const std::string& representative_image_filename() const = 0;
 
 	/// Blit the animation frame that should be displayed at the given time index
 	/// so that the given point is at the top left of the frame. Srcrc defines
 	/// the part of the animation that should be blitted. The 'clr' is the player
-	/// color used for blitting - the parameter can be NULL in which case the
+	/// color used for blitting - the parameter can be 'nullptr', in which case the
 	/// neutral image will be blitted. The Surface is the target for the blit
 	/// operation and must be non-null.
-	virtual void blit(uint32_t time, const Point&, const Rect& srcrc, const RGBColor* clr, Surface*) const = 0;
+	virtual void blit(uint32_t time,
+	                  const Rectf& dstrc,
+	                  const Rectf& srcrc,
+	                  const RGBColor* clr,
+	                  Surface*) const = 0;
 
 	/// Play the sound effect associated with this animation at the given time.
-	virtual void trigger_soundfx(uint32_t time, uint32_t stereo_position) const = 0;
+	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const = 0;
+
+private:
+	DISALLOW_COPY_AND_ASSIGN(Animation);
 };
 
 /**
 * The animation manager manages a list of all active animations.
 */
-struct AnimationManager {
+class AnimationManager {
+public:
 	/**
-	 * Loads an animation, graphics sound and everything.
+	 * Loads an animation, graphics sound and everything from a Lua table.
 	 *
-	 * The animation resides in the given directory and is described by the
-	 * given section.
+	 * The Lua table must contain a table 'pictures' with image paths and a 'hotspot' table.
 	 *
-	 * This function looks for image files as defined by the 'pics' key. If this
-	 * is not present, it will try \<sectionname\>_??.png
-	 *
-	 * \param directory     which directory to look in for image and sound files
-	 * \param s             conffile section to search for data on this animation
+	 * Optional parameters in the Lua table are 'fps' and 'sound_effect'.
 	*/
-	uint32_t load(const std::string & directory, Section& s);
+	uint32_t load(const LuaTable& table);
 
 	/// Returns the animation with the given ID or throws an exception if it is
 	/// unknown.
 	const Animation& get_animation(uint32_t id) const;
 
+	/// Returns the representative image, using the given player color.
+	/// If this image has been generated before, it is pulled from the cache using
+	/// the clr argument that was used previously.
+	const Image* get_representative_image(uint32_t id, const RGBColor* clr = nullptr);
+
 private:
-	std::vector<Animation*> m_animations;
+	std::vector<std::unique_ptr<Animation>> animations_;
+	std::map<uint32_t, std::unique_ptr<Image>> representative_images_;
 };
 
-#endif
+#endif  // end of include guard: WL_GRAPHIC_ANIMATION_H

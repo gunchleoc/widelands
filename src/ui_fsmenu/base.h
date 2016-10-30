@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006, 2008-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,51 +17,75 @@
  *
  */
 
-#ifndef FULLSCREEN_MENU_BASE_H
-#define FULLSCREEN_MENU_BASE_H
+#ifndef WL_UI_FSMENU_BASE_H
+#define WL_UI_FSMENU_BASE_H
 
-#include <boost/scoped_ptr.hpp>
-
-#include "ui_basic/panel.h"
 #include <string>
 
-namespace UI {
-struct Font;
-struct TextStyle;
-}
+#include "ui_basic/panel.h"
 
 /**
  * This class is the base class for a fullscreen menu.
  * A fullscreen menu is a menu which takes the full screen; it has the size
  * MENU_XRES and MENU_YRES and is a modal UI Element
  */
-struct Fullscreen_Menu_Base : public UI::Panel {
-	Fullscreen_Menu_Base(char const * bgpic);
-	~Fullscreen_Menu_Base();
-
-	virtual void draw(RenderTarget &);
-
+class FullscreenMenuBase : public UI::Panel {
 public:
+	enum class MenuTarget {
+		kBack = static_cast<int>(UI::Panel::Returncodes::kBack),
+		kOk = static_cast<int>(UI::Panel::Returncodes::kOk),
+
+		// Options
+		kApplyOptions,
+
+		// Main menu
+		kTutorial,
+		kSinglePlayer,
+		kMultiplayer,
+		kReplay,
+		kEditor,
+		kOptions,
+		kAbout,
+		kExit,
+
+		// Single player
+		kNewGame,
+		kCampaign,
+		kLoadGame,
+
+		// Multiplayer
+		kMetaserver,
+		kLan,
+
+		// Launch game
+		kNormalGame,
+		kScenarioGame,
+		kMultiPlayerSavegame,
+		kHostgame,
+		kJoingame
+	};
+
+	/// Calls FullscreenMenuBase(const std::string& bgpic)
+	/// with a default background image
+	FullscreenMenuBase();
+	FullscreenMenuBase(const std::string& bgpic);
+	virtual ~FullscreenMenuBase();
+
+	void draw(RenderTarget&) override;
+
 	///\return the size for texts fitting to current resolution
-	uint32_t fs_small();
-	uint32_t fs_big();
+	int fs_small();
+	int fs_big();
 
-	UI::TextStyle & ts_small();
-	UI::TextStyle & ts_big();
+	/// Handle keypresses
+	bool handle_key(bool down, SDL_Keysym code) override;
 
-	UI::Font * font_small();
-	UI::Font * font_big();
+protected:
+	virtual void clicked_back();
+	virtual void clicked_ok();
 
 private:
-	/**
-	 * Query the configured screen resolution.
-	 */
-	uint32_t gr_x();
-	uint32_t gr_y();
-
-	struct Data;
-	boost::scoped_ptr<Data> d;
+	std::string background_image_;
 };
 
-
-#endif
+#endif  // end of include guard: WL_UI_FSMENU_BASE_H

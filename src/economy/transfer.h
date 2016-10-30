@@ -17,22 +17,22 @@
  *
  */
 
-#ifndef TRANSFER_H
-#define TRANSFER_H
+#ifndef WL_ECONOMY_TRANSFER_H
+#define WL_ECONOMY_TRANSFER_H
 
-#include "route.h"
+#include "economy/route.h"
 
 namespace Widelands {
-struct Game;
+class Game;
 struct PlayerImmovable;
-struct Request;
+class Request;
 class WareInstance;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Saver;
+class MapObjectLoader;
+struct MapObjectSaver;
 class Worker;
 
 /**
- * Whenever an item or worker is transferred to fulfill a Request,
+ * Whenever an ware or worker is transferred to fulfill a Request,
  * a Transfer is allocated to describe this transfer.
  *
  * Transfers are always created and destroyed by a Request instance.
@@ -44,48 +44,50 @@ class Worker;
  * or ware was destroyed).
  */
 struct Transfer {
-	friend struct Request;
+	friend class Request;
 
-	Transfer(Game &, Request &, WareInstance &);
-	Transfer(Game &, Request &, Worker       &);
-	Transfer(Game &, WareInstance &);
-	Transfer(Game &, Worker &);
+	Transfer(Game&, Request&, WareInstance&);
+	Transfer(Game&, Request&, Worker&);
+	Transfer(Game&, WareInstance&);
+	Transfer(Game&, Worker&);
 	~Transfer();
 
-	Request * get_request() const {return m_request;}
-	void set_request(Request * req);
-	void set_destination(PlayerImmovable & imm);
-	PlayerImmovable * get_destination(Game & g);
-	uint32_t get_steps_left() const {return m_route.get_nrsteps();}
+	Request* get_request() const {
+		return request_;
+	}
+	void set_request(Request* req);
+	void set_destination(PlayerImmovable& imm);
+	PlayerImmovable* get_destination(Game& g);
+	uint32_t get_steps_left() const {
+		return route_.get_nrsteps();
+	}
 
 	/// Called by the controlled ware or worker
-	PlayerImmovable * get_next_step(PlayerImmovable *, bool & psuccess);
+	PlayerImmovable* get_next_step(PlayerImmovable*, bool& psuccess);
 	void has_finished();
 	void has_failed();
 
 	struct ReadData {
 		uint32_t destination;
 
-		ReadData() : destination(0) {}
+		ReadData() : destination(0) {
+		}
 	};
 
-	void read(FileRead & fr, ReadData & rd);
-	void read_pointers(Map_Map_Object_Loader & mol, const ReadData & rd);
-	void write(Map_Map_Object_Saver & mos, FileWrite & fw);
+	void read(FileRead& fr, ReadData& rd);
+	void read_pointers(MapObjectLoader& mol, const ReadData& rd);
+	void write(MapObjectSaver& mos, FileWrite& fw);
 
 private:
-	void tlog(char const * fmt, ...) PRINTF_FORMAT(2, 3);
+	void tlog(char const* fmt, ...) PRINTF_FORMAT(2, 3);
 
-	Game & m_game;
-	Request * m_request;
-	OPtr<PlayerImmovable> m_destination;
-	WareInstance * m_item;    ///< non-null if ware is an item
-	Worker * m_worker;  ///< non-null if ware is a worker
-	Route m_route;
+	Game& game_;
+	Request* request_;
+	OPtr<PlayerImmovable> destination_;
+	WareInstance* ware_;  ///< non-null iff this is transferring a ware
+	Worker* worker_;      ///< non-null iff this is transferring a worker
+	Route route_;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_TRANSFER_H

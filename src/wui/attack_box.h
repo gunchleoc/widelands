@@ -17,19 +17,23 @@
  *
  */
 
-#ifndef _ATTACK_BOX_H_
-#define _ATTACK_BOX_H_
+#ifndef WL_WUI_ATTACK_BOX_H
+#define WL_WUI_ATTACK_BOX_H
 
-#include "logic/attackable.h"
-#include "logic/bob.h"
-#include "logic/soldier.h"
+#include <list>
+#include <memory>
+
+#include "graphic/font_handler1.h"
+#include "graphic/text/font_set.h"
+#include "graphic/text_constants.h"
+#include "logic/map_objects/attackable.h"
+#include "logic/map_objects/bob.h"
+#include "logic/map_objects/tribes/soldier.h"
 #include "logic/player.h"
-
 #include "ui_basic/box.h"
 #include "ui_basic/button.h"
 #include "ui_basic/slider.h"
 #include "ui_basic/textarea.h"
-#include <list>
 
 using Widelands::Bob;
 using Widelands::Building;
@@ -40,56 +44,54 @@ using Widelands::Soldier;
  * when clicking on an enemy building.
  */
 struct AttackBox : public UI::Box {
-	AttackBox
-		(UI::Panel              * parent,
-		 Widelands::Player      * player,
-		 Widelands::FCoords     * target,
-		 uint32_t  const              x,
-		 uint32_t  const              y);
-	~AttackBox();
+	AttackBox(UI::Panel* parent,
+	          Widelands::Player* player,
+	          Widelands::FCoords* target,
+	          uint32_t const x,
+	          uint32_t const y);
 
 	void init();
 
 	uint32_t soldiers() const;
-	uint8_t  retreat() const;
 
-	private:
-		uint32_t get_max_attackers();
-		UI::Slider & add_slider
-			(UI::Box    & parent,
-			 uint32_t      width,
-			 uint32_t      height,
-			 uint32_t      min, uint32_t max, uint32_t initial,
-			 char const  * picname,
-			 char const  * hint);
-		UI::Textarea & add_text
-			(UI::Box           & parent,
-			 std::string         str,
-			 uint32_t            alignment = UI::Box::AlignTop,
-			 const std::string & fontname = UI_FONT_NAME,
-			 uint32_t            fontsize = UI_FONT_SIZE_SMALL);
-		UI::Button & add_button
-			(UI::Box           & parent,
-			 char const * picname,
-			 void (AttackBox::*fn)(),
-			 const std::string & tooltip_text);
+private:
+	uint32_t get_max_attackers();
+	std::unique_ptr<UI::HorizontalSlider> add_slider(UI::Box& parent,
+	                                                 uint32_t width,
+	                                                 uint32_t height,
+	                                                 uint32_t min,
+	                                                 uint32_t max,
+	                                                 uint32_t initial,
+	                                                 char const* picname,
+	                                                 char const* hint);
+	// TODO(GunChleoc): This should also return a unique_ptr
+	UI::Textarea& add_text(UI::Box& parent,
+	                       std::string str,
+	                       UI::Align alignment = UI::Align::kTop,
+	                       int fontsize = UI_FONT_SIZE_SMALL);
+	std::unique_ptr<UI::Button> add_button(UI::Box& parent,
+	                                       const std::string& text,
+	                                       void (AttackBox::*fn)(),
+	                                       const std::string& tooltip_text);
 
-		void update_attack();
-		void send_less_soldiers();
-		void send_more_soldiers();
+	void think() override;
+	void update_attack();
+	void send_less_soldiers();
+	void send_more_soldiers();
 
-	private:
-		Widelands::Player     * m_pl;
-		Widelands::Map        * m_map;
-		Widelands::FCoords    * m_node;
+private:
+	Widelands::Player* player_;
+	Widelands::Map* map_;
+	Widelands::FCoords* node_coordinates_;
 
-		UI::Slider            * m_slider_retreat;
-		UI::Slider            * m_slider_soldiers;
-		UI::Textarea          * m_text_soldiers;
-		UI::Textarea          * m_text_retreat;
+	std::unique_ptr<UI::Slider> soldiers_slider_;
+	std::unique_ptr<UI::Textarea> soldiers_text_;
 
-		UI::Button * m_less_soldiers;
-		UI::Button * m_add_soldiers;
+	std::unique_ptr<UI::Button> less_soldiers_;
+	std::unique_ptr<UI::Button> more_soldiers_;
+
+	/// The last time the information in this Panel got updated
+	uint32_t lastupdate_;
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_ATTACK_BOX_H

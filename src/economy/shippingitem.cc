@@ -17,49 +17,54 @@
  *
  */
 
-#include "shippingitem.h"
+#include "economy/shippingitem.h"
 
+#include "economy/portdock.h"
+#include "economy/ware_instance.h"
+#include "io/fileread.h"
+#include "io/filewrite.h"
 #include "logic/game_data_error.h"
-#include "logic/worker.h"
-#include "map_io/widelands_map_map_object_loader.h"
-#include "map_io/widelands_map_map_object_saver.h"
-#include "portdock.h"
-#include "ware_instance.h"
+#include "logic/map_objects/tribes/worker.h"
+#include "map_io/map_object_loader.h"
+#include "map_io/map_object_saver.h"
 
 namespace Widelands {
 
-ShippingItem::ShippingItem(WareInstance & ware) :
-	m_object(&ware)
-{
+ShippingItem::ShippingItem(WareInstance& ware) : object_(&ware) {
 }
 
-ShippingItem::ShippingItem(Worker & worker) :
-	m_object(&worker)
-{
+ShippingItem::ShippingItem(Worker& worker) : object_(&worker) {
 }
 
-void ShippingItem::get(Editor_Game_Base & game, WareInstance * & ware, Worker * & worker)
-{
-	Map_Object * obj = m_object.get(game);
-	if (obj) {
-		if (obj->get_type() == Map_Object::WARE) {
-			ware = dynamic_cast<WareInstance *>(obj);
-			worker = 0;
-		} else {
-			worker = dynamic_cast<Worker *>(obj);
-			ware = 0;
+void ShippingItem::get(EditorGameBase& game, WareInstance** ware, Worker** worker) const {
+	if (ware) {
+		*ware = nullptr;
+	}
+	if (worker) {
+		*worker = nullptr;
+	}
+
+	MapObject* obj = object_.get(game);
+	if (!obj) {
+		return;
+	}
+
+	if (obj->descr().type() == MapObjectType::WARE) {
+		if (ware) {
+			*ware = dynamic_cast<WareInstance*>(obj);
 		}
-	} else {
-		ware = 0;
-		worker = 0;
+		return;
+	}
+
+	if (worker) {
+		*worker = dynamic_cast<Worker*>(obj);
 	}
 }
 
-void ShippingItem::set_economy(Game & game, Economy * e)
-{
-	WareInstance * ware;
-	Worker * worker;
-	get(game, ware, worker);
+void ShippingItem::set_economy(Game& game, Economy* e) {
+	WareInstance* ware;
+	Worker* worker;
+	get(game, &ware, &worker);
 
 	if (ware)
 		ware->set_economy(e);
@@ -67,69 +72,67 @@ void ShippingItem::set_economy(Game & game, Economy * e)
 		worker->set_economy(e);
 }
 
-void ShippingItem::set_location(Game & game, Map_Object * obj)
-{
-	WareInstance * ware;
-	Worker * worker;
-	get(game, ware, worker);
+void ShippingItem::set_location(Game& game, MapObject* obj) {
+	WareInstance* ware;
+	Worker* worker;
+	get(game, &ware, &worker);
 
 	if (ware) {
-		if (upcast(Building, building, obj))
+		if (upcast(Building, building, obj)) {
 			ware->enter_building(game, *building);
-		else
+		} else {
 			ware->set_location(game, obj);
+		}
 	}
 	if (worker) {
-		worker->set_location(dynamic_cast<PlayerImmovable *>(obj));
+		worker->set_location(dynamic_cast<PlayerImmovable*>(obj));
 		if (upcast(Building, building, obj)) {
 			worker->set_position(game, building->get_position());
 		}
 	}
 }
 
-void ShippingItem::end_shipping(Game & game)
-{
-	WareInstance * ware;
-	Worker * worker;
-	get(game, ware, worker);
+void ShippingItem::end_shipping(Game& game) {
+	WareInstance* ware;
+	Worker* worker;
+	get(game, &ware, &worker);
 
-	if (ware)
+	if (ware) {
+		ware->update(game);
 		ware->schedule_act(game, 10);
+	}
 	if (worker)
 		worker->end_shipping(game);
 }
 
-PortDock * ShippingItem::get_destination(Game & game)
-{
-	return m_destination_dock.get(game);
+PortDock* ShippingItem::get_destination(Game& game) {
+	return destination_dock_.get(game);
 }
 
-void ShippingItem::fetch_destination(Game & game, PortDock & pd)
-{
-	WareInstance * ware;
-	Worker * worker;
-	get(game, ware, worker);
+void ShippingItem::update_destination(Game& game, PortDock& pd) {
+	WareInstance* ware;
+	Worker* worker;
+	get(game, &ware, &worker);
 
-	PlayerImmovable * next = 0;
+	PlayerImmovable* next = nullptr;
 
 	if (ware)
 		next = ware->get_next_move_step(game);
 	if (worker) {
-		Transfer * transfer = worker->get_transfer();
+		Transfer* transfer = worker->get_transfer();
 		if (transfer) {
 			bool success;
 			next = transfer->get_next_step(&pd, success);
 		}
 	}
 
-	m_destination_dock = dynamic_cast<PortDock *>(next);
+	destination_dock_ = dynamic_cast<PortDock*>(next);
 }
 
-void ShippingItem::schedule_update(Game & game, int32_t delay)
-{
-	WareInstance * ware;
-	Worker * worker;
-	get(game, ware, worker);
+void ShippingItem::schedule_update(Game& game, int32_t delay) {
+	WareInstance* ware;
+	Worker* worker;
+	get(game, &ware, &worker);
 
 	if (ware) {
 		ware->schedule_act(game, delay);
@@ -142,38 +145,38 @@ void ShippingItem::schedule_update(Game & game, int32_t delay)
 /**
  * Remove the underlying item directly. This is used when ships are removed.
  */
-void ShippingItem::remove(Editor_Game_Base & egbase)
-{
-	if (Map_Object * obj = m_object.get(egbase)) {
+void ShippingItem::remove(EditorGameBase& egbase) {
+	if (MapObject* obj = object_.get(egbase)) {
 		obj->remove(egbase);
-		m_object = 0;
+		object_ = nullptr;
 	}
 }
 
+constexpr uint16_t kCurrentPacketVersion = 1;
 
-#define SHIPPINGITEM_SAVEGAME_VERSION 1
-
-void ShippingItem::Loader::load(FileRead & fr)
-{
-	uint8_t version = fr.Unsigned8();
-	if (1 <= version && version <= SHIPPINGITEM_SAVEGAME_VERSION) {
-		m_serial = fr.Unsigned32();
-	} else
-		throw game_data_error("unknown ShippingItem version %u", version);
+void ShippingItem::Loader::load(FileRead& fr) {
+	try {
+		uint8_t packet_version = fr.unsigned_8();
+		if (packet_version == kCurrentPacketVersion) {
+			serial_ = fr.unsigned_32();
+		} else {
+			throw UnhandledVersionError("ShippingItem", packet_version, kCurrentPacketVersion);
+		}
+	} catch (const WException& e) {
+		throw GameDataError("shipping item: %s", e.what());
+	}
 }
 
-ShippingItem ShippingItem::Loader::get(Map_Map_Object_Loader & mol)
-{
+ShippingItem ShippingItem::Loader::get(MapObjectLoader& mol) {
 	ShippingItem it;
-	if (m_serial != 0)
-		it.m_object = &mol.get<Map_Object>(m_serial);
+	if (serial_ != 0)
+		it.object_ = &mol.get<MapObject>(serial_);
 	return it;
 }
 
-void ShippingItem::save(Editor_Game_Base & egbase, Map_Map_Object_Saver & mos, FileWrite & fw)
-{
-	fw.Unsigned8(SHIPPINGITEM_SAVEGAME_VERSION);
-	fw.Unsigned32(mos.get_object_file_index_or_zero(m_object.get(egbase)));
+void ShippingItem::save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw) {
+	fw.unsigned_8(kCurrentPacketVersion);
+	fw.unsigned_32(mos.get_object_file_index_or_zero(object_.get(egbase)));
 }
 
-} // namespace Widelands
+}  // namespace Widelands

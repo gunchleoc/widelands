@@ -17,16 +17,16 @@
  *
  */
 
-#ifndef PATHFIELD_H
-#define PATHFIELD_H
+#ifndef WL_LOGIC_PATHFIELD_H
+#define WL_LOGIC_PATHFIELD_H
 
-#include <boost/scoped_array.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include <stdint.h>
+#include <memory>
 #include <vector>
 
-#include "cookie_priority_queue.h"
+#include <boost/shared_ptr.hpp>
+#include <stdint.h>
+
+#include "logic/cookie_priority_queue.h"
 
 namespace Widelands {
 
@@ -41,25 +41,29 @@ namespace Widelands {
  */
 struct Pathfield {
 	struct LessCost {
-		bool operator()(const Pathfield & a, const Pathfield & b) const {
+		bool operator()(const Pathfield& a, const Pathfield& b) const {
 			return a.cost() < b.cost();
 		}
 	};
 
-	typedef cookie_priority_queue<Pathfield, LessCost> Queue;
+	using Queue = CookiePriorityQueue<Pathfield, LessCost>;
 
-	Queue::cookie heap_cookie;
-	int32_t real_cost;  //  true cost up to this field
-	int32_t estim_cost; //  estimated cost till goal
+	Queue::Cookie heap_cookie;
+	int32_t real_cost;   //  true cost up to this field
+	int32_t estim_cost;  //  estimated cost till goal
 	uint16_t cycle;
-	uint8_t  backlink;   //  how we got here (WALK_*)
+	uint8_t backlink;  //  how we got here (WALK_*)
 
-	int32_t cost() const throw () {return real_cost + estim_cost;}
-	Queue::cookie & cookie() {return heap_cookie;}
+	int32_t cost() const {
+		return real_cost + estim_cost;
+	}
+	Queue::Cookie& cookie() {
+		return heap_cookie;
+	}
 };
 
 struct Pathfields {
-	boost::scoped_array<Pathfield> fields;
+	std::unique_ptr<Pathfield[]> fields;
 	uint16_t cycle;
 
 	Pathfields(uint32_t nrfields);
@@ -74,18 +78,17 @@ struct Pathfields {
 struct PathfieldManager {
 	PathfieldManager();
 
-	void setSize(uint32_t nrfields);
+	void set_size(uint32_t nrfields);
 	boost::shared_ptr<Pathfields> allocate();
 
 private:
-	void clear(const boost::shared_ptr<Pathfields> & pf);
+	void clear(const boost::shared_ptr<Pathfields>& pf);
 
-	typedef std::vector<boost::shared_ptr<Pathfields> > List;
+	using List = std::vector<boost::shared_ptr<Pathfields>>;
 
-	uint32_t m_nrfields;
-	List m_list;
+	uint32_t nrfields_;
+	List list_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_PATHFIELD_H

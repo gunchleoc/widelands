@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2012 by the Widelands Development Team
+ * Copyright (C) 2006-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,43 +17,52 @@
  *
  */
 
-#ifndef WLAPPLICATION_H
-#define WLAPPLICATION_H
+#ifndef WL_WLAPPLICATION_H
+#define WL_WLAPPLICATION_H
 
-#include "point.h"
+// Workaround for bug http://sourceforge.net/p/mingw/bugs/2152/
+#ifdef __MINGW32__
+#ifndef _WIN64
+#define _USE_32BIT_TIME_T 1
+#endif
+#endif
 
-#include <SDL_events.h>
-#include <SDL_keyboard.h>
-#include <SDL_types.h>
-
+#include <cassert>
+#include <cstring>
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <cstring>
 
-namespace Widelands {struct Game;}
-struct Journal;
+#include <SDL_events.h>
+#include <SDL_keyboard.h>
 
-///Thrown if a commandline parameter is faulty
-struct Parameter_error : public std::runtime_error {
-	explicit Parameter_error() throw () : std::runtime_error("") {}
-	explicit Parameter_error(std::string text) throw ()
-		: std::runtime_error(text)
-	{}
-	virtual ~Parameter_error() throw () {}
+#include "base/vector.h"
+
+namespace Widelands {
+class Game;
+}
+
+/// Thrown if a commandline parameter is faulty
+struct ParameterError : public std::runtime_error {
+	explicit ParameterError() : std::runtime_error("") {
+	}
+	explicit ParameterError(std::string text) : std::runtime_error(text) {
+	}
 };
 
-// input
+// Callbacks input events to the UI. All functions return true when the event
+// was handled, false otherwise.
 struct InputCallback {
-	void (*mouse_press)
-	(const Uint8 button, // Button number as #defined in SDL_mouse.h.
-	 int32_t x, int32_t y);      // The coordinates of the mouse at press time.
-	void (*mouse_release)
-	(const Uint8 button, // Button number as #defined in SDL_mouse.h.
-	 int32_t x, int32_t y);      // The coordinates of the mouse at release time.
-	void (*mouse_move)
-	(const Uint8 state, int32_t x, int32_t y, int32_t xdiff, int32_t ydiff);
-	void (*key)        (bool down, SDL_keysym code);
+	bool (*mouse_press)(const uint8_t button,  // Button number as #defined in SDL_mouse.h.
+	                    int32_t x,
+	                    int32_t y);              // The coordinates of the mouse at press time.
+	bool (*mouse_release)(const uint8_t button,  // Button number as #defined in SDL_mouse.h.
+	                      int32_t x,
+	                      int32_t y);  // The coordinates of the mouse at release time.
+	bool (*mouse_move)(const uint8_t state, int32_t x, int32_t y, int32_t xdiff, int32_t ydiff);
+	bool (*key)(bool down, SDL_Keysym code);
+	bool (*textinput)(const std::string& text);
+	bool (*mouse_wheel)(uint32_t which, int32_t x, int32_t y);
 };
 
 /// You know main functions, of course. This is the main struct.
@@ -65,10 +74,10 @@ struct InputCallback {
 /// i18n, input handling, timing, low level networking and graphics setup (the
 /// actual graphics work is done by Graphic).
 ///
-/// \todo Is the above part about i18n still true? \#bedouin
-///
-/// Equally important, the main event loop is chugging along in this class.
-/// [not yet but some time in the future \#bedouin8sep2007]
+// TODO(bedouin): Is the above part about i18n still true?
+//
+// Equally important, the main event loop is chugging along in this class.
+// [not yet but some time in the future \#bedouin8sep2007]
 ///
 /// \par WLApplication is a singleton
 ///
@@ -103,19 +112,6 @@ struct InputCallback {
 /// Forking does not work on windows, but nobody cares enough to investigate.
 /// It is only a debugging convenience anyway.
 ///
-/// \par Session recording and playback
-///
-/// For debugging, e.g. profiling a real game without incurring the speed
-/// disadvantage while playing, the WLApplication can record (and of course
-/// play back) a complete game session. To do so with guaranteed repeatability,
-/// every single event - including low level stuff like mouse movement - gets
-/// recorded or played back.
-///
-/// During playback, external events are ignored to avoid interference with the
-/// playback (exception: F10 will cancel the playback immediately).
-///
-/// Recording/Playback does not work with --double. It could be made possible
-/// but that feature would not be very useful.
 ///
 /// \par The mouse cursor
 ///
@@ -127,71 +123,67 @@ struct InputCallback {
 /// Ordinarily, relative coordinates break down when the cursor leaves the
 /// window. This means we have to grab the mouse, then relative coords are
 /// always available.
-/// \todo Actually do grab the mouse when it is locked
-///
-/// \todo What happens if a playback is canceled? Does the game continue or
-/// quit?
-/// \todo Can recording be canceled?
-/// \todo Should we allow to trigger recording ingame, starting with a snapshot
-/// savegame? Preferably, the log would be stored inside the savegame. A new
-/// user interface for starting / stopping playback may bue useful with this.
-/// \todo How about a "pause" button during playback to examine the current
-/// game state?
-/// \todo Graphics are currently not handled by WLApplication, and it is
-/// non essential for playback anyway. Additionally, we will want several
-/// rendering backends (software and OpenGL). Maybe the graphics backend loader
-/// code should be in System, while the actual graphics work is done elsewhere.
-/// \todo Refactor the mainloop
-/// \todo Sensible use of exceptions (goes for whole game)
-/// \todo Default filenames for recording and playback
+// TODO(unknown): Actually do grab the mouse when it is locked
+// TODO(unknown): Graphics are currently not handled by WLApplication, and it is
+// non essential for playback anyway. Additionally, we will want several
+// rendering backends (software and OpenGL). Maybe the graphics backend loader
+// code should be in System, while the actual graphics work is done elsewhere.
+// TODO(unknown): Refactor the mainloop
+// TODO(unknown): Sensible use of exceptions (goes for whole game)
+// TODO(sirver): this class makes no sense for c++ - most of these should be
+// stand alone functions.
 struct WLApplication {
-	static WLApplication * get(int const argc = 0, char const * * argv = 0);
+	static WLApplication* get(int const argc = 0, char const** argv = nullptr);
 	~WLApplication();
 
-	enum GameType {NONE, EDITOR, REPLAY, SCENARIO, LOADGAME, NETWORK, INTERNET};
+	enum GameType { NONE, EDITOR, REPLAY, SCENARIO, LOADGAME, NETWORK };
 
 	void run();
 
 	/// \warning true if an external entity wants us to quit
-	bool should_die() const {return m_should_die;}
-
-	int32_t get_time();
+	bool should_die() const {
+		return should_die_;
+	}
 
 	/// Get the state of the current KeyBoard Button
 	/// \warning This function doesn't check for dumbness
-	bool get_key_state(SDLKey const key) const {return SDL_GetKeyState(0)[key];}
+	bool get_key_state(SDL_Scancode const key) const {
+		return SDL_GetKeyboardState(nullptr)[key];
+	}
 
-	//@{
-	void warp_mouse(Point);
+	// @{
+	void warp_mouse(Vector2i);
 	void set_input_grab(bool grab);
 
 	/// The mouse's current coordinates
-	Point get_mouse_position() const throw () {return m_mouse_position;}
+	Vector2i get_mouse_position() const {
+		return mouse_position_;
+	}
 	//
 	/// Find out whether the mouse is currently pressed
-	bool is_mouse_pressed() const {return SDL_GetMouseState(NULL, NULL); }
+	bool is_mouse_pressed() const {
+		return SDL_GetMouseState(nullptr, nullptr);
+	}
 
 	/// Swap left and right mouse key?
-	void set_mouse_swap(const bool swap) {m_mouse_swapped = swap;}
+	void set_mouse_swap(const bool swap) {
+		mouse_swapped_ = swap;
+	}
 
 	/// Lock the mouse cursor into place (e.g., for scrolling the map)
-	void set_mouse_lock(const bool locked) {m_mouse_locked = locked;}
-	//@}
+	void set_mouse_lock(const bool locked) {
+		mouse_locked_ = locked;
+	}
+	// @}
 
-	void init_graphics
-		(const int32_t w, const int32_t h, const int32_t bpp,
-		 const bool fullscreen, const bool opengl);
-
-	/**
-	 * Refresh the graphics from the latest options.
-	 *
-	 * \note See caveats for \ref init_graphics()
-	 */
+	// Refresh the graphics settings with the latest options.
 	void refresh_graphics();
 
-	void handle_input(InputCallback const *);
+	// Pump SDL events and dispatch them.
+	void handle_input(InputCallback const*);
 
 	void mainmenu();
+	void mainmenu_tutorial();
 	void mainmenu_singleplayer();
 	void mainmenu_multiplayer();
 	void mainmenu_editor();
@@ -200,115 +192,81 @@ struct WLApplication {
 	bool load_game();
 	bool campaign_game();
 	void replay();
+	static void emergency_save(Widelands::Game&);
 
-#ifndef NDEBUG
-#ifndef WIN32
-	//not all of these need to be public, but I consider signal handling
-	//a public interface
-	//@{
-	void init_double_game();
-	static void signal_handler (int32_t sig);
-	static void quit_handler();
-	static void yield_double_game();
-	//@}
+private:
+	WLApplication(int argc, char const* const* argv);
 
-	// Used for --double
-	//@{
-	static int32_t pid_me;
-	static int32_t pid_peer;
-	///\todo Explain me
-	static volatile int32_t may_run;
-	//@}
-#endif
-#endif
-
-	static void show_usage();
-
-	static void emergency_save(Widelands::Game &);
-
-protected:
-	WLApplication(int argc, char const * const * argv);
-
-	bool poll_event(SDL_Event &, bool throttle);
+	bool poll_event(SDL_Event&);
 
 	bool init_settings();
 	void init_language();
-	std::string find_relative_locale_path(std::string localedir);
-	std::string get_executable_path();
 	void shutdown_settings();
 
-	bool init_hardware();
 	void shutdown_hardware();
 
-	void parse_commandline(int argc, char const * const * argv);
-	void handle_commandline_parameters() throw (Parameter_error);
+	void parse_commandline(int argc, char const* const* argv);
+	void handle_commandline_parameters();
 
-	void setup_searchpaths(std::string argv0);
 	void setup_homedir();
 
 	void cleanup_replays();
 
 	bool redirect_output(std::string path = "");
 
+	// Handle the given pressed key. Returns true when key was
+	// handled.
+	bool handle_key(bool down, const SDL_Keycode& keycode, int modifiers);
+
 	/**
-	 * The commandline, conveniently repackaged
-	 * This is usually not empty, it contains at least the tuple
-	 * {"EXENAME", argv0}
+	 * The commandline, conveniently repackaged.
 	 */
-	std::map<std::string, std::string> m_commandline;
+	std::map<std::string, std::string> commandline_;
 
-	std::string m_filename;
+	std::string filename_;
 
-	//Log all output to this file if set, otherwise use cout
-	std::string m_logfile;
+	/// Script to be run after the game was started with --editor,
+	/// --scenario or --loadgame.
+	std::string script_to_run_;
 
-	GameType m_game_type;
-	///the event recorder object
-	Journal * journal;
+	GameType game_type_;
 
-	///True if left and right mouse button should be swapped
-	bool  m_mouse_swapped;
+	/// True if left and right mouse button should be swapped
+	bool mouse_swapped_;
 
-	///The current position of the mouse pointer
-	Point m_mouse_position;
+	/// When apple is involved, the middle mouse button is sometimes send, even
+	/// if it wasn't pressed. We try to revert this and this helps.
+	bool faking_middle_mouse_button_;
 
-	///If true, the mouse cursor will \e not move with a mousemotion event:
-	///instead, the map will be scrolled
-	bool  m_mouse_locked;
+	/// The current position of the mouse pointer
+	Vector2i mouse_position_;
 
-	///If the mouse needs to be moved in warp_mouse(), this Point is
-	///used to cancel the resulting SDL_MouseMotionEvent.
-	Point m_mouse_compensate_warp;
+	/// If true, the mouse cursor will \e not move with a mousemotion event:
+	/// instead, the map will be scrolled
+	bool mouse_locked_;
 
-	///true if an external entity wants us to quit
-	bool   m_should_die;
+	/// If the mouse needs to be moved in warp_mouse(), this Vector2i is
+	/// used to cancel the resulting SDL_MouseMotionEvent.
+	Vector2i mouse_compensate_warp_;
 
-	///The Widelands window's width in pixels
-	int32_t    m_gfx_w;
+	/// true if an external entity wants us to quit
+	bool should_die_;
 
-	///The Widelands window's height in pixels
-	int32_t    m_gfx_h;
-
-	///The Widelands window's bits per pixel
-	int32_t    m_gfx_bpp;
-
-	///If true Widelands is (should be, we never know ;-) running
-	///in a fullscreen window
-	bool   m_gfx_fullscreen;
-
-	bool   m_gfx_opengl;
-
-	//do we want to search the default places for widelands installs
-	bool   m_default_datadirs;
-	std::string m_homedir;
+	std::string homedir_;
 
 	/// flag indicating if stdout and stderr have been redirected
-	bool m_redirected_stdio;
-private:
-	///Holds this process' one and only instance of WLApplication, if it was
-	///created already. NULL otherwise.
-	///\note This is private on purpose. Read the class documentation.
-	static WLApplication * the_singleton;
+	bool redirected_stdio_;
+
+	/// Absolute path to the data directory.
+	std::string datadir_;
+	std::string datadir_for_testing_;
+
+	/// Holds this process' one and only instance of WLApplication, if it was
+	/// created already. nullptr otherwise.
+	/// \note This is private on purpose. Read the class documentation.
+	static WLApplication* the_singleton;
+
+	void handle_mousebutton(SDL_Event&, InputCallback const*);
 };
 
-#endif
+#endif  // end of include guard: WL_WLAPPLICATION_H

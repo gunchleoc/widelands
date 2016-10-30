@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2010, 2012 by the Widelands Development Team
+ * Copyright 2010 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,235 +14,293 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
  */
 
-#include <boost/foreach.hpp>
+#include "graphic/texture.h"
 
-#include <SDL_image.h>
+#include <cassert>
 
-#include "io/filesystem/layered_filesystem.h"
-#include "io/fileread.h"
+#include <SDL.h>
 
-#include "log.h"
-#include "constants.h"
-#include "wexception.h"
-#include "container_iterate.h"
+#include "base/log.h"
+#include "base/macros.h"
+#include "base/wexception.h"
+#include "graphic/gl/blit_program.h"
+#include "graphic/gl/coordinate_conversion.h"
+#include "graphic/gl/draw_line_program.h"
+#include "graphic/gl/fill_rect_program.h"
+#include "graphic/gl/utils.h"
+#include "graphic/graphic.h"
+#include "graphic/sdl_utils.h"
+#include "graphic/surface.h"
 
-#include "texture.h"
+namespace {
 
-extern bool g_opengl;
-
-using namespace std;
+namespace {
 
 /**
- * Create a texture, taking the pixel data from an Image.
- * Currently it converts a 16 bit image to a 8 bit texture. This should
- * be changed to load a 8 bit file directly, however.
+ * \return the standard 32-bit RGBA format that we use for our textures.
  */
-Texture::Texture(const string& fnametmpl, uint32_t frametime, const SDL_PixelFormat& format)
-	: m_colormap (0),
-		m_pixels   (0),
-		m_curframe (0),
-		m_frame_num(0),
-		m_nrframes (0),
-		m_frametime(frametime),
-		is_32bit   (format.BytesPerPixel == 4),
-		m_was_animated(false)
-{
-	// Load the images one by one
-	char fname[256];
+const SDL_PixelFormat& rgba_format() {
+	static SDL_PixelFormat format;
+	static bool init = false;
+	if (init)
+		return format;
 
-	for (;;) {
-		int32_t nr = m_nrframes;
+	init = true;
+	memset(&format, 0, sizeof(format));
+	format.BitsPerPixel = 32;
+	format.BytesPerPixel = 4;
+	format.Rmask = 0x000000ff;
+	format.Gmask = 0x0000ff00;
+	format.Bmask = 0x00ff0000;
+	format.Amask = 0xff000000;
+	format.Rshift = 0;
+	format.Gshift = 8;
+	format.Bshift = 16;
+	format.Ashift = 24;
+	return format;
+}
 
-		// create the file name by reverse-scanning for '?' and replacing
-		snprintf(fname, sizeof(fname), "%s", fnametmpl.c_str());
-		char * p = fname + strlen(fname);
-		while (p > fname) {
-			if (*--p != '?')
-				continue;
+}  // namespace
 
-			*p = '0' + (nr % 10);
-			nr = nr / 10;
-		}
-
-		if (nr) // cycled up to maximum possible frame number
-			break;
-
-		if (!g_fs->FileExists(fname))
-			break;
-
-		SDL_Surface * surf;
-
-		m_texture_image = strdup(fname);
-
-		FileRead fr;
-
-		//fastOpen tries to use mmap
-		fr.fastOpen(*g_fs, fname);
-
-		surf = IMG_Load_RW(SDL_RWFromMem(fr.Data(0), fr.GetSize()), 1);
-
-		if (!surf) {
-			log
-				("WARNING: Failed to load texture frame %s: %s\n",
-				 fname, IMG_GetError());
-			break;
-		}
-
-		if (surf->w != TEXTURE_WIDTH || surf->h != TEXTURE_HEIGHT) {
-			SDL_FreeSurface(surf);
-			log
-				("WARNING: %s: texture must be %ix%i pixels big\n",
-				 fname,
-				 TEXTURE_WIDTH,
-				 TEXTURE_HEIGHT);
-			break;
-		}
-
-#ifdef USE_OPENGL
-		if (g_opengl) {
-			// Note: we except the constructor to free the SDL surface
-			GLSurfaceTexture* surface = new GLSurfaceTexture(surf);
-			m_glFrames.push_back(surface);
-
-			// calculate shades on the first frame
-			if (!m_nrframes) {
-				surface->lock(Surface::Lock_Normal);
-				uint32_t mmap_color_base = surface->get_pixel(0, 0);
-				surface->unlock(Surface::Unlock_NoChange);
-
-				int32_t i, shade, r, g, b, a;
-				for (i = -128; i < 128; i++) {
-					shade = 128 + i;
-
-					a = (mmap_color_base & 0xff000000) >> 24;
-					b = (mmap_color_base & 0x00ff0000) >> 16;
-					g = (mmap_color_base & 0x0000ff00) >> 8;
-					r = (mmap_color_base & 0x000000ff);
-
-					b = (b * shade) >> 7;
-					g = (g * shade) >> 7;
-					r = (r * shade) >> 7;
-
-					if (b > 255) b = 255;
-					if (g > 255) g = 255;
-					if (r > 255) r = 255;
-
-					m_mmap_color[shade] = (a << 24) | (b << 16) | (g << 8) | r;
-				}
-			}
-
-			++m_nrframes;
-			continue;
-		}
-#endif
-
-		// Determine color map if it's the first frame
-		if (!m_nrframes) {
-			if (surf->format->BitsPerPixel == 8)
-				m_colormap = new Colormap(*surf->format->palette->colors, format);
-			else {
-				SDL_Color pal[256];
-
-				log("WARNING: %s: using 332 default palette\n", fname);
-
-				for (int32_t r = 0; r < 8; ++r)
-					for (int32_t g = 0; g < 8; ++g)
-						for (int32_t b = 0; b < 4; ++b) {
-							pal[(r << 5) | (g << 2) | b].r = r << 5;
-							pal[(r << 5) | (g << 2) | b].g = g << 5;
-							pal[(r << 5) | (g << 2) | b].b = b << 6;
-						}
-
-				m_colormap = new Colormap(*pal, format);
-			}
-		}
-
-		// Convert to our palette
-		SDL_Palette palette;
-		SDL_PixelFormat fmt;
-
-		palette.ncolors = 256;
-		palette.colors = m_colormap->get_palette();
-
-		memset(&fmt, 0, sizeof(fmt));
-		fmt.BitsPerPixel = 8;
-		fmt.BytesPerPixel = 1;
-		fmt.palette = &palette;
-
-		SDL_Surface * const cv = SDL_ConvertSurface(surf, &fmt, 0);
-
-		// Add the frame
-		m_pixels =
-			static_cast<uint8_t *>
-				(realloc
-				 	(m_pixels, TEXTURE_WIDTH * TEXTURE_HEIGHT * (m_nrframes + 1)));
-		m_curframe = &m_pixels[TEXTURE_WIDTH * TEXTURE_HEIGHT * m_nrframes];
-		++m_nrframes;
-
-		SDL_LockSurface(cv);
-
-		for (int32_t y = 0; y < TEXTURE_HEIGHT; ++y)
-			memcpy
-				(m_curframe + y * TEXTURE_WIDTH,
-				 static_cast<uint8_t *>(cv->pixels) + y * cv->pitch,
-				 TEXTURE_WIDTH);
-		SDL_UnlockSurface(cv);
-		SDL_FreeSurface(cv);
-		SDL_FreeSurface(surf);
+class GlFramebuffer {
+public:
+	static GlFramebuffer& instance() {
+		static GlFramebuffer gl_framebuffer;
+		return gl_framebuffer;
 	}
 
-	if (!m_nrframes)
-		throw wexception("%s: texture has no frames", fnametmpl.c_str());
+	~GlFramebuffer() {
+		glDeleteFramebuffers(1, &gl_framebuffer_id_);
+	}
+
+	GLuint id() const {
+		return gl_framebuffer_id_;
+	}
+
+private:
+	GlFramebuffer() {
+		// Generate the framebuffer for Offscreen rendering.
+		glGenFramebuffers(1, &gl_framebuffer_id_);
+	}
+
+	GLuint gl_framebuffer_id_;
+
+	DISALLOW_COPY_AND_ASSIGN(GlFramebuffer);
+};
+
+bool is_bgr_surface(const SDL_PixelFormat& fmt) {
+	return (fmt.Bmask == 0x000000ff && fmt.Gmask == 0x0000ff00 && fmt.Rmask == 0x00ff0000);
 }
 
+}  // namespace
 
-Texture::~Texture ()
-{
-	delete m_colormap;
-	free(m_pixels);
-	free(m_texture_image);
+Texture::Texture(int w, int h) : owns_texture_(false) {
+	init(w, h);
 
-	BOOST_FOREACH(GLSurfaceTexture* surf, m_glFrames)
-		delete surf;
-	m_glFrames.clear();
-}
-
-/**
- * Return the basic terrain colour to be used in the minimap.
-*/
-Uint32 Texture::get_minimap_color(char shade) {
-	if (not m_pixels)
-		return m_mmap_color[128 + shade];
-
-	uint8_t clr = m_pixels[0]; // just use the top-left pixel
-	uint32_t table = static_cast<uint8_t>(shade);
-	return
-		is_32bit ?
-		static_cast<const Uint32 *>(m_colormap->get_colormap())
-		[clr | (table << 8)]
-		:
-		static_cast<const Uint16 *>(m_colormap->get_colormap())
-		[clr | (table << 8)];
-}
-
-/**
- * Set the current frame according to the game time.
- */
-void Texture::animate(uint32_t time)
-{
-	m_frame_num = (time / m_frametime) % m_nrframes;
-
-#ifdef USE_OPENGL
-	if (g_opengl)
+	if (blit_data_.texture_id == 0) {
 		return;
-#endif
+	}
 
-	uint8_t * const lastframe = m_curframe;
+	glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(GL_RGBA), width(), height(), 0, GL_RGBA,
+	             GL_UNSIGNED_BYTE, nullptr);
+}
 
-	m_curframe = &m_pixels[TEXTURE_WIDTH * TEXTURE_HEIGHT * m_frame_num];
-	if (lastframe != m_curframe)
-		m_was_animated = true;
+Texture::Texture(SDL_Surface* surface, bool intensity) : owns_texture_(false) {
+	init(surface->w, surface->h);
+
+	// Convert image data. BGR Surface support is an extension for
+	// OpenGL ES 2, which we rather not rely on. So we convert our
+	// surfaces in software.
+	// TODO(sirver): SDL_TTF returns all data in BGR format. If we
+	// use freetype directly we might be able to avoid that.
+	uint8_t bpp = surface->format->BytesPerPixel;
+
+	if (surface->format->palette || width() != surface->w || height() != surface->h ||
+	    (bpp != 3 && bpp != 4) || is_bgr_surface(*surface->format)) {
+		SDL_Surface* converted = empty_sdl_surface(width(), height());
+		assert(converted);
+		SDL_SetSurfaceAlphaMod(converted, SDL_ALPHA_OPAQUE);
+		SDL_SetSurfaceBlendMode(converted, SDL_BLENDMODE_NONE);
+		SDL_SetSurfaceAlphaMod(surface, SDL_ALPHA_OPAQUE);
+		SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
+		SDL_BlitSurface(surface, nullptr, converted, nullptr);
+		SDL_FreeSurface(surface);
+		surface = converted;
+		bpp = surface->format->BytesPerPixel;
+	}
+
+	const GLenum pixels_format = bpp == 4 ? GL_RGBA : GL_RGB;
+
+	SDL_LockSurface(surface);
+
+	Gl::swap_rows(width(), height(), surface->pitch, bpp, static_cast<uint8_t*>(surface->pixels));
+
+	glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(intensity ? GL_INTENSITY : GL_RGBA), width(),
+	             height(), 0, pixels_format, GL_UNSIGNED_BYTE, surface->pixels);
+
+	SDL_UnlockSurface(surface);
+	SDL_FreeSurface(surface);
+}
+
+Texture::Texture(const GLuint texture, const Recti& subrect, int parent_w, int parent_h)
+   : owns_texture_(false) {
+	if (parent_w == 0 || parent_h == 0) {
+		throw wexception("Created a sub Texture with zero height and width parent.");
+	}
+
+	blit_data_ = BlitData{
+	   texture, parent_w, parent_h, subrect.cast<float>(),
+	};
+}
+
+Texture::~Texture() {
+	if (owns_texture_) {
+		Gl::State::instance().delete_texture(blit_data_.texture_id);
+	}
+}
+
+int Texture::width() const {
+	return blit_data_.rect.w;
+}
+
+int Texture::height() const {
+	return blit_data_.rect.h;
+}
+
+void Texture::init(uint16_t w, uint16_t h) {
+	blit_data_ = {
+	   0,  // initialized below
+	   w, h, Rectf(0, 0, w, h),
+	};
+	if (w * h == 0) {
+		return;
+	}
+
+	owns_texture_ = true;
+	glGenTextures(1, &blit_data_.texture_id);
+	Gl::State::instance().bind(GL_TEXTURE0, blit_data_.texture_id);
+
+	// set texture filter to use linear filtering. This looks nicer for resized
+	// texture. Most textures and images are not resized so the filtering
+	// makes no difference.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(GL_LINEAR));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(GL_LINEAR));
+}
+
+void Texture::lock() {
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+
+	if (pixels_) {
+		throw wexception("Called lock() on locked surface.");
+	}
+	if (!owns_texture_) {
+		throw wexception("A surface that does not own its pixels can not be locked..");
+	}
+
+	pixels_.reset(new uint8_t[width() * height() * 4]);
+
+	Gl::State::instance().bind(GL_TEXTURE0, blit_data_.texture_id);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels_.get());
+}
+
+void Texture::unlock(UnlockMode mode) {
+	if (width() <= 0 || height() <= 0) {
+		return;
+	}
+	assert(pixels_);
+
+	if (mode == Unlock_Update) {
+		Gl::State::instance().bind(GL_TEXTURE0, blit_data_.texture_id);
+		glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(GL_RGBA), width(), height(), 0, GL_RGBA,
+		             GL_UNSIGNED_BYTE, pixels_.get());
+	}
+
+	pixels_.reset(nullptr);
+}
+
+RGBAColor Texture::get_pixel(uint16_t x, uint16_t y) {
+	assert(pixels_);
+	assert(x < width());
+	assert(y < height());
+
+	RGBAColor color;
+
+	SDL_GetRGBA(*reinterpret_cast<uint32_t*>(&pixels_[(height() - y - 1) * 4 * width() + 4 * x]),
+	            &rgba_format(), &color.r, &color.g, &color.b, &color.a);
+	return color;
+}
+
+void Texture::set_pixel(uint16_t x, uint16_t y, const RGBAColor& color) {
+	assert(pixels_);
+	assert(x < width());
+	assert(y < height());
+
+	uint8_t* data = &pixels_[(height() - y - 1) * 4 * width() + 4 * x];
+	uint32_t packed_color = SDL_MapRGBA(&rgba_format(), color.r, color.g, color.b, color.a);
+	*(reinterpret_cast<uint32_t*>(data)) = packed_color;
+}
+
+void Texture::setup_gl() {
+	assert(blit_data_.texture_id != 0);
+	Gl::State::instance().bind_framebuffer(GlFramebuffer::instance().id(), blit_data_.texture_id);
+	glViewport(0, 0, width(), height());
+}
+
+void Texture::do_blit(const Rectf& dst_rect,
+                      const BlitData& texture,
+                      float opacity,
+                      BlendMode blend_mode) {
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+	setup_gl();
+	BlitProgram::instance().draw(dst_rect, 0.f, texture, BlitData{0, 0, 0, Rectf()},
+	                             RGBAColor(0, 0, 0, 255 * opacity), blend_mode);
+}
+
+void Texture::do_blit_blended(const Rectf& dst_rect,
+                              const BlitData& texture,
+                              const BlitData& mask,
+                              const RGBColor& blend) {
+
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+	setup_gl();
+	BlitProgram::instance().draw(dst_rect, 0.f, texture, mask, blend, BlendMode::UseAlpha);
+}
+
+void Texture::do_blit_monochrome(const Rectf& dst_rect,
+                                 const BlitData& texture,
+                                 const RGBAColor& blend) {
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+	setup_gl();
+	BlitProgram::instance().draw_monochrome(dst_rect, 0.f, texture, blend);
+}
+
+void Texture::do_draw_line_strip(std::vector<DrawLineProgram::PerVertexData> vertices) {
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+	setup_gl();
+	DrawLineProgram::instance().draw(
+	   {DrawLineProgram::Arguments{vertices, 0.f, BlendMode::UseAlpha}});
+}
+
+void Texture::do_fill_rect(const Rectf& dst_rect, const RGBAColor& color, BlendMode blend_mode) {
+	if (blit_data_.texture_id == 0) {
+		return;
+	}
+	setup_gl();
+	FillRectProgram::instance().draw(dst_rect, 0.f, color, blend_mode);
+}
+
+const BlitData& Texture::blit_data() const {
+	return blit_data_;
 }

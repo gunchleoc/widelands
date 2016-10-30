@@ -17,31 +17,29 @@
  *
  */
 
-#ifndef ECONOMY_DATA_PACKET_H
-#define ECONOMY_DATA_PACKET_H
+#ifndef WL_ECONOMY_ECONOMY_DATA_PACKET_H
+#define WL_ECONOMY_ECONOMY_DATA_PACKET_H
 
-#include "logic/widelands_fileread.h"
-#include "logic/widelands_filewrite.h"
+class FileRead;
+class FileWrite;
 
 namespace Widelands {
-struct Economy;
-struct Game;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Saver;
+class Economy;
+class Game;
+class MapObjectLoader;
+struct MapObjectSaver;
 
 class EconomyDataPacket {
-	public:
-		EconomyDataPacket(Economy * e) : m_eco(e) {}
+public:
+	EconomyDataPacket(Economy* e) : eco_(e) {
+	}
 
-		void Read(FileRead &);
-		void Write(FileWrite &);
+	void read(FileRead&);
+	void write(FileWrite&);
 
-	private:
-		Economy * m_eco;
+private:
+	Economy* eco_;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_ECONOMY_DATA_PACKET_H

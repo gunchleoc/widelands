@@ -17,29 +17,29 @@
  *
  */
 
-#include "router.h"
-
-#include "routeastar.h"
-#include "routing_node.h"
-#include "iroute.h"
-#include "itransport_cost_calculator.h"
+#include "economy/router.h"
 
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+
+#include "economy/iroute.h"
+#include "economy/itransport_cost_calculator.h"
+#include "economy/routeastar.h"
+#include "economy/routing_node.h"
 
 namespace Widelands {
 
 /*************************************************************************/
 /*                         Router Implementation                         */
 /*************************************************************************/
-Router::Router(const ResetCycleFn & reset) : m_reset(reset), mpf_cycle(0) {}
+Router::Router(const ResetCycleFn& reset) : reset_(reset), mpf_cycle(0) {
+}
 
-uint32_t Router::assign_cycle()
-{
+uint32_t Router::assign_cycle() {
 	++mpf_cycle;
-	if (!mpf_cycle) { // reset all cycle fields
-		m_reset();
+	if (!mpf_cycle) {  // reset all cycle fields
+		reset_();
 		++mpf_cycle;
 	}
 
@@ -67,18 +67,17 @@ uint32_t Router::assign_cycle()
  *
  * \return true if a route has been found, false otherwise
  */
-bool Router::find_route
-	(RoutingNode & start, RoutingNode & end,
-	 IRoute * const route,
-	 WareWorker const type,
-	 int32_t const cost_cutoff,
-	 ITransportCostCalculator & cost_calculator)
-{
+bool Router::find_route(RoutingNode& start,
+                        RoutingNode& end,
+                        IRoute* const route,
+                        WareWorker const type,
+                        int32_t const cost_cutoff,
+                        ITransportCostCalculator& cost_calculator) {
 	RouteAStar<AStarEstimator> astar(*this, type, AStarEstimator(cost_calculator, end));
 
 	astar.push(start);
 
-	while (RoutingNode * current = astar.step()) {
+	while (RoutingNode* current = astar.step()) {
 		if (cost_cutoff >= 0 && current->mpf_realcost > cost_cutoff)
 			return false;
 
@@ -93,4 +92,4 @@ bool Router::find_route
 	return false;
 }
 
-} // namespace Widelands
+}  // namespace Widelands

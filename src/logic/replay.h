@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef REPLAY_H
-#define REPLAY_H
+#ifndef WL_LOGIC_REPLAY_H
+#define WL_LOGIC_REPLAY_H
 
 /**
  * Allow players to watch previous game in a platform-independent way.
@@ -28,37 +28,39 @@
  * playercommands.
  */
 
-#include <stdint.h>
 #include <cstring>
 #include <string>
+
+#include <stdint.h>
 
 #define REPLAY_DIR "replays"
 #define REPLAY_SUFFIX ".wrpl"
 
-struct md5_checksum;
+struct Md5Checksum;
+
+class StreamRead;
+class StreamWrite;
 
 namespace Widelands {
 struct Command;
-struct Game;
+class Game;
 class PlayerCommand;
-struct StreamRead;
-struct StreamWrite;
 
 /**
  * Read game replays from disk.
  */
 class ReplayReader {
 public:
-	ReplayReader(Game & game, const std::string & filename);
+	ReplayReader(Game& game, const std::string& filename);
 	~ReplayReader();
 
-	Command * GetNextCommand(uint32_t time);
-	bool EndOfReplay();
+	Command* get_next_command(uint32_t time);
+	bool end_of_replay();
 
 private:
-	StreamRead * m_cmdlog;
+	StreamRead* cmdlog_;
 
-	uint32_t m_replaytime;
+	uint32_t replaytime_;
 };
 
 /**
@@ -66,19 +68,17 @@ private:
  */
 class ReplayWriter {
 public:
-	ReplayWriter(Game &, const std::string & filename);
+	ReplayWriter(Game&, const std::string& filename);
 	~ReplayWriter();
 
-	void SendPlayerCommand(PlayerCommand *);
-	void SendSync(const md5_checksum &);
+	void send_player_command(PlayerCommand*);
+	void send_sync(const Md5Checksum&);
 
 private:
-	Game        & m_game;
-	StreamWrite * m_cmdlog;
-	std::string m_filename;
+	Game& game_;
+	StreamWrite* cmdlog_;
+	std::string filename_;
 };
-
 }
 
-#endif
-
+#endif  // end of include guard: WL_LOGIC_REPLAY_H

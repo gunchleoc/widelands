@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2003, 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,25 +17,23 @@
  *
  */
 
-#ifndef INTERACTIVE_PLAYER_H
-#define INTERACTIVE_PLAYER_H
-
-#include "interactive_gamebase.h"
-
-#include "ui_basic/button.h"
-#include "ui_basic/textarea.h"
-
-#include "logic/message_id.h"
-
-#include <SDL_keyboard.h>
+#ifndef WL_WUI_INTERACTIVE_PLAYER_H
+#define WL_WUI_INTERACTIVE_PLAYER_H
 
 #include <vector>
 
+#include <SDL_keyboard.h>
+
+#include "logic/message_id.h"
+#include "profile/profile.h"
+#include "ui_basic/button.h"
+#include "ui_basic/textarea.h"
+#include "wui/interactive_gamebase.h"
+
 namespace UI {
-struct Multiline_Textarea;
+struct MultilineTextarea;
 struct Textarea;
 }
-
 
 /**
  * This is the interactive player. this one is
@@ -43,74 +41,68 @@ struct Textarea;
  * to the player and draws the user interface,
  * cares for input and so on.
  */
-struct Interactive_Player : public Interactive_GameBase
-{
-	Interactive_Player
-		(Widelands::Game &,
-		 Section         & global_s,
-		 Widelands::Player_Number,
-		 bool              scenario,
-		 bool              multiplayer);
+class InteractivePlayer : public InteractiveGameBase {
+public:
+	InteractivePlayer(Widelands::Game&,
+	                  Section& global_s,
+	                  Widelands::PlayerNumber,
+	                  bool multiplayer);
 
-	~Interactive_Player();
+	~InteractivePlayer();
 
-	void start();
+	void toggle_chat();
 
-	void toggle_chat        ();
+	bool can_see(Widelands::PlayerNumber) const override;
+	bool can_act(Widelands::PlayerNumber) const override;
+	Widelands::PlayerNumber player_number() const override;
 
-	virtual bool can_see(Widelands::Player_Number) const;
-	virtual bool can_act(Widelands::Player_Number) const;
-	virtual Widelands::Player_Number player_number() const;
+	void node_action() override;
 
-	virtual void node_action();
+	bool handle_key(bool down, SDL_Keysym) override;
 
-	bool handle_key(bool down, SDL_keysym);
-
-	Widelands::Player & player() const throw () {
-		return game().player(m_player_number);
+	Widelands::Player& player() const {
+		return game().player(player_number_);
 	}
-	Widelands::Player * get_player() const throw () {
+	Widelands::Player* get_player() const override {
 		assert(&game());
-		return game().get_player(m_player_number);
+		return game().get_player(player_number_);
 	}
 
 	// for savegames
 	void set_player_number(uint32_t plrn);
 
 	// For load
-	virtual void cleanup_for_load();
-	void think();
-	void postload();
+	void cleanup_for_load() override;
+	void think() override;
 
-	void set_flag_to_connect(Widelands::Coords const location) {
-		m_flag_to_connect = location;
+	void set_flag_to_connect(const Widelands::Coords& location) {
+		flag_to_connect_ = location;
 	}
 
-	void popup_message(Widelands::Message_Id, const Widelands::Message &);
+	void popup_message(Widelands::MessageId, const Widelands::Message&);
+	int32_t calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords>& c) override;
 
 private:
-	void cmdSwitchPlayer(const std::vector<std::string> & args);
+	void cmdSwitchPlayer(const std::vector<std::string>& args);
 
-	Widelands::Player_Number m_player_number;
-	bool                     m_auto_roadbuild_mode;
-	Widelands::Coords        m_flag_to_connect;
+	Widelands::PlayerNumber player_number_;
+	bool auto_roadbuild_mode_;
+	Widelands::Coords flag_to_connect_;
 
-	UI::Button m_toggle_chat;
-	UI::Button m_toggle_options_menu;
-	UI::Button m_toggle_statistics_menu;
-	UI::Button m_toggle_objectives;
-	UI::Button m_toggle_minimap;
-	UI::Button m_toggle_buildhelp;
-	UI::Button m_toggle_message_menu;
-	UI::Button m_toggle_help;
+	UI::Button toggle_chat_;
+	UI::Button toggle_options_menu_;
+	UI::Button toggle_statistics_menu_;
+	UI::Button toggle_objectives_;
+	UI::Button toggle_minimap_;
+	UI::Button toggle_message_menu_;
+	UI::Button toggle_help_;
 
-	UI::UniqueWindow::Registry m_chat;
-	UI::UniqueWindow::Registry m_options;
-	UI::UniqueWindow::Registry m_statisticsmenu;
-	UI::UniqueWindow::Registry m_objectives;
-	UI::UniqueWindow::Registry m_encyclopedia;
-	UI::UniqueWindow::Registry m_message_menu;
+	UI::UniqueWindow::Registry chat_;
+	UI::UniqueWindow::Registry options_;
+	UI::UniqueWindow::Registry statisticsmenu_;
+	UI::UniqueWindow::Registry objectives_;
+	UI::UniqueWindow::Registry encyclopedia_;
+	UI::UniqueWindow::Registry message_menu_;
 };
 
-
-#endif
+#endif  // end of include guard: WL_WUI_INTERACTIVE_PLAYER_H

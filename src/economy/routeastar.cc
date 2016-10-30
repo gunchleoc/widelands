@@ -17,17 +17,16 @@
  *
  */
 
-#include "routeastar.h"
+#include "economy/routeastar.h"
 
-#include "router.h"
-#include "iroute.h"
+#include "base/wexception.h"
+#include "economy/iroute.h"
+#include "economy/router.h"
 
 namespace Widelands {
 
-BaseRouteAStar::BaseRouteAStar(Router & router, WareWorker type) :
-	m_type(type),
-	mpf_cycle(router.assign_cycle())
-{
+BaseRouteAStar::BaseRouteAStar(Router& router, WareWorker type)
+   : type_(type), mpf_cycle(router.assign_cycle()) {
 }
 
 /**
@@ -35,14 +34,15 @@ BaseRouteAStar::BaseRouteAStar(Router & router, WareWorker type) :
  * set up by @ref RouteAStar::push to the destination node @p to.
  * The route is stored in @p route.
  */
-void BaseRouteAStar::routeto(RoutingNode & to, IRoute & route)
-{
-	assert(!to.cookie().is_active());
+void BaseRouteAStar::routeto(RoutingNode& to, IRoute& route) {
+	if (to.cookie().is_active()) {
+		throw wexception("BaseRouteAStar::routeto should not have an active cookie.");
+	}
 	assert(to.mpf_cycle == mpf_cycle);
 
 	route.init(to.mpf_realcost);
-	for (RoutingNode * node = &to; node; node = node->mpf_backlink)
+	for (RoutingNode* node = &to; node; node = node->mpf_backlink)
 		route.insert_as_first(node);
 }
 
-} // namespace Widelands
+}  // namespace Widelands

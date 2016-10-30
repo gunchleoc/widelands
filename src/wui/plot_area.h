@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2007-2011 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,23 +17,23 @@
  *
  */
 
-#ifndef WUI_PLOT_AREA_H
-#define WUI_PLOT_AREA_H
+#ifndef WL_WUI_PLOT_AREA_H
+#define WL_WUI_PLOT_AREA_H
 
-#include "ui_basic/panel.h"
-#include "ui_basic/slider.h"
-
-#include "rgbcolor.h"
+#include <vector>
 
 #include <boost/bind.hpp>
-#include <vector>
+
+#include "graphic/color.h"
+#include "ui_basic/panel.h"
+#include "ui_basic/slider.h"
 
 /*
  * A Plot Area is a simple 2D Plot, with the
  * X Axis as time (actually Minus Time)
  * and the Y Axis some Data
  */
-struct WUIPlot_Area : public UI::Panel {
+struct WuiPlotArea : public UI::Panel {
 	enum TIME {
 		TIME_15_MINS = 0,
 		TIME_30_MINS,
@@ -44,133 +44,179 @@ struct WUIPlot_Area : public UI::Panel {
 		TIME_16_HOURS,
 		TIME_GAME,
 	};
-	enum UNIT {
-		UNIT_MIN,
-		UNIT_HOUR,
-		UNIT_DAY,
-	};
-	enum PLOTMODE {
-		//  Always take the samples of some times together, so that the graph is
-		//  not completely zigg-zagged.
-		PLOTMODE_RELATIVE,
-
-		PLOTMODE_ABSOLUTE
+	enum class Plotmode {
+		//  Always aggregate the samples of some time periods, so that the graph is
+		//  not completely zig-zagged.
+		kRelative,
+		kAbsolute
 	};
 
-	WUIPlot_Area
-		(UI::Panel * parent, int32_t x, int32_t y, int32_t w, int32_t h);
+	// sample_rate is in in milliseconds
+	WuiPlotArea(UI::Panel* parent,
+	            int32_t x,
+	            int32_t y,
+	            int32_t w,
+	            int32_t h,
+	            uint32_t sample_rate,
+	            Plotmode plotmode);
 
-	virtual void draw(RenderTarget &);
+	/// Calls update() if needed
+	void think() override;
+
+	void draw(RenderTarget&) override;
 
 	void set_time(TIME id) {
-		m_time = id;
+		time_ = id;
+		needs_update_ = true;
 	}
 
-	void set_time_id(int32_t time) {
-		if (time == m_game_time_id)
+	void set_time_id(uint32_t time) {
+		if (time == game_time_id_)
 			set_time(TIME_GAME);
 		else
 			set_time(static_cast<TIME>(time));
-	};
-	TIME get_time() {return static_cast<TIME>(m_time); };
-	int32_t get_time_id() {
-		if (m_time == TIME_GAME)
-			return m_game_time_id;
+		needs_update_ = true;
+	}
+	TIME get_time() const {
+		return static_cast<TIME>(time_);
+	}
+	int32_t get_time_id() const {
+		if (time_ == TIME_GAME)
+			return game_time_id_;
 		else
-			return m_time;
-	};
-	void set_sample_rate(uint32_t id); // in milliseconds
+			return time_;
+	}
 
-	int32_t get_game_time_id();
+	uint32_t get_game_time_id();
 
-	void register_plot_data
-		(uint32_t id, const std::vector<uint32_t> * data, RGBColor);
+	void register_plot_data(uint32_t id, const std::vector<uint32_t>* data, RGBColor);
 	void show_plot(uint32_t id, bool t);
-
-	void set_plotmode(int32_t id) {m_plotmode = id;}
 
 	void set_plotcolor(uint32_t id, RGBColor color);
 
-	std::vector<std::string> get_labels();
+	std::vector<std::string> get_labels() const;
 
 protected:
-	uint32_t draw_diagram
-		(RenderTarget & dst, float const xline_length, float const yline_length);
-	void draw_value
-		(RenderTarget & dst, const char * value, RGBColor color, Point pos);
-	void draw_plot_line
-		(RenderTarget & dst, std::vector<uint32_t> const * dataset, float const yline_length,
-		 uint32_t const highest_scale, float const sub, RGBColor const color, int32_t yoffset);
+	void draw_plot(RenderTarget& dst,
+	               float yoffset,
+	               const std::string& yscale_label,
+	               uint32_t highest_scale);
+	void draw_plot_line(RenderTarget& dst,
+	                    std::vector<uint32_t> const* dataset,
+	                    uint32_t const highest_scale,
+	                    float const sub,
+	                    const RGBColor& color,
+	                    int32_t yoffset);
+	uint32_t get_plot_time() const;
+	/// Recalculates the data
+	virtual void update();
+	// Initializes relative_dataset and time scaling.
+	// Returns how many values will be aggregated when relative plotting
+	int32_t initialize_update();
 
-	int32_t calc_how_many(uint32_t time_in_ms_);
-
-	int32_t const spacing;
-	int32_t const space_at_bottom;
-	int32_t const space_at_right;
-	int32_t const space_left_of_label;
-
-	static const uint32_t time_in_ms[];
-	static const uint32_t nr_samples = 30;   // How many samples per diagramm when relative plotting
-
-	struct __plotdata {
-		const std::vector<uint32_t> * dataset;
-		bool                          showplot;
-		RGBColor                      plotcolor;
+	struct PlotData {
+		const std::vector<uint32_t>* absolute_data;  // The absolute dataset
+		std::vector<uint32_t>* relative_data;        // The relative dataset
+		bool showplot;
+		RGBColor plotcolor;
 	};
-	std::vector<__plotdata> m_plotdata;
+	std::vector<PlotData> plotdata_;
 
-	TIME                    m_time;  // How much do you want to list
-	int32_t                 m_sample_rate;
-	int32_t                 m_plotmode;
+	Plotmode plotmode_;
+	uint32_t sample_rate_;
+
+	/// Whether there has ben a data update since the last time that think() was executed
+	bool needs_update_;
+	/// The last time the information in this Panel got updated
+	uint32_t lastupdate_;
+
+	/// For first updating and then plotting the data
+	float const xline_length_;
+	float const yline_length_;
+	uint32_t time_ms_;
+	uint32_t highest_scale_;
+	float sub_;
 
 private:
-	float scale_value
-		(float const yline_length, uint32_t const highest_scale,
-		 int32_t const value);
+	uint32_t get_game_time() const;
 
-	uint32_t get_game_time();
-	uint32_t get_plot_time();
-	void calc_game_time_id();
-	UNIT get_suggested_unit(uint32_t game_time);
-	std::string get_unit_name(UNIT unit);
-	uint32_t ms_to_unit(UNIT unit, uint32_t ms);
-	int32_t                 m_game_time_id; // what label is used for TIME_GAME
+	TIME time_;              // How much do you want to list
+	uint32_t game_time_id_;  // what label is used for TIME_GAME
 };
 
 /**
  * A discrete slider with plot time steps preconfigured and automatic signal
  * setup.
  */
-struct WUIPlot_Area_Slider : public UI::DiscreteSlider {
-	WUIPlot_Area_Slider
-		(Panel * const parent,
-		 WUIPlot_Area & plot_area,
-		 const int32_t x, const int32_t y, const uint32_t w, const uint32_t h,
-		 const Image* background_picture_id,
-		 const std::string & tooltip_text = std::string(),
-		 const uint32_t cursor_size = 20,
-		 const bool enabled = true)
-	: DiscreteSlider
-		(parent,
-		 x, y, w, h,
-		 plot_area.get_labels(),
-		 plot_area.get_time_id(),
-		 background_picture_id,
-		 tooltip_text,
-		 cursor_size,
-		 enabled),
-	  m_plot_area(plot_area),
-	  m_last_game_time_id(plot_area.get_game_time_id())
-	{
-		changedto.connect(boost::bind(&WUIPlot_Area::set_time_id, &plot_area, _1));
+struct WuiPlotAreaSlider : public UI::DiscreteSlider {
+	WuiPlotAreaSlider(Panel* const parent,
+	                  WuiPlotArea& plot_area,
+	                  const int32_t x,
+	                  const int32_t y,
+	                  const uint32_t w,
+	                  const uint32_t h,
+	                  const Image* background_picture_id,
+	                  const std::string& tooltip_text = std::string(),
+	                  const uint32_t cursor_size = 20,
+	                  const bool enabled = true)
+	   : DiscreteSlider(parent,
+	                    x,
+	                    y,
+	                    w,
+	                    h,
+	                    plot_area.get_labels(),
+	                    plot_area.get_time_id(),
+	                    background_picture_id,
+	                    tooltip_text,
+	                    cursor_size,
+	                    enabled),
+	     plot_area_(plot_area),
+	     last_game_time_id_(plot_area.get_game_time_id()) {
+		changedto.connect(boost::bind(&WuiPlotArea::set_time_id, &plot_area, _1));
 	}
 
 protected:
-	void draw(RenderTarget & dst);
+	void draw(RenderTarget& dst) override;
 
 private:
-	WUIPlot_Area & m_plot_area;
-	int32_t m_last_game_time_id;
+	WuiPlotArea& plot_area_;
+	uint32_t last_game_time_id_;
 };
 
-#endif
+/**
+ * A Plot Area is a simple 2D Plot, with the
+ * X Axis as time (actually Minus Time)
+ * and the Y Axis as the difference between two data vectors
+ */
+struct DifferentialPlotArea : public WuiPlotArea {
+public:
+	DifferentialPlotArea(UI::Panel* parent,
+	                     int32_t x,
+	                     int32_t y,
+	                     int32_t w,
+	                     int32_t h,
+	                     uint32_t sample_rate,
+	                     Plotmode plotmode);
+
+	void draw(RenderTarget&) override;
+
+	void register_negative_plot_data(uint32_t id, const std::vector<uint32_t>* data);
+
+protected:
+	/// Recalculates the data
+	void update() override;
+
+private:
+	/**
+	 * For the negative plotdata, only the values matter. The color and
+	 * visibility is determined by the normal plotdata.
+	 * We don't need relative data to fill - this is also done in the
+	 * normal plotdata
+	 */
+	struct ReducedPlotData {
+		const std::vector<uint32_t>* absolute_data;
+	};
+	std::vector<ReducedPlotData> negative_plotdata_;
+};
+
+#endif  // end of include guard: WL_WUI_PLOT_AREA_H

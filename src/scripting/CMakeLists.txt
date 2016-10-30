@@ -1,4 +1,125 @@
-if (WL_UNIT_TESTS)
-  add_subdirectory(test)
-endif (WL_UNIT_TESTS)
+add_subdirectory(test)
 
+wl_library(scripting_base
+  SRCS
+    lua.h
+    lua.cc
+  DEPENDS
+    third_party_eris
+)
+
+wl_library(scripting_errors
+  SRCS
+    lua_errors.cc
+    lua_errors.h
+    report_error.cc
+    report_error.h
+  DEPENDS
+    base_exceptions
+    scripting_base
+)
+
+wl_library(scripting_luna
+  SRCS
+    luna.h
+    luna_impl.cc
+    luna_impl.h
+  DEPENDS
+    base_log
+    scripting_base
+    scripting_errors
+)
+
+wl_library(scripting_lua_table
+  SRCS
+    lua_table.cc
+    lua_table.h
+  DEPENDS
+    base_log
+    scripting_base
+    scripting_coroutine
+    scripting_errors
+)
+
+wl_library(scripting_coroutine
+  SRCS
+    lua_coroutine.cc
+    lua_coroutine.h
+  DEPENDS
+    io_fileread
+    scripting_base
+    scripting_errors
+    # TODO(sirver): Cyclic dependency. introduce a seam so that logic can
+    # push/pull new parameters to coroutines.
+    scripting_logic
+)
+
+wl_library(scripting_lua_interface
+  SRCS
+    lua_globals.cc
+    lua_globals.h
+    lua_interface.cc
+    lua_interface.h
+    lua_path.cc
+    lua_path.h
+    run_script.cc
+    run_script.h
+  DEPENDS
+    base_i18n
+    base_macros
+    build_info
+    helper
+    io_filesystem
+    scripting_base
+    scripting_errors
+    scripting_lua_table
+    scripting_luna
+)
+
+wl_library(scripting_logic
+  SRCS
+    factory.cc
+    factory.h
+    globals.cc
+    globals.h
+    logic.cc
+    logic.h
+    lua_bases.cc
+    lua_bases.h
+    lua_editor.cc
+    lua_editor.h
+    lua_game.cc
+    lua_game.h
+    lua_map.cc
+    lua_map.h
+    lua_root.cc
+    lua_root.h
+    lua_ui.cc
+    lua_ui.h
+    persistence.cc
+    persistence.h
+    eris.h
+  DEPENDS
+    base_exceptions
+    base_log
+    base_macros
+    economy
+    graphic
+    io_fileread
+    io_filesystem
+    logic
+    logic_campaign_visibility
+    logic_game_controller
+    logic_widelands_geometry
+    map_io
+    scripting_base
+    scripting_coroutine
+    scripting_errors
+    scripting_lua_interface
+    scripting_lua_table
+    scripting_luna
+    third_party_eris
+    ui_basic
+    wui
+    wui_mapview_pixelfunctions
+)

@@ -17,76 +17,114 @@
  *
  */
 
-#ifndef RT_PARSER_H
-#define RT_PARSER_H
+#ifndef WL_GRAPHIC_TEXT_RT_PARSE_H
+#define WL_GRAPHIC_TEXT_RT_PARSE_H
 
 #include <map>
-#include <stdint.h>
+#include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include "rgbcolor.h"
+#include <stdint.h>
 
-#include "rt_errors.h"
+#include "graphic/color.h"
+#include "graphic/text/rt_errors.h"
 
 namespace RT {
 
+class TextStream;
 struct Child;
-class IAttr {
-public:
-	virtual ~IAttr() {};
 
-	virtual const std::string & name() const = 0;
-	virtual long get_int() const = 0;
-	virtual bool get_bool() const = 0;
-	virtual std::string get_string() const = 0;
-	virtual RGBColor get_color() const = 0;
+class Attr {
+public:
+	Attr(const std::string& gname, const std::string& value);
+
+	const std::string& name() const;
+	long get_int() const;
+	bool get_bool() const;
+	std::string get_string() const;
+	RGBColor get_color() const;
+
+private:
+	const std::string name_, value_;
 };
 
-class IAttrMap {
+// This is basically a map<string, Attr>.
+class AttrMap {
 public:
-	virtual ~IAttrMap() {};
+	// Adds a 'a' with 'name' to the list of attributes.
+	void add_attribute(const std::string& name, Attr* a);
 
-	virtual const IAttr & operator[] (const std::string&) const throw (AttributeNotFound) = 0;
-	virtual bool has(const std::string &) const = 0;
+	// Returns the attribute with 'name' or throws an error if it is not found.
+	const Attr& operator[](const std::string& name) const;
+
+	// Returns true if 'name' is a known attribute.
+	bool has(const std::string& name) const;
+
+private:
+	std::map<std::string, std::unique_ptr<Attr>> attrs_;
 };
 
-class ITag {
-public:
-	typedef std::vector<Child*> ChildList;
+struct TagConstraint {
+	std::unordered_set<std::string> allowed_attrs;
+	std::unordered_set<std::string> allowed_children;
+	bool text_allowed;
+	bool has_closing_tag;
+};
+using TagConstraints = std::unordered_map<std::string, TagConstraint>;
+using TagSet = std::set<std::string>;
 
-	virtual ~ITag() {};
-	virtual const std::string & name() const = 0;
-	virtual const IAttrMap & attrs() const = 0;
-	virtual const ChildList & childs() const = 0;
+class Tag {
+public:
+	using ChildList = std::vector<Child*>;
+
+	~Tag();
+
+	const std::string& name() const;
+	const AttrMap& attrs() const;
+	const ChildList& children() const;
+	void parse(TextStream& ts, TagConstraints& tcs, const TagSet&);
+
+private:
+	void parse_opening_tag(TextStream& ts, TagConstraints& tcs);
+	void parse_closing_tag(TextStream& ts);
+	void parse_attribute(TextStream& ts, std::unordered_set<std::string>&);
+	void parse_content(TextStream& ts, TagConstraints& tc, const TagSet&);
+
+	std::string name_;
+	AttrMap attribute_map_;
+	ChildList children_;
 };
 
 struct Child {
-	Child() : tag(0), text() {}
-	Child(ITag * t) : tag(t) {}
-	Child(std::string t) : tag(0), text(t) {}
-	~Child() {
-		if (tag) delete tag;
+	Child() : tag(nullptr), text() {
 	}
-	ITag * tag;
+	Child(Tag* t) : tag(t) {
+	}
+	Child(std::string t) : tag(nullptr), text(t) {
+	}
+	~Child() {
+		if (tag)
+			delete tag;
+	}
+	Tag* tag;
 	std::string text;
 };
 
-
-typedef std::set<std::string> TagSet;
-
-class IParser {
+class Parser {
 public:
-	virtual ~IParser() {};
+	Parser();
+	~Parser();
+	Tag* parse(std::string text, const TagSet&);
+	std::string remaining_text();
 
-	virtual ITag * parse(std::string text, const TagSet &) = 0;
-	virtual std::string remaining_text() = 0;
+private:
+	TagConstraints tag_constraints_;
+	std::unique_ptr<TextStream> text_stream_;
 };
-
-// This function is mainly for testing
-IParser * setup_parser();
 }
 
-#endif /* end of include guard: RT_PARSER_H */
-
+#endif  // end of include guard: WL_GRAPHIC_TEXT_RT_PARSE_H

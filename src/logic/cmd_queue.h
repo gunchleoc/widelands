@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2004, 2006-2009, 2015 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,39 +17,31 @@
  *
  */
 
-#ifndef CMD_QUEUE_H
-#define CMD_QUEUE_H
+#ifndef WL_LOGIC_CMD_QUEUE_H
+#define WL_LOGIC_CMD_QUEUE_H
 
-#include "queue_cmd_ids.h"
-#include "widelands_fileread.h"
-#include "widelands_filewrite.h"
-
+#include <memory>
 #include <queue>
+#include <stdint.h>
+
+#include <stdint.h>
+
+#include "logic/queue_cmd_ids.h"
+#include <stdint.h>
+
+class FileRead;
+class FileWrite;
 
 namespace Widelands {
 
-struct Editor_Game_Base;
-struct Map_Map_Object_Saver;
-struct Map_Map_Object_Loader;
+class EditorGameBase;
+class Game;
+class MapObjectLoader;
+struct MapObjectSaver;
 
-// Define here all the possible users
-#define SENDER_MAPOBJECT 0
-#define SENDER_PLAYER1 1 // those are just place holder, a player can send
-#define SENDER_PLAYER2 2 // commands with it's player number
-#define SENDER_PLAYER3 3
-#define SENDER_PLAYER4 4
-#define SENDER_PLAYER5 5
-#define SENDER_PLAYER6 6
-#define SENDER_PLAYER7 7
-#define SENDER_PLAYER8 8
-#define SENDER_CMDQUEUE 100   // The Cmdqueue sends itself some action request
+constexpr uint32_t kCommandQueueBucketSize = 65536;  // Make this a power of two, so that % is fast
 
-#define CMD_QUEUE_BUCKET_SIZE 65536 // Make this a power of two, so that % is fast
-
-// ---------------------- END    OF CMDS ----------------------------------
-
-//
-// This is finally the command queue. It is fully widelands specific,
+// This is the command queue. It is fully widelands specific,
 // it needs to know nearly all modules.
 //
 // It used to be implemented as a priority_queue sorted by execution_time,
@@ -66,7 +58,6 @@ struct Map_Map_Object_Loader;
 // The price we pay is that when saving, we also have to traverse till we no
 // longer find any new command to write. This could theoretically take forever
 // but in my tests it was not noticeable.
-struct Game;
 
 /**
  * A command that is supposed to be executed at a certain gametime.
@@ -79,19 +70,23 @@ struct Game;
  * the same for all parallel simulation.
  */
 struct Command {
-	Command (int32_t const _duetime) : m_duetime(_duetime) {}
-	virtual ~Command ();
+	Command(const uint32_t init_duetime) : duetime_(init_duetime) {
+	}
+	virtual ~Command();
 
-	virtual void execute (Game &) = 0;
-	virtual uint8_t id() const = 0;
+	virtual void execute(Game&) = 0;
+	virtual QueueCommandTypes id() const = 0;
 
-	int32_t duetime() const {return m_duetime;}
-	void set_duetime(int32_t const t) {m_duetime = t;}
+	uint32_t duetime() const {
+		return duetime_;
+	}
+	void set_duetime(uint32_t const t) {
+		duetime_ = t;
+	}
 
 private:
-	int32_t m_duetime;
+	uint32_t duetime_;
 };
-
 
 /**
  * All commands that affect the game simulation (e.g. acting of \ref Bob
@@ -101,26 +96,21 @@ private:
  * for all instances of a game to ensure parallel simulation.
  */
 struct GameLogicCommand : public Command {
-	GameLogicCommand (int32_t const _duetime) : Command(_duetime) {}
+	GameLogicCommand(uint32_t const init_duetime) : Command(init_duetime) {
+	}
 
 	// Write these commands to a file (for savegames)
-	virtual void Write
-		(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	virtual void Read
-		(FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
+	virtual void write(FileWrite&, EditorGameBase&, MapObjectSaver&);
+	virtual void read(FileRead&, EditorGameBase&, MapObjectLoader&);
 };
 
-class Cmd_Queue {
-	friend struct Game_Cmd_Queue_Data_Packet;
+class CmdQueue {
+	friend struct GameCmdQueuePacket;
 
-	enum {
-		cat_nongamelogic = 0,
-		cat_gamelogic,
-		cat_playercommand
-	};
+	enum { cat_nongamelogic = 0, cat_gamelogic, cat_playercommand };
 
-	struct cmditem {
-		Command * cmd;
+	struct CmdItem {
+		Command* cmd;
 
 		/**
 		 * category and serial are used to sort commands such that
@@ -130,8 +120,7 @@ class Cmd_Queue {
 		int32_t category;
 		uint32_t serial;
 
-		bool operator< (const cmditem & c) const
-		{
+		bool operator<(const CmdItem& c) const {
 			if (cmd->duetime() != c.cmd->duetime())
 				return cmd->duetime() > c.cmd->duetime();
 			else if (category != c.category)
@@ -142,29 +131,27 @@ class Cmd_Queue {
 	};
 
 public:
-	Cmd_Queue(Game &);
-	~Cmd_Queue();
+	CmdQueue(Game&);
+	~CmdQueue();
 
-	/// Add a command to the queue.
-	///
-	/// The pointer passed to this object must point to a memory block allocated
-	/// with operator <b>new</b>, containing only the command. The command queue
-	/// will take ownership of the memory block and deallocate it with operator
-	/// <b>delete</b> when the command has been executed.
-	void enqueue (Command *);
+	/// Add a command to the queue. Takes ownership.
+	void enqueue(Command*);
 
-	int32_t run_queue (int32_t interval, int32_t & game_time_var);
+	// Run all commands scheduled for the next interval milliseconds, and update
+	// the internal time as well. the game_time_var represents the current game
+	// time, which we update and with which we must mess around (to run all
+	// queued cmd.s) and which we update (add the interval)
+	void run_queue(int32_t interval, uint32_t& game_time_var);
 
-	void flush(); // delete all commands in the queue now
+	void flush();  // delete all commands in the queue now
 
 private:
-	Game                       & m_game;
-	uint32_t                     nextserial;
-	uint32_t m_ncmds;
-	typedef std::vector<std::priority_queue<cmditem> > CommandsContainer;
-	CommandsContainer m_cmds;
+	Game& game_;
+	uint32_t nextserial_;
+	uint32_t ncmds_;
+	using CommandsContainer = std::vector<std::priority_queue<CmdItem>>;
+	CommandsContainer cmds_;
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_LOGIC_CMD_QUEUE_H

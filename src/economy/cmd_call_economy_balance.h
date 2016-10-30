@@ -17,39 +17,37 @@
  *
  */
 
-#ifndef S__CMD_CALL_ECONOMY_BALANCE_H
-#define S__CMD_CALL_ECONOMY_BALANCE_H
+#ifndef WL_ECONOMY_CMD_CALL_ECONOMY_BALANCE_H
+#define WL_ECONOMY_CMD_CALL_ECONOMY_BALANCE_H
 
+#include "economy/flag.h"
 #include "logic/cmd_queue.h"
-#include "flag.h"
-#include "logic/instances.h"
+#include "logic/map_objects/map_object.h"
 
 namespace Widelands {
-struct Economy;
-struct Game;
-struct Map_Map_Object_Loader;
-struct Map_Map_Object_Loader;
+class Economy;
+class Game;
+class MapObjectLoader;
 
+struct CmdCallEconomyBalance : public GameLogicCommand {
+	CmdCallEconomyBalance() : GameLogicCommand(0), timerid_(0) {
+	}  ///< for load and save
 
-struct Cmd_Call_Economy_Balance : public GameLogicCommand {
-	Cmd_Call_Economy_Balance () : GameLogicCommand(0), m_timerid(0) {} ///< for load and save
+	CmdCallEconomyBalance(uint32_t starttime, Economy*, uint32_t timerid);
 
-	Cmd_Call_Economy_Balance (int32_t starttime, Economy *, uint32_t timerid);
+	void execute(Game&) override;
 
-	void execute (Game &);
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kCallEconomyBalance;
+	}
 
-	virtual uint8_t id() const {return QUEUE_CMD_CALL_ECONOMY_BALANCE;}
-
-	void Write(FileWrite &, Editor_Game_Base &, Map_Map_Object_Saver  &);
-	void Read (FileRead  &, Editor_Game_Base &, Map_Map_Object_Loader &);
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
 
 private:
-	OPtr<Flag> m_flag;
-	uint32_t m_timerid;
+	OPtr<Flag> flag_;
+	uint32_t timerid_;
 };
-
 }
 
-#endif
-
-
+#endif  // end of include guard: WL_ECONOMY_CMD_CALL_ECONOMY_BALANCE_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006, 2008, 2012 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,48 +17,51 @@
  *
  */
 
-#ifndef FULLSCREEN_MENU_MULTIPLAYER_H
-#define FULLSCREEN_MENU_MULTIPLAYER_H
+#ifndef WL_UI_FSMENU_MULTIPLAYER_H
+#define WL_UI_FSMENU_MULTIPLAYER_H
 
 #include "network/internet_gaming.h"
-
-#include "base.h"
-
+#include "ui_basic/box.h"
 #include "ui_basic/button.h"
 #include "ui_basic/textarea.h"
+#include "ui_fsmenu/main_menu.h"
 
 /**
  * Fullscreen Menu for MultiPlayer.
  * Here you select what game you want to play.
  */
-struct Fullscreen_Menu_MultiPlayer : public Fullscreen_Menu_Base {
-	Fullscreen_Menu_MultiPlayer();
+class FullscreenMenuMultiPlayer : public FullscreenMenuMainMenu {
+public:
+	FullscreenMenuMultiPlayer();
 
-	enum {Back = dying_code, Metaserver, Lan};
+	void show_internet_login();
+	void internet_login();
+	std::string get_nickname() {
+		return nickname_;
+	}
+	std::string get_password() {
+		return password_;
+	}
+	bool registered() {
+		return register_;
+	}
 
-	void showInternetLogin();
-	void internetLogin();
-	std::string get_nickname() {return m_nickname;}
-	std::string get_password() {return m_password;}
-	bool registered()          {return m_register;}
+protected:
+	void clicked_ok() override;
 
 private:
-	uint32_t                                            m_butw;
-	uint32_t                                            m_buth;
-	uint32_t                                            m_butx;
-	uint32_t                                            m_fs;
-	std::string                                         m_fn;
-	UI::Textarea                                        title;
-	UI::Button                             metaserver;
-	UI::Button                           * showloginbox;
-	UI::Button                             lan;
-	UI::Button                             back;
+	UI::Textarea title;
+	UI::Box vbox;
+	UI::Button metaserver;
+	UI::Button* showloginbox;
+	UI::Button lan;
+	UI::Button back;
 
 	// Values from internet login window
-	std::string m_nickname;
-	std::string m_password;
-	bool        m_register;
-	bool        m_auto_log;
+	std::string nickname_;
+	std::string password_;
+	bool register_;
+	bool auto_log_;
 };
 
-#endif
+#endif  // end of include guard: WL_UI_FSMENU_MULTIPLAYER_H

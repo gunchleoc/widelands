@@ -17,10 +17,12 @@
  *
  */
 
-#ifndef QUEUE_CMD_FACTORY_H
-#define QUEUE_CMD_FACTORY_H
+#ifndef WL_LOGIC_QUEUE_CMD_FACTORY_H
+#define WL_LOGIC_QUEUE_CMD_FACTORY_H
 
 #include <stdint.h>
+
+#include "logic/queue_cmd_ids.h"
 
 namespace Widelands {
 
@@ -30,10 +32,9 @@ struct GameLogicCommand;
  * This creates the correct queue commands
  * from the queue command file ids
  */
-namespace Queue_Cmd_Factory {
-	GameLogicCommand & create_correct_queue_command(uint32_t id);
+namespace QueueCmdFactory {
+GameLogicCommand& create_correct_queue_command(Widelands::QueueCommandTypes id);
+}
 }
 
-}
-
-#endif
+#endif  // end of include guard: WL_LOGIC_QUEUE_CMD_FACTORY_H

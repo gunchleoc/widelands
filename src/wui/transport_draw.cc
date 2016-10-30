@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2007, 2009 by the Widelands Development Team
+ * Copyright (C) 2002-20016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,49 +20,40 @@
 #include "economy/flag.h"
 #include "economy/road.h"
 #include "economy/ware_instance.h"
+#include "graphic/rendertarget.h"
 #include "logic/editor_game_base.h"
 #include "logic/player.h"
-#include "graphic/rendertarget.h"
 
 namespace Widelands {
 
-void Flag::draw
-	(const Editor_Game_Base &       game,
-	 RenderTarget           &       dst,
-	 FCoords,
-	 Point                    const pos)
-{
-	static struct {int32_t x, y;} ware_offsets[8] = {
-		{-5,  1},
-		{-1,  3},
-		{3,  3},
-		{7,  1},
-		{-6, -3},
-		{-1, -2},
-		{3, -2},
-		{8, -3}
-	};
+void Flag::draw(uint32_t gametime,
+                const TextToDraw,
+                const Vector2f& point_on_dst,
+                float scale,
+                RenderTarget* dst) {
+	static struct {
+		float x, y;
+	} ware_offsets[8] = {{-5.f, 1.f},  {-1.f, 3.f},  {3.f, 3.f},  {7.f, 1.f},
+	                     {-6.f, -3.f}, {-1.f, -2.f}, {3.f, -2.f}, {8.f, -3.f}};
 
-	dst.drawanim
-		(pos, owner().flag_anim(), game.get_gametime() - m_animstart, &owner());
+	const RGBColor& player_color = owner().get_playercolor();
+	dst->blit_animation(
+	   point_on_dst, scale, owner().tribe().flag_animation(), gametime - animstart_, player_color);
 
-	const uint32_t item_filled = m_item_filled;
-	for (uint32_t i = 0; i < item_filled; ++i) { //  draw wares
-		Point warepos = pos;
+	for (int32_t i = 0; i < ware_filled_; ++i) {  //  draw wares
+		Vector2f warepos = point_on_dst;
 		if (i < 8) {
-			warepos.x += ware_offsets[i].x;
-			warepos.y += ware_offsets[i].y;
-		} else
-			warepos.y -= 6 + (i - 8) * 3;
-		dst.drawanim
-			(warepos,
-			 m_items[i].item->descr().get_animation("idle"),
-			 0,
-			 get_owner());
+			warepos.x += ware_offsets[i].x * scale;
+			warepos.y += ware_offsets[i].y * scale;
+		} else {
+			warepos.y -= (6.f + (i - 8.f) * 3.f) * scale;
+		}
+		dst->blit_animation(
+		   warepos, scale, wares_[i].ware->descr().get_animation("idle"), 0, player_color);
 	}
 }
 
 /** The road is drawn by the terrain renderer via marked fields. */
-void Road::draw(const Editor_Game_Base &, RenderTarget &, FCoords, Point) {}
-
+void Road::draw(uint32_t, const TextToDraw, const Vector2f&, float, RenderTarget*) {
+}
 }

@@ -17,97 +17,101 @@
  *
  */
 
-#include "login_box.h"
-#include "i18n.h"
+#include "wui/login_box.h"
+
+#include "base/i18n.h"
+#include "graphic/font_handler1.h"
+#include "profile/profile.h"
 #include "ui_basic/button.h"
 #include "ui_basic/messagebox.h"
-#include "profile/profile.h"
 
-LoginBox::LoginBox(Panel & parent)
-:
-Window(&parent, "login_box", 0, 0, 500, 210, _("Metaserver login"))
-{
+LoginBox::LoginBox(Panel& parent)
+   : Window(&parent, "login_box", 0, 0, 500, 220, _("Metaserver login")) {
 	center_to_parent();
 
-	ta_nickname = new UI::Textarea(this, 10, 5, _("Nickname:"));
-	eb_nickname =
-		new UI::EditBox
-			(this, 150, 5, 330, 20,
-			 g_gr->images().get("pics/but2.png"), UI::Align_Left);
+	int32_t margin = 10;
 
-	ta_password = new UI::Textarea(this, 10, 40, _("Password:"));
+	ta_nickname = new UI::Textarea(this, margin, margin, _("Nickname:"));
+	ta_password = new UI::Textarea(this, margin, 40, _("Password:"));
+	eb_nickname = new UI::EditBox(
+	   this, 150, margin, 330, 20, 2, g_gr->images().get("images/ui_basic/but2.png"));
 	eb_password =
-		new UI::EditBox
-			(this, 150, 40, 330, 20,
-			 g_gr->images().get("pics/but2.png"), UI::Align_Left);
+	   new UI::EditBox(this, 150, 40, 330, 20, 2, g_gr->images().get("images/ui_basic/but2.png"));
 
-	pwd_warning =
-		new UI::Textarea
-			(this, 250, 85,
-			 _("WARNING: Password will be shown and saved readable!"),
-			 UI::Align_Center);
+	pwd_warning = new UI::MultilineTextarea(this, margin, 65, 505, 50,
+	                                        _("WARNING: Password will be shown and saved readable!"),
+	                                        UI::Align::kLeft);
 
-	cb_register = new UI::Checkbox(this, Point(10, 110));
-	ta_register =
-		new UI::Textarea(this, 40, 110, _("Log in to a registered account"));
+	cb_register = new UI::Checkbox(this, Vector2i(margin, 110), _("Log in to a registered account"),
+	                               "", get_inner_w() - 2 * margin);
+	cb_auto_log = new UI::Checkbox(this, Vector2i(margin, 135),
+	                               _("Automatically use this login information from now on."), "",
+	                               get_inner_w() - 2 * margin);
 
-	cb_auto_log = new UI::Checkbox(this, Point(10, 135));
-	ta_auto_log = new UI::Textarea
-		(this, 40, 135,
-		 _("Automatically use this login information from now on."));
+	UI::Button* loginbtn =
+	   new UI::Button(this, "login", UI::g_fh1->fontset()->is_rtl() ?
+	                                    (get_inner_w() / 2 - 200) / 2 :
+	                                    (get_inner_w() / 2 - 200) / 2 + get_inner_w() / 2,
+	                  get_inner_h() - 20 - margin, 200, 20,
+	                  g_gr->images().get("images/ui_basic/but5.png"), _("Login"));
+	loginbtn->sigclicked.connect(boost::bind(&LoginBox::clicked_ok, boost::ref(*this)));
+	UI::Button* cancelbtn = new UI::Button(
+	   this, "cancel",
+	   UI::g_fh1->fontset()->is_rtl() ? (get_inner_w() / 2 - 200) / 2 + get_inner_w() / 2 :
+	                                    (get_inner_w() / 2 - 200) / 2,
+	   loginbtn->get_y(), 200, 20, g_gr->images().get("images/ui_basic/but1.png"), _("Cancel"));
+	cancelbtn->sigclicked.connect(boost::bind(&LoginBox::clicked_back, boost::ref(*this)));
 
-	UI::Button * loginbtn = new UI::Button
-		(this, "login",
-		 (get_inner_w() / 2 - 200) / 2, 175, 200, 20,
-		 g_gr->images().get("pics/but0.png"),
-		 _("Login"));
-	loginbtn->sigclicked.connect(boost::bind(&LoginBox::pressedLogin, boost::ref(*this)));
-	UI::Button * cancelbtn = new UI::Button
-		(this, "cancel",
-		 (get_inner_w() / 2 - 200) / 2 + get_inner_w() / 2, 175, 200, 20,
-		 g_gr->images().get("pics/but1.png"),
-		 _("Cancel"));
-	cancelbtn->sigclicked.connect(boost::bind(&LoginBox::pressedCancel, boost::ref(*this)));
-
-	Section & s = g_options.pull_section("global");
-	eb_nickname->setText(s.get_string("nickname", _("nobody")));
-	eb_password->setText(s.get_string("password", ""));
+	Section& s = g_options.pull_section("global");
+	eb_nickname->set_text(s.get_string("nickname", _("nobody")));
+	eb_password->set_text(s.get_string("password", ""));
 	cb_register->set_state(s.get_bool("registered", false));
+	eb_nickname->focus();
 }
 
-
 /// called, if "login" is pressed
-void LoginBox::pressedLogin()
-{
+void LoginBox::clicked_ok() {
 	// Check if all needed input fields are valid
 	if (eb_nickname->text().empty()) {
-		UI::WLMessageBox mb
-			(this, _("Empty Nickname"), _("Please enter a nickname!"),
-			 UI::WLMessageBox::OK);
-		mb.run();
+		UI::WLMessageBox mb(
+		   this, _("Empty Nickname"), _("Please enter a nickname!"), UI::WLMessageBox::MBoxType::kOk);
+		mb.run<UI::Panel::Returncodes>();
 		return;
 	}
 	if (eb_nickname->text().find(' ') <= eb_nickname->text().size()) {
-		UI::WLMessageBox mb
-			(this, _("Space in Nickname"),
-			 _("Sorry, but spaces are not allowed in nicknames!"),
-			 UI::WLMessageBox::OK);
-		mb.run();
+		UI::WLMessageBox mb(this, _("Space in Nickname"),
+		                    _("Sorry, but spaces are not allowed in nicknames!"),
+		                    UI::WLMessageBox::MBoxType::kOk);
+		mb.run<UI::Panel::Returncodes>();
 		return;
 	}
 	if (eb_password->text().empty() && cb_register->get_state()) {
-		UI::WLMessageBox mb
-			(this, _("Empty Password"), _("Please enter your password!"),
-			 UI::WLMessageBox::OK);
-		mb.run();
+		UI::WLMessageBox mb(this, _("Empty Password"), _("Please enter your password!"),
+		                    UI::WLMessageBox::MBoxType::kOk);
+		mb.run<UI::Panel::Returncodes>();
 		return;
 	}
-	end_modal(1);
+	end_modal<UI::Panel::Returncodes>(UI::Panel::Returncodes::kOk);
 }
 
-
 /// Called if "cancel" was pressed
-void LoginBox::pressedCancel()
-{
-	end_modal(0);
+void LoginBox::clicked_back() {
+	end_modal<UI::Panel::Returncodes>(UI::Panel::Returncodes::kBack);
+}
+
+bool LoginBox::handle_key(bool down, SDL_Keysym code) {
+	if (down) {
+		switch (code.sym) {
+		case SDLK_KP_ENTER:
+		case SDLK_RETURN:
+			clicked_ok();
+			return true;
+		case SDLK_ESCAPE:
+			clicked_back();
+			return true;
+		default:
+			break;  // not handled
+		}
+	}
+	return UI::Panel::handle_key(down, code);
 }

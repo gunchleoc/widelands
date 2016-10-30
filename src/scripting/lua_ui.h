@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2006-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,200 +17,225 @@
  *
  */
 
-#ifndef LUA_UI_H
-#define LUA_UI_H
+#ifndef WL_SCRIPTING_LUA_UI_H
+#define WL_SCRIPTING_LUA_UI_H
 
-#include <lua.hpp>
-
+#include "scripting/lua.h"
+#include "scripting/luna.h"
 #include "ui_basic/button.h"
 #include "ui_basic/tabpanel.h"
 #include "ui_basic/window.h"
 #include "wui/interactive_base.h"
-
-#include "luna.h"
 
 namespace LuaUi {
 
 /*
  * Base class for all classes in wl.ui
  */
-class L_UiModuleClass : public LunaClass {
-	public:
-		const char * get_modulename() {return "ui";}
+class LuaUiModuleClass : public LunaClass {
+public:
+	const char* get_modulename() override {
+		return "ui";
+	}
 };
 
-
-class L_Panel : public L_UiModuleClass {
+class LuaPanel : public LuaUiModuleClass {
 protected:
-	UI::Panel * m_panel;
+	UI::Panel* panel_;
 
 public:
-	LUNA_CLASS_HEAD(L_Panel);
+	LUNA_CLASS_HEAD(LuaPanel);
 
-	L_Panel() : m_panel(0) {}
-	L_Panel(UI::Panel * p) : m_panel(p) {}
-	L_Panel(lua_State * L) : m_panel(0) {
+	LuaPanel() : panel_(nullptr) {
+	}
+	LuaPanel(UI::Panel* p) : panel_(p) {
+	}
+	LuaPanel(lua_State* L) : panel_(nullptr) {
 		report_error(L, "Cannot instantiate a '%s' directly!", className);
 	}
-	virtual ~L_Panel() {}
-
-	virtual void __persist(lua_State * L) {
-		report_error
-			(L, "Trying to persist a User Interface Panel which is no supported!");
-	}
-	virtual void __unpersist(lua_State * L) {
-		report_error
-			(L, "Trying to unpersist a User Interface Panel which is "
-			 "not supported!");
+	virtual ~LuaPanel() {
 	}
 
+	void __persist(lua_State* L) override {
+		report_error(L, "Trying to persist a User Interface Panel which is no supported!");
+	}
+	void __unpersist(lua_State* L) override {
+		report_error(L, "Trying to unpersist a User Interface Panel which is "
+		                "not supported!");
+	}
+
 	/*
 	 * Properties
 	 */
-	int get_buttons(lua_State * L);
-	int get_tabs(lua_State * L);
-	int get_windows(lua_State * L);
-	int get_mouse_position_x(lua_State * L);
-	int get_mouse_position_y(lua_State * L);
-	int set_mouse_position_x(lua_State * L);
-	int set_mouse_position_y(lua_State * L);
-	int get_width(lua_State * L);
-	int set_width(lua_State * L);
-	int get_height(lua_State * L);
-	int set_height(lua_State * L);
-	int get_position_x(lua_State * L);
-	int set_position_x(lua_State * L);
-	int get_position_y(lua_State * L);
-	int set_position_y(lua_State * L);
+	int get_buttons(lua_State* L);
+	int get_tabs(lua_State* L);
+	int get_windows(lua_State* L);
+	int get_mouse_position_x(lua_State* L);
+	int get_mouse_position_y(lua_State* L);
+	int set_mouse_position_x(lua_State* L);
+	int set_mouse_position_y(lua_State* L);
+	int get_width(lua_State* L);
+	int set_width(lua_State* L);
+	int get_height(lua_State* L);
+	int set_height(lua_State* L);
+	int get_position_x(lua_State* L);
+	int set_position_x(lua_State* L);
+	int get_position_y(lua_State* L);
+	int set_position_y(lua_State* L);
 
 	/*
 	 * Lua Methods
 	 */
-	int get_descendant_position(lua_State * L);
+	int get_descendant_position(lua_State* L);
 
 	/*
 	 * C Methods
 	 */
 };
 
-class L_Button : public L_Panel {
+class LuaButton : public LuaPanel {
 public:
-	LUNA_CLASS_HEAD(L_Button);
+	LUNA_CLASS_HEAD(LuaButton);
 
-	L_Button() : L_Panel() {}
-	L_Button(UI::Panel * p) : L_Panel(p) {}
-	L_Button(lua_State * L) : L_Panel(L) {}
-	virtual ~L_Button() {}
+	LuaButton() : LuaPanel() {
+	}
+	LuaButton(UI::Panel* p) : LuaPanel(p) {
+	}
+	LuaButton(lua_State* L) : LuaPanel(L) {
+	}
+	virtual ~LuaButton() {
+	}
 
 	/*
 	 * Properties
 	 */
-	int get_name(lua_State * L);
+	int get_name(lua_State* L);
 
 	/*
 	 * Lua Methods
 	 */
-	int press(lua_State * L);
-	int click(lua_State * L);
+	int press(lua_State* L);
+	int click(lua_State* L);
 
 	/*
 	 * C Methods
 	 */
-	UI::Button * get() {return static_cast<UI::Button *>(m_panel);}
+	UI::Button* get() {
+		return static_cast<UI::Button*>(panel_);
+	}
 };
 
-class L_Tab : public L_Panel {
+class LuaTab : public LuaPanel {
 public:
-	LUNA_CLASS_HEAD(L_Tab);
+	LUNA_CLASS_HEAD(LuaTab);
 
-	L_Tab() : L_Panel() {}
-	L_Tab(UI::Panel * p) : L_Panel(p) {}
-	L_Tab(lua_State * L) : L_Panel(L) {}
-	virtual ~L_Tab() {}
+	LuaTab() : LuaPanel() {
+	}
+	LuaTab(UI::Panel* p) : LuaPanel(p) {
+	}
+	LuaTab(lua_State* L) : LuaPanel(L) {
+	}
+	virtual ~LuaTab() {
+	}
 
 	/*
 	 * Properties
 	 */
-	int get_name(lua_State * L);
-	int get_active(lua_State * L);
+	int get_name(lua_State* L);
+	int get_active(lua_State* L);
 
 	/*
 	 * Lua Methods
 	 */
-	int click(lua_State * L);
+	int click(lua_State* L);
 
 	/*
 	 * C Methods
 	 */
-	UI::Tab * get() {return static_cast<UI::Tab *>(m_panel);}
+	UI::Tab* get() {
+		return static_cast<UI::Tab*>(panel_);
+	}
 };
 
-class L_Window : public L_Panel {
+class LuaWindow : public LuaPanel {
 public:
-	LUNA_CLASS_HEAD(L_Window);
+	LUNA_CLASS_HEAD(LuaWindow);
 
-	L_Window() : L_Panel() {}
-	L_Window(UI::Panel * p) : L_Panel(p) {}
-	L_Window(lua_State * L) : L_Panel(L) {}
-	virtual ~L_Window() {}
+	LuaWindow() : LuaPanel() {
+	}
+	LuaWindow(UI::Panel* p) : LuaPanel(p) {
+	}
+	LuaWindow(lua_State* L) : LuaPanel(L) {
+	}
+	virtual ~LuaWindow() {
+	}
 
 	/*
 	 * Properties
 	 */
-	int get_name(lua_State * L);
+	int get_name(lua_State* L);
 
 	/*
 	 * Lua Methods
 	 */
-	int close(lua_State * L);
+	int close(lua_State* L);
 
 	/*
 	 * C Methods
 	 */
-	UI::Window * get() {return static_cast<UI::Window *>(m_panel);}
+	UI::Window* get() {
+		return static_cast<UI::Window*>(panel_);
+	}
 };
 
-
-class L_MapView : public L_Panel {
+class LuaMapView : public LuaPanel {
 public:
-	LUNA_CLASS_HEAD(L_MapView);
+	LUNA_CLASS_HEAD(LuaMapView);
 
-	L_MapView() : L_Panel() {}
-	L_MapView(Map_View * p) : L_Panel(p) {};
-	L_MapView(lua_State * L);
-	virtual ~L_MapView() {}
+	LuaMapView() : LuaPanel() {
+	}
+	LuaMapView(MapView* p) : LuaPanel(p) {
+	}
+	LuaMapView(lua_State* L);
+	virtual ~LuaMapView() {
+	}
+
+	void __persist(lua_State*) override {
+	}
+	void __unpersist(lua_State* L) override;
 
 	/*
 	 * Properties
 	 */
-	int get_viewpoint_x(lua_State *);
-	int set_viewpoint_x(lua_State *);
-	int get_viewpoint_y(lua_State *);
-	int set_viewpoint_y(lua_State *);
-	int get_buildhelp(lua_State * L);
-	int set_buildhelp(lua_State * L);
-	int get_census(lua_State * L);
-	int set_census(lua_State * L);
-	int get_statistics(lua_State * L);
-	int set_statistics(lua_State * L);
-	int get_is_building_road(lua_State * L);
+	int get_viewpoint_x(lua_State*);
+	int set_viewpoint_x(lua_State*);
+	int get_viewpoint_y(lua_State*);
+	int set_viewpoint_y(lua_State*);
+	int get_buildhelp(lua_State* L);
+	int set_buildhelp(lua_State* L);
+	int get_census(lua_State* L);
+	int set_census(lua_State* L);
+	int get_statistics(lua_State* L);
+	int set_statistics(lua_State* L);
+	int get_is_building_road(lua_State* L);
 
 	/*
 	 * Lua Methods
 	 */
-	int close(lua_State * L);
-	int click(lua_State * L);
-	int abort_road_building(lua_State * L);
-	int start_road_building(lua_State * L);
+	int close(lua_State* L);
+	int click(lua_State* L);
+	int abort_road_building(lua_State* L);
+	int start_road_building(lua_State* L);
 
 	/*
 	 * C Methods
 	 */
-	Interactive_Base * get() {return static_cast<Interactive_Base *>(m_panel);}
+	InteractiveBase* get() {
+		return static_cast<InteractiveBase*>(panel_);
+	}
 };
 
-void luaopen_wlui(lua_State *);
+void luaopen_wlui(lua_State*);
+}
 
-};
-
-#endif
+#endif  // end of include guard: WL_SCRIPTING_LUA_UI_H

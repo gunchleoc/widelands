@@ -1,0 +1,41 @@
+add_subdirectory(test)
+
+wl_library(graphic_text
+  SRCS
+    bidi.cc
+    bidi.h
+    font_io.cc
+    font_io.h
+    font_set.cc
+    font_set.h
+    rt_errors.h
+    rt_errors_impl.h
+    rt_parse.cc
+    rt_parse.h
+    rt_render.cc
+    rt_render.h
+    sdl_ttf_font.cc
+    sdl_ttf_font.h
+    textstream.cc
+    textstream.h
+  USES_SDL2
+  USES_SDL2_TTF
+  USES_ICU
+  DEPENDS
+    base_exceptions
+    base_geometry
+    base_i18n
+    base_log
+    base_macros
+    graphic
+    graphic_color
+    graphic_image_cache
+    graphic_image_io
+    graphic_sdl_utils
+    graphic_surface
+    graphic_text_layout
+    io_fileread
+    io_filesystem
+    scripting_lua_interface
+    scripting_lua_table
+)

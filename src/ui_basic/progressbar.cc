@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004, 2006-2007, 2009 by the Widelands Development Team
+ * Copyright (C) 2004-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,102 +17,79 @@
  *
  */
 
-#include "progressbar.h"
-
-#include "constants.h"
-#include "graphic/font.h"
-#include "graphic/font_handler.h"
-#include "graphic/rendertarget.h"
+#include "ui_basic/progressbar.h"
 
 #include <cstdio>
 
+#include <boost/format.hpp>
+
+#include "graphic/font_handler1.h"
+#include "graphic/rendertarget.h"
+#include "graphic/text_layout.h"
 
 namespace UI {
 /**
  * Initialize the progress bar.
 */
-Progress_Bar::Progress_Bar
-	(Panel * const parent,
-	 int32_t const x, int32_t const y, int32_t const w, int32_t const h,
-	 uint32_t const orientation)
-	:
-	Panel        (parent, x, y, w, h),
-	m_orientation(orientation),
-	m_state      (0),
-	m_total      (100)
-{}
-
+ProgressBar::ProgressBar(Panel* const parent,
+                         int32_t const x,
+                         int32_t const y,
+                         int32_t const w,
+                         int32_t const h,
+                         uint32_t const orientation)
+   : Panel(parent, x, y, w, h), orientation_(orientation), state_(0), total_(100) {
+}
 
 /**
  * Set the current state of progress.
 */
-void Progress_Bar::set_state(uint32_t state)
-{
-	m_state = state;
-
-	update();
+void ProgressBar::set_state(uint32_t state) {
+	state_ = state;
 }
-
 
 /**
  * Set the maximum state
 */
-void Progress_Bar::set_total(uint32_t total)
-{
+void ProgressBar::set_total(uint32_t total) {
 	assert(total);
-	m_total = total;
-
-	update();
+	total_ = total;
 }
-
 
 /**
  * Draw the progressbar.
 */
-void Progress_Bar::draw(RenderTarget & dst)
-{
+void ProgressBar::draw(RenderTarget& dst) {
 	assert(0 < get_w());
 	assert(0 < get_h());
-	assert(m_total);
-	const float fraction =
-		m_state < m_total ? static_cast<float>(m_state) / m_total : 1.0;
+	assert(total_);
+	const float fraction = state_ < total_ ? static_cast<float>(state_) / total_ : 1.0f;
 	assert(0 <= fraction);
-	assert     (fraction <= 1);
+	assert(fraction <= 1);
 
-	const RGBColor color = fraction <= 0.15 ?
-		RGBColor(255, 0, 0)
-		:
-		fraction <= 0.5 ? RGBColor(255, 255, 0) : RGBColor(0, 255, 0);
+	const RGBColor color = fraction <= 0.33f ? RGBColor(255, 0, 0) : fraction <= 0.67f ?
+	                                           RGBColor(255, 255, 0) :
+	                                           RGBColor(0, 255, 0);
 
 	// Draw the actual bar
-	if (m_orientation == Horizontal)
-	{
-		const uint32_t w = static_cast<uint32_t>(get_w() * fraction);
-		assert(w <= static_cast<uint32_t>(get_w()));
+	if (orientation_ == Horizontal) {
+		const float w = get_w() * fraction;
+		assert(w <= get_w());
 
-		dst.fill_rect(Rect(Point(0, 0), w, get_h()), color);
-		dst.fill_rect
-			(Rect(Point(w, 0), get_w() - w, get_h()), RGBColor(0, 0, 0));
-	}
-	else
-	{
-		const uint32_t h = static_cast<uint32_t>(get_h() * (1.0 - fraction));
+		dst.fill_rect(Rectf(0.f, 0.f, w, get_h()), color);
+		dst.fill_rect(Rectf(w, 0.f, get_w() - w, get_h()), RGBColor(0, 0, 0));
+	} else {
+		const uint32_t h = static_cast<uint32_t>(get_h() * (1.0f - fraction));
 
-		dst.fill_rect(Rect(Point(0, 0), get_w(), h), RGBColor(0, 0, 0));
-		dst.fill_rect(Rect(Point(0, h), get_w(), get_h() - h), color);
+		dst.fill_rect(Rectf(0.f, 0.f, get_w(), h), RGBColor(0, 0, 0));
+		dst.fill_rect(Rectf(0.f, h, get_w(), get_h() - h), color);
 	}
 
 	// Print the state in percent
-	char buffer[30];
-
-	snprintf
-		(buffer, sizeof(buffer), "%u%%", static_cast<uint32_t>(fraction * 100));
-
-	UI::g_fh->draw_text
-		(dst, UI::TextStyle::ui_small(),
-		 Point(get_w() / 2, get_h() / 2),
-		 buffer,
-		 Align_Center);
+	// TODO(unknown): use UI_FNT_COLOR_BRIGHT when merged
+	uint32_t percent = static_cast<uint32_t>(fraction * 100);
+	const std::string progress_text =
+	   (boost::format("<font color=%1$s>%2$i%%</font>") % "ffffff" % percent).str();
+	dst.blit(Vector2f(get_w() / 2.f, get_h() / 2.f), UI::g_fh1->render(as_uifont(progress_text)),
+	         BlendMode::UseAlpha, UI::Align::kCenter);
 }
-
 }

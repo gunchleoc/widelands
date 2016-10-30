@@ -17,36 +17,45 @@
  *
  */
 
-#ifndef LOGIN_BOX_H
-#define LOGIN_BOX_H
+#ifndef WL_WUI_LOGIN_BOX_H
+#define WL_WUI_LOGIN_BOX_H
 
 #include "ui_basic/checkbox.h"
 #include "ui_basic/editbox.h"
+#include "ui_basic/multilinetextarea.h"
 #include "ui_basic/textarea.h"
 #include "ui_basic/window.h"
 
 struct LoginBox : public UI::Window {
-	LoginBox(UI::Panel &);
+	LoginBox(UI::Panel&);
 
-	std::string get_nickname() {return eb_nickname->text();}
-	std::string get_password() {return eb_password->text();}
-	bool registered()          {return cb_register->get_state();}
-	bool set_automaticlog()    {return cb_auto_log->get_state();}
+	std::string get_nickname() {
+		return eb_nickname->text();
+	}
+	std::string get_password() {
+		return eb_password->text();
+	}
+	bool registered() {
+		return cb_register->get_state();
+	}
+	bool set_automaticlog() {
+		return cb_auto_log->get_state();
+	}
+
+	/// Handle keypresses
+	bool handle_key(bool down, SDL_Keysym code) override;
 
 private:
-	void pressedLogin();
-	void pressedCancel();
+	void clicked_back();
+	void clicked_ok();
 
-private:
-	UI::EditBox  * eb_nickname;
-	UI::EditBox  * eb_password;
-	UI::Checkbox * cb_register;
-	UI::Checkbox * cb_auto_log;
-	UI::Textarea * ta_nickname;
-	UI::Textarea * ta_password;
-	UI::Textarea * ta_register;
-	UI::Textarea * ta_auto_log;
-	UI::Textarea * pwd_warning;
+	UI::EditBox* eb_nickname;
+	UI::EditBox* eb_password;
+	UI::Checkbox* cb_register;
+	UI::Checkbox* cb_auto_log;
+	UI::Textarea* ta_nickname;
+	UI::Textarea* ta_password;
+	UI::MultilineTextarea* pwd_warning;
 };
 
-#endif
+#endif  // end of include guard: WL_WUI_LOGIN_BOX_H

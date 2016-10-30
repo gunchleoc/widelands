@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2008 by the Widelands Development Team
+ * Copyright (C) 2007-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,15 +17,15 @@
  *
  */
 
-#ifndef UI_PROGRESSWINDOW_H
-#define UI_PROGRESSWINDOW_H
+#ifndef WL_UI_BASIC_PROGRESSWINDOW_H
+#define WL_UI_BASIC_PROGRESSWINDOW_H
 
-#include <string>
 #include <cstring>
+#include <string>
 #include <vector>
 
-#include "point.h"
-#include "rect.h"
+#include "base/rect.h"
+#include "base/vector.h"
 
 class Image;
 class RenderTarget;
@@ -34,46 +34,45 @@ namespace UI {
 
 /// Manages a progress window on the screen.
 struct IProgressVisualization {
-	///perform any visualizations as needed
-	///if repaint is true, ensure previously painted areas are visible
+	/// perform any visualizations as needed
+	/// if repaint is true, ensure previously painted areas are visible
 	virtual void update(bool repaint) = 0;
 
-	///Progress Window is closing, unregister and cleanup
+	/// Progress Window is closing, unregister and cleanup
 	virtual void stop() = 0;
 
-	virtual ~IProgressVisualization() {}
+	virtual ~IProgressVisualization() {
+	}
 };
 
 /// Manages a progress window on the screen.
 struct ProgressWindow {
-	ProgressWindow(const std::string & background = std::string());
+	ProgressWindow(const std::string& background = std::string());
 	~ProgressWindow();
 
 	/// Register additional visualization (tips/hints, animation, etc)
-	void add_visualization(IProgressVisualization * instance);
-	void remove_visualization(IProgressVisualization * instance);
+	void add_visualization(IProgressVisualization* instance);
+	void remove_visualization(IProgressVisualization* instance);
 
 	/// Set a picture to render in the background
-	void set_background(const std::string & file_name);
+	void set_background(const std::string& file_name);
 
 	/// Display a progress step description.
-	void step(const std::string & description);
-	void stepf(char const * format, ...);
+	void step(const std::string& description);
 
 private:
-	typedef std::vector<IProgressVisualization *> VisualizationArray;
-	uint32_t  m_xres;
-	uint32_t  m_yres;
-	Point m_label_center;
-	Rect  m_label_rectangle;
-	VisualizationArray m_visualizations;
-	std::string m_background;
-	const Image* m_background_pic;
+	using VisualizationArray = std::vector<IProgressVisualization*>;
 
-	void draw_background(RenderTarget & rt, uint32_t xres, uint32_t yres);
+	// This is an integer vector to make sure that we blit at pixel boundaries
+	// to avoid Texture subsampling.
+	Vector2i label_center_;
+	Rectf label_rectangle_;
+	VisualizationArray visualizations_;
+	std::string background_;
+
+	void draw_background(RenderTarget& rt, uint32_t xres, uint32_t yres);
 	void update(bool repaint);
 };
-
 }
 
-#endif
+#endif  // end of include guard: WL_UI_BASIC_PROGRESSWINDOW_H

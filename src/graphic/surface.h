@@ -17,118 +17,87 @@
  *
  */
 
-#ifndef SURFACE_H
-#define SURFACE_H
+#ifndef WL_GRAPHIC_SURFACE_H
+#define WL_GRAPHIC_SURFACE_H
 
-#include <boost/noncopyable.hpp>
+#include <memory>
+#include <vector>
 
-#include "rect.h"
-#include "rgbcolor.h"
+#include "base/macros.h"
+#include "base/rect.h"
+#include "graphic/blend_mode.h"
+#include "graphic/color.h"
+#include "graphic/gl/draw_line_program.h"
+#include "graphic/image.h"
 
-#include "compositemode.h"
+class Texture;
 
-/**
- * Interface to a basic surfaces that can be used as destination for blitting and drawing.
- * It also allows low level pixel access.
- */
-class Surface : boost::noncopyable {
+// Interface to a basic surfaces that can be used as destination for blitting
+// and drawing. It also allows low level pixel access.
+class Surface {
 public:
-	// Create a new surface from an SDL_Surface. Ownership is taken.
-	static Surface* create(SDL_Surface*);
-
-	// Create a new empty (that is randomly filled) Surface with the given
-	// dimensions.
-	static Surface* create(uint16_t w, uint16_t h);
-
-	virtual ~Surface() {}
+	Surface() = default;
+	virtual ~Surface() {
+	}
 
 	/// Dimensions.
-	virtual uint16_t width() const = 0;
-	virtual uint16_t height() const = 0;
+	virtual int width() const = 0;
+	virtual int height() const = 0;
 
-	/// This draws a part of another surface to this surface
-	virtual void blit(const Point&, const Surface*, const Rect& srcrc, Composite cm = CM_Normal) = 0;
+	/// This draws a part of 'texture'.
+	void blit(
+	   const Rectf& dst, const Image&, const Rectf& srcrc, const float opacity, BlendMode blend_mode);
 
-	/// Draws a filled rect to the surface.
-	virtual void fill_rect(const Rect&, RGBAColor) = 0;
+	/// This draws a playercolor blended image.
+	void blit_blended(const Rectf& dst,
+	                  const Image& image,
+	                  const Image& texture_mask,
+	                  const Rectf& srcrc,
+	                  const RGBColor& blend);
 
-	/// Draws a rect (frame only) to the surface.
-	virtual void draw_rect(const Rect&, RGBColor) = 0;
+	/// This draws a grayed out version.
+	void
+	blit_monochrome(const Rectf& dst, const Image&, const Rectf& srcrc, const RGBAColor& multiplier);
 
-	/// draw a line to the surface
-	virtual void draw_line
-		(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const RGBColor& color, uint8_t width = 1) = 0;
+	/// Draws a filled rect to the destination.
+	void fill_rect(const Rectf& dst, const RGBAColor&, BlendMode blend_mode = BlendMode::Copy);
 
-	/// makes a rectangle on the surface brighter (or darker).
-	/// @note this is slow in SDL mode. Use with care
-	virtual void brighten_rect(const Rect&, int32_t factor) = 0;
+	// Draw a 'width' pixel wide line to the destination. 'points' are taken by
+	// value on purpose.
+	void draw_line_strip(std::vector<Vector2f> points, const RGBColor& color, float width);
 
-	/// The functions below are for direct pixel access. This should be used
-	/// only very sparingly as / it is potentially expensive (especially for
-	/// OpenGL). At the moment, only the code inside graphic / is actually using
-	/// this.
-	enum LockMode {
-		/**
-		 * Normal mode preserves pre-existing pixel data so that it can
-		 * be read or modified.
-		 */
-		Lock_Normal = 0,
+	/// makes a rectangle on the destination brighter (or darker).
+	void brighten_rect(const Rectf&, int factor);
 
-		/**
-		 * Discard mode discards pre-existing pixel data. All pixels
-		 * will be undefined unless they are re-written.
-		 */
-		Lock_Discard
-	};
+private:
+	/// The actual implementation of the methods below.
+	virtual void do_blit(const Rectf& dst_rect,
+	                     const BlitData& texture,
+	                     float opacity,
+	                     BlendMode blend_mode) = 0;
 
-	enum UnlockMode {
-		/**
-		 * Update mode will ensure that any changes in the pixel data
-		 * will appear in subsequent operations.
-		 */
-		Unlock_Update = 0,
+	virtual void do_blit_blended(const Rectf& dst_rect,
+	                             const BlitData& texture,
+	                             const BlitData& mask,
+	                             const RGBColor& blend) = 0;
 
-		/**
-		 * NoChange mode indicates that the caller changed no pixel data.
-		 *
-		 * \note If the caller did change pixel data but specifies NoChange
-		 * mode, the results are undefined.
-		 */
-		Unlock_NoChange
-	};
+	virtual void do_blit_monochrome(const Rectf& dst_rect,
+	                                const BlitData& texture,
+	                                const RGBAColor& blend) = 0;
 
-	/// This returns the pixel format for direct pixel access.
-	virtual const SDL_PixelFormat & format() const = 0;
+	// Takes argument by value for micro optimization: the argument might then
+	// be moved by the compiler instead of copied.
+	virtual void do_draw_line_strip(std::vector<DrawLineProgram::PerVertexData> vertices) = 0;
 
-	/**
-	 * Lock/Unlock pairs must guard any of the direct pixel access using the
-	 * functions below.
-	 *
-	 * \note Lock/Unlock pairs cannot be nested.
-	 */
-	//@{
-	virtual void lock(LockMode) = 0;
-	virtual void unlock(UnlockMode) = 0;
-	//@}
+	virtual void
+	do_fill_rect(const Rectf& dst_rect, const RGBAColor& color, BlendMode blend_mode) = 0;
 
-	//@{
-	virtual uint32_t get_pixel(uint16_t x, uint16_t y) = 0;
-	virtual void set_pixel(uint16_t x, uint16_t y, uint32_t clr) = 0;
-	//@}
-
-	/**
-	 * \return Pitch of the raw pixel data, i.e. the number of bytes
-	 * contained in each image row. This can be strictly larger than
-	 * bytes per pixel times the width.
-	 */
-	virtual uint16_t get_pitch() const = 0;
-
-	/**
-	 * \return Pointer to the raw pixel data.
-	 *
-	 * \warning May only be called inside lock/unlock pairs.
-	 */
-	virtual uint8_t * get_pixels() const = 0;
+	DISALLOW_COPY_AND_ASSIGN(Surface);
 };
 
-#endif
+/// Draws a rect (frame only) to the surface. The width of the surrounding line
+/// is 1 pixel, i.e. the transparent inner box of the drawn rectangle starts at
+/// (x+1, y+1) and has dimension (w - 2, h - 2).
+void draw_rect(const Rectf& rect, const RGBColor&, Surface* destination);
+
+#endif  // end of include guard: WL_GRAPHIC_SURFACE_H

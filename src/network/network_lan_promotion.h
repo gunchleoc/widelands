@@ -17,88 +17,87 @@
  *
  */
 
-#ifndef NETWORK_LAN_PROMOTION_H
-#define NETWORK_LAN_PROMOTION_H
-
-#include "network_system.h"
+#ifndef WL_NETWORK_NETWORK_LAN_PROMOTION_H
+#define WL_NETWORK_NETWORK_LAN_PROMOTION_H
 
 #include <list>
 
+#ifndef _WIN32
+#include <sys/socket.h>
+#endif
 #include <sys/types.h>
+
+#include "network/network_system.h"
 
 #define LAN_PROMOTION_PROTOCOL_VERSION 1
 
-#define LAN_GAME_CLOSED                0
-#define LAN_GAME_OPEN                  1
+#define LAN_GAME_CLOSED 0
+#define LAN_GAME_OPEN 1
 
-struct Net_Game_Info {
-	char          magic       [6];
+struct NetGameInfo {
+	char magic[6];
 	uint8_t version;
 	uint8_t state;
 
-	char          gameversion[32];
-	char          hostname   [128];
-	char          map        [32];
+	char gameversion[32];
+	char hostname[128];
+	char map[32];
 };
 
-struct Net_Open_Game {
-	in_addr_t     address;
-	in_port_t     port;
-	Net_Game_Info info;
+struct NetOpenGame {
+	in_addr_t address;
+	in_port_t port;
+	NetGameInfo info;
 };
 
-struct LAN_Base {
+struct LanBase {
 protected:
-	LAN_Base ();
-	~LAN_Base ();
+	LanBase();
+	~LanBase();
 
-	void bind (uint16_t);
+	void bind(uint16_t);
 
-	bool avail ();
+	bool avail();
 
-	ssize_t recv (void *, size_t, sockaddr_in *);
+	ssize_t receive(void*, size_t, sockaddr_in*);
 
-	void send (void const *, size_t, sockaddr_in const *);
-	void broadcast (void const *, size_t, uint16_t);
+	void send(void const*, size_t, sockaddr_in const*);
+	void broadcast(void const*, size_t, uint16_t);
 
 private:
-	int32_t                  sock;
+	int32_t sock;
 
 	std::list<in_addr_t> broadcast_addresses;
 };
 
-struct LAN_Game_Promoter : public LAN_Base {
-	LAN_Game_Promoter ();
-	~LAN_Game_Promoter ();
+struct LanGamePromoter : public LanBase {
+	LanGamePromoter();
+	~LanGamePromoter();
 
-	void run ();
+	void run();
 
-	void set_map (char const *);
-
-private:
-	Net_Game_Info gameinfo;
-	bool          needupdate;
-};
-
-struct LAN_Game_Finder:LAN_Base {
-	enum {
-		GameOpened,
-		GameClosed,
-		GameUpdated
-	};
-
-	LAN_Game_Finder ();
-
-	void reset ();
-	void run ();
-
-	void set_callback (void(*)(int32_t, Net_Open_Game const *, void *), void *);
+	void set_map(char const*);
 
 private:
-	std::list<Net_Open_Game *> opengames;
-
-	void (*callback) (int32_t, Net_Open_Game const *, void *);
-	void                     * userdata;
+	NetGameInfo gameinfo;
+	bool needupdate;
 };
 
-#endif
+struct LanGameFinder : LanBase {
+	enum { GameOpened, GameClosed, GameUpdated };
+
+	LanGameFinder();
+
+	void reset();
+	void run();
+
+	void set_callback(void (*)(int32_t, NetOpenGame const*, void*), void*);
+
+private:
+	std::list<NetOpenGame*> opengames;
+
+	void (*callback)(int32_t, NetOpenGame const*, void*);
+	void* userdata;
+};
+
+#endif  // end of include guard: WL_NETWORK_NETWORK_LAN_PROMOTION_H

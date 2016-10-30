@@ -17,34 +17,32 @@
  *
  */
 
-#ifndef FULLSCREEN_MENU_SINGLEPLAYER_H
-#define FULLSCREEN_MENU_SINGLEPLAYER_H
+#ifndef WL_UI_FSMENU_SINGLEPLAYER_H
+#define WL_UI_FSMENU_SINGLEPLAYER_H
 
-#include "base.h"
-
+#include "ui_basic/box.h"
 #include "ui_basic/button.h"
 #include "ui_basic/textarea.h"
+#include "ui_fsmenu/main_menu.h"
 
 /**
  * Fullscreen Menu for SinglePlayer.
  * Here you select what game you want to play.
  */
-struct Fullscreen_Menu_SinglePlayer : public Fullscreen_Menu_Base {
-	Fullscreen_Menu_SinglePlayer();
+class FullscreenMenuSinglePlayer : public FullscreenMenuMainMenu {
+public:
+	FullscreenMenuSinglePlayer();
 
-	enum {Back = dying_code, New_Game, Campaign, Load_Game};
+protected:
+	void clicked_ok() override;
 
 private:
-	uint32_t                                            m_butw;
-	uint32_t                                            m_buth;
-	uint32_t                                            m_butx;
-	uint32_t                                            m_fs;
-	std::string                                         m_fn;
-	UI::Textarea                                        title;
-	UI::Button                             new_game;
-	UI::Button                             campaign;
-	UI::Button                             load_game;
-	UI::Button                             back;
+	UI::Textarea title;
+	UI::Box vbox;
+	UI::Button new_game;
+	UI::Button campaign;
+	UI::Button load_game;
+	UI::Button back;
 };
 
-#endif
+#endif  // end of include guard: WL_UI_FSMENU_SINGLEPLAYER_H
