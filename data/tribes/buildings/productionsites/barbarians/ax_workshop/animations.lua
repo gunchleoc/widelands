@@ -2,25 +2,25 @@
 
 return {
    build = {
-      spritemap = "axefactory.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 89},
       offset = {117, 100},
       hotspot = {57, 76},
    },
    idle = {
-      spritemap = "axefactory.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 89},
       offset = {0, 100},
       hotspot = {57, 76},
    },
    unoccupied = {
-      spritemap = "axefactory.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 89},
       offset = {117, 0},
       hotspot = {57, 76},
    },
    working = {
-      spritemap = "axefactory.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 100},
       offset = {0, 0},
       hotspot = {57, 76},

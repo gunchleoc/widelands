@@ -2,7 +2,7 @@
 
 return {
    build = {
-      spritemap = "warmill.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 101},
       offset = {117, 101},
       hotspot = {57, 76},
@@ -14,19 +14,19 @@ return {
          },
       },
    idle = {
-      spritemap = "warmill.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 101},
       offset = {0, 101},
       hotspot = {57, 76},
    },
    unoccupied = {
-      spritemap = "warmill.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {117, 101},
       offset = {120, 0},
       hotspot = {57, 76},
    },
    working = {
-      spritemap = "warmill.png",
+      spritemap = path.dirname(__file__) .. "spritemap.png",
       size = {120, 101},
       offset = {0, 0},
       hotspot = {57, 76},
