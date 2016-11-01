@@ -86,7 +86,7 @@ public:
 	virtual const Vector2i& hotspot() const {return hotspot_;}
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
-	virtual void blit(uint32_t time,
+	void blit(uint32_t time,
 							const Rectf& dstrc,
 							const Rectf& srcrc,
 							const RGBColor* clr,
@@ -94,7 +94,7 @@ public:
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
 
 private:
-	const Image* image_for_frame(uint32_t framenumber, const Rectf& dstrc, const Rectf& srcrc, const RGBColor* clr) const;
+	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
 
 	struct Region {
 		Vector2i target_offset;
@@ -117,7 +117,7 @@ private:
 	/// mapping of soundeffect name to frame number, indexed by frame number .
 	// NOCOM map<uint32_t, string> sfx_cues;
 };
-// NOCOM segfault in ~ImageCache() when leaving Widelands
+
 PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(nullptr), pcmask_(nullptr), play_once_(false) {
 	log("NOCOM packed animation %s\n", name.c_str());
@@ -209,26 +209,15 @@ void PackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) con
 }
 
 const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
-	return g_gr->images().get("images/novalue.png");
-	/* // NOCOM segfault
-	const string hash =
-		(boost::format("%s:%02x%02x%02x:animation_pic") % hash_ % static_cast<int>(clr->r) %
-		 static_cast<int>(clr->g) % static_cast<int>(clr->b))
-			.str();
-
-	ImageCache& image_cache = g_gr->images();
-	if (image_cache.has(hash))
-		return image_cache.get(hash);
-*/
-	//return image_cache.insert(hash, std::unique_ptr<const Image>(image_for_frame(0u, rectangle_.cast<float>(), rectangle_.cast<float>(), clr)));
-	return g_gr->images().get("images/novalue.png");
+	return image_for_frame(0, clr);
 }
 
 const std::string& PackedAnimation::representative_image_filename() const {
 	return representative_image_filename_;
 }
 
-const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const Rectf& dstrc, const Rectf& srcrc, const RGBColor* clr) const {
+const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBColor* clr) const {
+	// NOCOM implement image cache
 	Image* image;
 	if (!pcmask_ || clr == nullptr) {
 		const int w = image_->width();
@@ -242,34 +231,11 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const Rectf&
 
 	Texture* target = new Texture(rectangle_.w, rectangle_.h);
 
-	target->blit(dstrc, *image, Rectf(rectangle_.x + srcrc.x, rectangle_.y + srcrc.y, srcrc.w, srcrc.h), 1., BlendMode::UseAlpha);
+	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image, Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1., BlendMode::UseAlpha);
 
 	for (const Region& r : regions_) {
 		Rectf rsrc = Rectf(r.source_offsets[framenumber], r.w, r.h);
-		Rectf rdst = dstrc;
-		rdst.x += r.target_offset.x + srcrc.x;
-		rdst.y += r.target_offset.y + srcrc.y;
-
-		if (srcrc.x > r.target_offset.x) {
-			rdst.x += srcrc.x - r.target_offset.x;
-			rsrc.x += srcrc.x - r.target_offset.x;
-			rsrc.w -= srcrc.x - r.target_offset.x;
-			if (rsrc.w > r.w)
-				continue;
-		}
-		if (srcrc.y > r.target_offset.y) {
-			rdst.y += srcrc.y - r.target_offset.y;
-			rsrc.y += srcrc.y - r.target_offset.y;
-			rsrc.h -= srcrc.y - r.target_offset.y;
-			if (rsrc.h > r.h)
-				continue;
-		}
-		if (r.target_offset.x + rsrc.w > srcrc.x + srcrc.w) {
-			rsrc.w = srcrc.x + srcrc.w - r.target_offset.x;
-		}
-		if (r.target_offset.y + rsrc.h > srcrc.y + srcrc.h) {
-			rsrc.h = srcrc.y + srcrc.h - r.target_offset.y;
-		}
+		Rectf rdst = Rectf(r.target_offset, r.w, r.h);
 		target->blit(rdst, *image, rsrc, 1., BlendMode::UseAlpha);
 	}
 	return target;
@@ -282,7 +248,7 @@ void PackedAnimation::blit(uint32_t time,
 										Surface* target) const {
 	assert(target);
 	const uint32_t frame_number = time / frametime_ % nr_frames();
-	const Image* blitme = image_for_frame(frame_number, dstrc, srcrc, clr);
+	const Image* blitme = image_for_frame(frame_number, clr);
 	target->blit(dstrc, *blitme, srcrc, 1., BlendMode::UseAlpha);
 }
 
@@ -304,7 +270,7 @@ public:
 	const Vector2i& hotspot() const override;
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
-	virtual void blit(uint32_t time,
+	void blit(uint32_t time,
 	                  const Rectf& dstrc,
 	                  const Rectf& srcrc,
 	                  const RGBColor* clr,
