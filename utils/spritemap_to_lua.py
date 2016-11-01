@@ -19,7 +19,7 @@ def parse_conf(directory, unit_name):
                 dimensions = split_string[0].split(" ")
                 if (len(dimensions)) == 4:
                     result += "         {\n"
-                    result += "            dimensions = {" + dimensions[0] + ", " + dimensions[1] + ", " + dimensions[2] + ", " + dimensions[3] + "},\n"
+                    result += "            rectangle = {" + dimensions[0] + ", " + dimensions[1] + ", " + dimensions[2] + ", " + dimensions[3] + "},\n"
                     result += "            offsets = {"
                     for offset in split_string[1].split(";"):
                         offset_x_y = offset.split(" ")
