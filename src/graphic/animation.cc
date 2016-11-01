@@ -76,7 +76,7 @@ void get_rect(const LuaTable& table, Recti* r) {
 class PackedAnimation : public Animation {
 public:
 	virtual ~PackedAnimation() {}
-	PackedAnimation(const string& directory, const string& name, const LuaTable& table);
+	PackedAnimation(const string& name, const LuaTable& table);
 
 	// Implements Animation.
 	virtual uint16_t width() const {return rectangle_.w;}
@@ -84,14 +84,14 @@ public:
 	virtual uint16_t nr_frames() const {return nr_frames_;}
 	virtual uint32_t frametime() const {return frametime_;}
 	virtual const Vector2i& hotspot() const {return hotspot_;}
-	virtual const Image& representative_image(const RGBColor& clr) const;
+	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	virtual void blit(uint32_t time,
 							const Rectf& dstrc,
 							const Rectf& srcrc,
 							const RGBColor* clr,
 							Surface*) const override;
-	virtual void trigger_soundfx(uint32_t framenumber, uint32_t stereo_position) const;
+	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
 
 private:
 	const Image* image_for_frame(uint32_t framenumber, const Rectf& dstrc, const Rectf& srcrc, const RGBColor* clr) const;
@@ -115,13 +115,12 @@ private:
 	bool play_once_;
 
 	/// mapping of soundeffect name to frame number, indexed by frame number .
-	map<uint32_t, string> sfx_cues; // NOCOM parse
+	// NOCOM map<uint32_t, string> sfx_cues;
 };
-
-PackedAnimation::PackedAnimation(const string& directory, const string& name, const LuaTable& table)
+// NOCOM segfault in ~ImageCache() when leaving Widelands
+PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(nullptr), pcmask_(nullptr), play_once_(false) {
-	hash_ = directory + name;
-	log("\nNOCOM packed animation %s\n", hash_.c_str());
+	log("NOCOM packed animation %s\n", name.c_str());
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -134,84 +133,95 @@ PackedAnimation::PackedAnimation(const string& directory, const string& name, co
 			throw wexception("Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
 		}
 		image_ = g_gr->images().get(image);
+		hash_ = image + name;
 		boost::replace_all(image, ".png", "");
 		if (g_fs->file_exists(image + "_pc.png")) {
 			pcmask_ = g_gr->images().get(image + "_pc.png");
 		}
 
-		// We need this for richtext image tags
-		representative_image_filename_ = table.get_string("representative_image");
+		// We need to define this for idle animations so we can use it in richtext image tags
+		if (table.has_key("representative_image")) {
+			representative_image_filename_ = table.get_string("representative_image");
+		}
 
 		get_rect(*table.get_table("rectangle"), &rectangle_);
 
-		std::unique_ptr<LuaTable> regions_table = table.get_table("regions");
-		const auto region_keys = regions_table->keys<int>();
-		const uint16_t no_of_regions = region_keys.size();
-		if (table.has_key("fps")) {
-			if (no_of_regions < 2) {
-				throw wexception(
-					"Animation with one picture %s must not have 'fps'", hash_.c_str());
+		if (table.has_key("regions")) {
+			std::unique_ptr<LuaTable> regions_table = table.get_table("regions");
+			const auto region_keys = regions_table->keys<int>();
+			if (table.has_key("fps")) {
+				if (region_keys.size() < 2) {
+					throw wexception(
+						"Animation with one picture %s must not have 'fps'", hash_.c_str());
+				}
+				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
-			frametime_ = 1000 / get_positive_int(table, "fps");
-		}
 
-		// No regions? Only one frame then.
-		if (no_of_regions == 0) {
+			for (const int region_key : region_keys) {
+				std::unique_ptr<LuaTable> region_table = regions_table->get_table(region_key);
+				Region r;
+				Recti region_rect;
+				get_rect(*region_table->get_table("rectangle"), &region_rect);
+				r.target_offset.x = region_rect.x;
+				r.target_offset.y = region_rect.y;
+				r.h = region_rect.h;
+				r.w = region_rect.w;
+
+				if (region_table->has_key("offsets")) {
+					std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+					const auto offsets_keys = offsets_table->keys<int>();
+					const uint16_t no_of_offsets = offsets_keys.size();
+					if (nr_frames_ && nr_frames_ != no_of_offsets) {
+						throw wexception(
+									"%s: region has different number of frames than previous (%i != %i).",
+													 hash_.c_str(), nr_frames_, no_of_offsets);
+					}
+					nr_frames_ = no_of_offsets;
+
+					for (const int offset_key : offsets_keys) {
+						std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
+						Vector2i p;
+						get_point(*offset_table, &p);
+						r.source_offsets.push_back(p);
+					}
+				}
+				regions_.push_back(r);
+			}
+		} else {
+			// No regions? Only one frame then.
 			nr_frames_ = 1;
-		}
-
-		for (const int region_key : region_keys) {
-			std::unique_ptr<LuaTable> region_table = regions_table->get_table(region_key);
-			Region r;
-			Recti region_rect;
-			get_rect(*region_table->get_table("rectangle"), &region_rect);
-			r.target_offset.x = region_rect.x;
-			r.target_offset.y = region_rect.y;
-			r.h = region_rect.h;
-			r.w = region_rect.w;
-
-			std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
-			const auto offsets_keys = offsets_table->keys<int>();
-			const uint16_t no_of_offsets = offsets_keys.size();
-			if (nr_frames_ && nr_frames_ != no_of_offsets) {
-				throw wexception(
-							"%s: region has different number of frames than previous (%i != %i).",
-											 hash_.c_str(), nr_frames_, no_of_offsets);
+			if (table.has_key("fps")) {
+				throw wexception("Animation with one picture %s must not have 'fps'", hash_.c_str());
 			}
-			nr_frames_ = no_of_offsets;
-
-			for (const int offset_key : offsets_keys) {
-				Vector2i p;
-				get_point(*region_table->get_table(offset_key), &p);
-				r.source_offsets.push_back(p);
-			}
-			regions_.push_back(r);
 		}
-
 	} catch (const LuaError& e) {
 		throw wexception("Error in packed animation table: %s", e.what());
 	}
 }
 
-void PackedAnimation::trigger_soundfx
-	(uint32_t time, uint32_t stereo_position) const {
+void PackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) const {
+	/* NOCOM
 	const uint32_t framenumber = time / frametime_ % nr_frames();
 	const map<uint32_t, string>::const_iterator sfx_cue = sfx_cues.find(framenumber);
 	if (sfx_cue != sfx_cues.end())
 		g_sound_handler.play_fx(sfx_cue->second, stereo_position, 1);
+		*/
 }
 
-const Image& PackedAnimation::representative_image(const RGBColor& clr) const {
+const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
+	return g_gr->images().get("images/novalue.png");
+	/* // NOCOM segfault
 	const string hash =
-		(boost::format("%s:%02x%02x%02x:animation_pic") % hash_ % static_cast<int>(clr.r) %
-		 static_cast<int>(clr.g) % static_cast<int>(clr.b))
+		(boost::format("%s:%02x%02x%02x:animation_pic") % hash_ % static_cast<int>(clr->r) %
+		 static_cast<int>(clr->g) % static_cast<int>(clr->b))
 			.str();
 
 	ImageCache& image_cache = g_gr->images();
 	if (image_cache.has(hash))
-		return *image_cache.get(hash);
-
-	return *image_cache.insert(hash, std::unique_ptr<const Image>(image_for_frame(0u, rectangle_.cast<float>(), rectangle_.cast<float>(), &clr)));
+		return image_cache.get(hash);
+*/
+	//return image_cache.insert(hash, std::unique_ptr<const Image>(image_for_frame(0u, rectangle_.cast<float>(), rectangle_.cast<float>(), clr)));
+	return g_gr->images().get("images/novalue.png");
 }
 
 const std::string& PackedAnimation::representative_image_filename() const {
@@ -292,7 +302,7 @@ public:
 	uint16_t nr_frames() const override;
 	uint32_t frametime() const override;
 	const Vector2i& hotspot() const override;
-	Image* representative_image(const RGBColor* clr) const override;
+	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	virtual void blit(uint32_t time,
 	                  const Rectf& dstrc,
@@ -437,7 +447,7 @@ const Vector2i& NonPackedAnimation::hotspot() const {
 	return hotspot_;
 }
 
-Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
+const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
 	assert(!image_files_.empty());
 	const Image* image = g_gr->images().get(image_files_[0]);
 
@@ -528,6 +538,11 @@ uint32_t AnimationManager::load(const LuaTable& table) {
 	return animations_.size();
 }
 
+uint32_t AnimationManager::load_packed(const string& name, const LuaTable& table) {
+	animations_.push_back(std::unique_ptr<Animation>(new PackedAnimation(name, table)));
+	return animations_.size();
+}
+
 const Animation& AnimationManager::get_animation(uint32_t id) const {
 	if (!id || id > animations_.size())
 		throw wexception("Requested unknown animation with id: %i", id);
@@ -539,7 +554,7 @@ const Image* AnimationManager::get_representative_image(uint32_t id, const RGBCo
 	if (representative_images_.count(id) != 1) {
 		representative_images_.insert(std::make_pair(
 		   id,
-		   std::unique_ptr<Image>(g_gr->animations().get_animation(id).representative_image(clr))));
+			std::unique_ptr<const Image>(g_gr->animations().get_animation(id).representative_image(clr))));
 	}
 	return representative_images_.at(id).get();
 }

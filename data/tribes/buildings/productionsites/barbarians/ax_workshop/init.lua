@@ -23,26 +23,7 @@ tribes:new_productionsite_type {
       grout = 1
    },
 
-   animations = {
-      idle = {
-         pictures = path.list_files(dirname .. "idle_??.png"),
-         hotspot = { 57, 76 },
-      },
-      build = {
-         pictures = path.list_files(dirname .. "build_??.png"),
-         hotspot = { 57, 76 },
-      },
-      unoccupied = {
-         pictures = path.list_files(dirname .. "unoccupied_??.png"),
-         hotspot = { 57, 76 },
-      },
-      working = {
-         pictures = path.list_files(dirname .. "working_??.png"),
-         hotspot = { 57, 76 },
-         fps = 10
-      },
-   },
-
+   spritemap_script = dirname .. "animations.lua",
    aihints = {},
 
    working_positions = {

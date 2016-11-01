@@ -230,13 +230,24 @@ MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
 		for (const std::string& animation : anims->keys<std::string>()) {
 			add_animation(animation, g_gr->animations().load(*anims->get_table(animation)));
 		}
+	}
+	// NOCOM
+	if (table.has_key("spritemap_script")) {
+		LuaInterface lua;
+		std::unique_ptr<LuaTable> spritemap(lua.run_script(table.get_string("spritemap_script")));
+		for (const std::string& animation : spritemap->keys<std::string>()) {
+			add_animation(animation, g_gr->animations().load_packed(animation, *spritemap->get_table(animation)));
+		}
+	}
+	if (table.has_key("animations") || table.has_key("spritemap_script")) {
 		if (!is_animation_known("idle")) {
 			throw GameDataError(
-			   "Map object %s has animations but no idle animation", init_name.c_str());
+				"Map object %s has animations but no idle animation", init_name.c_str());
 		}
 		representative_image_filename_ =
-		   g_gr->animations().get_animation(get_animation("idle")).representative_image_filename();
+			g_gr->animations().get_animation(get_animation("idle")).representative_image_filename();
 	}
+
 	if (table.has_key("icon")) {
 		icon_filename_ = table.get_string("icon");
 		if (icon_filename_.empty()) {

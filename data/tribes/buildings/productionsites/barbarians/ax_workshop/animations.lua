@@ -3,7 +3,6 @@
 return {
    build = {
       image = path.dirname(__file__) .. "spritemap.png",
-      representative_image = path.dirname(__file__) .. "build_00.png",
       rectangle = {117, 100, 117, 89},
       hotspot = {57, 76},
    },
@@ -15,13 +14,11 @@ return {
    },
    unoccupied = {
       image = path.dirname(__file__) .. "spritemap.png",
-      representative_image = path.dirname(__file__) .. "unoccupied_00.png",
       rectangle = {117, 0, 117, 89},
       hotspot = {57, 76},
    },
    working = {
       image = path.dirname(__file__) .. "spritemap.png",
-      representative_image = path.dirname(__file__) .. "working_00.png",
       rectangle = {0, 0, 117, 100},
       hotspot = {57, 76},
       fps = 10,
