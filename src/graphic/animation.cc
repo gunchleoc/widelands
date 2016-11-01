@@ -133,7 +133,7 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 			throw wexception("Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
 		}
 		image_ = g_gr->images().get(image);
-		hash_ = image + name;
+		hash_ = image + ":" + name;
 		boost::replace_all(image, ".png", "");
 		if (g_fs->file_exists(image + "_pc.png")) {
 			pcmask_ = g_gr->images().get(image + "_pc.png");
@@ -217,7 +217,14 @@ const std::string& PackedAnimation::representative_image_filename() const {
 }
 
 const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBColor* clr) const {
-	// NOCOM implement image cache
+	/* NOCOM fix image cache - segfaults when leaving Widelands.
+	const std::string hash = (boost::format("%s:%s:%u:animation") % hash_ % (clr ? clr->hex_value() : "") % framenumber).str();
+	ImageCache& image_cache = g_gr->images();
+	if (image_cache.has(hash)) {
+		return image_cache.get(hash);
+	}
+	*/
+
 	Image* image;
 	if (!pcmask_ || clr == nullptr) {
 		const int w = image_->width();
@@ -230,7 +237,6 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 	}
 
 	Texture* target = new Texture(rectangle_.w, rectangle_.h);
-
 	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image, Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1., BlendMode::UseAlpha);
 
 	for (const Region& r : regions_) {
@@ -238,6 +244,7 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 		Rectf rdst = Rectf(r.target_offset, r.w, r.h);
 		target->blit(rdst, *image, rsrc, 1., BlendMode::UseAlpha);
 	}
+	//image_cache.insert(hash, std::unique_ptr<const Image>(target));
 	return target;
 }
 
@@ -247,8 +254,7 @@ void PackedAnimation::blit(uint32_t time,
 										const RGBColor* clr,
 										Surface* target) const {
 	assert(target);
-	const uint32_t frame_number = time / frametime_ % nr_frames();
-	const Image* blitme = image_for_frame(frame_number, clr);
+	const Image* blitme = image_for_frame(time / frametime_ % nr_frames(), clr);
 	target->blit(dstrc, *blitme, srcrc, 1., BlendMode::UseAlpha);
 }
 
