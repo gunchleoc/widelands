@@ -68,43 +68,6 @@ void get_rect(const LuaTable& table, Recti* r) {
 	r->h = pts[3];
 }
 
-/**
- * An Image Implementation that draws a static animation into a surface.
- */
-class AnimationImage : public Image {
-public:
-	AnimationImage
-		(const string& ghash, const Animation* anim, const RGBColor& clr)
-		: hash_(ghash), anim_(anim), clr_(clr)	{}
-	virtual ~AnimationImage() {}
-
-	// Implements Image.
-	virtual int width() const {return anim_->width();}
-	virtual int height() const {return anim_->height();}
-	virtual const string& hash() const {return hash_;}
-	/* NOCOM
-	virtual Surface* surface() const {
-		SurfaceCache& surface_cache = g_gr->surfaces();
-		Surface* surf = surface_cache.get(hash_);
-		if (surf)
-			return surf;
-
-		// Blit the animation on a freshly wiped surface.
-		surf = Surface::create(width(), height());
-		surf->fill_rect(Rectf(0, 0, surf->width(), surf->height()), RGBAColor(255, 255, 255, 0));
-		anim_->blit(0, Vectof2f(0,0), Rectf(0,0,width(), height()), &clr_, surf);
-		surface_cache.insert(hash_, surf);
-
-		return surf;
-	}
-	*/
-
-private:
-	const string hash_;
-	const Animation* const anim_;   // Not owned.
-	const RGBColor clr_;
-};
-
 
 /**
  * Implements the Animation interface for a packed animation, that is an animation
@@ -123,10 +86,16 @@ public:
 	virtual const Vector2i& hotspot() const {return hotspot_;}
 	virtual const Image& representative_image(const RGBColor& clr) const;
 	const std::string& representative_image_filename() const override;
-	// NOCOM void blit(uint32_t time, const Vector2f&, const Rectf& srcrc, const RGBColor* clr, Surface*) const;
+	virtual void blit(uint32_t time,
+							const Rectf& dstrc,
+							const Rectf& srcrc,
+							const RGBColor* clr,
+							Surface*) const override;
 	virtual void trigger_soundfx(uint32_t framenumber, uint32_t stereo_position) const;
 
 private:
+	const Image* image_for_frame(uint32_t framenumber, const Rectf& dstrc, const Rectf& srcrc, const RGBColor* clr) const;
+
 	struct Region {
 		Vector2i target_offset;
 		uint16_t w, h;
@@ -146,50 +115,15 @@ private:
 	bool play_once_;
 
 	/// mapping of soundeffect name to frame number, indexed by frame number .
-	map<uint32_t, string> sfx_cues;
+	map<uint32_t, string> sfx_cues; // NOCOM parse
 };
 
 PackedAnimation::PackedAnimation(const string& directory, const string& name, const LuaTable& table)
-		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(NULL), pcmask_(NULL), play_once_(false) {
+		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(nullptr), pcmask_(nullptr), play_once_(false) {
 	hash_ = directory + name;
 	log("\nNOCOM packed animation %s\n", hash_.c_str());
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
-
-		/* NOCOM
-		if (table.has_key("sound_effect")) {
-			std::unique_ptr<LuaTable> sound_effects = table.get_table("sound_effect");
-
-			const std::string name = sound_effects->get_string("name");
-			const std::string directory = sound_effects->get_string("directory");
-			sound_effect_ = directory + g_fs->file_separator() + name;
-			g_sound_handler.load_fx_if_needed(directory, name, sound_effect_);
-		}
-
-	// Read mapping from frame numbers to sound effect names and load effects
-	while (Section::Value * const v = s.get_next_val("sfx")) {
-		char * parameters = v->get_string(), * endp;
-		unsigned long long int const value = strtoull(parameters, &endp, 0);
-		const uint32_t frame_number = value;
-		try {
-			if (endp == parameters or frame_number != value)
-				throw wexception("expected %s but found \"%s\"", "frame number", parameters);
-			parameters = endp;
-			force_skip(parameters);
-			g_sound_handler.load_fx(directory, parameters);
-			map<uint32_t, string>::const_iterator const it =
-				sfx_cues.find(frame_number);
-			if (it != sfx_cues.end())
-				throw wexception
-					("redefinition for frame %u to \"%s\" (previously defined to "
-					 "\"%s\")",
-					 frame_number, parameters, it->second.c_str());
-		} catch (const _wexception & e) {
-			throw wexception("sfx: %s", e.what());
-		}
-		sfx_cues[frame_number] = parameters;
-	}
-		*/
 
 		if (table.has_key("play_once")) {
 			play_once_ = table.get_bool("play_once");
@@ -277,31 +211,34 @@ const Image& PackedAnimation::representative_image(const RGBColor& clr) const {
 	if (image_cache.has(hash))
 		return *image_cache.get(hash);
 
-	// NOCOM return *image_cache.insert(hash, std::unique_ptr<const Image>(new AnimationImage(hash, this, clr)));
-	return *g_gr->images().get("images/novalue.png");
+	return *image_cache.insert(hash, std::unique_ptr<const Image>(image_for_frame(0u, rectangle_.cast<float>(), rectangle_.cast<float>(), &clr)));
 }
 
 const std::string& PackedAnimation::representative_image_filename() const {
 	return representative_image_filename_;
 }
 
-/* NOCOM
-void PackedAnimation::blit
-	(uint32_t time, const Vector2f& dst, const Rectf& srcrc, const RGBColor* clr, Surface* target) const
-{
-	assert(target);
-	const uint32_t framenumber = time / frametime_ % nr_frames();
-
-	const Image* use_image = image_;
-	if (clr && pcmask_) {
-		use_image = ImageTransformations::player_colored(*clr, image_, pcmask_);
+const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const Rectf& dstrc, const Rectf& srcrc, const RGBColor* clr) const {
+	Image* image;
+	if (!pcmask_ || clr == nullptr) {
+		const int w = image_->width();
+		const int h = image_->height();
+		Texture* texture = new Texture(w, h);
+		texture->blit(Rectf(0, 0, w, h), *image_, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		image = dynamic_cast<Image*>(texture);
+	} else {
+		image = playercolor_image(clr, image_, pcmask_);
 	}
 
-	target->blit(Rectf(0, 0, r.w, r.h), use_image->surface(), Rectf(rectangle_.x + srcrc.x, rectangle_.y + srcrc.y, srcrc.w, srcrc.h), 1., BlendMode::UseAlpha);
+	Texture* target = new Texture(rectangle_.w, rectangle_.h);
+
+	target->blit(dstrc, *image, Rectf(rectangle_.x + srcrc.x, rectangle_.y + srcrc.y, srcrc.w, srcrc.h), 1., BlendMode::UseAlpha);
 
 	for (const Region& r : regions_) {
 		Rectf rsrc = Rectf(r.source_offsets[framenumber], r.w, r.h);
-		Vector2f rdst = dst + r.target_offset - srcrc;
+		Rectf rdst = dstrc;
+		rdst.x += r.target_offset.x + srcrc.x;
+		rdst.y += r.target_offset.y + srcrc.y;
 
 		if (srcrc.x > r.target_offset.x) {
 			rdst.x += srcrc.x - r.target_offset.x;
@@ -323,11 +260,21 @@ void PackedAnimation::blit
 		if (r.target_offset.y + rsrc.h > srcrc.y + srcrc.h) {
 			rsrc.h = srcrc.y + srcrc.h - r.target_offset.y;
 		}
-		target->blit(Rectf(0, 0, r.w, r.h), use_image->surface(), rsrc, 1., BlendMode::UseAlpha);
+		target->blit(rdst, *image, rsrc, 1., BlendMode::UseAlpha);
 	}
-
+	return target;
 }
-*/
+
+void PackedAnimation::blit(uint32_t time,
+										const Rectf& dstrc,
+										const Rectf& srcrc,
+										const RGBColor* clr,
+										Surface* target) const {
+	assert(target);
+	const uint32_t frame_number = time / frametime_ % nr_frames();
+	const Image* blitme = image_for_frame(frame_number, dstrc, srcrc, clr);
+	target->blit(dstrc, *blitme, srcrc, 1., BlendMode::UseAlpha);
+}
 
 /**
  * Implements the Animation interface for an animation that is unpacked on disk, that
