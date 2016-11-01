@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2016 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 #include <memory>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/format.hpp>
 
 #include "base/i18n.h"
 #include "base/log.h"
@@ -45,28 +46,26 @@ using namespace std;
 
 namespace  {
 
-// Parses a point from a string like 'p=x y' into p. Throws on error.
-void parse_point(const string& def, Point* p) {
-	vector<string> split_vector;
-	boost::split(split_vector, def, boost::is_any_of(" "));
-	if (split_vector.size() != 2)
-		throw wexception("Invalid point definition: %s", def.c_str());
-
-	p->x = boost::lexical_cast<int32_t>(split_vector[0]);
-	p->y = boost::lexical_cast<int32_t>(split_vector[1]);
+// Parses an array { 12, 23 } into a point.
+void get_point(const LuaTable& table, Vector2i* p) {
+	std::vector<int> pts = table.array_entries<int>();
+	if (pts.size() != 2) {
+		throw wexception("Expected 2 entries, but got %" PRIuS ".", pts.size());
+	}
+	p->x = pts[0];
+	p->y = pts[1];
 }
 
-// Parses a rect from a string like 'p=x y w h' into r. Throws on error.
-void parse_rect(const string& def, Rect* r) {
-	vector<string> split_vector;
-	boost::split(split_vector, def, boost::is_any_of(" "));
-	if (split_vector.size() != 4)
-		throw wexception("Invalid rect definition: %s", def.c_str());
-
-	r->x = boost::lexical_cast<int32_t>(split_vector[0]);
-	r->y = boost::lexical_cast<int32_t>(split_vector[1]);
-	r->w = boost::lexical_cast<uint32_t>(split_vector[2]);
-	r->h = boost::lexical_cast<uint32_t>(split_vector[3]);
+// Parses an array { 89, 0, 23, 25 } into a rectangle.
+void get_rect(const LuaTable& table, Recti* r) {
+	std::vector<int> pts = table.array_entries<int>();
+	if (pts.size() != 4) {
+		throw wexception("Expected 4 entries, but got %" PRIuS ".", pts.size());
+	}
+	r->x = pts[0];
+	r->y = pts[1];
+	r->w = pts[2];
+	r->h = pts[3];
 }
 
 /**
@@ -80,9 +79,10 @@ public:
 	virtual ~AnimationImage() {}
 
 	// Implements Image.
-	virtual uint16_t width() const {return anim_->width();}
-	virtual uint16_t height() const {return anim_->height();}
+	virtual int width() const {return anim_->width();}
+	virtual int height() const {return anim_->height();}
 	virtual const string& hash() const {return hash_;}
+	/* NOCOM
 	virtual Surface* surface() const {
 		SurfaceCache& surface_cache = g_gr->surfaces();
 		Surface* surf = surface_cache.get(hash_);
@@ -91,12 +91,13 @@ public:
 
 		// Blit the animation on a freshly wiped surface.
 		surf = Surface::create(width(), height());
-		surf->fill_rect(Rect(0, 0, surf->width(), surf->height()), RGBAColor(255, 255, 255, 0));
-		anim_->blit(0, Point(0,0), Rect(0,0,width(), height()), &clr_, surf);
+		surf->fill_rect(Rectf(0, 0, surf->width(), surf->height()), RGBAColor(255, 255, 255, 0));
+		anim_->blit(0, Vectof2f(0,0), Rectf(0,0,width(), height()), &clr_, surf);
 		surface_cache.insert(hash_, surf);
 
 		return surf;
 	}
+	*/
 
 private:
 	const string hash_;
@@ -112,44 +113,58 @@ private:
 class PackedAnimation : public Animation {
 public:
 	virtual ~PackedAnimation() {}
-	PackedAnimation(const string& directory, Section & s);
+	PackedAnimation(const string& directory, const string& name, const LuaTable& table);
 
 	// Implements Animation.
-	virtual uint16_t width() const {return width_;}
-	virtual uint16_t height() const {return height_;}
+	virtual uint16_t width() const {return rectangle_.w;}
+	virtual uint16_t height() const {return rectangle_.h;}
 	virtual uint16_t nr_frames() const {return nr_frames_;}
 	virtual uint32_t frametime() const {return frametime_;}
-	virtual const Point& hotspot() const {return hotspot_;}
+	virtual const Vector2i& hotspot() const {return hotspot_;}
 	virtual const Image& representative_image(const RGBColor& clr) const;
-	void blit(uint32_t time, const Point&, const Rect& srcrc, const RGBColor* clr, Surface*) const;
+	const std::string& representative_image_filename() const override;
+	// NOCOM void blit(uint32_t time, const Vector2f&, const Rectf& srcrc, const RGBColor* clr, Surface*) const;
 	virtual void trigger_soundfx(uint32_t framenumber, uint32_t stereo_position) const;
 
 private:
 	struct Region {
-		Point target_offset;
+		Vector2i target_offset;
 		uint16_t w, h;
-		std::vector<Point> source_offsets;  // indexed by frame nr.
+		std::vector<Vector2i> source_offsets;  // indexed by frame nr.
 	};
 
-	uint16_t width_, height_;
+	Recti rectangle_;
+	Vector2i hotspot_;
 	uint16_t nr_frames_;
 	uint32_t frametime_;
-	Point hotspot_;
-	Point base_offset_;
 
 	const Image* image_;  // Not owned
 	const Image* pcmask_;  // Not owned
+	std::string representative_image_filename_;
 	std::vector<Region> regions_;
 	string hash_;
+	bool play_once_;
 
 	/// mapping of soundeffect name to frame number, indexed by frame number .
 	map<uint32_t, string> sfx_cues;
 };
 
-PackedAnimation::PackedAnimation(const string& directory, Section& s)
-		: width_(0), height_(0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(NULL), pcmask_(NULL) {
-	hash_ = directory + s.get_name();
-	log("\nNOCOM packed animation %s %s\n", directory.c_str(), s.get_name());
+PackedAnimation::PackedAnimation(const string& directory, const string& name, const LuaTable& table)
+		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(NULL), pcmask_(NULL), play_once_(false) {
+	hash_ = directory + name;
+	log("\nNOCOM packed animation %s\n", hash_.c_str());
+	try {
+		get_point(*table.get_table("hotspot"), &hotspot_);
+
+		/* NOCOM
+		if (table.has_key("sound_effect")) {
+			std::unique_ptr<LuaTable> sound_effects = table.get_table("sound_effect");
+
+			const std::string name = sound_effects->get_string("name");
+			const std::string directory = sound_effects->get_string("directory");
+			sound_effect_ = directory + g_fs->file_separator() + name;
+			g_sound_handler.load_fx_if_needed(directory, name, sound_effect_);
+		}
 
 	// Read mapping from frame numbers to sound effect names and load effects
 	while (Section::Value * const v = s.get_next_val("sfx")) {
@@ -174,110 +189,74 @@ PackedAnimation::PackedAnimation(const string& directory, Section& s)
 		}
 		sfx_cues[frame_number] = parameters;
 	}
+		*/
 
-	const int32_t fps = s.get_int("fps");
-	if (fps < 0)
-		throw wexception("fps is %i, must be non-negative", fps);
-	if (fps > 0)
-		frametime_ = 1000 / fps;
-
-	hotspot_ = s.get_Point("hotspot");
-
-	// Load the graphis
-	string pic_fn = directory + s.get_safe_string("pics");
-	image_ = g_gr->images().get(pic_fn);
-	boost::replace_all(pic_fn, ".png", "");
-	if (g_fs->FileExists(pic_fn + "_pc.png")) {
-		pcmask_ = g_gr->images().get(pic_fn + "_pc.png");
-	}
-
-	// Parse dimensions.
-	Point p;
-	parse_point(s.get_string("dimensions"), &p);
-	width_ = p.x;
-	height_ = p.y;
-
-	// Parse base_offset.
-	parse_point(s.get_string("base_offset"), &base_offset_);
-
-	// Parse regions
-	NumberGlob glob("region_??");
-	string region_name;
-	while (glob.next(&region_name)) {
-		string value=s.get_string(region_name.c_str(), "");
-		if (value.empty())
-			break;
-
-		boost::trim(value);
-		vector<string> split_vector;
-		boost::split(split_vector, value, boost::is_any_of(":"));
-		if (split_vector.size() != 2)
-			throw wexception("%s: line is ill formatted. Should be <rect>:<offsets>", region_name.c_str());
-
-		vector<string> offset_strings;
-		boost::split(offset_strings, split_vector[1], boost::is_any_of(";"));
-		if (nr_frames_ && nr_frames_ != offset_strings.size())
-			throw wexception
-				("%s: region has different number of frames than previous (%i != %"PRIuS").",
-				 region_name.c_str(), nr_frames_, offset_strings.size());
-		nr_frames_ = offset_strings.size();
-
-		Rect region_rect;
-		parse_rect(split_vector[0], &region_rect);
-
-		Region r;
-		r.target_offset.x = region_rect.x;
-		r.target_offset.y = region_rect.y;
-		r.w = region_rect.w;
-		r.h = region_rect.h;
-
-		BOOST_FOREACH(const string& offset_string, offset_strings) {
-			parse_point(offset_string, &p);
-			r.source_offsets.push_back(p);
+		if (table.has_key("play_once")) {
+			play_once_ = table.get_bool("play_once");
 		}
-		regions_.push_back(r);
-	}
 
-	if (!regions_.size())  // No regions? Only one frame then.
-		nr_frames_ = 1;
-
-	// NOCOM Write to new file
-	// 		std::unique_ptr<FileSystem> out_filesystem = initialize(output_path);
-	//LayeredFileSystem* fs = new LayeredFileSystem();
-	//fs->add_file_system(&FileSystem::create(INSTALL_DATADIR));
-
-	//FileSystem* out_filesystem(&FileSystem::create("tribes"));
-	//boost::scoped_ptr<FileSystem> fs
-	//		(g_fs->CreateSubFileSystem("NOCOM", FileSystem::DIR));
-/*
-	std::string complete_filename = "tribes";
-	complete_filename            += "/";
-	complete_filename            += "NOCOM";
-	g_fs->EnsureDirectoryExists(complete_filename);
-	boost::scoped_ptr<FileSystem> fs
-			(g_fs->CreateSubFileSystem(complete_filename, FileSystem::DIR));
-
-	FileWrite fw;
-	fw.CString("test");
-	*/
-	//fw.Write(*fs, "NOCOM");
-	//fw.Flush();
-	//fw.Clear();
-
-	BOOST_FOREACH(const Region& region, regions_) {
-		log("  NOCOM %d %d - ", region.target_offset.x, region.target_offset.y);
-		log("NOCOM %d %d\n", region.w, region.h);
-		BOOST_FOREACH(const Point& source_offset, region.source_offsets) {
-			log("  NOCOM %d %d\n", source_offset.x, source_offset.y);
+		std::string image = table.get_string("image");
+		if (!g_fs->file_exists(image)) {
+			throw wexception("Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
 		}
+		image_ = g_gr->images().get(image);
+		boost::replace_all(image, ".png", "");
+		if (g_fs->file_exists(image + "_pc.png")) {
+			pcmask_ = g_gr->images().get(image + "_pc.png");
+		}
+
+		// We need this for richtext image tags
+		representative_image_filename_ = table.get_string("representative_image");
+
+		get_rect(*table.get_table("rectangle"), &rectangle_);
+
+		std::unique_ptr<LuaTable> regions_table = table.get_table("regions");
+		const auto region_keys = regions_table->keys<int>();
+		const uint16_t no_of_regions = region_keys.size();
+		if (table.has_key("fps")) {
+			if (no_of_regions < 2) {
+				throw wexception(
+					"Animation with one picture %s must not have 'fps'", hash_.c_str());
+			}
+			frametime_ = 1000 / get_positive_int(table, "fps");
+		}
+
+		// No regions? Only one frame then.
+		if (no_of_regions == 0) {
+			nr_frames_ = 1;
+		}
+
+		for (const int region_key : region_keys) {
+			std::unique_ptr<LuaTable> region_table = regions_table->get_table(region_key);
+			Region r;
+			Recti region_rect;
+			get_rect(*region_table->get_table("rectangle"), &region_rect);
+			r.target_offset.x = region_rect.x;
+			r.target_offset.y = region_rect.y;
+			r.h = region_rect.h;
+			r.w = region_rect.w;
+
+			std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+			const auto offsets_keys = offsets_table->keys<int>();
+			const uint16_t no_of_offsets = offsets_keys.size();
+			if (nr_frames_ && nr_frames_ != no_of_offsets) {
+				throw wexception(
+							"%s: region has different number of frames than previous (%i != %i).",
+											 hash_.c_str(), nr_frames_, no_of_offsets);
+			}
+			nr_frames_ = no_of_offsets;
+
+			for (const int offset_key : offsets_keys) {
+				Vector2i p;
+				get_point(*region_table->get_table(offset_key), &p);
+				r.source_offsets.push_back(p);
+			}
+			regions_.push_back(r);
+		}
+
+	} catch (const LuaError& e) {
+		throw wexception("Error in packed animation table: %s", e.what());
 	}
-	/*
-	 * 	struct Region {
-		Point target_offset;
-		uint16_t w, h;
-		std::vector<Point> source_offsets;  // indexed by frame nr.
-	};
-	*/
 }
 
 void PackedAnimation::trigger_soundfx
@@ -298,11 +277,17 @@ const Image& PackedAnimation::representative_image(const RGBColor& clr) const {
 	if (image_cache.has(hash))
 		return *image_cache.get(hash);
 
-	return *image_cache.insert(new AnimationImage(hash, this, clr));
+	// NOCOM return *image_cache.insert(hash, std::unique_ptr<const Image>(new AnimationImage(hash, this, clr)));
+	return *g_gr->images().get("images/novalue.png");
 }
 
+const std::string& PackedAnimation::representative_image_filename() const {
+	return representative_image_filename_;
+}
+
+/* NOCOM
 void PackedAnimation::blit
-	(uint32_t time, const Point& dst, const Rect& srcrc, const RGBColor* clr, Surface* target) const
+	(uint32_t time, const Vector2f& dst, const Rectf& srcrc, const RGBColor* clr, Surface* target) const
 {
 	assert(target);
 	const uint32_t framenumber = time / frametime_ % nr_frames();
@@ -312,12 +297,11 @@ void PackedAnimation::blit
 		use_image = ImageTransformations::player_colored(*clr, image_, pcmask_);
 	}
 
-	target->blit
-		(dst, use_image->surface(), Rect(base_offset_.x + srcrc.x, base_offset_.y + srcrc.y, srcrc.w, srcrc.h));
+	target->blit(Rectf(0, 0, r.w, r.h), use_image->surface(), Rectf(rectangle_.x + srcrc.x, rectangle_.y + srcrc.y, srcrc.w, srcrc.h), 1., BlendMode::UseAlpha);
 
 	for (const Region& r : regions_) {
-		Rect rsrc = Rect(r.source_offsets[framenumber], r.w, r.h);
-		Point rdst = dst + r.target_offset - srcrc;
+		Rectf rsrc = Rectf(r.source_offsets[framenumber], r.w, r.h);
+		Vector2f rdst = dst + r.target_offset - srcrc;
 
 		if (srcrc.x > r.target_offset.x) {
 			rdst.x += srcrc.x - r.target_offset.x;
@@ -339,21 +323,11 @@ void PackedAnimation::blit
 		if (r.target_offset.y + rsrc.h > srcrc.y + srcrc.h) {
 			rsrc.h = srcrc.y + srcrc.h - r.target_offset.y;
 		}
-
-		target->blit(rdst, use_image->surface(), rsrc);
+		target->blit(Rectf(0, 0, r.w, r.h), use_image->surface(), rsrc, 1., BlendMode::UseAlpha);
 	}
 
 }
-
-// Parses an array { 12, 23 } into a point.
-void get_point(const LuaTable& table, Vector2i* p) {
-	std::vector<int> pts = table.array_entries<int>();
-	if (pts.size() != 2) {
-		throw wexception("Expected 2 entries, but got %" PRIuS ".", pts.size());
-	}
-	p->x = pts[0];
-	p->y = pts[1];
-}
+*/
 
 /**
  * Implements the Animation interface for an animation that is unpacked on disk, that
