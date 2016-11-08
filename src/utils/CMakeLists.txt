@@ -1,0 +1,14 @@
+wl_binary(wl_create_spritemap
+  SRCS
+    create_spritemap.cc
+  USES_SDL2
+  DEPENDS
+    base_i18n
+    base_log
+    base_macros
+    graphic
+    io_fileread
+    io_filesystem
+    logic
+    sound
+)
