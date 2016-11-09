@@ -414,9 +414,11 @@ uint16_t NonPackedAnimation::nr_frames() const {
 }
 
 std::vector<const Image*> NonPackedAnimation::images() const {
+	ensure_graphics_are_loaded();
 	return frames_;
 }
 std::vector<const Image*> NonPackedAnimation::pc_masks() const {
+	ensure_graphics_are_loaded();
 	return pcmasks_;
 }
 

@@ -30,6 +30,8 @@
 #include "base/macros.h"
 #include "config.h"
 #include "graphic/graphic.h"
+#include "graphic/image.h"
+#include "graphic/image_io.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "io/filewrite.h"
@@ -110,7 +112,7 @@ public:
 		data(writeme.c_str(), writeme.size());
 	}
 	void write_key(const std::string& key, bool use_indent = false) {
-		write_string((boost::format("\"%s\" = ") % key).str(), use_indent);
+		write_string((boost::format("%s = ") % key).str(), use_indent);
 	}
 	void write_value_string(const std::string& value, bool use_indent = false) {
 		write_string((boost::format("\"%s\"") % value).str(), use_indent);
@@ -131,7 +133,7 @@ public:
 	void write_key_value(const std::string& key,
 	                     const std::string& quoted_value,
 	                     bool use_indent = false) {
-		write_string((boost::format("\"%s\" = %s") % key % quoted_value).str(), use_indent);
+		write_string((boost::format("%s = %s") % key % quoted_value).str(), use_indent);
 	}
 	void write_key_value_string(const std::string& key,
 	                            const std::string& value,
@@ -204,7 +206,7 @@ private:
 };
 
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
-	LuaFileWrite fw;
+	LuaFileWrite lua_fw;
 
 	const std::string anim_name = "idle"; // NOCOM
 
@@ -217,72 +219,118 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 	std::vector<const Image*> images = animation.images();
 	std::vector<const Image*> pc_masks = animation.pc_masks();
+	log("NOCOM animation has %lu pictures\n", images.size());
 
-	fw.open_table(anim_name, true, true);
+	// Only create spritemap if animation has more than 1 frame.
+	if (images.size() > 1) {
+		const uint16_t w = images[0]->width();
+		const uint16_t h = images[0]->height();
+		log("dimension %d, %d\n", w, h);
+		Texture* main_texture = new Texture(w, h);
+		main_texture->blit(Rectf(0, 0, w, h), *images[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		main_texture->lock();
+		Texture* main_pc_mask = new Texture(w, h);
+		main_pc_mask->blit(Rectf(0, 0, w, h), *pc_masks[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		main_pc_mask->lock();
 
-	fw.write_key("image", true);
-	fw.write_string("path.dirname(__file__) .. \"" + std::string("NOCOM") + "\"");
-	fw.close_element(0, 2, true);
-	fw.write_key("representative_image", true);
-	fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
-	fw.close_element(0, 2, true);
+		// Make pixels in main texture transparent if any of the other images differs
+		for (size_t i = 1; i < images.size(); ++i) {
+			const Image* image = images[i];
+			Texture* current_texture = new Texture(w, h);
+			current_texture->blit(Rectf(0, 0, w, h), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+			current_texture->lock();
+			for (uint16_t x = 0; x < w; ++x) {
+				for (uint16_t y = 0; y < h; ++y) {
+					RGBAColor pixel = main_texture->get_pixel(x, y);
+					RGBAColor compareme = current_texture->get_pixel(x, y);
+					if (pixel != compareme) {
+						main_texture->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+						main_pc_mask->set_pixel(x, y, RGBAColor(0, 0, 0, 255));
+					}
+				}
+			}
+			current_texture->unlock(Texture::Unlock_Update);
+		}
+		main_texture->unlock(Texture::Unlock_Update);
+		main_pc_mask->unlock(Texture::Unlock_Update);
 
-	fw.open_table("rectangle", false, true);
-	fw.write_value_int(0);
-	fw.close_element();
-	fw.write_value_int(0);
-	fw.close_element();
-	fw.write_value_int(animation.width());
-	fw.close_element();
-	fw.write_value_int(animation.height());
-	fw.close_element(0, 0);
-	fw.close_table();
-	fw.write_string("\n");
+		FileWrite image_fw;
+		save_to_png(main_texture, &image_fw, ColorType::RGBA);
+		log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
+		image_fw.write(*out_filesystem, "main_texture.png");
+		save_to_png(main_pc_mask, &image_fw, ColorType::RGBA);
+		image_fw.write(*out_filesystem, "main_texture_pc.png");
 
-	fw.open_table("hotspot", false, true);
-	fw.write_value_int(hotspot.x);
-	fw.close_element();
-	fw.write_value_int(hotspot.y);
-	fw.close_element(0, 0);
-	fw.close_table();
-	fw.write_string("\n");
+		// Now write the Lua file
+		lua_fw.open_table(anim_name, true, true);
 
-	if (animation.nr_frames() > 1) {
-		fw.write_key_value_int("fps", animation.frametime() / 1000, true);
-		fw.close_element();
+		lua_fw.write_key("image", true);
+		lua_fw.write_string("path.dirname(__file__) .. \"" + std::string("NOCOM") + "\"");
+		lua_fw.close_element(0, 2, true);
+		lua_fw.write_key("representative_image", true);
+		lua_fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
+		lua_fw.close_element(0, 2, true);
+
+		lua_fw.open_table("rectangle", false, true);
+		lua_fw.write_value_int(0);
+		lua_fw.close_element();
+		lua_fw.write_value_int(0);
+		lua_fw.close_element();
+		lua_fw.write_value_int(animation.width());
+		lua_fw.close_element();
+		lua_fw.write_value_int(animation.height());
+		lua_fw.close_element(0, 0);
+		lua_fw.close_table();
+		lua_fw.write_string("\n");
+
+		lua_fw.open_table("hotspot", false, true);
+		lua_fw.write_value_int(hotspot.x);
+		lua_fw.close_element();
+		lua_fw.write_value_int(hotspot.y);
+		lua_fw.close_element(0, 0);
+		lua_fw.close_table();
+		lua_fw.write_string("\n");
+
+		if (animation.nr_frames() > 1) {
+			uint32_t frametime = animation.frametime();
+			if (frametime > 0) {
+				lua_fw.write_key_value_int("fps", 1000 / animation.frametime(), true);
+				lua_fw.close_element();
+			}
+		}
+
+		lua_fw.close_table(0, 2, true);
+
+		// NOCOM just for testing
+		lua_fw.open_table("foo", true, true);
+		lua_fw.open_table("ints", true);
+		lua_fw.write_value_int(hotspot.x, true);
+		lua_fw.close_element(0, 2, true);
+		lua_fw.write_value_int(hotspot.y, true);
+		lua_fw.close_element(0, 0, true);
+		lua_fw.close_table(0, 2, true);
+
+		lua_fw.open_table("strings", true);
+		lua_fw.write_value_string("foo", true);
+		lua_fw.close_element(0, 2, true);
+		lua_fw.write_value_string("bar", true);
+		lua_fw.close_element(0, 0, true);
+		lua_fw.close_table(0, 2, true);
+
+		lua_fw.open_table("floats", false, true);
+		lua_fw.write_value_double(1.0f);
+		lua_fw.close_element(0, 2);
+		lua_fw.write_key_value_double("double", 5.302430);
+		lua_fw.close_element(0, 0);
+		lua_fw.close_table(0, 2, false, true);
+
+		lua_fw.write_key_value_string("1", "bar", true);
+		lua_fw.close_element(0, 2, true);
+		lua_fw.write_key_value_string("2", "baz", true);
+		lua_fw.close_element(0, 0, true);
+		lua_fw.close_table(0, 0, true);
+		lua_fw.write(*out_filesystem, "test.lua");
 	}
-
-	fw.close_table(0, 2, true);
-
-	// NOCOM just for testing
-	fw.open_table("foo", true, true);
-	fw.open_table("ints", true);
-	fw.write_value_int(hotspot.x, true);
-	fw.close_element(0, 2, true);
-	fw.write_value_int(hotspot.y, true);
-	fw.close_element(0, 0, true);
-	fw.close_table(0, 2, true);
-
-	fw.open_table("strings", true);
-	fw.write_value_string("foo", true);
-	fw.close_element(0, 2, true);
-	fw.write_value_string("bar", true);
-	fw.close_element(0, 0, true);
-	fw.close_table(0, 2, true);
-
-	fw.open_table("floats", false, true);
-	fw.write_value_double(1.0f);
-	fw.close_element(0, 2);
-	fw.write_key_value_double("double", 5.302430);
-	fw.close_element(0, 0);
-	fw.close_table(0, 2, false, true);
-
-	fw.write_key_value_string("1", "bar", true);
-	fw.close_element(0, 2, true);
-	fw.write_key_value_string("2", "baz", true);
-	fw.close_element(0, 0, true);
-	fw.close_table(0, 0, true);
-	fw.write(*out_filesystem, "test.lua");
 }
 
 }  // namespace
