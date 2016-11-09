@@ -76,14 +76,14 @@ void get_rect(const LuaTable& table, Recti* r) {
 class PackedAnimation : public Animation {
 public:
 	virtual ~PackedAnimation() {}
-	PackedAnimation(const string& name, const LuaTable& table);
+	PackedAnimation(const std::string& name, const LuaTable& table);
 
 	// Implements Animation.
-	virtual uint16_t width() const {return rectangle_.w;}
-	virtual uint16_t height() const {return rectangle_.h;}
-	virtual uint16_t nr_frames() const {return nr_frames_;}
-	virtual uint32_t frametime() const {return frametime_;}
-	virtual const Vector2i& hotspot() const {return hotspot_;}
+	uint16_t width() const override {return rectangle_.w;}
+	uint16_t height() const override {return rectangle_.h;}
+	uint16_t nr_frames() const override {return nr_frames_;}
+	uint32_t frametime() const override {return frametime_;}
+	const Vector2i& hotspot() const override {return hotspot_;}
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
@@ -111,7 +111,7 @@ private:
 	const Image* pcmask_;  // Not owned
 	std::string representative_image_filename_;
 	std::vector<Region> regions_;
-	string hash_;
+	std::string hash_;
 	bool play_once_;
 
 	/// mapping of soundeffect name to frame number, indexed by frame number .
@@ -272,8 +272,10 @@ public:
 	uint16_t width() const override;
 	uint16_t height() const override;
 	uint16_t nr_frames() const override;
-	uint32_t frametime() const override;
-	const Vector2i& hotspot() const override;
+	uint32_t frametime() const override {return frametime_;}
+	const Vector2i& hotspot() const override {return hotspot_;}
+	std::vector<const Image*> images() const override;
+	std::vector<const Image*> pc_masks() const override;
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
@@ -411,12 +413,11 @@ uint16_t NonPackedAnimation::nr_frames() const {
 	return frames_.size();
 }
 
-uint32_t NonPackedAnimation::frametime() const {
-	return frametime_;
+std::vector<const Image*> NonPackedAnimation::images() const {
+	return frames_;
 }
-
-const Vector2i& NonPackedAnimation::hotspot() const {
-	return hotspot_;
+std::vector<const Image*> NonPackedAnimation::pc_masks() const {
+	return pcmasks_;
 }
 
 const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {

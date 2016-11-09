@@ -175,6 +175,8 @@ public:
 		--level_;
 		if (newline) {
 			write_string("\n");
+		} else {
+			write_string(" ");
 		}
 		if (current < total - 1) {
 			write_string("},", newline);
@@ -204,20 +206,56 @@ private:
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite fw;
 
+	const std::string anim_name = "idle"; // NOCOM
+
 	egbase.mutable_tribes()->postload();  // Make sure that all values have been set.
 	const Tribes& tribes = egbase.tribes();
 	const TribeDescr* barbarians = tribes.get_tribe_descr(tribes.tribe_index("barbarians"));
 	const BuildingDescr* building = barbarians->get_building_descr(barbarians->headquarters());
-	const Animation& animation = g_gr->animations().get_animation(building->get_animation("idle"));
+	const Animation& animation = g_gr->animations().get_animation(building->get_animation(anim_name));
 	const Vector2i& hotspot = animation.hotspot();
-	fw.open_table("hotspot");
-	fw.write_key_value_int("1", hotspot.x);
-	fw.close_element();
-	fw.write_key_value_int("2", hotspot.y);
-	fw.close_element(2, 2);
-	fw.close_table();
-	fw.open_table("foo", true, true);
 
+	std::vector<const Image*> images = animation.images();
+	std::vector<const Image*> pc_masks = animation.pc_masks();
+
+	fw.open_table(anim_name, true, true);
+
+	fw.write_key("image", true);
+	fw.write_string("path.dirname(__file__) .. \"" + std::string("NOCOM") + "\"");
+	fw.close_element(0, 2, true);
+	fw.write_key("representative_image", true);
+	fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
+	fw.close_element(0, 2, true);
+
+	fw.open_table("rectangle", false, true);
+	fw.write_value_int(0);
+	fw.close_element();
+	fw.write_value_int(0);
+	fw.close_element();
+	fw.write_value_int(animation.width());
+	fw.close_element();
+	fw.write_value_int(animation.height());
+	fw.close_element(0, 0);
+	fw.close_table();
+	fw.write_string("\n");
+
+	fw.open_table("hotspot", false, true);
+	fw.write_value_int(hotspot.x);
+	fw.close_element();
+	fw.write_value_int(hotspot.y);
+	fw.close_element(0, 0);
+	fw.close_table();
+	fw.write_string("\n");
+
+	if (animation.nr_frames() > 1) {
+		fw.write_key_value_int("fps", animation.frametime() / 1000, true);
+		fw.close_element();
+	}
+
+	fw.close_table(0, 2, true);
+
+	// NOCOM just for testing
+	fw.open_table("foo", true, true);
 	fw.open_table("ints", true);
 	fw.write_value_int(hotspot.x, true);
 	fw.close_element(0, 2, true);
