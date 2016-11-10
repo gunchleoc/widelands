@@ -17,7 +17,10 @@
  *
  */
 
+#include <cassert>
 #include <memory>
+#include <set>
+#include <vector>
 
 #include <SDL.h>
 #include <boost/algorithm/string.hpp>
@@ -260,17 +263,19 @@ Recti find_trim_rect(Texture* texture) {
 	return result;
 }
 
-std::set<int> find_empty_rows(Texture* texture) {
-	std::set<int> result;
+std::vector<int> find_empty_rows(Texture* texture, Recti region) {
+	assert(region.w <= texture->width());
+	assert(region.h <= texture->height());
+	std::vector<int> result;
 	bool had_a_filled_pixel = false;
-	for (int y = 0; y < texture->height(); ++y) {
-		for (int x = 0; x < texture->width(); ++x) {
+	for (int y = region.y; y < region.h; ++y) {
+		for (int x = region.x; x < region.w; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				had_a_filled_pixel = true;
 				break;
-			} else if (x == texture->width() - 1 && had_a_filled_pixel) {
-				result.insert(y);
+			} else if (x == region.w - 1 && had_a_filled_pixel) {
+				result.push_back(y);
 				had_a_filled_pixel = false;
 				break;
 			}
@@ -279,21 +284,46 @@ std::set<int> find_empty_rows(Texture* texture) {
 	return result;
 }
 
-std::set<int> find_empty_columns(Texture* texture) {
-	std::set<int> result;
+std::vector<int> find_empty_columns(Texture* texture, Recti region) {
+	assert(region.w <= texture->width());
+	assert(region.h <= texture->height());
+	std::vector<int> result;
 	bool had_a_filled_pixel = false;
-	for (int x = 0; x < texture->width(); ++x) {
-		for (int y = 0; y < texture->height(); ++y) {
+	for (int x = region.x; x < region.w; ++x) {
+		for (int y = region.y; y < region.h; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				had_a_filled_pixel = true;
 				break;
-			} else if (y == texture->height() - 1 && had_a_filled_pixel) {
-				result.insert(x);
+			} else if (y == region.h - 1 && had_a_filled_pixel) {
+				result.push_back(x);
 				had_a_filled_pixel = false;
 				break;
 			}
 		}
+	}
+	return result;
+}
+
+// Assumes that lines is not empty
+std::vector<Recti> split_region(Recti source, std::vector<int> lines, bool vertical) {
+	std::vector<Recti> result;
+	Recti current(source.x, source.y, source.w, source.h);
+	for (size_t i = 0; i < lines.size(); ++i) {
+		if (vertical) {
+			current.w = lines[i] - current.x;
+			result.push_back(Recti(current.x, current.y, current.w, current.h));
+			current.x = lines[i];
+		} else {
+			current.h = lines[i] - current.y;
+			result.push_back(Recti(current.x, current.y, current.w, current.h));
+			current.y = lines[i];
+		}
+	}
+	if (vertical) {
+		result.push_back(Recti(current.x, current.y, source.w - current.x, current.h));
+	} else {
+		result.push_back(Recti(current.x, current.y, current.w, source.h - current.y));
 	}
 	return result;
 }
@@ -365,13 +395,29 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
 
 		trimmed_cookie_cutter->lock();
-		std::set<int> columns = find_empty_columns(trimmed_cookie_cutter.get());
+		Recti trimmed_cookie_cutter_rect(0, 0, trimmed_cookie_cutter->width(), trimmed_cookie_cutter->height());
+		std::vector<int> columns = find_empty_columns(trimmed_cookie_cutter.get(), trimmed_cookie_cutter_rect);
 		for (int col : columns) {
 			log("NOCOM empty column at %d\n", col);
 		}
-		std::set<int> rows = find_empty_rows(trimmed_cookie_cutter.get());
+		std::vector<Recti> regions1 = split_region(trimmed_cookie_cutter_rect, columns, true);
+		for (const auto& region : regions1) {
+			log("_________\n");
+			log("| %d %d\n", region.x, region.y);
+			log("| %d %d\n", region.x + region.w, region.y + region.h);
+			log("---------\n");
+		}
+		log("\n");
+		std::vector<int> rows = find_empty_rows(trimmed_cookie_cutter.get(), trimmed_cookie_cutter_rect);
 		for (int row : rows) {
 			log("NOCOM empty row at %d\n", row);
+		}
+		std::vector<Recti> regions2 = split_region(trimmed_cookie_cutter_rect, rows, false);
+		for (const auto& region : regions2) {
+			log("_________\n");
+			log("| %d %d\n", region.x, region.y);
+			log("| %d %d\n", region.x + region.w, region.y + region.h);
+			log("---------\n");
 		}
 
 		trimmed_cookie_cutter->unlock(Texture::Unlock_Update);
