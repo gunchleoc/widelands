@@ -208,54 +208,63 @@ private:
 	int level_;
 };
 
-// Find trimmed rect according to transparent pixels
+#define assert_texture_contains_rect(texture, rect) { \
+	assert(rect.x >= 0); \
+	assert(rect.y >= 0); \
+	assert(rect.w <= texture->width()); \
+	assert(rect.h <= texture->height()); \
+} \
+
+
+// Find trimmed rect according to transparent pixels.
 // Lock texture before you call this function.
-Recti find_trim_rect(Texture* texture) {
-	Recti result = Recti(0, 0, texture->width(), texture->height());
+Recti find_trim_rect(Texture* texture, Recti source_rect) {
+	assert_texture_contains_rect(texture, source_rect);
+	Recti result = Recti(source_rect.x, source_rect.y, source_rect.w, source_rect.h);
 	// Find left margin
 	bool found = false;
-	for (int x = 0; x < texture->width() && !found; ++x) {
-		for (int y = 0; y < texture->height() && !found; ++y) {
+	for (int x = result.x; x < result.w && !found; ++x) {
+		for (int y = result.y; y < result.h && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				log("NOCOM pixel %d %d\n", x, y);
-				result.x = std::max(0, x - 1);
+				result.x = std::max(result.x, x - 1);
 				found = true;
 			}
 		}
 	}
 	// Find right margin
 	found = false;
-	for (int x = texture->width() - 1; x >= 0 && !found; --x) {
-		for (int y = 0; y < texture->height() && !found; ++y) {
+	for (int x = result.w - 1; x >= 0 && !found; --x) {
+		for (int y = 0; y < result.h && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				log("NOCOM pixel %d %d\n", x, y);
-				result.w = std::min(texture->width(), x + 1) - result.x;
+				result.w = std::min(result.w, x + 1) - result.x;
 				found = true;
 			}
 		}
 	}
 	// Find top margin
 	found = false;
-	for (int y = 0; y < texture->height() && !found; ++y) {
+	for (int y = result.y; y < result.h && !found; ++y) {
 		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				log("NOCOM pixel %d %d\n", x, y);
-				result.y = std::max(0, y - 1);
+				result.y = std::max(result.y, y - 1);
 				found = true;
 			}
 		}
 	}
 	// Find bottom margin
 	found = false;
-	for (int y = texture->height() - 1; y >= 0 && !found; --y) {
+	for (int y = result.h - 1; y >= 0 && !found; --y) {
 		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				log("NOCOM pixel %d %d\n", x, y);
-				result.h = std::min(texture->height(), y + 1) - result.y;
+				result.h = std::min(result.h, y + 1) - result.y;
 				found = true;
 			}
 		}
@@ -263,9 +272,10 @@ Recti find_trim_rect(Texture* texture) {
 	return result;
 }
 
+// Find all lines that separate regions with content in them horizontally.
+// Lock texture before you call this function.
 std::vector<int> find_empty_rows(Texture* texture, Recti region) {
-	assert(region.w <= texture->width());
-	assert(region.h <= texture->height());
+	assert_texture_contains_rect(texture, region);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int y = region.y; y < region.h; ++y) {
@@ -284,9 +294,10 @@ std::vector<int> find_empty_rows(Texture* texture, Recti region) {
 	return result;
 }
 
+// Find all lines that separate regions with content in them vertically.
+// Lock texture before you call this function.
 std::vector<int> find_empty_columns(Texture* texture, Recti region) {
-	assert(region.w <= texture->width());
-	assert(region.h <= texture->height());
+	assert_texture_contains_rect(texture, region);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int x = region.x; x < region.w; ++x) {
@@ -305,7 +316,9 @@ std::vector<int> find_empty_columns(Texture* texture, Recti region) {
 	return result;
 }
 
-// Assumes that lines is not empty
+// Uses empty lines to split a rect into rectangular stripes.
+// Lock texture before you call this function.
+// Assumes that lines is not empty.
 std::vector<Recti> split_region(Recti source, std::vector<int> lines, bool vertical) {
 	std::vector<Recti> result;
 	Recti current(source.x, source.y, source.w, source.h);
@@ -326,6 +339,46 @@ std::vector<Recti> split_region(Recti source, std::vector<int> lines, bool verti
 		result.push_back(Recti(current.x, current.y, current.w, source.h - current.y));
 	}
 	return result;
+}
+
+// bool in pending == true means vertical split
+// Lock texture before you call this function.
+void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending, std::vector<Recti>* result) {
+	// All done
+	if (pending.empty()) {
+		return;
+	}
+
+	// Grab a rectangle to process
+	std::pair<Recti, bool> splitme = pending.back();
+	pending.pop_back();
+	// NOCOM splitme.first = find_trim_rect(texture, splitme.first);
+
+	// Find an empty line. If no line is found, this rect is done and can be added to the result
+	// NOCOM line detection is still off.
+	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
+	for (int line : lines) {
+		log("NOCOM empty line at %d\n", line);
+	}
+	if (lines.empty()) {
+		result->push_back(splitme.first);
+	} else {
+		// Use the lines to split the current rectangle into regions, then add them to the todo-list.
+		std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
+		for (const auto& region : regions) {
+			log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
+			/*
+			log("_________\n");
+			log("| %d %d\n", region.x, region.y);
+			log("| %d %d\n", region.x + region.w, region.y + region.h);
+			log("---------\n");
+			*/
+			pending.push_back(std::make_pair(region, !splitme.second));
+		}
+		log("\n");
+	}
+	// Now recurse
+	make_regions(texture, pending, result);
 }
 
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
@@ -383,44 +436,10 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 			}
 			current_texture->unlock(Texture::Unlock_Update);
 		}
-		log("NOCOM cookie_cutter1: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
-		Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get());
-		log("NOCOM cookie_cutter2: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
 
 		main_texture->unlock(Texture::Unlock_Update);
 		main_pc_mask->unlock(Texture::Unlock_Update);
 		cookie_cutter->unlock(Texture::Unlock_Update);
-
-		std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
-		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
-
-		trimmed_cookie_cutter->lock();
-		Recti trimmed_cookie_cutter_rect(0, 0, trimmed_cookie_cutter->width(), trimmed_cookie_cutter->height());
-		std::vector<int> columns = find_empty_columns(trimmed_cookie_cutter.get(), trimmed_cookie_cutter_rect);
-		for (int col : columns) {
-			log("NOCOM empty column at %d\n", col);
-		}
-		std::vector<Recti> regions1 = split_region(trimmed_cookie_cutter_rect, columns, true);
-		for (const auto& region : regions1) {
-			log("_________\n");
-			log("| %d %d\n", region.x, region.y);
-			log("| %d %d\n", region.x + region.w, region.y + region.h);
-			log("---------\n");
-		}
-		log("\n");
-		std::vector<int> rows = find_empty_rows(trimmed_cookie_cutter.get(), trimmed_cookie_cutter_rect);
-		for (int row : rows) {
-			log("NOCOM empty row at %d\n", row);
-		}
-		std::vector<Recti> regions2 = split_region(trimmed_cookie_cutter_rect, rows, false);
-		for (const auto& region : regions2) {
-			log("_________\n");
-			log("| %d %d\n", region.x, region.y);
-			log("| %d %d\n", region.x + region.w, region.y + region.h);
-			log("---------\n");
-		}
-
-		trimmed_cookie_cutter->unlock(Texture::Unlock_Update);
 
 		FileWrite image_fw;
 		save_to_png(main_texture.get(), &image_fw, ColorType::RGBA);
@@ -430,9 +449,40 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		image_fw.write(*out_filesystem, "main_texture_pc.png");
 		save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "cookie_cutter.png");
+
+		// Split into regions
+		cookie_cutter->lock();
+		log("NOCOM cookie_cutter1: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
+		Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get(), Recti(0, 0, cookie_cutter->width(), cookie_cutter->height()));
+		log("NOCOM cookie_cutter2: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
+		cookie_cutter->unlock(Texture::Unlock_Update);
+
+		std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
+		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
+
+		trimmed_cookie_cutter->lock();
+		Recti trimmed_cookie_cutter_rect(0, 0, trimmed_cookie_cutter->width(), trimmed_cookie_cutter->height());
+		std::vector<Recti>* regions = new std::vector<Recti>();
+		std::vector<std::pair<Recti, bool>> splitme;
+		splitme.push_back(std::make_pair(trimmed_cookie_cutter_rect, true));
+		make_regions(trimmed_cookie_cutter.get(), splitme, regions);
+
+		for (size_t i = 0; i < regions->size(); ++i) {
+			//Recti region = find_trim_rect(trimmed_cookie_cutter.get(), regions->at(i));
+			Recti region = regions->at(i);
+			log("Blitting texture for region %lu - %d %d %d %d\n", i, region.x, region.y, region.x + region.w, region.y + region.h);
+			// Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get(), Recti(0, 0, cookie_cutter->width(), cookie_cutter->height()));
+			// std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
+			// trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
+			std::unique_ptr<Texture> region_texture(new Texture(region.w, region.h));
+			region_texture->blit(Rectf(0, 0, region.w, region.h), *trimmed_cookie_cutter, region.cast<float>(), 1., BlendMode::Copy);
+			save_to_png(region_texture.get(), &image_fw, ColorType::RGBA);
+			image_fw.write(*out_filesystem, (boost::format("region_%lu.png") % i).str().c_str());
+		}
+
+		trimmed_cookie_cutter->unlock(Texture::Unlock_Update);
 		save_to_png(trimmed_cookie_cutter.get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "trimmed_cookie_cutter.png");
-
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
@@ -504,6 +554,7 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		lua_fw.close_table(0, 0, true);
 		lua_fw.write(*out_filesystem, "test.lua");
 	}
+	log("\nDone!\n");
 }
 
 }  // namespace
