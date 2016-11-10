@@ -260,6 +260,44 @@ Recti find_trim_rect(Texture* texture) {
 	return result;
 }
 
+std::set<int> find_empty_rows(Texture* texture) {
+	std::set<int> result;
+	bool had_a_filled_pixel = false;
+	for (int y = 0; y < texture->height(); ++y) {
+		for (int x = 0; x < texture->width(); ++x) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				had_a_filled_pixel = true;
+				break;
+			} else if (x == texture->width() - 1 && had_a_filled_pixel) {
+				result.insert(y);
+				had_a_filled_pixel = false;
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+std::set<int> find_empty_columns(Texture* texture) {
+	std::set<int> result;
+	bool had_a_filled_pixel = false;
+	for (int x = 0; x < texture->width(); ++x) {
+		for (int y = 0; y < texture->height(); ++y) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				had_a_filled_pixel = true;
+				break;
+			} else if (y == texture->height() - 1 && had_a_filled_pixel) {
+				result.insert(x);
+				had_a_filled_pixel = false;
+				break;
+			}
+		}
+	}
+	return result;
+}
+
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
@@ -317,7 +355,7 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		}
 		log("NOCOM cookie_cutter1: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
 		Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get());
-		log("NOCOM cookie_cutter1: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
+		log("NOCOM cookie_cutter2: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
 
 		main_texture->unlock(Texture::Unlock_Update);
 		main_pc_mask->unlock(Texture::Unlock_Update);
@@ -325,6 +363,18 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 		std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
 		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
+
+		trimmed_cookie_cutter->lock();
+		std::set<int> columns = find_empty_columns(trimmed_cookie_cutter.get());
+		for (int col : columns) {
+			log("NOCOM empty column at %d\n", col);
+		}
+		std::set<int> rows = find_empty_rows(trimmed_cookie_cutter.get());
+		for (int row : rows) {
+			log("NOCOM empty row at %d\n", row);
+		}
+
+		trimmed_cookie_cutter->unlock(Texture::Unlock_Update);
 
 		FileWrite image_fw;
 		save_to_png(main_texture.get(), &image_fw, ColorType::RGBA);
