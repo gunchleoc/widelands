@@ -205,6 +205,61 @@ private:
 	int level_;
 };
 
+// Find trimmed rect according to transparent pixels
+// Lock texture before you call this function.
+Recti find_trim_rect(Texture* texture) {
+	Recti result = Recti(0, 0, texture->width(), texture->height());
+	// Find left margin
+	bool found = false;
+	for (int x = 0; x < texture->width() && !found; ++x) {
+		for (int y = 0; y < texture->height() && !found; ++y) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				log("NOCOM pixel %d %d\n", x, y);
+				result.x = std::max(0, x - 1);
+				found = true;
+			}
+		}
+	}
+	// Find right margin
+	found = false;
+	for (int x = texture->width() - 1; x >= 0 && !found; --x) {
+		for (int y = 0; y < texture->height() && !found; ++y) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				log("NOCOM pixel %d %d\n", x, y);
+				result.w = std::min(texture->width(), x + 1) - result.x;
+				found = true;
+			}
+		}
+	}
+	// Find top margin
+	found = false;
+	for (int y = 0; y < texture->height() && !found; ++y) {
+		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				log("NOCOM pixel %d %d\n", x, y);
+				result.y = std::max(0, y - 1);
+				found = true;
+			}
+		}
+	}
+	// Find bottom margin
+	found = false;
+	for (int y = texture->height() - 1; y >= 0 && !found; --y) {
+		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
+			RGBAColor pixel = texture->get_pixel(x, y);
+			if (pixel.a != 0) {
+				log("NOCOM pixel %d %d\n", x, y);
+				result.h = std::min(texture->height(), y + 1) - result.y;
+				found = true;
+			}
+		}
+	}
+	return result;
+}
+
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
@@ -226,12 +281,20 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		const uint16_t w = images[0]->width();
 		const uint16_t h = images[0]->height();
 		log("dimension %d, %d\n", w, h);
-		Texture* main_texture = new Texture(w, h);
+		std::unique_ptr<Texture> main_texture(new Texture(w, h));
 		main_texture->blit(Rectf(0, 0, w, h), *images[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
 		main_texture->lock();
-		Texture* main_pc_mask = new Texture(w, h);
+		std::unique_ptr<Texture> main_pc_mask(new Texture(w, h));
 		main_pc_mask->blit(Rectf(0, 0, w, h), *pc_masks[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
 		main_pc_mask->lock();
+
+		std::unique_ptr<Texture> cookie_cutter(new Texture(w, h));
+		cookie_cutter->lock();
+		for (uint16_t x = 0; x < w; ++x) {
+			for (uint16_t y = 0; y < h; ++y) {
+				cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+			}
+		}
 
 		// Make pixels in main texture transparent if any of the other images differs
 		for (size_t i = 1; i < images.size(); ++i) {
@@ -246,20 +309,34 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 					if (pixel != compareme) {
 						main_texture->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
 						main_pc_mask->set_pixel(x, y, RGBAColor(0, 0, 0, 255));
+						cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 255));
 					}
 				}
 			}
 			current_texture->unlock(Texture::Unlock_Update);
 		}
+		log("NOCOM cookie_cutter1: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
+		Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get());
+		log("NOCOM cookie_cutter1: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
+
 		main_texture->unlock(Texture::Unlock_Update);
 		main_pc_mask->unlock(Texture::Unlock_Update);
+		cookie_cutter->unlock(Texture::Unlock_Update);
+
+		std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
+		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
 
 		FileWrite image_fw;
-		save_to_png(main_texture, &image_fw, ColorType::RGBA);
+		save_to_png(main_texture.get(), &image_fw, ColorType::RGBA);
 		log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
 		image_fw.write(*out_filesystem, "main_texture.png");
-		save_to_png(main_pc_mask, &image_fw, ColorType::RGBA);
+		save_to_png(main_pc_mask.get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "main_texture_pc.png");
+		save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
+		image_fw.write(*out_filesystem, "cookie_cutter.png");
+		save_to_png(trimmed_cookie_cutter.get(), &image_fw, ColorType::RGBA);
+		image_fw.write(*out_filesystem, "trimmed_cookie_cutter.png");
+
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
