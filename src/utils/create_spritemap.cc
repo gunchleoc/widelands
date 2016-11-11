@@ -395,9 +395,9 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 }
 
 // Returns a new texture with the trimmed contents defined by 'rect'.
-std::unique_ptr<Texture> trim_texture(const Texture& texture, const Recti& rect) {
+std::unique_ptr<Texture> trim_texture(const Image* texture, const Recti& rect) {
 	std::unique_ptr<Texture> result(new Texture(rect.w, rect.h));
-	result->blit(Rectf(0, 0, rect.w, rect.h), texture, rect.cast<float>(), 1., BlendMode::Copy);
+	result->blit(Rectf(0, 0, rect.w, rect.h), *texture, rect.cast<float>(), 1., BlendMode::Copy);
 	return result;
 }
 
@@ -414,10 +414,11 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	const Vector2i& hotspot = animation.hotspot();
 
 	std::vector<const Image*> images = animation.images();
-	std::vector<const Image*> pc_masks = animation.pc_masks();
+	std::vector<const Image*> pc_masks = animation.pc_masks(); // NOCOM deal with empty pc_masks
 	log("NOCOM animation has %lu pictures\n", images.size());
 
 	// Only create spritemap if animation has more than 1 frame.
+	// NOCOM we should have a test if the animation is nonpacked.
 	if (images.size() > 1) {
 		const uint16_t w = images[0]->width();
 		const uint16_t h = images[0]->height();
@@ -464,10 +465,10 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		cookie_cutter->unlock(Texture::Unlock_Update);
 
 		FileWrite image_fw;
-		save_to_png(trim_texture(*main_texture.get(), main_rect).get(), &image_fw, ColorType::RGBA);
+		save_to_png(trim_texture(main_texture.get(), main_rect).get(), &image_fw, ColorType::RGBA);
 		//log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
 		image_fw.write(*out_filesystem, "main_texture.png");
-		save_to_png(trim_texture(*main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
+		save_to_png(trim_texture(main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "main_texture_pc.png");
 
 		save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
@@ -480,15 +481,29 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		std::vector<std::pair<Recti, bool>> splitme;
 		splitme.push_back(std::make_pair(main_rect, true));
 		make_regions(cookie_cutter.get(), splitme, regions);
-		cookie_cutter->unlock(Texture::Unlock_Update);
 
 		for (size_t i = 0; i < regions->size(); ++i) {
-			//Recti region = find_trim_rect(trimmed_cookie_cutter.get(), regions->at(i));
 			Recti region = regions->at(i);
 			log("Blitting texture for region %lu - %d %d %d %d\n", i, region.x, region.y, region.x + region.w, region.y + region.h);
-			save_to_png(trim_texture(*cookie_cutter.get(), region).get(), &image_fw, ColorType::RGBA);
-			image_fw.write(*out_filesystem, (boost::format("region_%lu.png") % i).str().c_str());
+			for (size_t frame_index = 0; frame_index < images.size(); ++frame_index) {
+				std::unique_ptr<Texture> frame(trim_texture(images[frame_index], region));
+				frame->lock();
+				// We want transparent pixels according to the cookie cutter.
+				for (uint16_t x = 0; x < frame->width(); ++x) {
+					for (uint16_t y = 0; y < frame->height(); ++y) {
+						RGBAColor mask = cookie_cutter->get_pixel(region.x + x, region.y + y);
+						if (mask.a == 0) {
+							frame->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+						}
+					}
+				}
+				frame->unlock(Texture::Unlock_Update);
+				save_to_png(frame.get(), &image_fw, ColorType::RGBA);
+				image_fw.write(*out_filesystem, (boost::format("region_%lu_frame_%lu.png") % i % frame_index).str().c_str());
+			}
 		}
+
+		cookie_cutter->unlock(Texture::Unlock_Update);
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
