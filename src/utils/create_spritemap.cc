@@ -218,16 +218,17 @@ private:
 
 // Find trimmed rect according to transparent pixels.
 // Lock texture before you call this function.
-Recti find_trim_rect(Texture* texture, Recti source_rect) {
+Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 	assert_texture_contains_rect(texture, source_rect);
-	Recti result = Recti(source_rect.x, source_rect.y, source_rect.w, source_rect.h);
+	Recti result = source_rect;
+	log("Trimmed %d %d %d %d\n", result.x, result.y, result.w, result.h);
 	// Find left margin
 	bool found = false;
 	for (int x = result.x; x < result.w && !found; ++x) {
 		for (int y = result.y; y < result.h && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				log("NOCOM pixel %d %d\n", x, y);
+				//log("NOCOM pixel %d %d\n", x, y);
 				result.x = std::max(result.x, x - 1);
 				found = true;
 			}
@@ -239,7 +240,7 @@ Recti find_trim_rect(Texture* texture, Recti source_rect) {
 		for (int y = 0; y < result.h && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				log("NOCOM pixel %d %d\n", x, y);
+				//log("NOCOM pixel %d %d\n", x, y);
 				result.w = std::min(result.w, x + 1) - result.x;
 				found = true;
 			}
@@ -251,7 +252,7 @@ Recti find_trim_rect(Texture* texture, Recti source_rect) {
 		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				log("NOCOM pixel %d %d\n", x, y);
+				//log("NOCOM pixel %d %d\n", x, y);
 				result.y = std::max(result.y, y - 1);
 				found = true;
 			}
@@ -263,28 +264,32 @@ Recti find_trim_rect(Texture* texture, Recti source_rect) {
 		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				log("NOCOM pixel %d %d\n", x, y);
+				//log("NOCOM pixel %d %d\n", x, y);
 				result.h = std::min(result.h, y + 1) - result.y;
 				found = true;
 			}
 		}
 	}
+	log("To      %d %d %d %d\n", result.x, result.y, result.w, result.h);
 	return result;
 }
 
 // Find all lines that separate regions with content in them horizontally.
 // Lock texture before you call this function.
-std::vector<int> find_empty_rows(Texture* texture, Recti region) {
+std::vector<int> find_empty_rows(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
+	const int max_x = region.x + region.w;
+	const int max_y = region.y + region.h;
+	log("Find rows - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
-	for (int y = region.y; y < region.h; ++y) {
-		for (int x = region.x; x < region.w; ++x) {
+	for (int y = region.y; y < max_y; ++y) {
+		for (int x = region.x; x < max_x; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				had_a_filled_pixel = true;
 				break;
-			} else if (x == region.w - 1 && had_a_filled_pixel) {
+			} else if (x == max_x - 1 && had_a_filled_pixel) {
 				result.push_back(y);
 				had_a_filled_pixel = false;
 				break;
@@ -296,17 +301,20 @@ std::vector<int> find_empty_rows(Texture* texture, Recti region) {
 
 // Find all lines that separate regions with content in them vertically.
 // Lock texture before you call this function.
-std::vector<int> find_empty_columns(Texture* texture, Recti region) {
+std::vector<int> find_empty_columns(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
+	const int max_x = region.x + region.w;
+	const int max_y = region.y + region.h;
+	log("Find columns - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
-	for (int x = region.x; x < region.w; ++x) {
-		for (int y = region.y; y < region.h; ++y) {
+	for (int x = region.x; x < max_x; ++x) {
+		for (int y = region.y; y < max_y; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				had_a_filled_pixel = true;
 				break;
-			} else if (y == region.h - 1 && had_a_filled_pixel) {
+			} else if (y == max_y - 1 && had_a_filled_pixel) {
 				result.push_back(x);
 				had_a_filled_pixel = false;
 				break;
@@ -319,9 +327,9 @@ std::vector<int> find_empty_columns(Texture* texture, Recti region) {
 // Uses empty lines to split a rect into rectangular stripes.
 // Lock texture before you call this function.
 // Assumes that lines is not empty.
-std::vector<Recti> split_region(Recti source, std::vector<int> lines, bool vertical) {
+std::vector<Recti> split_region(const Recti& source, std::vector<int> lines, bool vertical) {
 	std::vector<Recti> result;
-	Recti current(source.x, source.y, source.w, source.h);
+	Recti current = source;
 	for (size_t i = 0; i < lines.size(); ++i) {
 		if (vertical) {
 			current.w = lines[i] - current.x;
@@ -352,31 +360,37 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 	// Grab a rectangle to process
 	std::pair<Recti, bool> splitme = pending.back();
 	pending.pop_back();
-	// NOCOM splitme.first = find_trim_rect(texture, splitme.first);
+	//splitme.first =
+			//find_trim_rect(texture, splitme.first);
+	//if (splitme.first.w > 0 && splitme.first.h > 0) {
 
-	// Find an empty line. If no line is found, this rect is done and can be added to the result
-	// NOCOM line detection is still off.
-	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
-	for (int line : lines) {
-		log("NOCOM empty line at %d\n", line);
-	}
-	if (lines.empty()) {
-		result->push_back(splitme.first);
-	} else {
-		// Use the lines to split the current rectangle into regions, then add them to the todo-list.
-		std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
-		for (const auto& region : regions) {
-			log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
-			/*
-			log("_________\n");
-			log("| %d %d\n", region.x, region.y);
-			log("| %d %d\n", region.x + region.w, region.y + region.h);
-			log("---------\n");
-			*/
-			pending.push_back(std::make_pair(region, !splitme.second));
+		// Find an empty line. If no line is found, this rect is done and can be added to the result
+		std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
+		for (int line : lines) {
+			log("NOCOM empty line at %d\n", line);
 		}
-		log("\n");
-	}
+		if (lines.empty()) {
+			// NOCOM trimming is still off.
+			//splitme.first = find_trim_rect(texture, splitme.first);
+			if (splitme.first.w > 0 && splitme.first.h > 0) {
+				result->push_back(splitme.first);
+			}
+		} else {
+			// Use the lines to split the current rectangle into regions, then add them to the todo-list.
+			std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
+			for (const auto& region : regions) {
+				log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
+				/*
+				log("_________\n");
+				log("| %d %d\n", region.x, region.y);
+				log("| %d %d\n", region.x + region.w, region.y + region.h);
+				log("---------\n");
+				*/
+				pending.push_back(std::make_pair(region, !splitme.second));
+			}
+			log("\n");
+		}
+	//}
 	// Now recurse
 	make_regions(texture, pending, result);
 }
