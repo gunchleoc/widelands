@@ -221,11 +221,13 @@ private:
 Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 	assert_texture_contains_rect(texture, source_rect);
 	Recti result = source_rect;
-	log("Trimmed %d %d %d %d\n", result.x, result.y, result.w, result.h);
+	//log("Trimmed %d %d %d %d\n", result.x, result.y, result.w, result.h);
+	int max_x = result.x + result.w;
+	const int max_y = result.y + result.h;
 	// Find left margin
 	bool found = false;
-	for (int x = result.x; x < result.w && !found; ++x) {
-		for (int y = result.y; y < result.h && !found; ++y) {
+	for (int x = result.x; x < max_x && !found; ++x) {
+		for (int y = result.y; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				//log("NOCOM pixel %d %d\n", x, y);
@@ -236,20 +238,21 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 	}
 	// Find right margin
 	found = false;
-	for (int x = result.w - 1; x >= 0 && !found; --x) {
-		for (int y = 0; y < result.h && !found; ++y) {
+	for (int x = max_x - 1; x >= 0 && !found; --x) {
+		for (int y = 0; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				//log("NOCOM pixel %d %d\n", x, y);
-				result.w = std::min(result.w, x + 1) - result.x;
+				result.w = std::min(max_x, x + 1 - result.x);
 				found = true;
 			}
 		}
 	}
+	max_x = result.x + result.w;
 	// Find top margin
 	found = false;
-	for (int y = result.y; y < result.h && !found; ++y) {
-		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
+	for (int y = result.y; y < max_y && !found; ++y) {
+		for (int x = result.x; x < max_x && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				//log("NOCOM pixel %d %d\n", x, y);
@@ -260,17 +263,17 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 	}
 	// Find bottom margin
 	found = false;
-	for (int y = result.h - 1; y >= 0 && !found; --y) {
-		for (int x = result.x; (x < result.x + result.w) && !found; ++x) {
+	for (int y = max_y - 1; y >= 0 && !found; --y) {
+		for (int x = result.x; x < max_x && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
 				//log("NOCOM pixel %d %d\n", x, y);
-				result.h = std::min(result.h, y + 1) - result.y;
+				result.h = std::min(max_y, y + 1 - result.y);
 				found = true;
 			}
 		}
 	}
-	log("To      %d %d %d %d\n", result.x, result.y, result.w, result.h);
+	//log("To      %d %d %d %d\n", result.x, result.y, result.w, result.h);
 	return result;
 }
 
@@ -280,7 +283,7 @@ std::vector<int> find_empty_rows(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
 	const int max_x = region.x + region.w;
 	const int max_y = region.y + region.h;
-	log("Find rows - %d %d %d %d\n", region.x, region.y, max_x, max_y);
+	//log("Find rows - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int y = region.y; y < max_y; ++y) {
@@ -305,7 +308,7 @@ std::vector<int> find_empty_columns(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
 	const int max_x = region.x + region.w;
 	const int max_y = region.y + region.h;
-	log("Find columns - %d %d %d %d\n", region.x, region.y, max_x, max_y);
+	//log("Find columns - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int x = region.x; x < max_x; ++x) {
@@ -360,37 +363,33 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 	// Grab a rectangle to process
 	std::pair<Recti, bool> splitme = pending.back();
 	pending.pop_back();
-	//splitme.first =
-			//find_trim_rect(texture, splitme.first);
-	//if (splitme.first.w > 0 && splitme.first.h > 0) {
-
-		// Find an empty line. If no line is found, this rect is done and can be added to the result
-		std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
-		for (int line : lines) {
-			log("NOCOM empty line at %d\n", line);
+	// Find an empty line. If no line is found, this rect is done and can be added to the result
+	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
+	/*
+	for (int line : lines) {
+		log("NOCOM empty line at %d\n", line);
+	}
+	*/
+	if (lines.empty()) {
+		splitme.first = find_trim_rect(texture, splitme.first);
+		if (splitme.first.w > 0 && splitme.first.h > 0) {
+			result->push_back(splitme.first);
 		}
-		if (lines.empty()) {
-			// NOCOM trimming is still off.
-			//splitme.first = find_trim_rect(texture, splitme.first);
-			if (splitme.first.w > 0 && splitme.first.h > 0) {
-				result->push_back(splitme.first);
-			}
-		} else {
-			// Use the lines to split the current rectangle into regions, then add them to the todo-list.
-			std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
-			for (const auto& region : regions) {
-				log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
-				/*
-				log("_________\n");
-				log("| %d %d\n", region.x, region.y);
-				log("| %d %d\n", region.x + region.w, region.y + region.h);
-				log("---------\n");
-				*/
-				pending.push_back(std::make_pair(region, !splitme.second));
-			}
-			log("\n");
+	} else {
+		// Use the lines to split the current rectangle into regions, then add them to the todo-list.
+		std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
+		for (const auto& region : regions) {
+			log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
+			/*
+			log("_________\n");
+			log("| %d %d\n", region.x, region.y);
+			log("| %d %d\n", region.x + region.w, region.y + region.h);
+			log("---------\n");
+			*/
+			pending.push_back(std::make_pair(region, !splitme.second));
 		}
-	//}
+		log("\n");
+	}
 	// Now recurse
 	make_regions(texture, pending, result);
 }
