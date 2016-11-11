@@ -394,6 +394,13 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 	make_regions(texture, pending, result);
 }
 
+// Returns a new texture with the trimmed contents defined by 'rect'.
+std::unique_ptr<Texture> trim_texture(const Texture& texture, const Recti& rect) {
+	std::unique_ptr<Texture> result(new Texture(rect.w, rect.h));
+	result->blit(Rectf(0, 0, rect.w, rect.h), texture, rect.cast<float>(), 1., BlendMode::Copy);
+	return result;
+}
+
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
@@ -450,52 +457,38 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 			current_texture->unlock(Texture::Unlock_Update);
 		}
 
+		Recti main_rect = find_trim_rect(main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height()));
+
 		main_texture->unlock(Texture::Unlock_Update);
 		main_pc_mask->unlock(Texture::Unlock_Update);
 		cookie_cutter->unlock(Texture::Unlock_Update);
 
 		FileWrite image_fw;
-		save_to_png(main_texture.get(), &image_fw, ColorType::RGBA);
-		log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
+		save_to_png(trim_texture(*main_texture.get(), main_rect).get(), &image_fw, ColorType::RGBA);
+		//log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
 		image_fw.write(*out_filesystem, "main_texture.png");
-		save_to_png(main_pc_mask.get(), &image_fw, ColorType::RGBA);
+		save_to_png(trim_texture(*main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "main_texture_pc.png");
+
 		save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
 		image_fw.write(*out_filesystem, "cookie_cutter.png");
 
 		// Split into regions
 		cookie_cutter->lock();
-		log("NOCOM cookie_cutter1: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
-		Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get(), Recti(0, 0, cookie_cutter->width(), cookie_cutter->height()));
-		log("NOCOM cookie_cutter2: %d %d %d %d \n", cookie_cutter_rect.x, cookie_cutter_rect.y, cookie_cutter_rect.w, cookie_cutter_rect.h);
-		cookie_cutter->unlock(Texture::Unlock_Update);
-
-		std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
-		trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
-
-		trimmed_cookie_cutter->lock();
-		Recti trimmed_cookie_cutter_rect(0, 0, trimmed_cookie_cutter->width(), trimmed_cookie_cutter->height());
+		log("NOCOM cookie_cutter: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
 		std::vector<Recti>* regions = new std::vector<Recti>();
 		std::vector<std::pair<Recti, bool>> splitme;
-		splitme.push_back(std::make_pair(trimmed_cookie_cutter_rect, true));
-		make_regions(trimmed_cookie_cutter.get(), splitme, regions);
+		splitme.push_back(std::make_pair(main_rect, true));
+		make_regions(cookie_cutter.get(), splitme, regions);
+		cookie_cutter->unlock(Texture::Unlock_Update);
 
 		for (size_t i = 0; i < regions->size(); ++i) {
 			//Recti region = find_trim_rect(trimmed_cookie_cutter.get(), regions->at(i));
 			Recti region = regions->at(i);
 			log("Blitting texture for region %lu - %d %d %d %d\n", i, region.x, region.y, region.x + region.w, region.y + region.h);
-			// Recti cookie_cutter_rect = find_trim_rect(cookie_cutter.get(), Recti(0, 0, cookie_cutter->width(), cookie_cutter->height()));
-			// std::unique_ptr<Texture> trimmed_cookie_cutter(new Texture(cookie_cutter_rect.w, cookie_cutter_rect.h));
-			// trimmed_cookie_cutter->blit(Rectf(0, 0, cookie_cutter_rect.w, cookie_cutter_rect.h), *cookie_cutter, cookie_cutter_rect.cast<float>(), 1., BlendMode::Copy);
-			std::unique_ptr<Texture> region_texture(new Texture(region.w, region.h));
-			region_texture->blit(Rectf(0, 0, region.w, region.h), *trimmed_cookie_cutter, region.cast<float>(), 1., BlendMode::Copy);
-			save_to_png(region_texture.get(), &image_fw, ColorType::RGBA);
+			save_to_png(trim_texture(*cookie_cutter.get(), region).get(), &image_fw, ColorType::RGBA);
 			image_fw.write(*out_filesystem, (boost::format("region_%lu.png") % i).str().c_str());
 		}
-
-		trimmed_cookie_cutter->unlock(Texture::Unlock_Update);
-		save_to_png(trimmed_cookie_cutter.get(), &image_fw, ColorType::RGBA);
-		image_fw.write(*out_filesystem, "trimmed_cookie_cutter.png");
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
