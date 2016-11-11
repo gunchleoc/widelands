@@ -35,6 +35,7 @@
 #include "graphic/graphic.h"
 #include "graphic/image.h"
 #include "graphic/image_io.h"
+#include "graphic/texture_atlas.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "io/filewrite.h"
@@ -46,7 +47,7 @@
 using namespace Widelands;
 
 namespace {
-
+constexpr int kMaximumSizeForTextures = 2048;
 /*
  ==========================================================
  SETUP
@@ -401,6 +402,11 @@ std::unique_ptr<Texture> trim_texture(const Image* texture, const Recti& rect) {
 	return result;
 }
 
+
+std::string region_name(size_t region, size_t frame) {
+	return (boost::format("region_%lu_frame_%lu.png") % region % frame).str();
+}
+
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
@@ -464,15 +470,19 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		main_pc_mask->unlock(Texture::Unlock_Update);
 		cookie_cutter->unlock(Texture::Unlock_Update);
 
-		FileWrite image_fw;
-		save_to_png(trim_texture(main_texture.get(), main_rect).get(), &image_fw, ColorType::RGBA);
-		//log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
-		image_fw.write(*out_filesystem, "main_texture.png");
-		save_to_png(trim_texture(main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
-		image_fw.write(*out_filesystem, "main_texture_pc.png");
+		std::vector<std::pair<std::string, std::unique_ptr<Texture>>> to_be_packed;
+		std::unique_ptr<Texture> cropped_main_texture(trim_texture(main_texture.get(), main_rect));
+		to_be_packed.push_back(std::make_pair("main_texture.png", std::move(cropped_main_texture)));
 
-		save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
-		image_fw.write(*out_filesystem, "cookie_cutter.png");
+		FileWrite image_fw;
+		//save_to_png(cropped_main_texture.get(), &image_fw, ColorType::RGBA);
+		//log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
+		//image_fw.write(*out_filesystem, "main_texture.png");
+		//save_to_png(trim_texture(main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
+		//image_fw.write(*out_filesystem, "main_texture_pc.png");
+
+		//save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
+		//image_fw.write(*out_filesystem, "cookie_cutter.png");
 
 		// Split into regions
 		cookie_cutter->lock();
@@ -499,11 +509,61 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 				}
 				frame->unlock(Texture::Unlock_Update);
 				save_to_png(frame.get(), &image_fw, ColorType::RGBA);
-				image_fw.write(*out_filesystem, (boost::format("region_%lu_frame_%lu.png") % i % frame_index).str().c_str());
+				to_be_packed.push_back(std::make_pair(region_name(i, frame_index), std::move(frame)));
+				//image_fw.write(*out_filesystem, region_name(i, frame_index).c_str());
 			}
 		}
 
 		cookie_cutter->unlock(Texture::Unlock_Update);
+
+		// Build Texture Atlas
+		TextureAtlas atlas;
+		log("NOCOM we have %lu textures\n", to_be_packed.size());
+		for (auto& pair : to_be_packed) {
+			log("NOCOM add %s to atlas\n", pair.first.c_str());
+			atlas.add(*pair.second);
+		}
+
+		std::vector<std::unique_ptr<Texture>> texture_atlases;
+		std::vector<TextureAtlas::PackedTexture> packed_textures;
+		log("NOCOM pack\n");
+		atlas.pack(kMaximumSizeForTextures, &texture_atlases, &packed_textures);
+		std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas = new std::map<std::string, std::unique_ptr<Texture>>();
+
+		for (size_t i = 0; i < to_be_packed.size(); ++i) {
+			log("Packed texture %d %d\n", packed_textures[i].texture->width(), packed_textures[i].texture->height());
+			textures_in_atlas->insert(
+				std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
+		}
+		for (auto& listme : *textures_in_atlas) {
+			log("NOCOM %s is in atlas\n", listme.first.c_str());
+		}
+
+		if (texture_atlases.size() != 1) {
+			log("Textures didn't fit in 1 atlas, we have %lu!\n", texture_atlases.size());
+		}
+		log("NOCOM done packing\n");
+		// NOCOM the TextureAtlas contains only the last texture that was added. Why?
+		log("NOCOM dimensions are %d %d\n", texture_atlases[0]->width(), texture_atlases[0]->height());
+
+		std::unique_ptr<ImageCache> image_cache(new ImageCache());
+		image_cache->fill_with_texture_atlases(std::move(texture_atlases), std::move(*textures_in_atlas));
+
+		const Image* test = image_cache->get("main_texture.png");
+		log("Found test: %s\n", test ? "yes" : "no");
+		std::unique_ptr<Texture> test_texture(trim_texture(test, Recti(0, 0, test->width(), test->height())));
+		save_to_png(test_texture.get(), &image_fw, ColorType::RGBA);
+		image_fw.write(*out_filesystem, "test.png");
+
+		test = image_cache->get(region_name(0, 0));
+		log("Found test2: %s\n", test ? "yes" : "no");
+		std::unique_ptr<Texture> test_texture2(trim_texture(test, Recti(0, 0, test->width(), test->height())));
+		save_to_png(test_texture2.get(), &image_fw, ColorType::RGBA);
+		image_fw.write(*out_filesystem, "test2.png");
+
+		//save_to_png(texture_atlases->at(0).get(), &image_fw, ColorType::RGBA);
+		//save_to_png(spritemap, &image_fw, ColorType::RGBA);
+		//image_fw.write(*out_filesystem, "spritemap.png");
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
