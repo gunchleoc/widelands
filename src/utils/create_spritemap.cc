@@ -520,41 +520,40 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		TextureAtlas atlas;
 		log("NOCOM we have %lu textures\n", to_be_packed.size());
 		for (auto& pair : to_be_packed) {
-			log("NOCOM add %s to atlas\n", pair.first.c_str());
 			atlas.add(*pair.second);
 		}
 
 		std::vector<std::unique_ptr<Texture>> texture_atlases;
 		std::vector<TextureAtlas::PackedTexture> packed_textures;
-		log("NOCOM pack\n");
 		atlas.pack(kMaximumSizeForTextures, &texture_atlases, &packed_textures);
 		std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas = new std::map<std::string, std::unique_ptr<Texture>>();
 
 		for (size_t i = 0; i < to_be_packed.size(); ++i) {
-			log("Packed texture %d %d\n", packed_textures[i].texture->width(), packed_textures[i].texture->height());
 			textures_in_atlas->insert(
 				std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
-		}
-		for (auto& listme : *textures_in_atlas) {
-			log("NOCOM %s is in atlas\n", listme.first.c_str());
 		}
 
 		if (texture_atlases.size() != 1) {
 			log("Textures didn't fit in 1 atlas, we have %lu!\n", texture_atlases.size());
+			return;
 		}
-		log("NOCOM done packing\n");
-		// NOCOM the TextureAtlas contains only the last texture that was added. Why?
-		log("NOCOM dimensions are %d %d\n", texture_atlases[0]->width(), texture_atlases[0]->height());
 
-		for (size_t i = 0; i < texture_atlases.size(); ++i) {
-			std::unique_ptr<::StreamWrite> sw(
-			   out_filesystem->open_stream_write((boost::format("texture_atlas_%02d.png") % i).str()));
-			save_to_png(texture_atlases[i].get(), sw.get(), ColorType::RGBA);
+		// Write Atlas image
+		std::unique_ptr<::StreamWrite> sw(out_filesystem->open_stream_write("spritemap.png"));
+		save_to_png(texture_atlases[0].get(), sw.get(), ColorType::RGBA);
+
+		// Colecr Atlas regions and write to file
+		for (const auto& texture_in_atlas : *textures_in_atlas) {
+			log("In atlas - %s", texture_in_atlas.first.c_str());
+			const Recti& blit_rect = texture_in_atlas.second->blit_data().rect.cast<int>();
+			log(" - rect: %d %d %d %d\n", blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
+			// NOCOM write
 		}
-		for (int i = 0; i < packed_texture.size(); ++i) {
+
+		/*
+		for (size_t i = 0; i < packed_textures.size(); ++i) {
 			const TextureAtlas::PackedTexture& packed_texture = packed_textures[i];
-			const Texture& texture = *packed_texture.texture;
-			log("Texture %s ended up in atlas number %d", to_be_packed[i].first.c_str(),
+			log("Texture %s atlas %d - ", to_be_packed[i].first.c_str(),
 			    packed_texture.texture_atlas);
 			// NOCOM(#sirver): See texture.blit_data() which defines how to blit
 			// the texture out of the bigger texture. You now need to serialize
@@ -565,7 +564,7 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 			// 'image_cache->fill_with_texture_atlases'. Background: there are two
 			// types of 'Texture': the ones that own their memory, i.e. that have
 			// a GL texture associated with them. this is the default if the
-			// image_loader in WIdelands loads an image from disk. but we also
+			// image_loader in Widelands loads an image from disk. but we also
 			// support textures that do not own their memory. They are referencing
 			// a sub rectangle in a texture that does own its memory and are only
 			// valid for as long as the parent texture is not deleted. In
@@ -573,29 +572,7 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 			// that will hold on forever, while most other images should just be
 			// refeencing sub rectangles in the texture atlases.
 		}
-
-		std::unique_ptr<ImageCache> image_cache(new ImageCache());
-		// NOCOM(#sirver): this is wrong. After having called 'packed', you only
-		// require the 'packed_textures', you can drop the single ones. Have you
-		// seen 'build_texture_atlas.cc'? It shows how we build a texture atlas
-		// with the most used UI images. It is called in Graphic::initialize'.
-		image_cache->fill_with_texture_atlases(std::move(texture_atlases), std::move(*textures_in_atlas));
-
-		const Image* test = image_cache->get("main_texture.png");
-		log("Found test: %s\n", test ? "yes" : "no");
-		std::unique_ptr<Texture> test_texture(trim_texture(test, Recti(0, 0, test->width(), test->height())));
-		save_to_png(test_texture.get(), &image_fw, ColorType::RGBA);
-		image_fw.write(*out_filesystem, "test.png");
-
-		test = image_cache->get(region_name(0, 0));
-		log("Found test2: %s\n", test ? "yes" : "no");
-		std::unique_ptr<Texture> test_texture2(trim_texture(test, Recti(0, 0, test->width(), test->height())));
-		save_to_png(test_texture2.get(), &image_fw, ColorType::RGBA);
-		image_fw.write(*out_filesystem, "test2.png");
-
-		//save_to_png(texture_atlases->at(0).get(), &image_fw, ColorType::RGBA);
-		//save_to_png(spritemap, &image_fw, ColorType::RGBA);
-		//image_fw.write(*out_filesystem, "spritemap.png");
+		*/
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
