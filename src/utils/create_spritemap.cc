@@ -546,7 +546,39 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		// NOCOM the TextureAtlas contains only the last texture that was added. Why?
 		log("NOCOM dimensions are %d %d\n", texture_atlases[0]->width(), texture_atlases[0]->height());
 
+		for (size_t i = 0; i < texture_atlases.size(); ++i) {
+			std::unique_ptr<::StreamWrite> sw(
+			   out_filesystem->open_stream_write((boost::format("texture_atlas_%02d.png") % i).str()));
+			save_to_png(texture_atlases[i].get(), sw.get(), ColorType::RGBA);
+		}
+		for (int i = 0; i < packed_texture.size(); ++i) {
+			const TextureAtlas::PackedTexture& packed_texture = packed_textures[i];
+			const Texture& texture = *packed_texture.texture;
+			log("Texture %s ended up in atlas number %d", to_be_packed[i].first.c_str(),
+			    packed_texture.texture_atlas);
+			// NOCOM(#sirver): See texture.blit_data() which defines how to blit
+			// the texture out of the bigger texture. You now need to serialize
+			// the packed_texture.texture_atlas AND the blit_data of the the
+			// packed_textures. To reload, load the texture_atlas images in order,
+			// create the packed textures using the Texture constructor that takes
+			// texture, subrect parent_w|h and pass these to
+			// 'image_cache->fill_with_texture_atlases'. Background: there are two
+			// types of 'Texture': the ones that own their memory, i.e. that have
+			// a GL texture associated with them. this is the default if the
+			// image_loader in WIdelands loads an image from disk. but we also
+			// support textures that do not own their memory. They are referencing
+			// a sub rectangle in a texture that does own its memory and are only
+			// valid for as long as the parent texture is not deleted. In
+			// Widelands therofore, texture atlas images go into the image cache
+			// that will hold on forever, while most other images should just be
+			// refeencing sub rectangles in the texture atlases.
+		}
+
 		std::unique_ptr<ImageCache> image_cache(new ImageCache());
+		// NOCOM(#sirver): this is wrong. After having called 'packed', you only
+		// require the 'packed_textures', you can drop the single ones. Have you
+		// seen 'build_texture_atlas.cc'? It shows how we build a texture atlas
+		// with the most used UI images. It is called in Graphic::initialize'.
 		image_cache->fill_with_texture_atlases(std::move(texture_atlases), std::move(*textures_in_atlas));
 
 		const Image* test = image_cache->get("main_texture.png");
