@@ -19,7 +19,6 @@
 
 #include <cassert>
 #include <memory>
-#include <set>
 #include <vector>
 
 #include <SDL.h>
@@ -100,7 +99,7 @@ void cleanup() {
  ==========================================================
  */
 
-// Defines some convenience writing functions for the JSON format
+// Defines some convenience writing functions for the Lua format
 class LuaFileWrite : public FileWrite {
 public:
 	LuaFileWrite() : FileWrite(), level_(0) {
@@ -209,6 +208,13 @@ private:
 	int level_;
 };
 
+
+/*
+ ==========================================================
+ IMAGE SEGMENTATION
+ ==========================================================
+ */
+
 #define assert_texture_contains_rect(texture, rect) { \
 	assert(rect.x >= 0); \
 	assert(rect.y >= 0); \
@@ -222,7 +228,6 @@ private:
 Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 	assert_texture_contains_rect(texture, source_rect);
 	Recti result = source_rect;
-	//log("Trimmed %d %d %d %d\n", result.x, result.y, result.w, result.h);
 	int max_x = result.x + result.w;
 	const int max_y = result.y + result.h;
 	// Find left margin
@@ -231,7 +236,6 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 		for (int y = result.y; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				//log("NOCOM pixel %d %d\n", x, y);
 				result.x = std::max(result.x, x - 1);
 				found = true;
 			}
@@ -243,7 +247,6 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 		for (int y = 0; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				//log("NOCOM pixel %d %d\n", x, y);
 				result.w = std::min(max_x, x + 1 - result.x);
 				found = true;
 			}
@@ -256,7 +259,6 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 		for (int x = result.x; x < max_x && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				//log("NOCOM pixel %d %d\n", x, y);
 				result.y = std::max(result.y, y - 1);
 				found = true;
 			}
@@ -268,13 +270,11 @@ Recti find_trim_rect(Texture* texture, const Recti& source_rect) {
 		for (int x = result.x; x < max_x && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				//log("NOCOM pixel %d %d\n", x, y);
 				result.h = std::min(max_y, y + 1 - result.y);
 				found = true;
 			}
 		}
 	}
-	//log("To      %d %d %d %d\n", result.x, result.y, result.w, result.h);
 	return result;
 }
 
@@ -284,7 +284,6 @@ std::vector<int> find_empty_rows(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
 	const int max_x = region.x + region.w;
 	const int max_y = region.y + region.h;
-	//log("Find rows - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int y = region.y; y < max_y; ++y) {
@@ -309,7 +308,6 @@ std::vector<int> find_empty_columns(Texture* texture, const Recti& region) {
 	assert_texture_contains_rect(texture, region);
 	const int max_x = region.x + region.w;
 	const int max_y = region.y + region.h;
-	//log("Find columns - %d %d %d %d\n", region.x, region.y, max_x, max_y);
 	std::vector<int> result;
 	bool had_a_filled_pixel = false;
 	for (int x = region.x; x < max_x; ++x) {
@@ -330,7 +328,7 @@ std::vector<int> find_empty_columns(Texture* texture, const Recti& region) {
 
 // Uses empty lines to split a rect into rectangular stripes.
 // Lock texture before you call this function.
-// Assumes that lines is not empty.
+// Assumes that 'lines' is not empty.
 std::vector<Recti> split_region(const Recti& source, std::vector<int> lines, bool vertical) {
 	std::vector<Recti> result;
 	Recti current = source;
@@ -353,7 +351,9 @@ std::vector<Recti> split_region(const Recti& source, std::vector<int> lines, boo
 	return result;
 }
 
-// bool in pending == true means vertical split
+// Recursively finds and adds trimmed regions to 'result'
+// If the bool in 'pending' is true, we have a vertical split; horizontal otherwise.
+// We alternate vertical and horizontal split.
 // Lock texture before you call this function.
 void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending, std::vector<Recti>* result) {
 	// All done
@@ -366,11 +366,6 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 	pending.pop_back();
 	// Find an empty line. If no line is found, this rect is done and can be added to the result
 	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
-	/*
-	for (int line : lines) {
-		log("NOCOM empty line at %d\n", line);
-	}
-	*/
 	if (lines.empty()) {
 		splitme.first = find_trim_rect(texture, splitme.first);
 		if (splitme.first.w > 0 && splitme.first.h > 0) {
@@ -380,16 +375,8 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 		// Use the lines to split the current rectangle into regions, then add them to the todo-list.
 		std::vector<Recti> regions = split_region(splitme.first, lines, splitme.second);
 		for (const auto& region : regions) {
-			log("Pending texture - %d %d %d %d, %s\n", region.x, region.y, region.x + region.w, region.y + region.h, splitme.second ? "v" : "h");
-			/*
-			log("_________\n");
-			log("| %d %d\n", region.x, region.y);
-			log("| %d %d\n", region.x + region.w, region.y + region.h);
-			log("---------\n");
-			*/
 			pending.push_back(std::make_pair(region, !splitme.second));
 		}
-		log("\n");
 	}
 	// Now recurse
 	make_regions(texture, pending, result);
@@ -403,10 +390,134 @@ std::unique_ptr<Texture> trim_texture(const Image* texture, const Recti& rect) {
 }
 
 
+/*
+ ==========================================================
+ BUILDING TEXTURE ATLAS
+ ==========================================================
+ */
+
+// A string identifier to reference the image for the given 'region' and 'frame'
 std::string region_name(size_t region, size_t frame) {
-	return (boost::format("region_%lu_frame_%lu.png") % region % frame).str();
+	return (boost::format("r_%lu_f_%lu.png") % region % frame).str();
 }
 
+// Data about the animation Texture Atlas that we need to record in our Lua file.
+struct SpritemapData {
+	SpritemapData(const Recti& init_rectangle) : textures_in_atlas(new std::map<std::string, std::unique_ptr<Texture>>()), rectangle(init_rectangle), regions(new std::vector<Recti>()) {}
+	std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas;
+	const Recti rectangle;
+	std::vector<Recti>* regions;
+};
+
+// Creates a spritemap from the images, writes it to a .png file and returns information about its
+// Texture Atlas.
+const SpritemapData* make_spritemap(std::vector<const Image*> images, const std::string& image_filename, FileSystem* out_filesystem) {
+	const uint16_t w = images[0]->width();
+	const uint16_t h = images[0]->height();
+
+	// The main texture contains the pixels that all animation frames have in common.
+	std::unique_ptr<Texture> main_texture(new Texture(w, h));
+	main_texture->blit(Rectf(0, 0, w, h), *images[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
+	main_texture->lock();
+
+	// The cookie cutter is a mask to define the pixels that differ between frames.
+	std::unique_ptr<Texture> cookie_cutter(new Texture(w, h));
+	cookie_cutter->lock();
+	for (uint16_t x = 0; x < w; ++x) {
+		for (uint16_t y = 0; y < h; ++y) {
+			cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+		}
+	}
+
+	// Make pixels in main texture transparent if any of the other images differ
+	for (size_t i = 1; i < images.size(); ++i) {
+		const Image* image = images[i];
+		Texture* current_texture = new Texture(w, h);
+		current_texture->blit(Rectf(0, 0, w, h), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		current_texture->lock();
+		for (uint16_t x = 0; x < w; ++x) {
+			for (uint16_t y = 0; y < h; ++y) {
+				RGBAColor pixel = main_texture->get_pixel(x, y);
+				RGBAColor compareme = current_texture->get_pixel(x, y);
+				if (pixel != compareme) {
+					main_texture->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+					cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 255));
+				}
+			}
+		}
+		current_texture->unlock(Texture::Unlock_Update);
+	}
+
+	const SpritemapData* result = new SpritemapData(find_trim_rect(main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height())));
+
+	main_texture->unlock(Texture::Unlock_Update);
+	cookie_cutter->unlock(Texture::Unlock_Update);
+
+	std::vector<std::pair<std::string, std::unique_ptr<Texture>>> to_be_packed;
+	// NOCOM Prime suspect for player color alignment error
+	std::unique_ptr<Texture> cropped_main_texture(trim_texture(main_texture.get(), result->rectangle));
+	to_be_packed.push_back(std::make_pair("main_texture.png", std::move(cropped_main_texture)));
+
+	// Split into regions
+	cookie_cutter->lock();
+	std::vector<std::pair<Recti, bool>> splitme;
+	splitme.push_back(std::make_pair(result->rectangle, true));
+	make_regions(cookie_cutter.get(), splitme, result->regions);
+
+	for (size_t i = 0; i < result->regions->size(); ++i) {
+		Recti region = result->regions->at(i);
+		for (size_t frame_index = 0; frame_index < images.size(); ++frame_index) {
+			std::unique_ptr<Texture> frame(trim_texture(images[frame_index], region));
+			frame->lock();
+			// We want transparent pixels according to the cookie cutter.
+			for (uint16_t x = 0; x < frame->width(); ++x) {
+				for (uint16_t y = 0; y < frame->height(); ++y) {
+					RGBAColor mask = cookie_cutter->get_pixel(region.x + x, region.y + y);
+					if (mask.a == 0) {
+						frame->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
+					}
+				}
+			}
+			frame->unlock(Texture::Unlock_Update);
+			to_be_packed.push_back(std::make_pair(region_name(i, frame_index), std::move(frame)));
+		}
+	}
+
+	cookie_cutter->unlock(Texture::Unlock_Update);
+
+	// Build Texture Atlas
+	TextureAtlas atlas;
+	for (auto& pair : to_be_packed) {
+		atlas.add(*pair.second);
+	}
+
+	std::vector<std::unique_ptr<Texture>> texture_atlases;
+	std::vector<TextureAtlas::PackedTexture> packed_textures;
+	atlas.pack(kMaximumSizeForTextures, &texture_atlases, &packed_textures);
+
+	for (size_t i = 0; i < to_be_packed.size(); ++i) {
+		result->textures_in_atlas->insert(
+			std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
+	}
+
+	if (texture_atlases.size() != 1) {
+		log("ABORTING. Textures didn't fit in 1 atlas, we have %lu!\n", texture_atlases.size());
+		return nullptr;
+	}
+
+	// Write Texture Atlas image file
+	std::unique_ptr<::StreamWrite> sw(out_filesystem->open_stream_write(image_filename));
+	save_to_png(texture_atlases[0].get(), sw.get(), ColorType::RGBA);
+
+	return result;
+}
+
+
+/*
+ ==========================================================
+ WRITING ANIMATION
+ ==========================================================
+ */
 
 // Add Texture Atlas regions to Lua file
 void write_regions(LuaFileWrite* lua_fw, std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas, std::vector<Recti>* regions, size_t no_of_frames) {
@@ -441,205 +552,88 @@ void write_regions(LuaFileWrite* lua_fw, std::map<std::string, std::unique_ptr<T
 	}
 }
 
-struct SpritemapData {
-	SpritemapData(const Recti& init_rectangle) : textures_in_atlas(new std::map<std::string, std::unique_ptr<Texture>>()), rectangle(init_rectangle), regions(new std::vector<Recti>()) {}
-	std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas;
-	const Recti rectangle;
-	std::vector<Recti>* regions;
-};
-
-// Creates a spritemap from the images, writes it to a png file and returns information about its
-// Texture Atlas.
-const SpritemapData* make_spritemap(std::vector<const Image*> images, const std::string& image_filename, FileSystem* out_filesystem) {
-	const uint16_t w = images[0]->width();
-	const uint16_t h = images[0]->height();
-	log("dimension %d, %d\n", w, h);
-	std::unique_ptr<Texture> main_texture(new Texture(w, h));
-	main_texture->blit(Rectf(0, 0, w, h), *images[0], Rectf(0, 0, w, h), 1., BlendMode::Copy);
-	main_texture->lock();
-	std::unique_ptr<Texture> cookie_cutter(new Texture(w, h));
-	cookie_cutter->lock();
-	for (uint16_t x = 0; x < w; ++x) {
-		for (uint16_t y = 0; y < h; ++y) {
-			cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
-		}
-	}
-
-	// Make pixels in main texture transparent if any of the other images differs
-	for (size_t i = 1; i < images.size(); ++i) {
-		const Image* image = images[i];
-		Texture* current_texture = new Texture(w, h);
-		current_texture->blit(Rectf(0, 0, w, h), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
-		current_texture->lock();
-		for (uint16_t x = 0; x < w; ++x) {
-			for (uint16_t y = 0; y < h; ++y) {
-				RGBAColor pixel = main_texture->get_pixel(x, y);
-				RGBAColor compareme = current_texture->get_pixel(x, y);
-				if (pixel != compareme) {
-					main_texture->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
-					cookie_cutter->set_pixel(x, y, RGBAColor(0, 0, 0, 255));
-				}
-			}
-		}
-		current_texture->unlock(Texture::Unlock_Update);
-	}
-
-	const SpritemapData* result = new SpritemapData(find_trim_rect(main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height())));
-
-	main_texture->unlock(Texture::Unlock_Update);
-	cookie_cutter->unlock(Texture::Unlock_Update);
-
-	std::vector<std::pair<std::string, std::unique_ptr<Texture>>> to_be_packed;
-	std::unique_ptr<Texture> cropped_main_texture(trim_texture(main_texture.get(), result->rectangle));
-	to_be_packed.push_back(std::make_pair("main_texture.png", std::move(cropped_main_texture)));
-
-	FileWrite image_fw;
-	//save_to_png(cropped_main_texture.get(), &image_fw, ColorType::RGBA);
-	//log("NOCOM %s\n", out_filesystem->get_working_directory().c_str());
-	//image_fw.write(*out_filesystem, "main_texture.png");
-	//save_to_png(trim_texture(main_pc_mask.get(), main_rect).get(), &image_fw, ColorType::RGBA);
-	//image_fw.write(*out_filesystem, "main_texture_pc.png");
-
-	//save_to_png(cookie_cutter.get(), &image_fw, ColorType::RGBA);
-	//image_fw.write(*out_filesystem, "cookie_cutter.png");
-
-	// Split into regions
-	cookie_cutter->lock();
-	log("NOCOM cookie_cutter: %d %d %d %d \n", 0, 0, cookie_cutter->width(), cookie_cutter->height());
-	std::vector<std::pair<Recti, bool>> splitme;
-	splitme.push_back(std::make_pair(result->rectangle, true));
-	make_regions(cookie_cutter.get(), splitme, result->regions);
-
-	for (size_t i = 0; i < result->regions->size(); ++i) {
-		Recti region = result->regions->at(i);
-		log("Blitting texture for region %lu - %d %d %d %d\n", i, region.x, region.y, region.x + region.w, region.y + region.h);
-		for (size_t frame_index = 0; frame_index < images.size(); ++frame_index) {
-			std::unique_ptr<Texture> frame(trim_texture(images[frame_index], region));
-			frame->lock();
-			// We want transparent pixels according to the cookie cutter.
-			for (uint16_t x = 0; x < frame->width(); ++x) {
-				for (uint16_t y = 0; y < frame->height(); ++y) {
-					RGBAColor mask = cookie_cutter->get_pixel(region.x + x, region.y + y);
-					if (mask.a == 0) {
-						frame->set_pixel(x, y, RGBAColor(0, 0, 0, 0));
-					}
-				}
-			}
-			frame->unlock(Texture::Unlock_Update);
-			save_to_png(frame.get(), &image_fw, ColorType::RGBA);
-			to_be_packed.push_back(std::make_pair(region_name(i, frame_index), std::move(frame)));
-			//image_fw.write(*out_filesystem, region_name(i, frame_index).c_str());
-		}
-	}
-
-	cookie_cutter->unlock(Texture::Unlock_Update);
-
-	// Build Texture Atlas
-	TextureAtlas atlas;
-	for (auto& pair : to_be_packed) {
-		atlas.add(*pair.second);
-	}
-
-	std::vector<std::unique_ptr<Texture>> texture_atlases;
-	std::vector<TextureAtlas::PackedTexture> packed_textures;
-	atlas.pack(kMaximumSizeForTextures, &texture_atlases, &packed_textures);
-
-	for (size_t i = 0; i < to_be_packed.size(); ++i) {
-		result->textures_in_atlas->insert(
-			std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
-	}
-
-	if (texture_atlases.size() != 1) {
-		log("ABORTING. Textures didn't fit in 1 atlas, we have %lu!\n", texture_atlases.size());
-		return nullptr;
-	}
-
-	// Write Atlas image
-	std::unique_ptr<::StreamWrite> sw(out_filesystem->open_stream_write(image_filename));
-	save_to_png(texture_atlases[0].get(), sw.get(), ColorType::RGBA);
-
-	return result;
-}
-
+// Reads animation data from engine and then creates spritemap data.
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
-	const std::string anim_name = "idle"; // NOCOM
+	const std::string anim_name = "idle"; // NOCOM Add selection of which animation(s) to process to command line.
 
 	egbase.mutable_tribes()->postload();  // Make sure that all values have been set.
 	const Tribes& tribes = egbase.tribes();
+	log("==========================================\n");
+
 	const TribeDescr* barbarians = tribes.get_tribe_descr(tribes.tribe_index("barbarians"));
 	const BuildingDescr* building = barbarians->get_building_descr(barbarians->headquarters());
 	const Animation& animation = g_gr->animations().get_animation(building->get_animation(anim_name));
 	const Vector2i& hotspot = animation.hotspot();
 
+	// NOCOM We should probably have a test whether the animation is nonpacked.
 	std::vector<const Image*> images = animation.images();
-
-	//std::vector<const Image*> pc_masks = animation.pc_masks(); // NOCOM deal with empty pc_masks
-	log("NOCOM animation has %lu pictures\n", images.size());
+	log("Parsing '%s' animation for '%s'\nIt has %lu pictures\n", anim_name.c_str(), building->name().c_str(), images.size());
 
 	// Only create spritemap if animation has more than 1 frame.
-	// NOCOM we should have a test if the animation is nonpacked.
-	if (images.size() > 1) {
-		const SpritemapData* spritemap = make_spritemap(images, anim_name + ".png", out_filesystem);
-		if (spritemap) {
-			// Now write the Lua file
-			lua_fw.open_table(anim_name, true, true);
-
-			lua_fw.write_key("image", true);
-			lua_fw.write_string("path.dirname(__file__) .. \"" + anim_name + ".png\"");
-			lua_fw.close_element(0, 2, true);
-			lua_fw.write_key("representative_image", true);
-			lua_fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
-			lua_fw.close_element(0, 2, true);
-
-			lua_fw.open_table("rectangle", false, true);
-			lua_fw.write_value_int(0);
-			lua_fw.close_element();
-			lua_fw.write_value_int(0);
-			lua_fw.close_element();
-			lua_fw.write_value_int(animation.width());
-			lua_fw.close_element();
-			lua_fw.write_value_int(animation.height());
-			lua_fw.close_element(0, 0);
-			lua_fw.close_table();
-			lua_fw.write_string("\n");
-
-			lua_fw.open_table("hotspot", false, true);
-			lua_fw.write_value_int(hotspot.x - spritemap->rectangle.x);
-			lua_fw.close_element();
-			lua_fw.write_value_int(hotspot.y - spritemap->rectangle.y);
-			lua_fw.close_element(0, 0);
-			lua_fw.close_table();
-			lua_fw.write_string("\n");
-
-			if (animation.nr_frames() > 1) {
-				uint32_t frametime = animation.frametime();
-				if (frametime > 0) {
-					lua_fw.write_key_value_int("fps", 1000 / animation.frametime(), true);
-					lua_fw.close_element();
-				}
-			}
-
-			lua_fw.open_table("regions", true, true);
-			write_regions(&lua_fw, spritemap->textures_in_atlas, spritemap->regions, images.size());
-
-			std::vector<const Image*> pc_masks = animation.pc_masks();
-			if (!pc_masks.empty()) {
-				lua_fw.close_table(0, 2, true); // Regions
-				const SpritemapData* pc_spritemap = make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
-				lua_fw.open_table("playercolor_regions", true, true);
-				write_regions(&lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
-
-			}
-			lua_fw.close_table(0, 0, true); // Regions
-
-			lua_fw.close_table(0, 2, true); // Animation
-			lua_fw.write_string("\n");
-			lua_fw.write(*out_filesystem, "new_spritemaps.lua");
-		}
+	if (images.size() < 2) {
+		log("Animation has less than 2 images and doesn't need a spritemap.\n");
+		return;
 	}
-	log("\nDone!\n");
+	const SpritemapData* spritemap = make_spritemap(images, anim_name + ".png", out_filesystem);
+	if (spritemap) {
+		// Now write the Lua file
+		lua_fw.open_table(anim_name, true, true);
+
+		lua_fw.write_key("image", true);
+		lua_fw.write_string("path.dirname(__file__) .. \"" + anim_name + ".png\"");
+		lua_fw.close_element(0, 2, true);
+		lua_fw.write_key("representative_image", true);
+		lua_fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
+		lua_fw.close_element(0, 2, true);
+
+		lua_fw.open_table("rectangle", false, true);
+		lua_fw.write_value_int(0);
+		lua_fw.close_element();
+		lua_fw.write_value_int(0);
+		lua_fw.close_element();
+		lua_fw.write_value_int(animation.width());
+		lua_fw.close_element();
+		lua_fw.write_value_int(animation.height());
+		lua_fw.close_element(0, 0);
+		lua_fw.close_table();
+		lua_fw.write_string("\n");
+
+		lua_fw.open_table("hotspot", false, true);
+		lua_fw.write_value_int(hotspot.x - spritemap->rectangle.x);
+		lua_fw.close_element();
+		lua_fw.write_value_int(hotspot.y - spritemap->rectangle.y);
+		lua_fw.close_element(0, 0);
+		lua_fw.close_table();
+		lua_fw.write_string("\n");
+
+		if (animation.nr_frames() > 1) {
+			uint32_t frametime = animation.frametime();
+			if (frametime > 0) {
+				lua_fw.write_key_value_int("fps", 1000 / animation.frametime(), true);
+				lua_fw.close_element();
+			}
+		}
+
+		lua_fw.open_table("regions", true, true);
+		write_regions(&lua_fw, spritemap->textures_in_atlas, spritemap->regions, images.size());
+
+		std::vector<const Image*> pc_masks = animation.pc_masks();
+		if (!pc_masks.empty()) {
+			lua_fw.close_table(0, 2, true); // Regions
+			const SpritemapData* pc_spritemap = make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
+			lua_fw.open_table("playercolor_regions", true, true);
+			write_regions(&lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
+
+		}
+		lua_fw.close_table(0, 0, true); // Regions
+
+		lua_fw.close_table(0, 2, true); // Animation
+		lua_fw.write_string("\n");
+		lua_fw.write(*out_filesystem, "new_spritemaps.lua");
+	}
+	log("Done!\n");
 }
 
 }  // namespace

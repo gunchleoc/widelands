@@ -99,43 +99,8 @@ private:
 		uint16_t w, h;
 		std::vector<Vector2i> source_offsets;  // indexed by frame nr.
 	};
+	std::vector<Region>* make_regions(const LuaTable& regions_table);
 	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
-
-	// NOCOM
-	std::vector<Region>* make_regions(const LuaTable& regions_table) {
-		std::vector<Region>* result = new std::vector<Region>();
-		for (const int region_key : regions_table.keys<int>()) {
-			std::unique_ptr<LuaTable> region_table = regions_table.get_table(region_key);
-			Region region;
-			Recti region_rect;
-			get_rect(*region_table->get_table("rectangle"), &region_rect);
-			region.target_offset.x = region_rect.x;
-			region.target_offset.y = region_rect.y;
-			region.h = region_rect.h;
-			region.w = region_rect.w;
-
-			if (region_table->has_key("offsets")) {
-				std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
-				const auto offsets_keys = offsets_table->keys<int>();
-				const uint16_t no_of_offsets = offsets_keys.size();
-				if (nr_frames_ && nr_frames_ != no_of_offsets) {
-					throw wexception(
-								"%s: region has different number of frames than previous (%i != %i).",
-												 hash_.c_str(), nr_frames_, no_of_offsets);
-				}
-				nr_frames_ = no_of_offsets;
-
-				for (const int offset_key : offsets_keys) {
-					std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
-					Vector2i p;
-					get_point(*offset_table, &p);
-					region.source_offsets.push_back(p);
-				}
-			}
-			result->push_back(region);
-		}
-		return result;
-	}
 
 	Recti rectangle_;
 	Vector2i hotspot_;
@@ -149,14 +114,10 @@ private:
 	std::vector<Region> pc_regions_;
 	std::string hash_;
 	bool play_once_;
-
-	/// mapping of soundeffect name to frame number, indexed by frame number .
-	// NOCOM map<uint32_t, string> sfx_cues;
 };
 
 PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(nullptr), pcmask_(nullptr), play_once_(false) {
-	log("NOCOM packed animation %s\n", name.c_str());
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -171,11 +132,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 		image_ = g_gr->images().get(image);
 		hash_ = image + ":" + name;
 		boost::replace_all(image, ".png", "");
-		log("NOCOM image filename : %s\n", image.c_str());
 		const std::string pc_mask_filename = image + "_pc.png";
-		log("NOCOM pc_mask_filename : %s\n", pc_mask_filename.c_str());
 		if (g_fs->file_exists(pc_mask_filename)) {
-			log("NOCOM Has playercolor\n");
 			pcmask_ = g_gr->images().get(pc_mask_filename);
 		}
 
@@ -196,10 +154,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 				}
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
-			log("NOCOM parsing regions.\n");
 			regions_ = *make_regions(*regions_table.get());
 			if (pcmask_ && table.has_key("playercolor_regions")) {
-				log("NOCOM we have playercolor!\n");
 				pc_regions_ = *make_regions(*table.get_table("playercolor_regions").get());
 			}
 		} else {
@@ -214,13 +170,44 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 	}
 }
 
-void PackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) const {
-	/* NOCOM
-	const uint32_t framenumber = time / frametime_ % nr_frames();
-	const map<uint32_t, string>::const_iterator sfx_cue = sfx_cues.find(framenumber);
-	if (sfx_cue != sfx_cues.end())
-		g_sound_handler.play_fx(sfx_cue->second, stereo_position, 1);
-		*/
+// Parse regions from LuaTable.
+std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTable& regions_table) {
+	std::vector<Region>* result = new std::vector<Region>();
+	for (const int region_key : regions_table.keys<int>()) {
+		std::unique_ptr<LuaTable> region_table = regions_table.get_table(region_key);
+		Region region;
+		Recti region_rect;
+		get_rect(*region_table->get_table("rectangle"), &region_rect);
+		region.target_offset.x = region_rect.x;
+		region.target_offset.y = region_rect.y;
+		region.h = region_rect.h;
+		region.w = region_rect.w;
+
+		if (region_table->has_key("offsets")) {
+			std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+			const auto offsets_keys = offsets_table->keys<int>();
+			const uint16_t no_of_offsets = offsets_keys.size();
+			if (nr_frames_ && nr_frames_ != no_of_offsets) {
+				throw wexception(
+							"%s: region has different number of frames than previous (%i != %i).",
+											 hash_.c_str(), nr_frames_, no_of_offsets);
+			}
+			nr_frames_ = no_of_offsets;
+
+			for (const int offset_key : offsets_keys) {
+				std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
+				Vector2i p;
+				get_point(*offset_table, &p);
+				region.source_offsets.push_back(p);
+			}
+		}
+		result->push_back(region);
+	}
+	return result;
+}
+
+void PackedAnimation::trigger_sound(uint32_t /*time*/, uint32_t /*stereo_position*/) const {
+	// TODO(GunChleoc): Not implemented
 }
 
 const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
@@ -230,7 +217,7 @@ const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
 const std::string& PackedAnimation::representative_image_filename() const {
 	return representative_image_filename_;
 }
-// NOCOM this eventually maxes out the system.
+// NOCOM This blinks occasionally when blitting - needs some texture atlas fu.
 const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBColor* clr) const {
 	const int w = image_->width();
 	const int h = image_->height();
