@@ -47,6 +47,7 @@ using namespace Widelands;
 
 namespace {
 constexpr int kMaximumSizeForTextures = 2048;
+constexpr int kDefaultFps = 4;
 /*
  ==========================================================
  SETUP
@@ -559,41 +560,66 @@ void write_regions(LuaFileWrite* lua_fw,
 }
 
 // Reads animation data from engine and then creates spritemap data.
-void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
-	LuaFileWrite lua_fw;
-
-	const std::string anim_name =
-	   "idle";  // NOCOM Add selection of which animation(s) to process to command line.
-
+void write_animation(EditorGameBase& egbase,
+                     const std::string& map_object_name,
+                     const std::string& animation_name,
+                     FileSystem* out_filesystem) {
 	egbase.mutable_tribes()->postload();  // Make sure that all values have been set.
 	const Tribes& tribes = egbase.tribes();
+	const World& world = egbase.world();
 	log("==========================================\n");
+	const MapObjectDescr* descr = nullptr;
 
-	const TribeDescr* barbarians = tribes.get_tribe_descr(tribes.tribe_index("barbarians"));
-	const BuildingDescr* building = barbarians->get_building_descr(barbarians->headquarters());
+	if (tribes.building_exists(tribes.building_index(map_object_name))) {
+		descr = tribes.get_building_descr(tribes.building_index(map_object_name));
+	} else if (tribes.ware_exists(tribes.ware_index(map_object_name))) {
+		descr = tribes.get_ware_descr(tribes.ware_index(map_object_name));
+	} else if (tribes.worker_exists(tribes.worker_index(map_object_name))) {
+		descr = tribes.get_worker_descr(tribes.worker_index(map_object_name));
+	} else if (tribes.immovable_exists(tribes.immovable_index(map_object_name))) {
+		descr = tribes.get_immovable_descr(tribes.immovable_index(map_object_name));
+	} else if (tribes.ship_exists(tribes.ship_index(map_object_name))) {
+		descr = tribes.get_ship_descr(tribes.ship_index(map_object_name));
+	} else if (world.get_immovable_index(map_object_name) != INVALID_INDEX) {
+		descr = world.get_immovable_descr(world.get_immovable_index(map_object_name));
+	} else if (world.get_bob_descr(map_object_name)) {
+		descr = world.get_bob_descr(map_object_name);
+	} else {
+		log("ABORTING. Unable to find map object for '%s'!\n", map_object_name.c_str());
+		return;
+	}
+	assert(descr->name() == map_object_name);
+
+	if (!descr->is_animation_known(animation_name)) {
+		log("ABORTING. Unknown animation '%s' for '%s'\n", animation_name.c_str(),
+		    descr->name().c_str());
+		return;
+	}
+
 	const Animation& animation =
-	   g_gr->animations().get_animation(building->get_animation(anim_name));
+	   g_gr->animations().get_animation(descr->get_animation(animation_name));
 	const Vector2i& hotspot = animation.hotspot();
 
-	// NOCOM We should probably have a test whether the animation is nonpacked.
 	std::vector<const Image*> images = animation.images();
-	log("Parsing '%s' animation for '%s'\nIt has %lu pictures\n", anim_name.c_str(),
-	    building->name().c_str(), images.size());
+	log("Parsing '%s' animation for '%s'\nIt has %lu pictures\n", animation_name.c_str(),
+	    descr->name().c_str(), images.size());
 
 	// Only create spritemap if animation has more than 1 frame.
 	if (images.size() < 2) {
 		log("Animation has less than 2 images and doesn't need a spritemap.\n");
 		return;
 	}
-	const SpritemapData* spritemap = make_spritemap(images, anim_name + ".png", out_filesystem);
+	const SpritemapData* spritemap = make_spritemap(images, animation_name + ".png", out_filesystem);
 	if (spritemap) {
 		// Now write the Lua file
-		lua_fw.open_table(anim_name, true, true);
+		LuaFileWrite lua_fw;
+		lua_fw.open_table(animation_name, true, true);
 
 		lua_fw.write_key("image", true);
-		lua_fw.write_string("path.dirname(__file__) .. \"" + anim_name + ".png\"");
+		lua_fw.write_string("path.dirname(__file__) .. \"" + animation_name + ".png\"");
 		lua_fw.close_element(0, 2, true);
-		lua_fw.write_key("representative_image", true);
+		lua_fw.write_key(
+		   "representative_image", true);  // NOCOM get rid - we will add these to the map objects
 		lua_fw.write_string(
 		   "path.dirname(__file__) .. \"" +
 		   std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
@@ -617,11 +643,10 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		lua_fw.write_value_int(hotspot.y - spritemap->rectangle.y);
 		lua_fw.close_element(0, 0);
 		lua_fw.close_table();
-		lua_fw.write_string("\n");
-
 		if (animation.nr_frames() > 1) {
 			uint32_t frametime = animation.frametime();
-			if (frametime > 0) {
+			if (frametime > 0 && 1000 / animation.frametime() != kDefaultFps) {
+				lua_fw.write_string("\n");
 				lua_fw.write_key_value_int("fps", 1000 / animation.frametime(), true);
 				lua_fw.close_element();
 			}
@@ -630,11 +655,12 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		lua_fw.open_table("regions", true, true);
 		write_regions(&lua_fw, spritemap->textures_in_atlas, spritemap->regions, images.size());
 
+		// NOCOM I'm not seeing any player color for Wood Hardener
 		std::vector<const Image*> pc_masks = animation.pc_masks();
 		if (!pc_masks.empty()) {
 			lua_fw.close_table(0, 2, true);  // Regions
 			const SpritemapData* pc_spritemap =
-			   make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
+			   make_spritemap(pc_masks, animation_name + "_pc.png", out_filesystem);
 			lua_fw.open_table("playercolor_regions", true, true);
 			write_regions(
 			   &lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
@@ -643,7 +669,7 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 		lua_fw.close_table(0, 2, true);  // Animation
 		lua_fw.write_string("\n");
-		lua_fw.write(*out_filesystem, "new_spritemaps.lua");
+		lua_fw.write(*out_filesystem, "new_spritemap.lua");
 	}
 	log("Done!\n");
 }
@@ -657,17 +683,19 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
  */
 
 int main(int argc, char** argv) {
-	if (argc != 2) {
-		log("Usage: %s <existing-output-path>\n", argv[0]);
+	if (argc != 4) {
+		log("Usage: %s <mapobject_name> <animation_name> <existing-output-path>\n", argv[0]);
 		return 1;
 	}
 
-	const std::string output_path = argv[argc - 1];
+	const std::string map_object_name = argv[1];
+	const std::string animation_name = argv[2];
+	const std::string output_path = argv[3];
 
 	try {
 		std::unique_ptr<FileSystem> out_filesystem = initialize(output_path);
 		EditorGameBase egbase(nullptr);
-		write_animation(egbase, out_filesystem.get());
+		write_animation(egbase, map_object_name, animation_name, out_filesystem.get());
 	} catch (std::exception& e) {
 		log("Exception: %s.\n", e.what());
 		cleanup();

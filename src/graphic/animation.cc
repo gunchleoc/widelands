@@ -143,8 +143,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 
 		std::string image = table.get_string("image");
 		if (!g_fs->file_exists(image)) {
-			throw wexception(
-			   "Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
+			throw wexception("Packed animation %s - spritemap image %s does not exist.", hash_.c_str(),
+			                 image.c_str());
 		}
 		image_ = g_gr->images().get(image);
 		hash_ = image + ":" + name;
@@ -163,10 +163,15 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 
 		if (table.has_key("regions")) {
 			std::unique_ptr<LuaTable> regions_table = table.get_table("regions");
-			const auto region_keys = regions_table->keys<int>();
 			if (table.has_key("fps")) {
-				if (region_keys.size() < 2) {
-					throw wexception("Animation with one picture %s must not have 'fps'", hash_.c_str());
+				std::unique_ptr<LuaTable> region_table = regions_table->get_table(1);
+				region_table->do_not_warn_about_unaccessed_keys();
+				std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+				offsets_table->do_not_warn_about_unaccessed_keys();
+				const auto offsets_keys = offsets_table->keys<int>();
+				if (offsets_keys.size() < 2) {
+					throw wexception(
+					   "PAcked animation with one picture %s must not have 'fps'", hash_.c_str());
 				}
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
@@ -178,7 +183,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 			// No regions? Only one frame then.
 			nr_frames_ = 1;
 			if (table.has_key("fps")) {
-				throw wexception("Animation with one picture %s must not have 'fps'", hash_.c_str());
+				throw wexception(
+				   "Packed animation with one picture %s must not have 'fps'", hash_.c_str());
 			}
 		}
 	} catch (const LuaError& e) {
@@ -199,22 +205,21 @@ std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTab
 		region.h = region_rect.h;
 		region.w = region_rect.w;
 
-		if (region_table->has_key("offsets")) {
-			std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
-			const auto offsets_keys = offsets_table->keys<int>();
-			const uint16_t no_of_offsets = offsets_keys.size();
-			if (nr_frames_ && nr_frames_ != no_of_offsets) {
-				throw wexception("%s: region has different number of frames than previous (%i != %i).",
-				                 hash_.c_str(), nr_frames_, no_of_offsets);
-			}
-			nr_frames_ = no_of_offsets;
+		std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+		const auto offsets_keys = offsets_table->keys<int>();
+		const uint16_t no_of_offsets = offsets_keys.size();
+		if (nr_frames_ && nr_frames_ != no_of_offsets) {
+			throw wexception("Packed animation '%s': region has different number of frames than "
+			                 "previous (%i != %i).",
+			                 hash_.c_str(), nr_frames_, no_of_offsets);
+		}
+		nr_frames_ = no_of_offsets;
 
-			for (const int offset_key : offsets_keys) {
-				std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
-				Vector2i p;
-				get_point(*offset_table, &p);
-				region.source_offsets.push_back(p);
-			}
+		for (const int offset_key : offsets_keys) {
+			std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
+			Vector2i p;
+			get_point(*offset_table, &p);
+			region.source_offsets.push_back(p);
 		}
 		result->push_back(region);
 	}
