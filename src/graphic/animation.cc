@@ -171,7 +171,7 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
 			regions_ = *make_regions(*regions_table.get());
-			if (pcmask_ && table.has_key("playercolor_regions")) {
+			if (pcmask_) {
 				pc_regions_ = *make_regions(*table.get_table("playercolor_regions").get());
 			}
 		} else {

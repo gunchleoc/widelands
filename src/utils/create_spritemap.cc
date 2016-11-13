@@ -454,21 +454,15 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images,
 		}
 		current_texture->unlock(Texture::Unlock_Update);
 	}
-
-	const SpritemapData* result = new SpritemapData(find_trim_rect(
-	   main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height())));
-
 	main_texture->unlock(Texture::Unlock_Update);
-	cookie_cutter->unlock(Texture::Unlock_Update);
 
+	// We do not crop the main texture to avoid aligning problems with the player color masks
+	const SpritemapData* result =
+	   new SpritemapData(Recti(0, 0, main_texture->width(), main_texture->height()));
 	std::vector<std::pair<std::string, std::unique_ptr<Texture>>> to_be_packed;
-	// NOCOM Prime suspect for player color alignment error
-	std::unique_ptr<Texture> cropped_main_texture(
-	   trim_texture(main_texture.get(), result->rectangle));
-	to_be_packed.push_back(std::make_pair("main_texture.png", std::move(cropped_main_texture)));
+	to_be_packed.push_back(std::make_pair("main_texture.png", std::move(main_texture)));
 
 	// Split into regions
-	cookie_cutter->lock();
 	std::vector<std::pair<Recti, bool>> splitme;
 	splitme.push_back(std::make_pair(result->rectangle, true));
 	make_regions(cookie_cutter.get(), splitme, result->regions);
