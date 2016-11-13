@@ -623,9 +623,20 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 			lua_fw.open_table("regions", true, true);
 			write_regions(&lua_fw, spritemap->textures_in_atlas, spritemap->regions, images.size());
+
+			std::vector<const Image*> pc_masks = animation.pc_masks();
+			if (!pc_masks.empty()) {
+				lua_fw.close_table(0, 2, true); // Regions
+				const SpritemapData* pc_spritemap = make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
+				lua_fw.open_table("playercolor_regions", true, true);
+				write_regions(&lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
+
+			}
 			lua_fw.close_table(0, 0, true); // Regions
+
 			lua_fw.close_table(0, 2, true); // Animation
-			lua_fw.write(*out_filesystem, "test.lua");
+			lua_fw.write_string("\n");
+			lua_fw.write(*out_filesystem, "new_spritemaps.lua");
 		}
 	}
 	log("\nDone!\n");

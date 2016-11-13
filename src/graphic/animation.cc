@@ -94,13 +94,48 @@ public:
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
 
 private:
-	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
-
 	struct Region {
 		Vector2i target_offset;
 		uint16_t w, h;
 		std::vector<Vector2i> source_offsets;  // indexed by frame nr.
 	};
+	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
+
+	// NOCOM
+	std::vector<Region>* make_regions(const LuaTable& regions_table) {
+		std::vector<Region>* result = new std::vector<Region>();
+		for (const int region_key : regions_table.keys<int>()) {
+			std::unique_ptr<LuaTable> region_table = regions_table.get_table(region_key);
+			Region region;
+			Recti region_rect;
+			get_rect(*region_table->get_table("rectangle"), &region_rect);
+			region.target_offset.x = region_rect.x;
+			region.target_offset.y = region_rect.y;
+			region.h = region_rect.h;
+			region.w = region_rect.w;
+
+			if (region_table->has_key("offsets")) {
+				std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
+				const auto offsets_keys = offsets_table->keys<int>();
+				const uint16_t no_of_offsets = offsets_keys.size();
+				if (nr_frames_ && nr_frames_ != no_of_offsets) {
+					throw wexception(
+								"%s: region has different number of frames than previous (%i != %i).",
+												 hash_.c_str(), nr_frames_, no_of_offsets);
+				}
+				nr_frames_ = no_of_offsets;
+
+				for (const int offset_key : offsets_keys) {
+					std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
+					Vector2i p;
+					get_point(*offset_table, &p);
+					region.source_offsets.push_back(p);
+				}
+			}
+			result->push_back(region);
+		}
+		return result;
+	}
 
 	Recti rectangle_;
 	Vector2i hotspot_;
@@ -111,6 +146,7 @@ private:
 	const Image* pcmask_;  // Not owned
 	std::string representative_image_filename_;
 	std::vector<Region> regions_;
+	std::vector<Region> pc_regions_;
 	std::string hash_;
 	bool play_once_;
 
@@ -135,8 +171,12 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 		image_ = g_gr->images().get(image);
 		hash_ = image + ":" + name;
 		boost::replace_all(image, ".png", "");
-		if (g_fs->file_exists(image + "_pc.png")) {
-			pcmask_ = g_gr->images().get(image + "_pc.png");
+		log("NOCOM image filename : %s\n", image.c_str());
+		const std::string pc_mask_filename = image + "_pc.png";
+		log("NOCOM pc_mask_filename : %s\n", pc_mask_filename.c_str());
+		if (g_fs->file_exists(pc_mask_filename)) {
+			log("NOCOM Has playercolor\n");
+			pcmask_ = g_gr->images().get(pc_mask_filename);
 		}
 
 		// We need to define this for idle animations so we can use it in richtext image tags
@@ -156,36 +196,11 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 				}
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
-
-			for (const int region_key : region_keys) {
-				std::unique_ptr<LuaTable> region_table = regions_table->get_table(region_key);
-				Region r;
-				Recti region_rect;
-				get_rect(*region_table->get_table("rectangle"), &region_rect);
-				r.target_offset.x = region_rect.x;
-				r.target_offset.y = region_rect.y;
-				r.h = region_rect.h;
-				r.w = region_rect.w;
-
-				if (region_table->has_key("offsets")) {
-					std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
-					const auto offsets_keys = offsets_table->keys<int>();
-					const uint16_t no_of_offsets = offsets_keys.size();
-					if (nr_frames_ && nr_frames_ != no_of_offsets) {
-						throw wexception(
-									"%s: region has different number of frames than previous (%i != %i).",
-													 hash_.c_str(), nr_frames_, no_of_offsets);
-					}
-					nr_frames_ = no_of_offsets;
-
-					for (const int offset_key : offsets_keys) {
-						std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
-						Vector2i p;
-						get_point(*offset_table, &p);
-						r.source_offsets.push_back(p);
-					}
-				}
-				regions_.push_back(r);
+			log("NOCOM parsing regions.\n");
+			regions_ = *make_regions(*regions_table.get());
+			if (pcmask_ && table.has_key("playercolor_regions")) {
+				log("NOCOM we have playercolor!\n");
+				pc_regions_ = *make_regions(*table.get_table("playercolor_regions").get());
 			}
 		} else {
 			// No regions? Only one frame then.
@@ -215,36 +230,31 @@ const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
 const std::string& PackedAnimation::representative_image_filename() const {
 	return representative_image_filename_;
 }
-
+// NOCOM this eventually maxes out the system.
 const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBColor* clr) const {
-	/* NOCOM fix image cache - segfaults when leaving Widelands.
-	const std::string hash = (boost::format("%s:%s:%u:animation") % hash_ % (clr ? clr->hex_value() : "") % framenumber).str();
-	ImageCache& image_cache = g_gr->images();
-	if (image_cache.has(hash)) {
-		return image_cache.get(hash);
+	const int w = image_->width();
+	const int h = image_->height();
+	std::unique_ptr<Texture> image(new Texture(w, h));
+	image->blit(Rectf(0, 0, w, h), *image_, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+	for (const Region& region : regions_) {
+		Rectf rsrc = Rectf(region.source_offsets[framenumber], region.w, region.h);
+		Rectf rdst = Rectf(region.target_offset, region.w, region.h);
+		image->blit(rdst, *image.get(), rsrc, 1., BlendMode::UseAlpha);
 	}
-	*/
 
-	Image* image;
-	if (!pcmask_ || clr == nullptr) {
-		const int w = image_->width();
-		const int h = image_->height();
-		Texture* texture = new Texture(w, h);
-		texture->blit(Rectf(0, 0, w, h), *image_, Rectf(0, 0, w, h), 1., BlendMode::Copy);
-		image = dynamic_cast<Image*>(texture);
-	} else {
-		image = playercolor_image(clr, image_, pcmask_);
+	if (pcmask_ && clr) {
+		std::unique_ptr<Texture> pc_image(new Texture(w, h));
+		pc_image->blit(Rectf(0, 0, w, h), *pcmask_, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+		for (const Region& region : pc_regions_) {
+			Rectf rsrc = Rectf(region.source_offsets[framenumber], region.w, region.h);
+			Rectf rdst = Rectf(region.target_offset, region.w, region.h);
+			pc_image->blit(rdst, *pc_image.get(), rsrc, 1., BlendMode::UseAlpha);
+		}
+		image.reset(dynamic_cast<Texture*>(playercolor_image(clr, dynamic_cast<Image*>(image.get()), dynamic_cast<Image*>(pc_image.get()))));
 	}
 
 	Texture* target = new Texture(rectangle_.w, rectangle_.h);
-	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image, Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1., BlendMode::UseAlpha);
-
-	for (const Region& r : regions_) {
-		Rectf rsrc = Rectf(r.source_offsets[framenumber], r.w, r.h);
-		Rectf rdst = Rectf(r.target_offset, r.w, r.h);
-		target->blit(rdst, *image, rsrc, 1., BlendMode::UseAlpha);
-	}
-	//image_cache.insert(hash, std::unique_ptr<const Image>(target));
+	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image.get(), Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1., BlendMode::UseAlpha);
 	return target;
 }
 
