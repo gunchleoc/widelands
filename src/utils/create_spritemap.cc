@@ -189,7 +189,7 @@ public:
 		} else {
 			write_string("}", newline);
 		}
-		if (newline || indent_for_following) {
+		if (indent_for_following) {
 			write_string("\n");
 		}
 	}
@@ -518,7 +518,6 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 		// Build Texture Atlas
 		TextureAtlas atlas;
-		log("NOCOM we have %lu textures\n", to_be_packed.size());
 		for (auto& pair : to_be_packed) {
 			atlas.add(*pair.second);
 		}
@@ -541,38 +540,6 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		// Write Atlas image
 		std::unique_ptr<::StreamWrite> sw(out_filesystem->open_stream_write("spritemap.png"));
 		save_to_png(texture_atlases[0].get(), sw.get(), ColorType::RGBA);
-
-		// Colecr Atlas regions and write to file
-		for (const auto& texture_in_atlas : *textures_in_atlas) {
-			log("In atlas - %s", texture_in_atlas.first.c_str());
-			const Recti& blit_rect = texture_in_atlas.second->blit_data().rect.cast<int>();
-			log(" - rect: %d %d %d %d\n", blit_rect.x, blit_rect.y, blit_rect.w, blit_rect.h);
-			// NOCOM write
-		}
-
-		/*
-		for (size_t i = 0; i < packed_textures.size(); ++i) {
-			const TextureAtlas::PackedTexture& packed_texture = packed_textures[i];
-			log("Texture %s atlas %d - ", to_be_packed[i].first.c_str(),
-			    packed_texture.texture_atlas);
-			// NOCOM(#sirver): See texture.blit_data() which defines how to blit
-			// the texture out of the bigger texture. You now need to serialize
-			// the packed_texture.texture_atlas AND the blit_data of the the
-			// packed_textures. To reload, load the texture_atlas images in order,
-			// create the packed textures using the Texture constructor that takes
-			// texture, subrect parent_w|h and pass these to
-			// 'image_cache->fill_with_texture_atlases'. Background: there are two
-			// types of 'Texture': the ones that own their memory, i.e. that have
-			// a GL texture associated with them. this is the default if the
-			// image_loader in Widelands loads an image from disk. but we also
-			// support textures that do not own their memory. They are referencing
-			// a sub rectangle in a texture that does own its memory and are only
-			// valid for as long as the parent texture is not deleted. In
-			// Widelands therofore, texture atlas images go into the image cache
-			// that will hold on forever, while most other images should just be
-			// refeencing sub rectangles in the texture atlases.
-		}
-		*/
 
 		// Now write the Lua file
 		lua_fw.open_table(anim_name, true, true);
@@ -597,9 +564,9 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		lua_fw.write_string("\n");
 
 		lua_fw.open_table("hotspot", false, true);
-		lua_fw.write_value_int(hotspot.x);
+		lua_fw.write_value_int(hotspot.x - main_rect.x);
 		lua_fw.close_element();
-		lua_fw.write_value_int(hotspot.y);
+		lua_fw.write_value_int(hotspot.y - main_rect.y);
 		lua_fw.close_element(0, 0);
 		lua_fw.close_table();
 		lua_fw.write_string("\n");
@@ -612,37 +579,40 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 			}
 		}
 
-		lua_fw.close_table(0, 2, true);
+		// Collect Atlas regions
+		lua_fw.open_table("regions", true, true);
+		for (size_t i = 0; i < regions->size(); ++i) {
+			// Rectangle
+			lua_fw.open_table("", true, i > 0);
+			const Recti& dest_rect = regions->at(i);
+			lua_fw.open_table("rectangle", false, true);
+			lua_fw.write_value_int(dest_rect.x);
+			lua_fw.close_element();
+			lua_fw.write_value_int(dest_rect.y);
+			lua_fw.close_element();
+			lua_fw.write_value_int(dest_rect.w);
+			lua_fw.close_element();
+			lua_fw.write_value_int(dest_rect.h);
+			lua_fw.close_element(0, 0);
+			lua_fw.close_table(0, 2, false, true);
 
-		// NOCOM just for testing
-		lua_fw.open_table("foo", true, true);
-		lua_fw.open_table("ints", true);
-		lua_fw.write_value_int(hotspot.x, true);
-		lua_fw.close_element(0, 2, true);
-		lua_fw.write_value_int(hotspot.y, true);
-		lua_fw.close_element(0, 0, true);
-		lua_fw.close_table(0, 2, true);
+			// Offsets
+			lua_fw.open_table("offsets", false, true);
+			for (size_t frame_index = 0; frame_index < images.size(); ++frame_index) {
+				lua_fw.open_table("");
+				const Recti& source_rect = textures_in_atlas->at(region_name(i, frame_index))->blit_data().rect.cast<int>();
+				lua_fw.write_value_int(source_rect.x);
+				lua_fw.close_element();
+				lua_fw.write_value_int(source_rect.y);
+				lua_fw.close_element(0, 0);
+				lua_fw.close_table(frame_index, images.size());
+			}
+			lua_fw.close_table(0, 0); // Offsets
+			lua_fw.close_table(i, regions->size(), true); // Region
+		}
 
-		lua_fw.open_table("strings", true);
-		lua_fw.write_value_string("foo", true);
-		lua_fw.close_element(0, 2, true);
-		lua_fw.write_value_string("bar", true);
-		lua_fw.close_element(0, 0, true);
-		lua_fw.close_table(0, 2, true);
-
-		lua_fw.open_table("floats", false, true);
-		lua_fw.write_value_double(1.0f);
-		lua_fw.close_element(0, 2);
-		lua_fw.write_key_value_double("double", 5.302430);
-		lua_fw.close_element(0, 0);
-		lua_fw.close_table(0, 2, false, true);
-
-		lua_fw.write_key_value_string("1", "bar", true);
-		lua_fw.close_element(0, 2, true);
-		lua_fw.write_key_value_string("2", "baz", true);
-		lua_fw.close_element(0, 0, true);
-		lua_fw.close_table(0, 0, true);
-		lua_fw.write(*out_filesystem, "test.lua");
+		lua_fw.close_table(0, 0, true); // Regions
+		lua_fw.close_table(0, 2, true); // Animation
 	}
 	log("\nDone!\n");
 }
