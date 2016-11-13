@@ -44,7 +44,7 @@
 
 using namespace std;
 
-namespace  {
+namespace {
 
 // Parses an array { 12, 23 } into a point.
 void get_point(const LuaTable& table, Vector2i* p) {
@@ -68,29 +68,39 @@ void get_rect(const LuaTable& table, Recti* r) {
 	r->h = pts[3];
 }
 
-
 /**
  * Implements the Animation interface for a packed animation, that is an animation
  * that is contained in a singular image (plus one for player color).
  */
 class PackedAnimation : public Animation {
 public:
-	virtual ~PackedAnimation() {}
+	virtual ~PackedAnimation() {
+	}
 	PackedAnimation(const std::string& name, const LuaTable& table);
 
 	// Implements Animation.
-	uint16_t width() const override {return rectangle_.w;}
-	uint16_t height() const override {return rectangle_.h;}
-	uint16_t nr_frames() const override {return nr_frames_;}
-	uint32_t frametime() const override {return frametime_;}
-	const Vector2i& hotspot() const override {return hotspot_;}
+	uint16_t width() const override {
+		return rectangle_.w;
+	}
+	uint16_t height() const override {
+		return rectangle_.h;
+	}
+	uint16_t nr_frames() const override {
+		return nr_frames_;
+	}
+	uint32_t frametime() const override {
+		return frametime_;
+	}
+	const Vector2i& hotspot() const override {
+		return hotspot_;
+	}
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
-							const Rectf& dstrc,
-							const Rectf& srcrc,
-							const RGBColor* clr,
-							Surface*) const override;
+	          const Rectf& dstrc,
+	          const Rectf& srcrc,
+	          const RGBColor* clr,
+	          Surface*) const override;
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
 
 private:
@@ -107,7 +117,7 @@ private:
 	uint16_t nr_frames_;
 	uint32_t frametime_;
 
-	const Image* image_;  // Not owned
+	const Image* image_;   // Not owned
 	const Image* pcmask_;  // Not owned
 	std::string representative_image_filename_;
 	std::vector<Region> regions_;
@@ -117,7 +127,13 @@ private:
 };
 
 PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
-		: rectangle_(0, 0, 0, 0), hotspot_(0, 0), nr_frames_(0), frametime_(FRAME_LENGTH), image_(nullptr), pcmask_(nullptr), play_once_(false) {
+   : rectangle_(0, 0, 0, 0),
+     hotspot_(0, 0),
+     nr_frames_(0),
+     frametime_(FRAME_LENGTH),
+     image_(nullptr),
+     pcmask_(nullptr),
+     play_once_(false) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -127,7 +143,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 
 		std::string image = table.get_string("image");
 		if (!g_fs->file_exists(image)) {
-			throw wexception("Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
+			throw wexception(
+			   "Animation %s - spritemap image %s does not exist.", hash_.c_str(), image.c_str());
 		}
 		image_ = g_gr->images().get(image);
 		hash_ = image + ":" + name;
@@ -149,8 +166,7 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
 			const auto region_keys = regions_table->keys<int>();
 			if (table.has_key("fps")) {
 				if (region_keys.size() < 2) {
-					throw wexception(
-						"Animation with one picture %s must not have 'fps'", hash_.c_str());
+					throw wexception("Animation with one picture %s must not have 'fps'", hash_.c_str());
 				}
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
@@ -188,9 +204,8 @@ std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTab
 			const auto offsets_keys = offsets_table->keys<int>();
 			const uint16_t no_of_offsets = offsets_keys.size();
 			if (nr_frames_ && nr_frames_ != no_of_offsets) {
-				throw wexception(
-							"%s: region has different number of frames than previous (%i != %i).",
-											 hash_.c_str(), nr_frames_, no_of_offsets);
+				throw wexception("%s: region has different number of frames than previous (%i != %i).",
+				                 hash_.c_str(), nr_frames_, no_of_offsets);
 			}
 			nr_frames_ = no_of_offsets;
 
@@ -237,19 +252,22 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 			Rectf rdst = Rectf(region.target_offset, region.w, region.h);
 			pc_image->blit(rdst, *pc_image.get(), rsrc, 1., BlendMode::UseAlpha);
 		}
-		image.reset(dynamic_cast<Texture*>(playercolor_image(clr, dynamic_cast<Image*>(image.get()), dynamic_cast<Image*>(pc_image.get()))));
+		image.reset(dynamic_cast<Texture*>(playercolor_image(
+		   clr, dynamic_cast<Image*>(image.get()), dynamic_cast<Image*>(pc_image.get()))));
 	}
 
 	Texture* target = new Texture(rectangle_.w, rectangle_.h);
-	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image.get(), Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1., BlendMode::UseAlpha);
+	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image.get(),
+	             Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1.,
+	             BlendMode::UseAlpha);
 	return target;
 }
 
 void PackedAnimation::blit(uint32_t time,
-										const Rectf& dstrc,
-										const Rectf& srcrc,
-										const RGBColor* clr,
-										Surface* target) const {
+                           const Rectf& dstrc,
+                           const Rectf& srcrc,
+                           const RGBColor* clr,
+                           Surface* target) const {
 	assert(target);
 	const Image* blitme = image_for_frame(time / frametime_ % nr_frames(), clr);
 	target->blit(dstrc, *blitme, srcrc, 1., BlendMode::UseAlpha);
@@ -269,17 +287,21 @@ public:
 	uint16_t width() const override;
 	uint16_t height() const override;
 	uint16_t nr_frames() const override;
-	uint32_t frametime() const override {return frametime_;}
-	const Vector2i& hotspot() const override {return hotspot_;}
+	uint32_t frametime() const override {
+		return frametime_;
+	}
+	const Vector2i& hotspot() const override {
+		return hotspot_;
+	}
 	std::vector<const Image*> images() const override;
 	std::vector<const Image*> pc_masks() const override;
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
-	                  const Rectf& dstrc,
-	                  const Rectf& srcrc,
-	                  const RGBColor* clr,
-	                  Surface*) const override;
+	          const Rectf& dstrc,
+	          const Rectf& srcrc,
+	          const RGBColor* clr,
+	          Surface*) const override;
 	void trigger_sound(uint32_t framenumber, uint32_t stereo_position) const override;
 
 private:
@@ -524,9 +546,9 @@ const Animation& AnimationManager::get_animation(uint32_t id) const {
 
 const Image* AnimationManager::get_representative_image(uint32_t id, const RGBColor* clr) {
 	if (representative_images_.count(id) != 1) {
-		representative_images_.insert(std::make_pair(
-		   id,
-			std::unique_ptr<const Image>(g_gr->animations().get_animation(id).representative_image(clr))));
+		representative_images_.insert(
+		   std::make_pair(id, std::unique_ptr<const Image>(
+		                         g_gr->animations().get_animation(id).representative_image(clr))));
 	}
 	return representative_images_.at(id).get();
 }

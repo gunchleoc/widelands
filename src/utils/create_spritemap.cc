@@ -208,20 +208,19 @@ private:
 	int level_;
 };
 
-
 /*
  ==========================================================
  IMAGE SEGMENTATION
  ==========================================================
  */
 
-#define assert_texture_contains_rect(texture, rect) { \
-	assert(rect.x >= 0); \
-	assert(rect.y >= 0); \
-	assert(rect.w <= texture->width()); \
-	assert(rect.h <= texture->height()); \
-} \
-
+#define assert_texture_contains_rect(texture, rect)                                                \
+	{                                                                                               \
+		assert(rect.x >= 0);                                                                         \
+		assert(rect.y >= 0);                                                                         \
+		assert(rect.w <= texture->width());                                                          \
+		assert(rect.h <= texture->height());                                                         \
+	}
 
 // Find trimmed rect according to transparent pixels.
 // Lock texture before you call this function.
@@ -355,7 +354,9 @@ std::vector<Recti> split_region(const Recti& source, std::vector<int> lines, boo
 // If the bool in 'pending' is true, we have a vertical split; horizontal otherwise.
 // We alternate vertical and horizontal split.
 // Lock texture before you call this function.
-void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending, std::vector<Recti>* result) {
+void make_regions(Texture* texture,
+                  std::vector<std::pair<Recti, bool>> pending,
+                  std::vector<Recti>* result) {
 	// All done
 	if (pending.empty()) {
 		return;
@@ -365,7 +366,8 @@ void make_regions(Texture* texture, std::vector<std::pair<Recti, bool>> pending,
 	std::pair<Recti, bool> splitme = pending.back();
 	pending.pop_back();
 	// Find an empty line. If no line is found, this rect is done and can be added to the result
-	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) : find_empty_rows(texture, splitme.first);
+	std::vector<int> lines = splitme.second ? find_empty_columns(texture, splitme.first) :
+	                                          find_empty_rows(texture, splitme.first);
 	if (lines.empty()) {
 		splitme.first = find_trim_rect(texture, splitme.first);
 		if (splitme.first.w > 0 && splitme.first.h > 0) {
@@ -389,7 +391,6 @@ std::unique_ptr<Texture> trim_texture(const Image* texture, const Recti& rect) {
 	return result;
 }
 
-
 /*
  ==========================================================
  BUILDING TEXTURE ATLAS
@@ -403,7 +404,11 @@ std::string region_name(size_t region, size_t frame) {
 
 // Data about the animation Texture Atlas that we need to record in our Lua file.
 struct SpritemapData {
-	SpritemapData(const Recti& init_rectangle) : textures_in_atlas(new std::map<std::string, std::unique_ptr<Texture>>()), rectangle(init_rectangle), regions(new std::vector<Recti>()) {}
+	SpritemapData(const Recti& init_rectangle)
+	   : textures_in_atlas(new std::map<std::string, std::unique_ptr<Texture>>()),
+	     rectangle(init_rectangle),
+	     regions(new std::vector<Recti>()) {
+	}
 	std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas;
 	const Recti rectangle;
 	std::vector<Recti>* regions;
@@ -411,7 +416,9 @@ struct SpritemapData {
 
 // Creates a spritemap from the images, writes it to a .png file and returns information about its
 // Texture Atlas.
-const SpritemapData* make_spritemap(std::vector<const Image*> images, const std::string& image_filename, FileSystem* out_filesystem) {
+const SpritemapData* make_spritemap(std::vector<const Image*> images,
+                                    const std::string& image_filename,
+                                    FileSystem* out_filesystem) {
 	const uint16_t w = images[0]->width();
 	const uint16_t h = images[0]->height();
 
@@ -448,14 +455,16 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images, const std:
 		current_texture->unlock(Texture::Unlock_Update);
 	}
 
-	const SpritemapData* result = new SpritemapData(find_trim_rect(main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height())));
+	const SpritemapData* result = new SpritemapData(find_trim_rect(
+	   main_texture.get(), Recti(0, 0, main_texture->width(), main_texture->height())));
 
 	main_texture->unlock(Texture::Unlock_Update);
 	cookie_cutter->unlock(Texture::Unlock_Update);
 
 	std::vector<std::pair<std::string, std::unique_ptr<Texture>>> to_be_packed;
 	// NOCOM Prime suspect for player color alignment error
-	std::unique_ptr<Texture> cropped_main_texture(trim_texture(main_texture.get(), result->rectangle));
+	std::unique_ptr<Texture> cropped_main_texture(
+	   trim_texture(main_texture.get(), result->rectangle));
 	to_be_packed.push_back(std::make_pair("main_texture.png", std::move(cropped_main_texture)));
 
 	// Split into regions
@@ -497,7 +506,7 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images, const std:
 
 	for (size_t i = 0; i < to_be_packed.size(); ++i) {
 		result->textures_in_atlas->insert(
-			std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
+		   std::make_pair(to_be_packed[i].first, std::move(packed_textures[i].texture)));
 	}
 
 	if (texture_atlases.size() != 1) {
@@ -512,7 +521,6 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images, const std:
 	return result;
 }
 
-
 /*
  ==========================================================
  WRITING ANIMATION
@@ -520,7 +528,10 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images, const std:
  */
 
 // Add Texture Atlas regions to Lua file
-void write_regions(LuaFileWrite* lua_fw, std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas, std::vector<Recti>* regions, size_t no_of_frames) {
+void write_regions(LuaFileWrite* lua_fw,
+                   std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas,
+                   std::vector<Recti>* regions,
+                   size_t no_of_frames) {
 	for (size_t i = 0; i < regions->size(); ++i) {
 		// Rectangle
 		lua_fw->open_table("", true, i > 0);
@@ -540,15 +551,16 @@ void write_regions(LuaFileWrite* lua_fw, std::map<std::string, std::unique_ptr<T
 		lua_fw->open_table("offsets", false, true);
 		for (size_t frame_index = 0; frame_index < no_of_frames; ++frame_index) {
 			lua_fw->open_table("");
-			const Recti& source_rect = textures_in_atlas->at(region_name(i, frame_index))->blit_data().rect.cast<int>();
+			const Recti& source_rect =
+			   textures_in_atlas->at(region_name(i, frame_index))->blit_data().rect.cast<int>();
 			lua_fw->write_value_int(source_rect.x);
 			lua_fw->close_element();
 			lua_fw->write_value_int(source_rect.y);
 			lua_fw->close_element(0, 0);
 			lua_fw->close_table(frame_index, no_of_frames);
 		}
-		lua_fw->close_table(0, 0); // Offsets
-		lua_fw->close_table(i, regions->size(), true); // Region
+		lua_fw->close_table(0, 0);                      // Offsets
+		lua_fw->close_table(i, regions->size(), true);  // Region
 	}
 }
 
@@ -556,7 +568,8 @@ void write_regions(LuaFileWrite* lua_fw, std::map<std::string, std::unique_ptr<T
 void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 	LuaFileWrite lua_fw;
 
-	const std::string anim_name = "idle"; // NOCOM Add selection of which animation(s) to process to command line.
+	const std::string anim_name =
+	   "idle";  // NOCOM Add selection of which animation(s) to process to command line.
 
 	egbase.mutable_tribes()->postload();  // Make sure that all values have been set.
 	const Tribes& tribes = egbase.tribes();
@@ -564,12 +577,14 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 	const TribeDescr* barbarians = tribes.get_tribe_descr(tribes.tribe_index("barbarians"));
 	const BuildingDescr* building = barbarians->get_building_descr(barbarians->headquarters());
-	const Animation& animation = g_gr->animations().get_animation(building->get_animation(anim_name));
+	const Animation& animation =
+	   g_gr->animations().get_animation(building->get_animation(anim_name));
 	const Vector2i& hotspot = animation.hotspot();
 
 	// NOCOM We should probably have a test whether the animation is nonpacked.
 	std::vector<const Image*> images = animation.images();
-	log("Parsing '%s' animation for '%s'\nIt has %lu pictures\n", anim_name.c_str(), building->name().c_str(), images.size());
+	log("Parsing '%s' animation for '%s'\nIt has %lu pictures\n", anim_name.c_str(),
+	    building->name().c_str(), images.size());
 
 	// Only create spritemap if animation has more than 1 frame.
 	if (images.size() < 2) {
@@ -585,7 +600,9 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 		lua_fw.write_string("path.dirname(__file__) .. \"" + anim_name + ".png\"");
 		lua_fw.close_element(0, 2, true);
 		lua_fw.write_key("representative_image", true);
-		lua_fw.write_string("path.dirname(__file__) .. \"" + std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
+		lua_fw.write_string(
+		   "path.dirname(__file__) .. \"" +
+		   std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
 		lua_fw.close_element(0, 2, true);
 
 		lua_fw.open_table("rectangle", false, true);
@@ -621,15 +638,16 @@ void write_animation(EditorGameBase& egbase, FileSystem* out_filesystem) {
 
 		std::vector<const Image*> pc_masks = animation.pc_masks();
 		if (!pc_masks.empty()) {
-			lua_fw.close_table(0, 2, true); // Regions
-			const SpritemapData* pc_spritemap = make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
+			lua_fw.close_table(0, 2, true);  // Regions
+			const SpritemapData* pc_spritemap =
+			   make_spritemap(pc_masks, anim_name + "_pc.png", out_filesystem);
 			lua_fw.open_table("playercolor_regions", true, true);
-			write_regions(&lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
-
+			write_regions(
+			   &lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
 		}
-		lua_fw.close_table(0, 0, true); // Regions
+		lua_fw.close_table(0, 0, true);  // Regions
 
-		lua_fw.close_table(0, 2, true); // Animation
+		lua_fw.close_table(0, 2, true);  // Animation
 		lua_fw.write_string("\n");
 		lua_fw.write(*out_filesystem, "new_spritemaps.lua");
 	}

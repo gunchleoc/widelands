@@ -93,13 +93,14 @@ public:
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const = 0;
 
 	virtual std::vector<const Image*> images() const {
-		std::vector<const Image*>  result;
+		std::vector<const Image*> result;
 		return result;
 	}
 	virtual std::vector<const Image*> pc_masks() const {
 		std::vector<const Image*> result;
 		return result;
 	}
+
 private:
 	DISALLOW_COPY_AND_ASSIGN(Animation);
 };
