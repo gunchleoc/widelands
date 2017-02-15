@@ -40,6 +40,7 @@
 #include "io/filewrite.h"
 #include "logic/editor_game_base.h"
 #include "logic/map_objects/tribes/tribes.h"
+#include "logic/map_objects/world/critter.h"
 #include "logic/map_objects/world/world.h"
 #include "sound/sound_handler.h"
 
@@ -582,8 +583,8 @@ void write_animation(EditorGameBase& egbase,
 		descr = tribes.get_ship_descr(tribes.ship_index(map_object_name));
 	} else if (world.get_immovable_index(map_object_name) != INVALID_INDEX) {
 		descr = world.get_immovable_descr(world.get_immovable_index(map_object_name));
-	} else if (world.get_bob_descr(map_object_name)) {
-		descr = world.get_bob_descr(map_object_name);
+	} else if (world.get_critter_descr(map_object_name)) {
+		descr = world.get_critter_descr(map_object_name);
 	} else {
 		log("ABORTING. Unable to find map object for '%s'!\n", map_object_name.c_str());
 		return;

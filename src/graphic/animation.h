@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2017 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@
 #include "base/macros.h"
 #include "base/rect.h"
 #include "base/vector.h"
+#include "graphic/surface.h"
 
 class Image;
 class LuaTable;
@@ -56,19 +57,27 @@ public:
 	virtual ~Animation() {
 	}
 
-	/// The dimensions of this animation.
-	virtual uint16_t width() const = 0;
-	virtual uint16_t height() const = 0;
+	/// The height of this animation.
+	virtual float height() const = 0;
+	virtual float width() const  = 0;
+	virtual const Vector2i& hotspot() const = 0;
+
+	/// The size of the animation source images in pixels. Use 'percent_from_bottom' to crop the
+	/// animation.
+	virtual Rectf source_rectangle(int percent_from_bottom) const = 0;
+
+	/// Calculates the destination rectangle for blitting the animation in pixels.
+	/// 'position' is where the top left corner of the animation will end up,
+	/// 'source_rect' is the rectangle calculated by source_rectangle,
+	/// 'scale' is the zoom scale.
+	virtual Rectf
+	destination_rectangle(const Vector2f& position, const Rectf& source_rect, float scale) const = 0;
 
 	/// The number of animation frames of this animation.
 	virtual uint16_t nr_frames() const = 0;
 
 	/// The number of milliseconds each frame will be displayed.
 	virtual uint32_t frametime() const = 0;
-
-	/// The hotspot of this animation. Note that this is ignored when blitting,
-	/// so the caller has to adjust for the hotspot himself.
-	virtual const Vector2i& hotspot() const = 0;
 
 	/// An image of the first frame, blended with the given player color.
 	/// The 'clr' is the player color used for blending - the parameter can be
@@ -78,16 +87,16 @@ public:
 	virtual const std::string& representative_image_filename() const = 0;
 
 	/// Blit the animation frame that should be displayed at the given time index
-	/// so that the given point is at the top left of the frame. Srcrc defines
-	/// the part of the animation that should be blitted. The 'clr' is the player
-	/// color used for blitting - the parameter can be 'nullptr', in which case the
-	/// neutral image will be blitted. The Surface is the target for the blit
-	/// operation and must be non-null.
+	/// into the given 'destination_rect'.
+	/// 'source_rect' defines the part of the animation that should be blitted.
+	/// The 'clr' is the player color used for blitting - the parameter can be 'nullptr',
+	/// in which case the neutral image will be blitted. The Surface is the 'target'
+	/// for the blit operation and must be non-null.
 	virtual void blit(uint32_t time,
-	                  const Rectf& dstrc,
-	                  const Rectf& srcrc,
+	                  const Rectf& source_rect,
+	                  const Rectf& destination_rect,
 	                  const RGBColor* clr,
-	                  Surface*) const = 0;
+	                  Surface* target) const = 0;
 
 	/// Play the sound effect associated with this animation at the given time.
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const = 0;

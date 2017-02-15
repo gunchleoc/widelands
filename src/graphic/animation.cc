@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2016 by the Widelands Development Team
+ * Copyright (C) 2002-2017 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,7 +36,6 @@
 #include "graphic/image.h"
 #include "graphic/image_cache.h"
 #include "graphic/playercolor.h"
-#include "graphic/surface.h"
 #include "graphic/texture.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "scripting/lua_table.h"
@@ -79,10 +78,10 @@ public:
 	PackedAnimation(const std::string& name, const LuaTable& table);
 
 	// Implements Animation.
-	uint16_t width() const override {
+	float width() const override {
 		return rectangle_.w;
 	}
-	uint16_t height() const override {
+	float height() const override {
 		return rectangle_.h;
 	}
 	uint16_t nr_frames() const override {
@@ -94,6 +93,19 @@ public:
 	const Vector2i& hotspot() const override {
 		return hotspot_;
 	}
+	// NOCOM test these
+	Rectf source_rectangle(int percent_from_bottom) const override {
+		float h = percent_from_bottom * height() / 100;
+		return Rectf(0.f, height(), width(), h);
+	}
+	Rectf destination_rectangle(const Vector2f& position,
+										 const Rectf& source_rect,
+										 float scale) const override {
+		return Rectf(position.x - (hotspot_.x - source_rect.x / scale_) * scale,
+						 position.y - (hotspot_.y - source_rect.y / scale_) * scale,
+						 source_rect.w * scale / scale_, source_rect.h * scale / scale_);
+	}
+
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
@@ -113,7 +125,7 @@ private:
 	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
 
 	Recti rectangle_;
-	Vector2i hotspot_;
+	Vector2i hotspot_; // NOCOM put this member in Animation class
 	uint16_t nr_frames_;
 	uint32_t frametime_;
 
@@ -124,6 +136,7 @@ private:
 	std::vector<Region> pc_regions_;
 	std::string hash_;
 	bool play_once_;
+	float scale_; // NOCOM read
 };
 
 PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
@@ -133,7 +146,8 @@ PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
      frametime_(FRAME_LENGTH),
      image_(nullptr),
      pcmask_(nullptr),
-     play_once_(false) {
+	  play_once_(false),
+	  scale_(1) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -289,25 +303,30 @@ public:
 	NonPackedAnimation(const LuaTable& table);
 
 	// Implements Animation.
-	uint16_t width() const override;
-	uint16_t height() const override;
+	float height() const override;
+	float width() const override;
+	Rectf source_rectangle(int percent_from_bottom) const override;
+	Rectf destination_rectangle(const Vector2f& position,
+	                            const Rectf& source_rect,
+	                            float scale) const override;
 	uint16_t nr_frames() const override;
-	uint32_t frametime() const override {
-		return frametime_;
-	}
+	uint32_t frametime() const override;
 	const Vector2i& hotspot() const override {
 		return hotspot_;
 	}
+
+	virtual void blit(uint32_t time,
+	                  const Rectf& source_rect,
+	                  const Rectf& destination_rect,
+	                  const RGBColor* clr,
+	                  Surface* target) const override;
+
+	void trigger_sound(uint32_t framenumber, uint32_t stereo_position) const override;
+
 	std::vector<const Image*> images() const override;
 	std::vector<const Image*> pc_masks() const override;
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
-	void blit(uint32_t time,
-	          const Rectf& dstrc,
-	          const Rectf& srcrc,
-	          const RGBColor* clr,
-	          Surface*) const override;
-	void trigger_sound(uint32_t framenumber, uint32_t stereo_position) const override;
 
 private:
 	// Loads the graphics if they are not yet loaded.
@@ -323,6 +342,7 @@ private:
 	bool hasplrclrs_;
 	std::vector<std::string> image_files_;
 	std::vector<std::string> pc_mask_image_files_;
+	float scale_;
 
 	vector<const Image*> frames_;
 	vector<const Image*> pcmasks_;
@@ -335,7 +355,7 @@ private:
 };
 
 NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
-   : frametime_(FRAME_LENGTH), hasplrclrs_(false), play_once_(false) {
+   : frametime_(FRAME_LENGTH), hasplrclrs_(false), scale_(1), play_once_(false) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -374,9 +394,19 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
 				throw wexception("Animation is missing player color file: %s", image_file.c_str());
 			}
 		}
+
+		if (table.has_key("scale")) {
+			scale_ = table.get_double("scale");
+			if (scale_ <= 0.0f) {
+				throw wexception("Animation scale needs to be > 0.0f, but it is %f. The first image of "
+				                 "this animation is %s",
+				                 scale_, image_files_[0].c_str());
+			}
+		}
+
 		assert(!image_files_.empty());
 		assert(pc_mask_image_files_.size() == image_files_.size() || pc_mask_image_files_.empty());
-
+		assert(scale_ > 0);
 	} catch (const LuaError& e) {
 		throw wexception("Error in animation table: %s", e.what());
 	}
@@ -422,14 +452,14 @@ void NonPackedAnimation::load_graphics() {
 	}
 }
 
-uint16_t NonPackedAnimation::width() const {
+float NonPackedAnimation::height() const {
 	ensure_graphics_are_loaded();
-	return frames_[0]->width();
+	return frames_[0]->height() / scale_;
 }
 
-uint16_t NonPackedAnimation::height() const {
+float NonPackedAnimation::width() const {
 	ensure_graphics_are_loaded();
-	return frames_[0]->height();
+	return frames_[0]->width() / scale_;
 }
 
 uint16_t NonPackedAnimation::nr_frames() const {
@@ -441,27 +471,30 @@ std::vector<const Image*> NonPackedAnimation::images() const {
 	ensure_graphics_are_loaded();
 	return frames_;
 }
+
 std::vector<const Image*> NonPackedAnimation::pc_masks() const {
 	ensure_graphics_are_loaded();
 	return pcmasks_;
 }
 
+uint32_t NonPackedAnimation::frametime() const {
+	return frametime_;
+}
+
 const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
 	assert(!image_files_.empty());
 	const Image* image = g_gr->images().get(image_files_[0]);
-
-	if (!hasplrclrs_ || clr == nullptr) {
-		// No player color means we simply want an exact copy of the original image.
-		const int w = image->width();
-		const int h = image->height();
-		Texture* rv = new Texture(w, h);
-		rv->blit(Rectf(0, 0, w, h), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
-		return rv;
-	} else {
-		return playercolor_image(clr, image, g_gr->images().get(pc_mask_image_files_[0]));
+	if (hasplrclrs_ && clr) {
+		image = playercolor_image(clr, image, g_gr->images().get(pc_mask_image_files_[0]));
 	}
+	const int w = image->width();
+	const int h = image->height();
+	Texture* rv = new Texture(w / scale_, h / scale_);
+	rv->blit(Rectf(0, 0, w / scale_, h / scale_), *image, Rectf(0, 0, w, h), 1., BlendMode::Copy);
+	return rv;
 }
 
+// TODO(GunChleoc): This is only here for the font renderers.
 const std::string& NonPackedAnimation::representative_image_filename() const {
 	return image_files_[0];
 }
@@ -487,20 +520,35 @@ void NonPackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) 
 	}
 }
 
+Rectf NonPackedAnimation::source_rectangle(const int percent_from_bottom) const {
+	ensure_graphics_are_loaded();
+	float h = percent_from_bottom * frames_[0]->height() / 100;
+	return Rectf(0.f, frames_[0]->height() - h, frames_[0]->width(), h);
+}
+
+Rectf NonPackedAnimation::destination_rectangle(const Vector2f& position,
+                                                const Rectf& source_rect,
+                                                const float scale) const {
+	ensure_graphics_are_loaded();
+	return Rectf(position.x - (hotspot_.x - source_rect.x / scale_) * scale,
+	             position.y - (hotspot_.y - source_rect.y / scale_) * scale,
+	             source_rect.w * scale / scale_, source_rect.h * scale / scale_);
+}
+
 void NonPackedAnimation::blit(uint32_t time,
-                              const Rectf& dstrc,
-                              const Rectf& srcrc,
+                              const Rectf& source_rect,
+                              const Rectf& destination_rect,
                               const RGBColor* clr,
                               Surface* target) const {
+	ensure_graphics_are_loaded();
 	assert(target);
-
 	const uint32_t idx = current_frame(time);
 	assert(idx < nr_frames());
-
 	if (!hasplrclrs_ || clr == nullptr) {
-		target->blit(dstrc, *frames_.at(idx), srcrc, 1., BlendMode::UseAlpha);
+		target->blit(destination_rect, *frames_.at(idx), source_rect, 1., BlendMode::UseAlpha);
 	} else {
-		target->blit_blended(dstrc, *frames_.at(idx), *pcmasks_.at(idx), srcrc, *clr);
+		target->blit_blended(
+		   destination_rect, *frames_.at(idx), *pcmasks_.at(idx), source_rect, *clr);
 	}
 }
 
