@@ -272,7 +272,7 @@ void Player::update_team_players() {
 }
 
 
-MessageId Player::add_message(Game& game, Message& message, bool const popup) {
+MessageId Player::add_message(Message& message, bool const popup) {
 	MessageId id = messages().add_message(message);
 
 	// MapObject connection
@@ -301,7 +301,7 @@ MessageId Player::add_message_with_timeout(Game& game,
 			return MessageId::null();
 		}
 	}
-	return add_message(game, m);
+	return add_message(m);
 }
 
 void Player::message_object_removed(MessageId message_id) const {

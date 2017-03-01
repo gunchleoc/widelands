@@ -764,6 +764,6 @@ void Building::send_message(Game& game,
 	if (throttle_time)
 		owner().add_message_with_timeout(game, *msg, throttle_time, throttle_radius);
 	else
-		owner().add_message(game, *msg);
+		owner().add_message(*msg);
 }
 }

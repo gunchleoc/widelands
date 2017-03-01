@@ -388,7 +388,7 @@ void InteractivePlayer::on_player_settings_note(const LuaGame::NotePlayerSetting
 	}
 	if (!error_message.empty()) {
 		player().add_message(
-			*game, *new Widelands::Message(Widelands::Message::Type::kScenario,
+			*new Widelands::Message(Widelands::Message::Type::kScenario,
 													 game->get_gametime(), "Lua Error",
 													 "images/wui/messages/menu_toggle_objectives_menu.png",
 													 "Lua Error", error_message),

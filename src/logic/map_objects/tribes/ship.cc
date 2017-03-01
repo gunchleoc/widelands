@@ -1056,7 +1056,7 @@ void Ship::send_message(Game& game,
 	Message* msg = new Message(Message::Type::kSeafaring, game.get_gametime(), title, picture,
 	                           heading, rt_description, get_position(), serial_);
 
-	get_owner()->add_message(game, *msg);
+	get_owner()->add_message(*msg);
 }
 
 /*

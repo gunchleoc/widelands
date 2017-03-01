@@ -55,7 +55,7 @@ void CmdLuaCoroutine::execute(Game& game) {
 			   Message::Type::kGameLogic, game.get_gametime(), "Coroutine",
 			   "images/ui_basic/menu_help.png", "Lua Coroutine Failed",
 			   (boost::format("<rt><p font-size=12>%s</p></rt>") % e.what()).str());
-			game.player(i).add_message(game, msg, true);
+			game.player(i).add_message(msg, true);
 		}
 		game.game_controller()->set_desired_speed(0);
 	}

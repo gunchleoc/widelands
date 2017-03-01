@@ -1345,13 +1345,13 @@ void Soldier::battle_update(Game& game, State&) {
 					    descr().descname().c_str())
 					      .str();
 					owner().add_message(
-					   game, *new Message(
+						*new Message(
 					            Message::Type::kGameLogic, game.get_gametime(), descr().descname(),
 					            "images/ui_basic/menu_help.png", _("Logic error"),
 					            (boost::format("<rt><p font-size=12>%s</p></rt>") % messagetext).str(),
 					            get_position(), serial_));
 					opponent.owner().add_message(
-					   game, *new Message(
+						*new Message(
 					            Message::Type::kGameLogic, game.get_gametime(), descr().descname(),
 					            "images/ui_basic/menu_help.png", _("Logic error"),
 					            (boost::format("<rt><p font-size=12>%s</p></rt>") % messagetext).str(),

@@ -374,7 +374,7 @@ int LuaPlayer::send_message(lua_State* L) {
 	}
 
 	MessageId const message =
-	   plr.add_message(game, *new Message(Message::Type::kScenario, game.get_gametime(), title, icon,
+		plr.add_message(*new Message(Message::Type::kScenario, game.get_gametime(), title, icon,
 	                                      heading, body, c, 0, st),
 	                   popup);
 

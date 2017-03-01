@@ -1679,7 +1679,7 @@ void Worker::return_update(Game& game, State& state) {
 		      .str();
 
 		owner().add_message(
-		   game, *new Message(Message::Type::kGameLogic, game.get_gametime(), _("Worker"),
+			*new Message(Message::Type::kGameLogic, game.get_gametime(), _("Worker"),
 		                      "images/ui_basic/menu_help.png", _("Worker got lost!"),
 		                      (boost::format("<rt><p font-size=12>%s</p></rt>") % message).str(),
 		                      get_position()),

@@ -114,7 +114,7 @@ public:
 	/// that it has been allocated in a separate memory block (not as a
 	/// component of an array or struct) with operator new, so that it can be
 	/// deallocated with operator delete.
-	MessageId add_message(Game&, Message&, bool popup = false);
+	MessageId add_message(Message&, bool popup = false);
 
 	/// Like add_message, but if there has been a message from the same sender
 	/// in the last timeout milliseconds in a radius r around the coordinates
