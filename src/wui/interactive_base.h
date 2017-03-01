@@ -141,14 +141,6 @@ public:
 	virtual void cleanup_for_load() {
 	}
 
-	/**
-	 * Log a message to be displayed on screen
-	 */
-	void log_message(const std::string& message) const;
-	void log_message(const char* message) const {
-		log_message(std::string(message));
-	}
-
 	const FieldOverlayManager& field_overlay_manager() const {
 		return *field_overlay_manager_;
 	}

@@ -71,6 +71,11 @@ public:
 	}
 
 private:
+	/**
+	 * Log a message to be displayed on screen
+	 */
+	void log_message(const std::string& message) const;
+
 	uint32_t last_saved_realtime_;
 	bool initialized_;
 	bool allow_saving_;

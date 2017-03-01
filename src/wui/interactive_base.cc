@@ -606,13 +606,6 @@ Coords InteractiveBase::get_build_road_end() const {
 	return buildroad_->get_end();
 }
 
-void InteractiveBase::log_message(const std::string& message) const {
-	// Send to linked receivers
-	LogMessage lm;
-	lm.msg = message;
-	lm.time = time(nullptr);
-	Notifications::publish(lm);
-}
 
 // Repositions the chat overlay
 void InteractiveBase::resize_chat_overlay() {

@@ -35,7 +35,7 @@
 #include "logic/game.h"
 #include "logic/game_controller.h"
 #include "wlapplication.h"
-#include "wui/interactive_base.h"
+#include "wui/logmessage.h"
 
 using Widelands::GameSaver;
 
@@ -108,7 +108,7 @@ void SaveHandler::think(Widelands::Game& game) {
 		std::string error;
 		if (!save_game(game, complete_filename, &error)) {
 			log("Autosave: ERROR! - %s\n", error.c_str());
-			game.get_ibase()->log_message(_("Saving failed!"));
+			log_message(_("Saving failed!"));
 
 			// if backup file was created, move it back
 			if (backup_filename.length() > 0) {
@@ -127,7 +127,7 @@ void SaveHandler::think(Widelands::Game& game) {
 		}
 
 		log("Autosave: save took %d ms\n", SDL_GetTicks() - realtime);
-		game.get_ibase()->log_message(_("Game saved"));
+		log_message(_("Game saved"));
 		last_saved_realtime_ = realtime;
 		saving_next_tick_ = false;
 
@@ -154,7 +154,7 @@ void SaveHandler::think(Widelands::Game& game) {
 		    gametimestring(game.get_gametime(), true).c_str());
 
 		saving_next_tick_ = true;
-		game.get_ibase()->log_message(_("Saving game…"));
+		log_message(_("Saving game…"));
 	}
 }
 
@@ -220,4 +220,12 @@ bool SaveHandler::save_game(Widelands::Game& game,
 	}
 
 	return result;
+}
+
+void SaveHandler::log_message(const std::string& message) const {
+	// Send to linked receivers
+	LogMessage lm;
+	lm.msg = message;
+	lm.time = time(nullptr);
+	Notifications::publish(lm);
 }
