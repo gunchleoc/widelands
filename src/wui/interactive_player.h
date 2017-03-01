@@ -85,7 +85,9 @@ public:
 
 private:
 	void cmdSwitchPlayer(const std::vector<std::string>& args);
-	void play_message_sound(const Widelands::Message::Type& msgtype);
+	void on_player_settings_note(const LuaGame::NotePlayerSettings& note);
+	void on_story_message_note(const LuaGame::NoteStoryMessage& note);
+	void on_play_message_note(const Widelands::NotePlayerMessage& note);
 
 	Widelands::PlayerNumber player_number_;
 	bool auto_roadbuild_mode_;

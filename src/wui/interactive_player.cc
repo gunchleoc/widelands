@@ -124,68 +124,14 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 
 	main_windows_.stock.open_window = [this] { new StockMenu(*this, main_windows_.stock); };
 
-	// NOCOM refactor these into functions.
 	lua_player_settings_subscriber_ = Notifications::subscribe<LuaGame::NotePlayerSettings>(
-	   [this](const LuaGame::NotePlayerSettings& note) {
-		   Widelands::Game* game = get_game();
-		   std::string error_message = "";
-		   switch (note.action) {
-		   case LuaGame::NotePlayerSettings::Action::kSwitchPlayer:
-			   if (note.player == player_number_) {
-				   set_player_number(note.new_player);
-			   } else {
-				   error_message = "'switchplayer' can only be called for interactive player!";
-			   }
-			   break;
-		   case LuaGame::NotePlayerSettings::Action::kRevealCampaign:
-			   if (note.player == player_number_) {
-				   CampaignVisibilitySave cvs;
-				   cvs.set_campaign_visibility(note.visibility_entry, true);
-			   } else {
-				   error_message = "'reveal_campaign' can only be called for interactive player!";
-			   }
-			   break;
-		   case LuaGame::NotePlayerSettings::Action::kRevealScenario:
-			   if (note.player == player_number_) {
-				   CampaignVisibilitySave cvs;
-				   cvs.set_map_visibility(note.visibility_entry, true);
-			   } else {
-				   error_message = "'reveal_scenario' can only be called for interactive player!";
-			   }
-			   break;
-		   }
-		   if (!error_message.empty()) {
-			   player().add_message(
-			      *game, *new Widelands::Message(Widelands::Message::Type::kScenario,
-			                                     game->get_gametime(), "Lua Error",
-			                                     "images/wui/messages/menu_toggle_objectives_menu.png",
-			                                     "Lua Error", error_message),
-			      true);
-			   game->game_controller()->set_paused(true);
-		   }
-		});
+		[this](const LuaGame::NotePlayerSettings& note) {
+		on_player_settings_note(note);
+	});
 
 	lua_story_message_subscriber_ = Notifications::subscribe<LuaGame::NoteStoryMessage>(
 	   [this](const LuaGame::NoteStoryMessage& note) {
-		   if (note.player == player_number_) {
-			   Widelands::Game* game = get_game();
-
-			   const uint32_t current_speed = game->game_controller()->desired_speed();
-			   game->game_controller()->set_desired_speed(0);
-			   game->save_handler().set_allow_saving(false);
-
-			   std::unique_ptr<StoryMessageBox> mb(
-			      new StoryMessageBox(this, note.title, note.body, note.button_text, note.dimensions.x,
-			                          note.dimensions.y, note.dimensions.w, note.dimensions.h));
-			   mb->run<UI::Panel::Returncodes>();
-			   mb.reset(nullptr);
-
-			   // Manually force the game to reevaluate its current state,
-			   // especially time information.
-			   game->game_controller()->think();
-			   game->game_controller()->set_desired_speed(current_speed);
-			   game->save_handler().set_allow_saving(true);
-		   }
+			on_story_message_note(note);
 		});
 
 	scroll_subscriber_ = Notifications::subscribe<Widelands::NoteScroll>(
@@ -197,12 +143,7 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 
 	player_message_subscriber_ = Notifications::subscribe<Widelands::NotePlayerMessage>(
 		[this](const Widelands::NotePlayerMessage& note) {
-		if (note.player == player_number_) {
-			play_message_sound(note.message.type());
-			if (note.popup) {
-				popup_message(note.id, note.message);
-			}
-		}
+		on_play_message_note(note);
 	});
 
 #ifndef NDEBUG  //  only in debug builds
@@ -416,21 +357,97 @@ void InteractivePlayer::cmdSwitchPlayer(const std::vector<std::string>& args) {
 	}
 }
 
-/*
- * Plays the corresponding sound when a message is received and if sound is
- * enabled.
- */
-void InteractivePlayer::play_message_sound(const Widelands::Message::Type& msgtype) {
-#define MAYBE_PLAY(type, file)                                                                     \
-	if (msgtype == type) {                                                                          \
-		g_sound_handler.play_fx(file, 200, PRIO_ALWAYS_PLAY);                                        \
-		return;                                                                                      \
+/// Actions to be taken when a LuaGame::NotePlayerSettings is received.
+void InteractivePlayer::on_player_settings_note(const LuaGame::NotePlayerSettings& note) {
+	Widelands::Game* game = get_game();
+	std::string error_message = "";
+	switch (note.action) {
+	case LuaGame::NotePlayerSettings::Action::kSwitchPlayer:
+		if (note.player == player_number_) {
+			set_player_number(note.new_player);
+		} else {
+			error_message = "'switchplayer' can only be called for interactive player!";
+		}
+		break;
+	case LuaGame::NotePlayerSettings::Action::kRevealCampaign:
+		if (note.player == player_number_) {
+			CampaignVisibilitySave cvs;
+			cvs.set_campaign_visibility(note.visibility_entry, true);
+		} else {
+			error_message = "'reveal_campaign' can only be called for interactive player!";
+		}
+		break;
+	case LuaGame::NotePlayerSettings::Action::kRevealScenario:
+		if (note.player == player_number_) {
+			CampaignVisibilitySave cvs;
+			cvs.set_map_visibility(note.visibility_entry, true);
+		} else {
+			error_message = "'reveal_scenario' can only be called for interactive player!";
+		}
+		break;
 	}
+	if (!error_message.empty()) {
+		player().add_message(
+			*game, *new Widelands::Message(Widelands::Message::Type::kScenario,
+													 game->get_gametime(), "Lua Error",
+													 "images/wui/messages/menu_toggle_objectives_menu.png",
+													 "Lua Error", error_message),
+			true);
+		game->game_controller()->set_paused(true);
+	}
+}
 
-	if (g_options.pull_section("global").get_bool("sound_at_message", true)) {
-		MAYBE_PLAY(Widelands::Message::Type::kEconomySiteOccupied, "military/site_occupied");
-		MAYBE_PLAY(Widelands::Message::Type::kWarfareUnderAttack, "military/under_attack");
+/**
+ * Actions to be taken when a LuaGame::NoteStoryMessage is received.
+ *
+ * Stops the game and opens the message box. Resumes the game after the message bos has been closed by the player.
+ */
+void InteractivePlayer::on_story_message_note(const LuaGame::NoteStoryMessage& note) {
+	if (note.player == player_number_) {
+		Widelands::Game* game = get_game();
 
-		g_sound_handler.play_fx("message", 200, PRIO_ALWAYS_PLAY);
+		const uint32_t current_speed = game->game_controller()->desired_speed();
+		game->game_controller()->set_desired_speed(0);
+		game->save_handler().set_allow_saving(false);
+
+		std::unique_ptr<StoryMessageBox> mb(
+			new StoryMessageBox(this, note.title, note.body, note.button_text, note.dimensions.x,
+									  note.dimensions.y, note.dimensions.w, note.dimensions.h));
+		mb->run<UI::Panel::Returncodes>();
+		mb.reset(nullptr);
+
+		// Manually force the game to reevaluate its current state,
+		// especially time information.
+		game->game_controller()->think();
+		game->game_controller()->set_desired_speed(current_speed);
+		game->save_handler().set_allow_saving(true);
+	}
+}
+
+/**
+ * Actions to be taken when a Widelands::NotePlayerMessage is received.
+ *
+ * Plays the corresponding sound when a message is received and if sound is
+ * enabled. Pops up the kessage window if 'note.popup'.
+ */
+void InteractivePlayer::on_play_message_note(const Widelands::NotePlayerMessage& note) {
+	if (note.player == player_number_) {
+		Widelands::Message::Type msgtype = note.message.type();
+
+		#define MAYBE_PLAY(type, file)                                                                     \
+		if (msgtype == type) {                                                                          \
+			g_sound_handler.play_fx(file, 200, PRIO_ALWAYS_PLAY);                                        \
+			return;                                                                                      \
+		}
+
+		if (g_options.pull_section("global").get_bool("sound_at_message", true)) {
+			MAYBE_PLAY(Widelands::Message::Type::kEconomySiteOccupied, "military/site_occupied");
+			MAYBE_PLAY(Widelands::Message::Type::kWarfareUnderAttack, "military/under_attack");
+
+			g_sound_handler.play_fx("message", 200, PRIO_ALWAYS_PLAY);
+		}
+		if (note.popup) {
+			popup_message(note.id, note.message);
+		}
 	}
 }
