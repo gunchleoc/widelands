@@ -26,6 +26,8 @@
 #include "base/vector.h"
 #include "graphic/gl/fields_to_draw.h"
 #include "logic/map_objects/draw_text.h"
+#include "wui/edge_overlay_manager.h"
+#include "wui/field_overlay_manager.h"
 
 namespace Widelands {
 class Player;
@@ -44,6 +46,8 @@ public:
 	// window. The 'viewpoint' is the top left screens pixel map pixel and
 	// 'scale' is the magnification of the view.
 	void rendermap(const Widelands::EditorGameBase& egbase,
+	               const FieldOverlayManager& field_overlay_manager,
+	               const EdgeOverlayManager& edge_overlay_manager,
 	               const Vector2f& viewpoint,
 	               float scale,
 	               const Widelands::Player& player,
@@ -53,6 +57,8 @@ public:
 	// Renders the map from an omniscient perspective. This is used
 	// for spectators, players that see all, and in the editor.
 	void rendermap(const Widelands::EditorGameBase& egbase,
+	               const FieldOverlayManager& field_overlay_manager,
+	               const EdgeOverlayManager& edge_overlay_manager,
 	               const Vector2f& viewpoint,
 	               float scale,
 	               TextToDraw draw_text,
@@ -62,6 +68,8 @@ private:
 	// Draw the map for the given parameters (see rendermap). 'player'
 	// can be nullptr in which case the whole map is drawn.
 	void draw(const Widelands::EditorGameBase& egbase,
+	          const FieldOverlayManager& field_overlay_manager,
+	          const EdgeOverlayManager& edge_overlay_manager,
 	          const Vector2f& viewpoint,
 	          float scale,
 	          TextToDraw draw_text,

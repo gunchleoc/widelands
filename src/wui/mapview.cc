@@ -401,11 +401,13 @@ void MapView::draw(RenderTarget& dst) {
 	}
 
 	if (upcast(InteractivePlayer const, interactive_player, &intbase())) {
-		renderer_->rendermap(
-		   egbase, view_.viewpoint, view_.zoom, interactive_player->player(), draw_text, &dst);
+		renderer_->rendermap(egbase, intbase_.field_overlay_manager(),
+		                     intbase_.edge_overlay_manager(), view_.viewpoint, view_.zoom,
+		                     interactive_player->player(), draw_text, &dst);
 	} else {
-		renderer_->rendermap(
-		   egbase, view_.viewpoint, view_.zoom, static_cast<TextToDraw>(draw_text), &dst);
+		renderer_->rendermap(egbase, intbase_.field_overlay_manager(),
+		                     intbase_.edge_overlay_manager(), view_.viewpoint, view_.zoom,
+		                     static_cast<TextToDraw>(draw_text), &dst);
 	}
 }
 

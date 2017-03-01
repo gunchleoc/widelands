@@ -29,9 +29,6 @@
 #include "logic/editor_game_base.h"
 #include "logic/map_objects/world/world.h"
 #include "logic/player.h"
-#include "wui/edge_overlay_manager.h"
-#include "wui/field_overlay_manager.h"
-#include "wui/interactive_base.h"
 #include "wui/mapviewpixelconstants.h"
 #include "wui/mapviewpixelfunctions.h"
 
@@ -206,6 +203,7 @@ void draw_objets_for_formerly_visible_field(const FieldsToDraw::Field& field,
 
 // Draws the objects (animations & overlays).
 void draw_objects(const EditorGameBase& egbase,
+                  const FieldOverlayManager& field_overlay_manager,
                   const float zoom,
                   const FieldsToDraw& fields_to_draw,
                   const Player* player,
@@ -249,10 +247,9 @@ void draw_objects(const EditorGameBase& egbase,
 			draw_objets_for_formerly_visible_field(field, player_field, zoom, dst);
 		}
 
-		const FieldOverlayManager& overlay_manager = egbase.get_ibase()->field_overlay_manager();
 		{
 			overlay_info.clear();
-			overlay_manager.get_overlays(field.fcoords, &overlay_info);
+			field_overlay_manager.get_overlays(field.fcoords, &overlay_info);
 			for (const auto& overlay : overlay_info) {
 				dst->blitrect_scale(
 				   Rectf(field.rendertarget_pixel - overlay.hotspot.cast<float>() * zoom,
@@ -265,7 +262,7 @@ void draw_objects(const EditorGameBase& egbase,
 		{
 			// Render overlays on the right triangle
 			overlay_info.clear();
-			overlay_manager.get_overlays(TCoords<>(field.fcoords, TCoords<>::R), &overlay_info);
+			field_overlay_manager.get_overlays(TCoords<>(field.fcoords, TCoords<>::R), &overlay_info);
 
 			Vector2f tripos(
 			   (field.rendertarget_pixel.x + rn.rendertarget_pixel.x + brn.rendertarget_pixel.x) / 3.f,
@@ -283,7 +280,7 @@ void draw_objects(const EditorGameBase& egbase,
 		{
 			// Render overlays on the D triangle
 			overlay_info.clear();
-			overlay_manager.get_overlays(TCoords<>(field.fcoords, TCoords<>::D), &overlay_info);
+			field_overlay_manager.get_overlays(TCoords<>(field.fcoords, TCoords<>::D), &overlay_info);
 
 			Vector2f tripos(
 			   (field.rendertarget_pixel.x + bln.rendertarget_pixel.x + brn.rendertarget_pixel.x) /
@@ -310,23 +307,31 @@ GameRenderer::~GameRenderer() {
 }
 
 void GameRenderer::rendermap(const Widelands::EditorGameBase& egbase,
+                             const FieldOverlayManager& field_overlay_manager,
+                             const EdgeOverlayManager& edge_overlay_manager,
                              const Vector2f& viewpoint,
                              const float zoom,
                              const Widelands::Player& player,
                              const TextToDraw draw_text,
                              RenderTarget* dst) {
-	draw(egbase, viewpoint, zoom, draw_text, &player, dst);
+	draw(egbase, field_overlay_manager, edge_overlay_manager, viewpoint, zoom, draw_text, &player,
+	     dst);
 }
 
 void GameRenderer::rendermap(const Widelands::EditorGameBase& egbase,
+                             const FieldOverlayManager& field_overlay_manager,
+                             const EdgeOverlayManager& edge_overlay_manager,
                              const Vector2f& viewpoint,
                              const float zoom,
                              const TextToDraw draw_text,
                              RenderTarget* dst) {
-	draw(egbase, viewpoint, zoom, draw_text, nullptr, dst);
+	draw(egbase, field_overlay_manager, edge_overlay_manager, viewpoint, zoom, draw_text, nullptr,
+	     dst);
 }
 
 void GameRenderer::draw(const EditorGameBase& egbase,
+                        const FieldOverlayManager& field_overlay_manager,
+                        const EdgeOverlayManager& edge_overlay_manager,
                         const Vector2f& viewpoint,
                         const float zoom,
                         const TextToDraw draw_text,
@@ -367,7 +372,6 @@ void GameRenderer::draw(const EditorGameBase& egbase,
 	const int surface_height = surface->height();
 
 	Map& map = egbase.map();
-	const EdgeOverlayManager& edge_overlay_manager = egbase.get_ibase()->edge_overlay_manager();
 	const uint32_t gametime = egbase.get_gametime();
 
 	const float scale = 1.f / zoom;
@@ -451,5 +455,5 @@ void GameRenderer::draw(const EditorGameBase& egbase,
 	i.program_id = RenderQueue::Program::kTerrainRoad;
 	RenderQueue::instance().enqueue(i);
 
-	draw_objects(egbase, scale, fields_to_draw_, player, draw_text, dst);
+	draw_objects(egbase, field_overlay_manager, scale, fields_to_draw_, player, draw_text, dst);
 }
