@@ -94,7 +94,7 @@ void ReplayGameController::set_paused(bool const paused) {
 	paused_ = paused;
 }
 
-void ReplayGameController::CmdReplayEnd::execute(Widelands::Game& game) {
+void ReplayGameController::CmdReplayEnd::execute(Widelands::Game&) {
 	Notifications::publish(NoteReplayEnded());
 }
 

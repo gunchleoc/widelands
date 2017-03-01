@@ -38,6 +38,7 @@ namespace UI {
 struct ProgressWindow;
 }
 struct ComputerPlayer;
+class InteractivePlayer;
 struct GameMainMenuLoadGame;
 struct WLApplication;
 struct GameSettings;
