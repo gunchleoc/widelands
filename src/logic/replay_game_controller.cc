@@ -21,9 +21,7 @@
 
 #include "logic/game.h"
 #include "logic/replay.h"
-#include "ui_basic/messagebox.h"
 #include "wlapplication.h"
-#include "wui/interactive_base.h"
 
 ReplayGameController::ReplayGameController(Widelands::Game& game, const std::string& filename)
    : game_(game),
@@ -97,13 +95,7 @@ void ReplayGameController::set_paused(bool const paused) {
 }
 
 void ReplayGameController::CmdReplayEnd::execute(Widelands::Game& game) {
-	game.game_controller()->set_desired_speed(0);
-	UI::WLMessageBox mmb(game.get_ibase(), _("End of replay"),
-	                     _("The end of the replay has been reached and the game has "
-	                       "been paused. You may unpause the game and continue watching "
-	                       "if you want to."),
-	                     UI::WLMessageBox::MBoxType::kOk);
-	mmb.run<UI::Panel::Returncodes>();
+	Notifications::publish(NoteReplayEnded());
 }
 
 Widelands::QueueCommandTypes ReplayGameController::CmdReplayEnd::id() const {

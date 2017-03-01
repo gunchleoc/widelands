@@ -30,10 +30,9 @@ wl_library(logic_game_controller
     ai
     logic
     logic_constants
+    notifications
     profile
-    ui_basic
     widelands_ball_of_mud
-    wui
 )
 
 wl_library(logic_campaign_visibility

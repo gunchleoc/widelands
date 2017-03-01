@@ -22,6 +22,7 @@
 
 #include <SDL_keyboard.h>
 
+#include "logic/replay_game_controller.h"
 #include "profile/profile.h"
 #include "ui_basic/button.h"
 #include "wui/interactive_gamebase.h"
@@ -55,6 +56,10 @@ private:
 private:
 	UI::UniqueWindow::Registry chat_;
 	UI::UniqueWindow::Registry options_;
+
+	std::unique_ptr<Notifications::Subscriber<NoteReplayEnded>>
+		replay_ended_subscriber_;
+
 };
 
 #endif  // end of include guard: WL_WUI_INTERACTIVE_SPECTATOR_H

@@ -23,10 +23,10 @@
 #include "base/macros.h"
 #include "chat/chat.h"
 #include "graphic/graphic.h"
-#include "logic/game_controller.h"
 #include "logic/player.h"
 #include "profile/profile.h"
 #include "ui_basic/editbox.h"
+#include "ui_basic/messagebox.h"
 #include "ui_basic/multilinetextarea.h"
 #include "ui_basic/textarea.h"
 #include "ui_basic/unique_window.h"
@@ -95,6 +95,17 @@ InteractiveSpectator::InteractiveSpectator(Widelands::Game& g,
 
 	// Setup all screen elements
 	fieldclicked.connect(boost::bind(&InteractiveSpectator::node_action, this));
+
+	replay_ended_subscriber_ = Notifications::subscribe<NoteReplayEnded>(
+		[this](const NoteReplayEnded&) {
+		get_game()->game_controller()->set_desired_speed(0);
+		UI::WLMessageBox mmb(this, _("End of replay"),
+									_("The end of the replay has been reached and the game has "
+									  "been paused. You may unpause the game and continue watching "
+									  "if you want to."),
+									UI::WLMessageBox::MBoxType::kOk);
+		mmb.run<UI::Panel::Returncodes>();
+	});
 }
 
 /**

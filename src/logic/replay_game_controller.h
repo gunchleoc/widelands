@@ -24,10 +24,18 @@
 
 #include "logic/cmd_queue.h"
 #include "logic/game_controller.h"
+#include "notifications/note_ids.h"
+#include "notifications/notifications.h"
 
 namespace Widelands {
 class ReplayReader;
 }
+
+struct NoteReplayEnded {
+	CAN_BE_SENT_AS_NOTE(NoteId::ReplayEnded)
+	NoteReplayEnded() {
+	}
+};
 
 class ReplayGameController : public GameController {
 public:
