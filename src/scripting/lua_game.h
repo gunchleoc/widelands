@@ -24,6 +24,7 @@
 #include "logic/message_id.h"
 #include "scripting/lua.h"
 #include "scripting/lua_bases.h"
+#include "scripting/lua_notes.h"
 #include "scripting/luna.h"
 
 namespace Widelands {
@@ -197,5 +198,6 @@ public:
 
 void luaopen_wlgame(lua_State*);
 
+} // namespace LuaGame
+
 #endif  // end of include guard: WL_SCRIPTING_LUA_GAME_H
-}

@@ -430,6 +430,7 @@ int LuaPlayer::message_box(lua_State* L) {
 	int32_t posx = -1;
 	int32_t posy = -1;
 	std::string button_text = _("OK");
+	Widelands::Coords scrollto(-1, -1);
 
 #define CHECK_ARG(var, type)                                                                       \
 	lua_getfield(L, -1, #var);                                                                      \
@@ -447,35 +448,16 @@ int LuaPlayer::message_box(lua_State* L) {
 		// This must be done manually
 		lua_getfield(L, 4, "field");
 		if (!lua_isnil(L, -1)) {
-			Coords c = (*get_user_class<LuaField>(L, -1))->coords();
-			game.get_ipl()->scroll_to_field(c, MapView::Transition::Jump);
+			scrollto = (*get_user_class<LuaField>(L, -1))->coords();
 		}
 		lua_pop(L, 1);
 	}
 #undef CHECK_ARG
 
-	std::string title = luaL_checkstring(L, 2);
-	std::string body = luaL_checkstring(L, 3);
+	const std::string title = luaL_checkstring(L, 2);
+	const std::string body = luaL_checkstring(L, 3);
 
-	uint32_t cspeed = game.game_controller()->desired_speed();
-	game.game_controller()->set_desired_speed(0);
-
-	game.save_handler().set_allow_saving(false);
-
-	StoryMessageBox* mb = new StoryMessageBox(game.get_ipl(), luaL_checkstring(L, 2),
-	                                          luaL_checkstring(L, 3), button_text, posx, posy, w, h);
-
-	mb->run<UI::Panel::Returncodes>();
-	delete mb;
-
-	// Manually force the game to reevaluate it's current state,
-	// especially time information.
-	game.game_controller()->think();
-
-	game.game_controller()->set_desired_speed(cspeed);
-
-	game.save_handler().set_allow_saving(true);
-
+	Notifications::publish(NoteStoryMessage(player_number(), title, body, button_text, Recti(posx, posy, w, h), scrollto));
 	return 1;
 }
 
@@ -650,12 +632,7 @@ int LuaPlayer::hide_fields(lua_State* L) {
 */
 // UNTESTED
 int LuaPlayer::reveal_scenario(lua_State* L) {
-	if (get_game(L).get_ipl()->player_number() != player_number())
-		report_error(L, "Can only be called for interactive player!");
-
-	CampaignVisibilitySave cvs;
-	cvs.set_map_visibility(luaL_checkstring(L, 2), true);
-
+	Notifications::publish(NotePlayerSettings(NotePlayerSettings::Action::kRevealScenario, player_number(), player_number(), luaL_checkstring(L, 2)));
 	return 0;
 }
 
@@ -670,13 +647,7 @@ int LuaPlayer::reveal_scenario(lua_State* L) {
 */
 // UNTESTED
 int LuaPlayer::reveal_campaign(lua_State* L) {
-	if (get_game(L).get_ipl()->player_number() != player_number()) {
-		report_error(L, "Can only be called for interactive player!");
-	}
-
-	CampaignVisibilitySave cvs;
-	cvs.set_campaign_visibility(luaL_checkstring(L, 2), true);
-
+	Notifications::publish(NotePlayerSettings(NotePlayerSettings::Action::kRevealCampaign, player_number(), player_number(), luaL_checkstring(L, 2)));
 	return 0;
 }
 
@@ -862,14 +833,7 @@ int LuaPlayer::allow_workers(lua_State* L) {
       switch to the player with playernumber
 */
 int LuaPlayer::switchplayer(lua_State* L) {
-	Game& game = get_game(L);
-
-	uint8_t newplayer = luaL_checkinteger(L, -1);
-	InteractivePlayer* ipl = game.get_ipl();
-	// only switch, if this is our player!
-	if (ipl->player_number() == player_number()) {
-		ipl->set_player_number(newplayer);
-	}
+	Notifications::publish(NotePlayerSettings(NotePlayerSettings::Action::kSwitchPlayer, player_number(), luaL_checkinteger(L, -1)));
 	return 0;
 }
 

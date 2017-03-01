@@ -253,6 +253,7 @@ wl_library(wui
     io_fileread
     io_filesystem
     logic
+    logic_campaign_visibility
     logic_constants
     logic_game_controller
     logic_game_settings
@@ -263,6 +264,7 @@ wl_library(wui
     scripting_coroutine
     scripting_lua_interface
     scripting_lua_table
+    scripting_notes
     sound
     ui_basic
     widelands_ball_of_mud

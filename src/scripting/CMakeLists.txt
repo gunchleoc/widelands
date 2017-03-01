@@ -76,6 +76,16 @@ wl_library(scripting_lua_interface
     scripting_luna
 )
 
+wl_library(scripting_notes
+  SRCS
+    lua_notes.h
+  DEPENDS
+    base_geometry
+    logic_constants
+    logic_widelands_geometry
+    notifications
+)
+
 wl_library(scripting_logic
   SRCS
     factory.cc
@@ -109,6 +119,7 @@ wl_library(scripting_logic
     io_filesystem
     logic
     logic_campaign_visibility
+    logic_constants
     logic_game_controller
     logic_widelands_geometry
     map_io
@@ -118,6 +129,7 @@ wl_library(scripting_logic
     scripting_lua_interface
     scripting_lua_table
     scripting_luna
+    scripting_notes
     third_party_eris
     ui_basic
     wui

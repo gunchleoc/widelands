@@ -30,13 +30,16 @@
 #include "base/macros.h"
 #include "economy/flag.h"
 #include "game_io/game_loader.h"
+#include "logic/campaign_visibility.h"
 #include "logic/cmd_queue.h"
+#include "logic/game_controller.h"
 #include "logic/map_objects/immovable.h"
 #include "logic/map_objects/tribes/building.h"
 #include "logic/map_objects/tribes/constructionsite.h"
 #include "logic/map_objects/tribes/productionsite.h"
 #include "logic/map_objects/tribes/soldier.h"
 #include "logic/map_objects/tribes/tribe_descr.h"
+#include "logic/message.h"
 #include "logic/message_queue.h"
 #include "logic/player.h"
 #include "profile/profile.h"
@@ -52,6 +55,7 @@
 #include "wui/game_statistics_menu.h"
 #include "wui/general_statistics_menu.h"
 #include "wui/stock_menu.h"
+#include "wui/story_message_box.h"
 #include "wui/tribal_encyclopedia.h"
 #include "wui/ware_statistics_menu.h"
 
@@ -118,6 +122,74 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 	adjust_toolbar_position();
 
 	main_windows_.stock.open_window = [this] { new StockMenu(*this, main_windows_.stock); };
+
+	// NOCOM refactor these into functions.
+	lua_player_settings_subscriber_ = Notifications::subscribe<LuaGame::NotePlayerSettings>(
+	   [this](const LuaGame::NotePlayerSettings& note) {
+		   Widelands::Game* game = get_game();
+		   std::string error_message = "";
+		   switch (note.action) {
+		   case LuaGame::NotePlayerSettings::Action::kSwitchPlayer:
+			   if (note.player == player_number_) {
+				   set_player_number(note.new_player);
+			   } else {
+				   error_message = "'switchplayer' can only be called for interactive player!";
+			   }
+			   break;
+		   case LuaGame::NotePlayerSettings::Action::kRevealCampaign:
+			   if (note.player == player_number_) {
+				   CampaignVisibilitySave cvs;
+				   cvs.set_campaign_visibility(note.visibility_entry, true);
+			   } else {
+				   error_message = "'reveal_campaign' can only be called for interactive player!";
+			   }
+			   break;
+		   case LuaGame::NotePlayerSettings::Action::kRevealScenario:
+			   if (note.player == player_number_) {
+				   CampaignVisibilitySave cvs;
+				   cvs.set_map_visibility(note.visibility_entry, true);
+			   } else {
+				   error_message = "'reveal_scenario' can only be called for interactive player!";
+			   }
+			   break;
+		   }
+		   if (!error_message.empty()) {
+			   player().add_message(
+			      *game, *new Widelands::Message(Widelands::Message::Type::kScenario,
+			                                     game->get_gametime(), "Lua Error",
+			                                     "images/wui/messages/menu_toggle_objectives_menu.png",
+			                                     "Lua Error", error_message),
+			      true);
+			   game->game_controller()->set_paused(true);
+		   }
+		});
+
+	lua_story_message_subscriber_ = Notifications::subscribe<LuaGame::NoteStoryMessage>(
+	   [this](const LuaGame::NoteStoryMessage& note) {
+		   if (note.player == player_number_) {
+			   if (note.scrollto != Widelands::Coords(-1, -1)) {
+				   scroll_to_field(note.scrollto, MapView::Transition::Jump);
+			   }
+
+			   Widelands::Game* game = get_game();
+
+			   const uint32_t current_speed = game->game_controller()->desired_speed();
+			   game->game_controller()->set_desired_speed(0);
+			   game->save_handler().set_allow_saving(false);
+
+			   std::unique_ptr<StoryMessageBox> mb(
+			      new StoryMessageBox(this, note.title, note.body, note.button_text, note.dimensions.x,
+			                          note.dimensions.y, note.dimensions.w, note.dimensions.h));
+			   mb->run<UI::Panel::Returncodes>();
+			   mb.reset(nullptr);
+
+			   // Manually force the game to reevaluate its current state,
+			   // especially time information.
+			   game->game_controller()->think();
+			   game->game_controller()->set_desired_speed(current_speed);
+			   game->save_handler().set_allow_saving(true);
+		   }
+		});
 
 #ifndef NDEBUG  //  only in debug builds
 	addCommand("switchplayer", boost::bind(&InteractivePlayer::cmdSwitchPlayer, this, _1));

@@ -20,12 +20,15 @@
 #ifndef WL_WUI_INTERACTIVE_PLAYER_H
 #define WL_WUI_INTERACTIVE_PLAYER_H
 
+#include <memory>
 #include <vector>
 
 #include <SDL_keyboard.h>
 
 #include "logic/message_id.h"
+#include "notifications/notifications.h"
 #include "profile/profile.h"
+#include "scripting/lua_notes.h"
 #include "ui_basic/button.h"
 #include "ui_basic/textarea.h"
 #include "wui/interactive_gamebase.h"
@@ -94,6 +97,12 @@ private:
 	UI::UniqueWindow::Registry objectives_;
 	UI::UniqueWindow::Registry encyclopedia_;
 	UI::UniqueWindow::Registry message_menu_;
+
+	std::unique_ptr<Notifications::Subscriber<LuaGame::NotePlayerSettings>>
+		lua_player_settings_subscriber_;
+	std::unique_ptr<Notifications::Subscriber<LuaGame::NoteStoryMessage>>
+		lua_story_message_subscriber_;
+
 };
 
 #endif  // end of include guard: WL_WUI_INTERACTIVE_PLAYER_H
