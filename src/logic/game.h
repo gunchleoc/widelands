@@ -27,6 +27,10 @@
 #include "logic/cmd_queue.h"
 #include "logic/editor_game_base.h"
 #include "logic/save_handler.h"
+#include "logic/widelands.h"
+#include "logic/widelands_geometry.h"
+#include "notifications/note_ids.h"
+#include "notifications/notifications.h"
 #include "random/random.h"
 #include "scripting/logic.h"
 
@@ -54,6 +58,18 @@ class MilitarySite;
 
 #define WLGF_SUFFIX ".wgf"
 #define WLGF_MAGIC "WLgf"
+
+struct NoteScroll {
+	CAN_BE_SENT_AS_NOTE(NoteId::Scroll)
+
+	const Widelands::PlayerNumber player;
+	const Widelands::Coords coords;
+
+	NoteScroll(const Widelands::PlayerNumber init_player, const Widelands::Coords& init_coords)
+		: player(init_player), coords(init_coords) {
+	}
+};
+
 
 /** class Game
  *
@@ -213,6 +229,7 @@ public:
 	void send_player_sink_ship(Ship&);
 	void send_player_cancel_expedition_ship(Ship&);
 
+	// NOCOM get
 	InteractivePlayer* get_ipl();
 
 	SaveHandler& save_handler() {

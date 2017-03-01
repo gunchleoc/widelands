@@ -102,6 +102,8 @@ private:
 		lua_player_settings_subscriber_;
 	std::unique_ptr<Notifications::Subscriber<LuaGame::NoteStoryMessage>>
 		lua_story_message_subscriber_;
+	std::unique_ptr<Notifications::Subscriber<Widelands::NoteScroll>>
+		scroll_subscriber_;
 
 };
 

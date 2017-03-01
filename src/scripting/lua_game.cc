@@ -429,7 +429,6 @@ int LuaPlayer::message_box(lua_State* L) {
 	int32_t posx = -1;
 	int32_t posy = -1;
 	std::string button_text = _("OK");
-	Widelands::Coords scrollto(-1, -1);
 
 #define CHECK_ARG(var, type)                                                                       \
 	lua_getfield(L, -1, #var);                                                                      \
@@ -447,7 +446,7 @@ int LuaPlayer::message_box(lua_State* L) {
 		// This must be done manually
 		lua_getfield(L, 4, "field");
 		if (!lua_isnil(L, -1)) {
-			scrollto = (*get_user_class<LuaField>(L, -1))->coords();
+			Notifications::publish(Widelands::NoteScroll(player_number(), (*get_user_class<LuaField>(L, -1))->coords()));
 		}
 		lua_pop(L, 1);
 	}
@@ -456,7 +455,7 @@ int LuaPlayer::message_box(lua_State* L) {
 	const std::string title = luaL_checkstring(L, 2);
 	const std::string body = luaL_checkstring(L, 3);
 
-	Notifications::publish(NoteStoryMessage(player_number(), title, body, button_text, Recti(posx, posy, w, h), scrollto));
+	Notifications::publish(NoteStoryMessage(player_number(), title, body, button_text, Recti(posx, posy, w, h)));
 	return 1;
 }
 

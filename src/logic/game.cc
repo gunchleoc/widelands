@@ -152,6 +152,7 @@ bool Game::get_allow_cheats() {
  * \note This function may return 0 (in particular, it will return 0 during
  * playback or if player is spectator)
  */
+// NOCOM get - get rid
 InteractivePlayer* Game::get_ipl() {
 	return dynamic_cast<InteractivePlayer*>(get_ibase());
 }
@@ -222,6 +223,7 @@ bool Game::run_splayer_scenario_direct(const std::string& mapname,
 	}
 	win_condition_displayname_ = "Scenario";
 
+	// NOCOM set
 	set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), 1, false));
 
 	loader_ui.step(_("Loading map…"));
@@ -369,6 +371,7 @@ bool Game::run_load_game(const std::string& filename, const std::string& script_
 		}
 		loader_ui.set_background(background);
 		player_nr = gpdp.get_player_nr();
+		// NOCOM set
 		set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), player_nr, false));
 
 		loader_ui.step(_("Loading…"));
@@ -400,6 +403,7 @@ bool Game::run_load_game(const std::string& filename, const std::string& script_
  */
 void Game::postload() {
 	EditorGameBase::postload();
+	// NOCOM get - turn this the other way around
 	get_ibase()->postload();
 }
 
@@ -454,9 +458,9 @@ bool Game::run(UI::ProgressWindow* loader_ui,
 			}
 		}
 
-		if (get_ipl())
-			get_ipl()->scroll_to_field(
-			   map().get_starting_pos(get_ipl()->player_number()), MapView::Transition::Jump);
+		iterate_players_existing_novar(p, nr_players, *this) {
+			Notifications::publish(Widelands::NoteScroll(p, map().get_starting_pos(p)));
+		}
 
 		// Prepare the map, set default textures
 		map().recalc_default_resources(world());
@@ -523,6 +527,7 @@ bool Game::run(UI::ProgressWindow* loader_ui,
 
 	state_ = gs_running;
 
+	// NOCOM get -> run
 	get_ibase()->run<UI::Panel::Returncodes>();
 
 	state_ = gs_ending;

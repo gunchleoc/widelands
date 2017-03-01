@@ -167,10 +167,6 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 	lua_story_message_subscriber_ = Notifications::subscribe<LuaGame::NoteStoryMessage>(
 	   [this](const LuaGame::NoteStoryMessage& note) {
 		   if (note.player == player_number_) {
-			   if (note.scrollto != Widelands::Coords(-1, -1)) {
-				   scroll_to_field(note.scrollto, MapView::Transition::Jump);
-			   }
-
 			   Widelands::Game* game = get_game();
 
 			   const uint32_t current_speed = game->game_controller()->desired_speed();
@@ -190,6 +186,13 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 			   game->save_handler().set_allow_saving(true);
 		   }
 		});
+
+	scroll_subscriber_ = Notifications::subscribe<Widelands::NoteScroll>(
+		[this](const Widelands::NoteScroll& note) {
+		if (note.player == player_number_) {
+			scroll_to_field(note.coords, MapView::Transition::Jump);
+		}
+	});
 
 #ifndef NDEBUG  //  only in debug builds
 	addCommand("switchplayer", boost::bind(&InteractivePlayer::cmdSwitchPlayer, this, _1));

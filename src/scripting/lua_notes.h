@@ -59,20 +59,17 @@ struct NoteStoryMessage {
 	const std::string body;
 	const std::string button_text;
 	const Recti dimensions;
-	const Widelands::Coords scrollto;
 
 	NoteStoryMessage(Widelands::PlayerNumber init_player,
 	                 const std::string& init_title,
 	                 const std::string& init_body,
 	                 const std::string& init_button_text,
-	                 const Recti& init_dimensions,
-	                 const Widelands::Coords& init_scrollto)
+	                 const Recti& init_dimensions)
 	   : player(init_player),
 	     title(init_title),
 	     body(init_body),
 	     button_text(init_button_text),
-	     dimensions(init_dimensions),
-	     scrollto(init_scrollto) {
+	     dimensions(init_dimensions) {
 	}
 };
 
