@@ -46,6 +46,7 @@ private:
 	void player_selected(uint32_t idx);
 	std::string parse_player_info(std::string info);
 
+	InteractiveGameBase* parent_;
 	Widelands::Game& game_;
 	uint32_t desired_speed_;
 	UI::Textarea* title_area_;

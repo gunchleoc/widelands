@@ -79,6 +79,7 @@ private:
 	void view_button_clicked(uint8_t index);
 	void set_current_view(uint8_t idx, bool save_previous = true);
 
+	InteractiveGameBase* parent_;
 	MapView mapview_;
 	uint32_t last_visit_;
 	bool single_window_;
@@ -96,6 +97,7 @@ WatchWindow::WatchWindow(InteractiveGameBase& parent,
                          uint32_t const h,
                          bool const init_single_window)
    : UI::Window(&parent, "watch", x, y, w, h, _("Watch")),
+	  parent_(&parent),
      mapview_(this, 0, 0, 200, 166, parent),
      last_visit_(game().get_gametime()),
      single_window_(init_single_window),
@@ -216,7 +218,7 @@ void WatchWindow::think() {
 
 		Widelands::Map& map = game().map();
 		// Drop the tracking if it leaves our vision range
-		InteractivePlayer* ipl = game().get_ipl();
+		InteractivePlayer* ipl = dynamic_cast<InteractivePlayer*>(parent_);
 		if (ipl && 1 >= ipl->player().vision(map.get_index(bob->get_position(), map.get_width()))) {
 			// Not in sight
 			views_[cur_index_].tracking = nullptr;
@@ -275,7 +277,7 @@ void WatchWindow::do_follow() {
 			   MapviewPixelFunctions::to_map_pixel(map, bob->get_position());
 			const Vector2f p = bob->calc_drawpos(g, field_position, 1.f);
 			const float dist = MapviewPixelFunctions::calc_pix_distance(map, p, center_map_pixel);
-			InteractivePlayer* ipl = game().get_ipl();
+			InteractivePlayer* ipl = dynamic_cast<InteractivePlayer*>(parent_);
 			if ((!closest || closest_dist > dist) &&
 			    (!ipl ||
 			     1 < ipl->player().vision(map.get_index(bob->get_position(), map.get_width())))) {

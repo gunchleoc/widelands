@@ -179,10 +179,8 @@ void ShipWindow::init(bool avoid_fastclick) {
 
 void ShipWindow::think() {
 	UI::Window::think();
-	InteractiveBase* ib = ship_.get_owner()->egbase().get_ibase();
 	bool can_act = false;
-	if (upcast(InteractiveGameBase, igb, ib))
-		can_act = igb->can_act(ship_.get_owner()->player_number());
+	can_act = igbase_.can_act(ship_.get_owner()->player_number());
 
 	btn_destination_->set_enabled(ship_.get_destination(igbase_.egbase()));
 	btn_sink_->set_enabled(can_act);

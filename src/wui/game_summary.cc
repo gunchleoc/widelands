@@ -42,6 +42,7 @@
 
 GameSummaryScreen::GameSummaryScreen(InteractiveGameBase* parent, UI::UniqueWindow::Registry* r)
    : UI::UniqueWindow(parent, "game_summary", r, 0, 0, _("Game over")),
+	  parent_(parent),
      game_(parent->game()),
      desired_speed_(game_.game_controller()->desired_speed()) {
 	game_.game_controller()->set_desired_speed(0);
@@ -135,7 +136,7 @@ void GameSummaryScreen::fill_data() {
 	bool local_won = false;
 	Widelands::Player* single_won = nullptr;
 	uint8_t teawon_ = 0;
-	InteractivePlayer* ipl = game_.get_ipl();
+	InteractivePlayer* ipl = dynamic_cast<InteractivePlayer*>(parent_);
 	// This defines a row to be selected, current player,
 	// if not then the first line
 	uint32_t current_player_position = 0;
@@ -216,7 +217,7 @@ void GameSummaryScreen::continue_clicked() {
 }
 
 void GameSummaryScreen::stop_clicked() {
-	game_.get_ibase()->end_modal<UI::Panel::Returncodes>(UI::Panel::Returncodes::kBack);
+	parent_->end_modal<UI::Panel::Returncodes>(UI::Panel::Returncodes::kBack);
 }
 
 void GameSummaryScreen::player_selected(uint32_t entry_index) {
