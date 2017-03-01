@@ -33,11 +33,10 @@
 #include "logic/path.h"
 #include "logic/player.h"
 #include "logic/playersmanager.h"
+#include "profile/profile.h"
 #include "scripting/globals.h"
 #include "scripting/lua_interface.h"
 #include "scripting/lua_map.h"
-#include "wui/interactive_player.h"
-#include "wui/story_message_box.h"
 
 using namespace Widelands;
 using namespace LuaMaps;
