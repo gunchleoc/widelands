@@ -42,7 +42,8 @@ enum class NoteId : uint32_t {
 	NoteExpeditionCanceled,
 	LuaGamePlayerSettings,
 	LuaGameStoryMessage,
-	Scroll
+	Scroll,
+	PlayerMessage
 };
 
 #endif  // end of include guard: WL_NOTIFICATIONS_NOTE_IDS_H

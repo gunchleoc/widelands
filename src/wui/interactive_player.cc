@@ -39,10 +39,9 @@
 #include "logic/map_objects/tribes/productionsite.h"
 #include "logic/map_objects/tribes/soldier.h"
 #include "logic/map_objects/tribes/tribe_descr.h"
-#include "logic/message.h"
 #include "logic/message_queue.h"
-#include "logic/player.h"
 #include "profile/profile.h"
+#include "sound/sound_handler.h"
 #include "ui_basic/unique_window.h"
 #include "wui/building_statistics_menu.h"
 #include "wui/debugconsole.h"
@@ -191,6 +190,16 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
 		[this](const Widelands::NoteScroll& note) {
 		if (note.player == player_number_) {
 			scroll_to_field(note.coords, MapView::Transition::Jump);
+		}
+	});
+
+	player_message_subscriber_ = Notifications::subscribe<Widelands::NotePlayerMessage>(
+		[this](const Widelands::NotePlayerMessage& note) {
+		if (note.player == player_number_) {
+			play_message_sound(note.message.type());
+			if (note.popup) {
+				popup_message(note.id, note.message);
+			}
 		}
 	});
 
@@ -402,5 +411,24 @@ void InteractivePlayer::cmdSwitchPlayer(const std::vector<std::string>& args) {
 
 	if (UI::UniqueWindow* const building_statistics_window = main_windows_.building_stats.window) {
 		dynamic_cast<BuildingStatisticsMenu&>(*building_statistics_window).update();
+	}
+}
+
+/*
+ * Plays the corresponding sound when a message is received and if sound is
+ * enabled.
+ */
+void InteractivePlayer::play_message_sound(const Widelands::Message::Type& msgtype) {
+#define MAYBE_PLAY(type, file)                                                                     \
+	if (msgtype == type) {                                                                          \
+		g_sound_handler.play_fx(file, 200, PRIO_ALWAYS_PLAY);                                        \
+		return;                                                                                      \
+	}
+
+	if (g_options.pull_section("global").get_bool("sound_at_message", true)) {
+		MAYBE_PLAY(Widelands::Message::Type::kEconomySiteOccupied, "military/site_occupied");
+		MAYBE_PLAY(Widelands::Message::Type::kWarfareUnderAttack, "military/under_attack");
+
+		g_sound_handler.play_fx("message", 200, PRIO_ALWAYS_PLAY);
 	}
 }

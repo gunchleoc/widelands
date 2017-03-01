@@ -271,24 +271,6 @@ void Player::update_team_players() {
 	}
 }
 
-/*
- * Plays the corresponding sound when a message is received and if sound is
- * enabled.
- */
-void Player::play_message_sound(const Message::Type& msgtype) {
-#define MAYBE_PLAY(type, file)                                                                     \
-	if (msgtype == type) {                                                                          \
-		g_sound_handler.play_fx(file, 200, PRIO_ALWAYS_PLAY);                                        \
-		return;                                                                                      \
-	}
-
-	if (g_options.pull_section("global").get_bool("sound_at_message", true)) {
-		MAYBE_PLAY(Message::Type::kEconomySiteOccupied, "military/site_occupied");
-		MAYBE_PLAY(Message::Type::kWarfareUnderAttack, "military/under_attack");
-
-		g_sound_handler.play_fx("message", 200, PRIO_ALWAYS_PLAY);
-	}
-}
 
 MessageId Player::add_message(Game& game, Message& message, bool const popup) {
 	MessageId id = messages().add_message(message);
@@ -300,14 +282,7 @@ MessageId Player::add_message(Game& game, Message& message, bool const popup) {
 	}
 
 	// Sound & popup
-	if (InteractivePlayer* const iplayer = game.get_ipl()) {
-		if (&iplayer->player() == this) {
-			play_message_sound(message.type());
-			if (popup)
-				iplayer->popup_message(id, message);
-		}
-	}
-
+	Notifications::publish(Widelands::NotePlayerMessage(player_number(), id, message, popup));
 	return id;
 }
 

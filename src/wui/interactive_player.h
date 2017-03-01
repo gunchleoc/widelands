@@ -25,7 +25,9 @@
 
 #include <SDL_keyboard.h>
 
+#include "logic/message.h"
 #include "logic/message_id.h"
+#include "logic/player.h"
 #include "notifications/notifications.h"
 #include "profile/profile.h"
 #include "scripting/lua_notes.h"
@@ -83,6 +85,7 @@ public:
 
 private:
 	void cmdSwitchPlayer(const std::vector<std::string>& args);
+	void play_message_sound(const Widelands::Message::Type& msgtype);
 
 	Widelands::PlayerNumber player_number_;
 	bool auto_roadbuild_mode_;
@@ -104,6 +107,8 @@ private:
 		lua_story_message_subscriber_;
 	std::unique_ptr<Notifications::Subscriber<Widelands::NoteScroll>>
 		scroll_subscriber_;
+	std::unique_ptr<Notifications::Subscriber<Widelands::NotePlayerMessage>>
+		player_message_subscriber_;
 
 };
 

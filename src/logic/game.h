@@ -38,7 +38,6 @@ namespace UI {
 struct ProgressWindow;
 }
 struct ComputerPlayer;
-class InteractivePlayer;
 struct GameMainMenuLoadGame;
 struct WLApplication;
 struct GameSettings;
@@ -228,9 +227,6 @@ public:
 	void send_player_ship_explore_island(Ship&, IslandExploreDirection);
 	void send_player_sink_ship(Ship&);
 	void send_player_cancel_expedition_ship(Ship&);
-
-	// NOCOM get
-	InteractivePlayer* get_ipl();
 
 	SaveHandler& save_handler() {
 		return savehandler_;

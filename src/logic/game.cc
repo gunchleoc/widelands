@@ -66,7 +66,7 @@
 #include "ui_basic/progresswindow.h"
 #include "wlapplication.h"
 #include "wui/game_tips.h"
-#include "wui/interactive_player.h"
+
 
 namespace Widelands {
 
@@ -145,16 +145,6 @@ void Game::sync_reset() {
  */
 bool Game::get_allow_cheats() {
 	return true;
-}
-
-/**
- * \return a pointer to the \ref InteractivePlayer if any.
- * \note This function may return 0 (in particular, it will return 0 during
- * playback or if player is spectator)
- */
-// NOCOM get - get rid
-InteractivePlayer* Game::get_ipl() {
-	return dynamic_cast<InteractivePlayer*>(get_ibase());
 }
 
 void Game::set_game_controller(GameController* const ctrl) {

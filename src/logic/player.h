@@ -33,6 +33,8 @@
 #include "logic/map_objects/tribes/warehouse.h"
 #include "logic/mapregion.h"
 #include "logic/message_queue.h"
+#include "notifications/note_ids.h"
+#include "notifications/notifications.h"
 #include "logic/widelands.h"
 
 // there are three arrays to be used by AI
@@ -52,6 +54,19 @@ struct Flag;
 class TribeDescr;
 struct Road;
 struct AttackController;
+
+struct NotePlayerMessage {
+	CAN_BE_SENT_AS_NOTE(NoteId::PlayerMessage)
+
+	const Widelands::PlayerNumber player;
+	const MessageId id;
+	const Message message;
+	const bool popup;
+
+	NotePlayerMessage(const Widelands::PlayerNumber init_player, const MessageId init_id, const Message& init_message, bool init_popup)
+		: player(init_player), id(init_id), message(init_message), popup(init_popup) {
+	}
+};
 
 /**
  * Manage in-game aspects of players, such as tribe, team, fog-of-war, statistics,
@@ -604,7 +619,6 @@ private:
 	BuildingStatsVector* get_mutable_building_statistics(const DescriptionIndex& i);
 	void update_building_statistics(Building&, NoteImmovable::Ownership ownership);
 	void update_team_players();
-	void play_message_sound(const Message::Type& msgtype);
 	void enhance_or_dismantle(Building*, DescriptionIndex index_of_new_building);
 
 	// Called when a node becomes seen or has changed.  Discovers the node and
