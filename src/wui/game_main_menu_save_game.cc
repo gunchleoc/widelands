@@ -22,6 +22,7 @@
 #include <boost/format.hpp>
 
 #include "base/i18n.h"
+#include "base/macros.h"
 #include "base/time_string.h"
 #include "game_io/game_loader.h"
 #include "game_io/game_preload_packet.h"
@@ -32,6 +33,7 @@
 #include "logic/game_controller.h"
 #include "logic/playersmanager.h"
 #include "wui/interactive_gamebase.h"
+#include "wui/interactive_player.h"
 
 namespace {
 
@@ -137,7 +139,8 @@ GameMainMenuSaveGame::GameMainMenuSaveGame(InteractiveGameBase& parent,
 void GameMainMenuSaveGame::selected(uint32_t) {
 	const std::string& name = ls_.get_selected();
 
-	Widelands::GameLoader gl(name, igbase().game());
+	upcast(InteractivePlayer, ipl, &igbase());
+	Widelands::GameLoader gl(name, igbase().game(), ipl);
 	Widelands::GamePreloadPacket gpdp;
 	gl.preload_game(gpdp);  //  This has worked before, no problem
 	{ editbox_.set_text(FileSystem::filename_without_ext(name.c_str())); }
@@ -188,7 +191,8 @@ void GameMainMenuSaveGame::fill_list() {
 		char const* const name = pname->c_str();
 
 		try {
-			Widelands::GameLoader gl(name, igbase().game());
+			upcast(InteractivePlayer, ipl, &igbase());
+			Widelands::GameLoader gl(name, igbase().game(), ipl);
 			gl.preload_game(gpdp);
 			ls_.add(FileSystem::filename_without_ext(name), name);
 		} catch (const WException&) {

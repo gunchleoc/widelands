@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+class InteractivePlayer;
+
 namespace Widelands {
 class Game;
 }
@@ -45,7 +47,7 @@ public:
 	}
 	void think(Widelands::Game&);
 	std::string create_file_name(const std::string& dir, const std::string& filename) const;
-	bool save_game(Widelands::Game&, const std::string& filename, std::string* error = nullptr);
+	bool save_game(Widelands::Game&, const std::string& filename, std::string* error = nullptr, InteractivePlayer* ipl = nullptr);
 
 	static std::string get_base_dir() {
 		return "save";

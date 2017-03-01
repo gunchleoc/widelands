@@ -37,6 +37,7 @@
 #include "logic/game_controller.h"
 #include "profile/profile.h"
 #include "wlapplication.h"
+#include "wui/interactive_player.h"
 #include "wui/logmessage.h"
 
 using Widelands::GameSaver;
@@ -196,7 +197,8 @@ std::string SaveHandler::create_file_name(const std::string& dir,
  */
 bool SaveHandler::save_game(Widelands::Game& game,
                             const std::string& complete_filename,
-                            std::string* const error) {
+                            std::string* const error,
+                            InteractivePlayer* ipl) {
 	ScopedTimer save_timer("SaveHandler::save_game() took %ums");
 
 	bool const binary = !g_options.pull_section("global").get_bool("nozip", false);
@@ -212,7 +214,7 @@ bool SaveHandler::save_game(Widelands::Game& game,
 	}
 
 	bool result = true;
-	GameSaver gs(*fs, game);
+	GameSaver gs(*fs, game, ipl);
 	try {
 		gs.save();
 	} catch (const std::exception& e) {

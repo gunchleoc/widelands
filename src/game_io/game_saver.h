@@ -23,6 +23,7 @@
 #include "base/wexception.h"
 
 class FileSystem;
+class InteractivePlayer;
 
 namespace Widelands {
 
@@ -38,13 +39,14 @@ class Game;
  */
 
 struct GameSaver {
-	GameSaver(FileSystem&, Game&);
+	GameSaver(FileSystem&, Game&, InteractivePlayer* ipl);
 
 	void save();
 
 private:
 	FileSystem& fs_;
 	Game& game_;
+	InteractivePlayer* ipl_;
 };
 }
 

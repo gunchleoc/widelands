@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 class FileSystem;
+class InteractivePlayer;
 
 namespace Widelands {
 
@@ -36,7 +37,7 @@ struct GamePreloadPacket;
  * of a game out to a file.
  */
 struct GameLoader {
-	GameLoader(const std::string& path, Game&);
+	GameLoader(const std::string& path, Game&, InteractivePlayer* ipl);
 	~GameLoader();
 
 	int32_t preload_game(GamePreloadPacket&);
@@ -45,6 +46,7 @@ struct GameLoader {
 private:
 	FileSystem& fs_;
 	Game& game_;
+	InteractivePlayer* ipl_;
 };
 }
 

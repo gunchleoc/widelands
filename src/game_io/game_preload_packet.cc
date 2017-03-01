@@ -84,8 +84,6 @@ void GamePreloadPacket::write(FileSystem& fs, Game& game, MapObjectSaver* const)
 	Profile prof;
 	Section& s = prof.create_section("global");
 
-	InteractivePlayer const* const ipl = game.get_ipl();
-
 	s.set_int("packet_version", kCurrentPacketVersion);
 
 	//  save some kind of header.
@@ -93,9 +91,9 @@ void GamePreloadPacket::write(FileSystem& fs, Game& game, MapObjectSaver* const)
 	const Map& map = game.map();
 	s.set_string("mapname", map.get_name());  // Name of map
 
-	if (ipl) {
+	if (ipl_) {
 		// player that saved the game.
-		s.set_int("player_nr", ipl->player_number());
+		s.set_int("player_nr", ipl_->player_number());
 	} else {
 		// Pretend that the first player saved the game
 		for (Widelands::PlayerNumber p = 1; p <= map.get_nrplayers(); ++p) {
@@ -124,9 +122,9 @@ void GamePreloadPacket::write(FileSystem& fs, Game& game, MapObjectSaver* const)
 		const MiniMapLayer layers =
 		   MiniMapLayer::Owner | MiniMapLayer::Building | MiniMapLayer::Terrain;
 		std::unique_ptr<Texture> texture;
-		if (ipl != nullptr) {  // Player
+		if (ipl_ != nullptr) {  // Player
 			texture = draw_minimap(
-			   game, &ipl->player(), ipl->view_area().rect(), MiniMapType::kStaticViewWindow, layers);
+				game, &ipl_->player(), ipl_->view_area().rect(), MiniMapType::kStaticViewWindow, layers);
 		} else {  // Observer
 			texture = draw_minimap(game, nullptr, Rectf(), MiniMapType::kStaticMap, layers);
 		}

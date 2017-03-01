@@ -196,7 +196,7 @@ void NetClient::run() {
 		d->lasttimestamp = game.get_gametime();
 		d->lasttimestamp_realtime = SDL_GetTicks();
 
-		d->modal = game.get_ibase();
+		d->modal = igb;
 		game.run(loader_ui, d->settings.savegame ? Widelands::Game::Loaded : d->settings.scenario ?
 		                                           Widelands::Game::NewMPScenario :
 		                                           Widelands::Game::NewNonScenario,
@@ -705,7 +705,7 @@ void NetClient::handle_packet(RecvPacket& packet) {
 				// Saved game check - does Widelands recognize the file as saved game?
 				Widelands::Game game;
 				try {
-					Widelands::GameLoader gl(file_->filename, game);
+					Widelands::GameLoader gl(file_->filename, game, nullptr);
 				} catch (...) {
 					invalid = true;
 				}

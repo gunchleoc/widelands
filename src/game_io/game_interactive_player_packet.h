@@ -22,6 +22,8 @@
 
 #include "game_io/game_data_packet.h"
 
+class InteractivePlayer;
+
 namespace Widelands {
 
 /*
@@ -31,6 +33,13 @@ namespace Widelands {
 struct GameInteractivePlayerPacket : public GameDataPacket {
 	void read(FileSystem&, Game&, MapObjectLoader* = nullptr) override;
 	void write(FileSystem&, Game&, MapObjectSaver* = nullptr) override;
+
+	/// The Interactive Player that is being saved or loaded.
+	void set_interactive_player(InteractivePlayer* ipl) {
+		ipl_ = ipl;
+	}
+private:
+	InteractivePlayer* ipl_;
 };
 }
 

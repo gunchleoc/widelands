@@ -542,7 +542,7 @@ void FullscreenMenuLoadGame::fill_table() {
 		gamedata.filename = gamefilename;
 
 		try {
-			Widelands::GameLoader gl(savename.c_str(), game_);
+			Widelands::GameLoader gl(savename.c_str(), game_, nullptr);
 			gl.preload_game(gpdp);
 
 			gamedata.gametype = gpdp.get_gametype();

@@ -39,8 +39,8 @@
 
 namespace Widelands {
 
-GameLoader::GameLoader(const std::string& path, Game& game)
-   : fs_(*g_fs->make_sub_file_system(path)), game_(game) {
+GameLoader::GameLoader(const std::string& path, Game& game, InteractivePlayer* ipl)
+	: fs_(*g_fs->make_sub_file_system(path)), game_(game), ipl_(ipl) {
 }
 
 GameLoader::~GameLoader() {
@@ -144,6 +144,7 @@ int32_t GameLoader::load_game(bool const multiplayer) {
 		log("Game: Reading Interactive Player Data ... ");
 		{
 			GameInteractivePlayerPacket p;
+			p.set_interactive_player(ipl_);
 			p.read(fs_, game_, mol);
 		}
 		log("took %ums\n", timer.ms_since_last_query());

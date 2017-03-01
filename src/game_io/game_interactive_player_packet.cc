@@ -90,8 +90,9 @@ void GameInteractivePlayerPacket::read(FileSystem& fs, Game& game, MapObjectLoad
 				uint32_t const realdf = (olddf & ~loaded_df) | (display_flags & loaded_df);
 				ibase->set_display_flags(realdf);
 			}
-			if (InteractivePlayer* const ipl = game.get_ipl()) {
-				ipl->set_player_number(player_number);
+
+			if (ipl_) {
+				ipl_->set_player_number(player_number);
 			}
 
 			// Map landmarks
@@ -124,19 +125,17 @@ void GameInteractivePlayerPacket::read(FileSystem& fs, Game& game, MapObjectLoad
 /*
  * Write Function
  */
-void GameInteractivePlayerPacket::write(FileSystem& fs, Game& game, MapObjectSaver* const) {
+void GameInteractivePlayerPacket::write(FileSystem& fs, Game&, MapObjectSaver* const) {
 	FileWrite fw;
 
 	fw.unsigned_16(kCurrentPacketVersion);
 
-	InteractiveBase* const ibase = game.get_ibase();
-	InteractivePlayer* const iplayer = game.get_ipl();
-
 	// Player number
-	fw.unsigned_8(iplayer ? iplayer->player_number() : 1);
+	fw.unsigned_8(ipl_ ? ipl_->player_number() : 1);
 
-	if (ibase != nullptr) {
-		Vector2f center = ibase->view_area().rect().center();
+	// View area
+	if (ipl_ != nullptr) {
+		Vector2f center = ipl_->view_area().rect().center();
 		fw.float_32(center.x);
 		fw.float_32(center.y);
 	} else {
@@ -145,16 +144,20 @@ void GameInteractivePlayerPacket::write(FileSystem& fs, Game& game, MapObjectSav
 	}
 
 	// Display flags
-	fw.unsigned_32(ibase ? ibase->get_display_flags() : 0);
+	fw.unsigned_32(ipl_ ? ipl_->get_display_flags() : 0);
 
 	// Map landmarks
-	const std::vector<QuickNavigation::Landmark>& landmarks = ibase->landmarks();
-	fw.unsigned_8(landmarks.size());
-	for (const QuickNavigation::Landmark& landmark : landmarks) {
-		fw.unsigned_8(landmark.set ? 1 : 0);
-		fw.float_32(landmark.view.viewpoint.x);
-		fw.float_32(landmark.view.viewpoint.y);
-		fw.float_32(landmark.view.zoom);
+	if (ipl_ != nullptr) {
+		const std::vector<QuickNavigation::Landmark>& landmarks = ipl_->landmarks();
+		fw.unsigned_8(landmarks.size());
+		for (const QuickNavigation::Landmark& landmark : landmarks) {
+			fw.unsigned_8(landmark.set ? 1 : 0);
+			fw.float_32(landmark.view.viewpoint.x);
+			fw.float_32(landmark.view.viewpoint.y);
+			fw.float_32(landmark.view.zoom);
+		}
+	} else {
+		fw.unsigned_8(0);
 	}
 
 	fw.write(fs, "binary/interactive_player");

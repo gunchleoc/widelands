@@ -708,7 +708,7 @@ void NetHost::run() {
 
 		if (d->settings.savegame) {
 			// Read and broadcast original win condition
-			Widelands::GameLoader gl(d->settings.mapfilename, game);
+			Widelands::GameLoader gl(d->settings.mapfilename, game, nullptr);
 			Widelands::GamePreloadPacket gpdp;
 			gl.preload_game(gpdp);
 

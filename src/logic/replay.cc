@@ -80,7 +80,7 @@ ReplayReader::ReplayReader(Game& game, const std::string& filename) {
 	replaytime_ = 0;
 
 	{
-		GameLoader gl(filename + WLGF_SUFFIX, game);
+		GameLoader gl(filename + WLGF_SUFFIX, game, nullptr);
 		gl.load_game();
 	}
 
@@ -221,7 +221,7 @@ ReplayWriter::ReplayWriter(Game& game, const std::string& filename)
 	log("Reloading the game from replay\n");
 	game.cleanup_for_load();
 	{
-		GameLoader gl(filename_ + WLGF_SUFFIX, game);
+		GameLoader gl(filename_ + WLGF_SUFFIX, game, nullptr);
 		gl.load_game();
 	}
 	game.postload();

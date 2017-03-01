@@ -213,7 +213,6 @@ bool Game::run_splayer_scenario_direct(const std::string& mapname,
 	}
 	win_condition_displayname_ = "Scenario";
 
-	// NOCOM set
 	set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), 1, false));
 
 	loader_ui.step(_("Loading map…"));
@@ -318,7 +317,8 @@ void Game::init_savegame(UI::ProgressWindow* loader_ui, const GameSettings& sett
 	assert(!get_map());
 	set_map(new Map);
 	try {
-		GameLoader gl(settings.mapfilename, *this);
+		upcast(InteractivePlayer, ipl, get_ibase());
+		GameLoader gl(settings.mapfilename, *this, ipl);
 		Widelands::GamePreloadPacket gpdp;
 		gl.preload_game(gpdp);
 		win_condition_displayname_ = gpdp.get_win_condition();
@@ -349,7 +349,8 @@ bool Game::run_load_game(const std::string& filename, const std::string& script_
 	set_map(new Map);
 
 	{
-		GameLoader gl(filename, *this);
+		upcast(InteractivePlayer, ipl, get_ibase());
+		GameLoader gl(filename, *this, ipl);
 
 		Widelands::GamePreloadPacket gpdp;
 		gl.preload_game(gpdp);
@@ -361,7 +362,7 @@ bool Game::run_load_game(const std::string& filename, const std::string& script_
 		}
 		loader_ui.set_background(background);
 		player_nr = gpdp.get_player_nr();
-		// NOCOM set
+
 		set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), player_nr, false));
 
 		loader_ui.step(_("Loading…"));
@@ -393,7 +394,6 @@ bool Game::run_load_game(const std::string& filename, const std::string& script_
  */
 void Game::postload() {
 	EditorGameBase::postload();
-	// NOCOM get - turn this the other way around
 	get_ibase()->postload();
 }
 
@@ -517,7 +517,6 @@ bool Game::run(UI::ProgressWindow* loader_ui,
 
 	state_ = gs_running;
 
-	// NOCOM get -> run
 	get_ibase()->run<UI::Panel::Returncodes>();
 
 	state_ = gs_ending;

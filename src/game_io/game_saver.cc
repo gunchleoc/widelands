@@ -34,7 +34,7 @@
 
 namespace Widelands {
 
-GameSaver::GameSaver(FileSystem& fs, Game& game) : fs_(fs), game_(game) {
+GameSaver::GameSaver(FileSystem& fs, Game& game, InteractivePlayer* ipl) : fs_(fs), game_(game), ipl_(ipl) {
 }
 
 /*
@@ -48,6 +48,7 @@ void GameSaver::save() {
 	log("Game: Writing Preload Data ... ");
 	{
 		GamePreloadPacket p;
+		p.set_interactive_player(ipl_);
 		p.write(fs_, game_, nullptr);
 	}
 	log("took %ums\n", timer.ms_since_last_query());
@@ -97,6 +98,7 @@ void GameSaver::save() {
 	log("Game: Writing Interactive Player Data ... ");
 	{
 		GameInteractivePlayerPacket p;
+		p.set_interactive_player(ipl_);
 		p.write(fs_, game_, mos);
 	}
 	log("took %ums\n", timer.ms_since_last_query());

@@ -25,8 +25,9 @@
 #include <string>
 
 #include "game_io/game_data_packet.h"
-
 #include "logic/game_controller.h"
+
+class InteractivePlayer;
 
 namespace Widelands {
 
@@ -73,6 +74,12 @@ struct GamePreloadPacket : public GameDataPacket {
 		return gametype_;
 	}
 
+	/// The Interactive Player that saved the game. Can be nullptr.
+	/// Needed for writing player number and minimap.
+	void set_interactive_player(InteractivePlayer* ipl) {
+		ipl_ = ipl;
+	}
+
 private:
 	std::string minimap_path_;
 	std::string mapname_;
@@ -84,6 +91,7 @@ private:
 	std::string version_;
 	time_t savetimestamp_;
 	GameController::GameType gametype_;
+	InteractivePlayer* ipl_;
 };
 }
 
