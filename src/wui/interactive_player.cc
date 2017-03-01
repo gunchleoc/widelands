@@ -19,6 +19,8 @@
 
 #include "wui/interactive_player.h"
 
+#include <memory>
+
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/bind.hpp>

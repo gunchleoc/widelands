@@ -20,6 +20,8 @@
 #ifndef WL_WUI_INTERACTIVE_SPECTATOR_H
 #define WL_WUI_INTERACTIVE_SPECTATOR_H
 
+#include <memory>
+
 #include <SDL_keyboard.h>
 
 #include "logic/replay_game_controller.h"
