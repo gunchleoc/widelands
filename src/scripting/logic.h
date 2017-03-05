@@ -22,21 +22,23 @@
 
 #include <memory>
 
-#include "logic/editor_game_base.h"
 #include "scripting/lua_coroutine.h"
 #include "scripting/lua_interface.h"
 
 class EditorFactory;
-class EditorInteractive;
 class GameFactory;
 class InteractiveBase;
+namespace Widelands {
+class MapObjectLoader;
+class MapObjectSaver;
+}
 
 class LuaEditorInterface : public LuaInterface {
 public:
 	LuaEditorInterface();
 	virtual ~LuaEditorInterface();
 
-	void init(Widelands::EditorGameBase* g, EditorInteractive* eia);
+	void init(InteractiveBase* eia);
 
 	std::unique_ptr<LuaTable> run_script(const std::string& script) override;
 
@@ -49,7 +51,7 @@ public:
 	LuaGameInterface();
 	virtual ~LuaGameInterface();
 
-	void init(Widelands::Game* g, InteractiveGameBase* igbase);
+	void init(InteractiveBase* igbase);
 
 	// Returns a given hook if one is defined, otherwise returns 0
 	std::unique_ptr<LuaTable> get_hook(const std::string& name);

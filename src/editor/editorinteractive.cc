@@ -573,7 +573,7 @@ void EditorInteractive::run_editor(const std::string& filename, const std::strin
 	LuaEditorInterface* lua = new LuaEditorInterface();
 	Widelands::EditorGameBase egbase(lua);
 	EditorInteractive& eia = *new EditorInteractive(egbase);
-	lua->init(&egbase, &eia); // NOCOM EditorInteractive should own lua
+	lua->init(&eia); // NOCOM EditorInteractive should own lua
 	egbase.set_ibase(&eia);  // TODO(unknown): get rid of this
 	{
 		UI::ProgressWindow loader_ui("images/loadscreens/editor.jpg");

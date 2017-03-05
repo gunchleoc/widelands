@@ -25,6 +25,8 @@
 
 #include "editor/editorinteractive.h"
 #include "io/filesystem/layered_filesystem.h"
+#include "map_io/map_object_loader.h"
+#include "map_io/map_object_saver.h"
 #include "scripting/factory.h"
 #include "scripting/globals.h"
 #include "scripting/lua_bases.h"
@@ -44,14 +46,14 @@ namespace {
 
 // Setup the basic Widelands functions and pushes egbase into the Lua registry
 // so that it is available for all the other Lua functions.
-void setup_for_editor_and_game(lua_State* L, Widelands::EditorGameBase* g, InteractiveBase* ibase) {
+void setup_for_editor_and_game(lua_State* L, InteractiveBase* ibase) {
 	// NOCOM use ibase for the ui
 	LuaBases::luaopen_wlbases(L);
 	LuaMaps::luaopen_wlmap(L);
 	LuaUi::luaopen_wlui(L);
 
 	// Push the editor game base
-	lua_pushlightuserdata(L, static_cast<void*>(g));
+	lua_pushlightuserdata(L, static_cast<void*>(&ibase->egbase()));
 	lua_setfield(L, LUA_REGISTRYINDEX, "egbase");
 
 	// Push the UI
@@ -74,8 +76,8 @@ LuaEditorInterface::LuaEditorInterface()
 
 }
 
-void LuaEditorInterface::init(Widelands::EditorGameBase* g, EditorInteractive* eia) {
-	setup_for_editor_and_game(lua_state_, g, eia);
+void LuaEditorInterface::init(InteractiveBase* eia) {
+	setup_for_editor_and_game(lua_state_, eia);
 	LuaRoot::luaopen_wlroot(lua_state_, true);
 	LuaEditor::luaopen_wleditor(lua_state_);
 
@@ -135,8 +137,8 @@ static int L_math_random(lua_State* L) {
 LuaGameInterface::LuaGameInterface() : factory_(new GameFactory()) {
 }
 
-void LuaGameInterface::init(Widelands::Game* g, InteractiveGameBase* igbase) {
-	setup_for_editor_and_game(lua_state_, g, igbase);
+void LuaGameInterface::init(InteractiveBase* igbase) {
+	setup_for_editor_and_game(lua_state_, igbase);
 
 	// Overwrite math.random
 	lua_getglobal(lua_state_, "math");
@@ -148,7 +150,7 @@ void LuaGameInterface::init(Widelands::Game* g, InteractiveGameBase* igbase) {
 	LuaGame::luaopen_wlgame(lua_state_);
 
 	// Push the game into the registry
-	lua_pushlightuserdata(lua_state_, static_cast<void*>(g));
+	lua_pushlightuserdata(lua_state_, static_cast<void*>(&igbase->egbase()));
 	lua_setfield(lua_state_, LUA_REGISTRYINDEX, "game");
 
 	// Push the factory class into the registry
