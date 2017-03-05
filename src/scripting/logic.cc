@@ -47,7 +47,7 @@ namespace {
 // Setup the basic Widelands functions and pushes egbase into the Lua registry
 // so that it is available for all the other Lua functions.
 void setup_for_editor_and_game(lua_State* L, InteractiveBase* ibase) {
-	// NOCOM use ibase for the ui
+
 	LuaBases::luaopen_wlbases(L);
 	LuaMaps::luaopen_wlmap(L);
 	LuaUi::luaopen_wlui(L);
