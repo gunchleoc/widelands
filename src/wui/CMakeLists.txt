@@ -103,30 +103,6 @@ wl_library(wui_logmessage
     notifications
 )
 
-wl_library(wui_gamesetup
-  SRCS
-    login_box.cc
-    login_box.h
-    multiplayersetupgroup.cc
-    multiplayersetupgroup.h
-    playerdescrgroup.cc
-    playerdescrgroup.h
-  DEPENDS
-    ai
-    base_exceptions
-    base_i18n
-    base_log
-    graphic
-    graphic_playercolor
-    graphic_text
-    graphic_text_layout
-    logic
-    logic_game_settings
-    network
-    profile
-    ui_basic
-)
-
 wl_library(wui_quicknavigation
   SRCS
     quicknavigation.cc

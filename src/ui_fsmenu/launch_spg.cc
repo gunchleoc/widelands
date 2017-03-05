@@ -40,7 +40,7 @@
 #include "scripting/lua_table.h"
 #include "ui_fsmenu/loadgame.h"
 #include "ui_fsmenu/mapselect.h"
-#include "wui/playerdescrgroup.h"
+#include "ui_fsmenu/playerdescrgroup.h"
 
 FullscreenMenuLaunchSPG::FullscreenMenuLaunchSPG(GameSettingsProvider* const settings,
                                                  GameController* const ctrl,

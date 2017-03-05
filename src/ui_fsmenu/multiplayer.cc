@@ -24,7 +24,7 @@
 #include "network/internet_gaming.h"
 #include "profile/profile.h"
 #include "ui_basic/messagebox.h"
-#include "wui/login_box.h"
+#include "ui_fsmenu/login_box.h"
 
 FullscreenMenuMultiPlayer::FullscreenMenuMultiPlayer()
    : FullscreenMenuMainMenu(),

@@ -17,7 +17,7 @@
  *
  */
 
-#include "wui/playerdescrgroup.h"
+#include "ui_fsmenu/playerdescrgroup.h"
 
 #include <string>
 

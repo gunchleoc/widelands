@@ -17,7 +17,7 @@
  *
  */
 
-#include "wui/login_box.h"
+#include "ui_fsmenu/login_box.h"
 
 #include "base/i18n.h"
 #include "graphic/font_handler1.h"

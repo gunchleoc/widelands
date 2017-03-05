@@ -17,7 +17,7 @@
  *
  */
 
-#include "wui/multiplayersetupgroup.h"
+#include "ui_fsmenu/multiplayersetupgroup.h"
 
 #include <string>
 

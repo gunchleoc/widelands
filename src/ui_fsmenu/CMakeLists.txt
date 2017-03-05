@@ -20,6 +20,8 @@ wl_library(ui_fsmenu
     loadgame.h
     load_map_or_game.cc
     load_map_or_game.h
+    login_box.cc
+    login_box.h
     main.cc
     main.h
     main_menu.cc
@@ -28,13 +30,18 @@ wl_library(ui_fsmenu
     mapselect.h
     multiplayer.cc
     multiplayer.h
+    multiplayersetupgroup.cc
+    multiplayersetupgroup.h
     netsetup_lan.cc
     netsetup_lan.h
     options.cc
     options.h
+    playerdescrgroup.cc
+    playerdescrgroup.h
     singleplayer.cc
     singleplayer.h
   DEPENDS
+    ai
     base_exceptions
     base_i18n
     base_log
@@ -65,5 +72,4 @@ wl_library(ui_fsmenu
     widelands_ball_of_mud
     wui_chat_ui
     wui_common
-    wui_gamesetup
 )
