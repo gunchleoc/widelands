@@ -31,8 +31,6 @@
 
 struct ChatProvider;
 
-enum PlayerType { NONE, OBSERVER, PLAYING, VICTORIOUS, DEFEATED };
-
 class InteractiveGameBase : public InteractiveBase {
 public:
 	struct GameMainMenuWindows {
@@ -52,7 +50,7 @@ public:
 
 	InteractiveGameBase(Widelands::Game&,
 	                    Section& global_s,
-	                    PlayerType pt = NONE,
+	                    Widelands::PlayerNumber,
 	                    bool multiplayer = false);
 	Widelands::Game* get_game() const;
 	Widelands::Game& game() const;
@@ -66,12 +64,6 @@ public:
 	virtual Widelands::PlayerNumber player_number() const = 0;
 
 	virtual void node_action() = 0;
-	const PlayerType& get_playertype() const {
-		return playertype_;
-	}
-	void set_playertype(const PlayerType& pt) {
-		playertype_ = pt;
-	}
 
 	void add_wanted_building_window(const Widelands::Coords& coords,
 	                                const Vector2i point,
@@ -94,7 +86,6 @@ protected:
 	GameMainMenuWindows main_windows_;
 	ChatProvider* chat_provider_;
 	bool multiplayer_;
-	PlayerType playertype_;
 	UI::UniqueWindow::Registry fieldaction_;
 	UI::UniqueWindow::Registry game_summary_;
 	UI::Button* toggle_buildhelp_;

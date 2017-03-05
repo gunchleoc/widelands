@@ -123,5 +123,6 @@ wl_library(scripting_logic
     third_party_eris
     ui_basic
     wui
+    wui_interactive_base
     wui_mapview_pixelfunctions
 )

@@ -42,7 +42,7 @@
 InteractiveSpectator::InteractiveSpectator(Widelands::Game& g,
                                            Section& global_s,
                                            bool const multiplayer)
-   : InteractiveGameBase(g, global_s, OBSERVER, multiplayer) {
+	: InteractiveGameBase(g, global_s, 0, multiplayer) {
 	if (is_multiplayer()) {
 		add_toolbar_button(
 		   "wui/menus/menu_options_menu", "options_menu", _("Main Menu"), &options_, true);

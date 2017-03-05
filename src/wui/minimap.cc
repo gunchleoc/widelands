@@ -27,7 +27,7 @@
 #include "graphic/rendertarget.h"
 #include "graphic/texture.h"
 #include "logic/map.h"
-#include "wui/interactive_player.h"
+#include "wui/interactive_base.h"
 #include "wui/mapviewpixelconstants.h"
 
 MiniMap::View::View(UI::Panel& parent,

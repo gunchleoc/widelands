@@ -56,14 +56,11 @@ std::string speed_string(int const speed) {
 
 InteractiveGameBase::InteractiveGameBase(Widelands::Game& g,
                                          Section& global_s,
-                                         PlayerType pt,
+                                         Widelands::PlayerNumber pn,
                                          bool const multiplayer)
-   : InteractiveBase(g, global_s),
-     chat_provider_(nullptr),
-     multiplayer_(multiplayer),
-     playertype_(pt) {
+   : InteractiveBase(g, global_s, pn), chat_provider_(nullptr), multiplayer_(multiplayer) {
 	upcast(LuaGameInterface, lua, &g.lua());
-	lua->init(this); // NOCOM own the Lua interface.
+	lua->init(this);
 
 	buildingnotes_subscriber_ = Notifications::subscribe<Widelands::NoteBuilding>(
 	   [this](const Widelands::NoteBuilding& note) {

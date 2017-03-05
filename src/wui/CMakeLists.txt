@@ -127,7 +127,7 @@ wl_library(wui_mapview
     logic_widelands_geometry
     ui_basic
     widelands_ball_of_mud
-    wui
+    wui_interactive_base
     wui_mapview_pixelfunctions
 )
 
@@ -153,6 +153,46 @@ wl_library(wui_unique_window_handler
     ui_basic
 )
 
+wl_library(wui_interactive_base
+  SRCS
+    debugconsole.cc
+    debugconsole.h
+    game_debug_ui.cc
+    game_debug_ui.h
+    interactive_base.cc
+    interactive_base.h
+    minimap.cc
+    minimap.h
+  DEPENDS
+    base_i18n
+    base_log
+    base_macros
+    base_time_string
+    chat
+    economy
+    graphic
+    graphic_minimap_renderer
+    graphic_surface
+    graphic_text_layout
+    logic
+    logic_game_controller
+    logic_widelands_geometry
+    note_sound
+    notifications
+    profile
+    scripting_lua_interface
+    sound
+    ui_basic
+    wui_chat_ui
+    wui_edge_overlay_manager
+    wui_field_overlay_manager
+    wui_logmessage
+    wui_mapview
+    wui_mapview_pixelfunctions
+    wui_quicknavigation
+    wui_unique_window_handler
+)
+
 wl_library(wui
   SRCS
     actionconfirm.cc
@@ -165,16 +205,12 @@ wl_library(wui
     buildingwindow.h
     constructionsitewindow.cc
     constructionsitewindow.h
-    debugconsole.cc
-    debugconsole.h
     dismantlesitewindow.cc
     dismantlesitewindow.h
     encyclopedia_window.cc
     encyclopedia_window.h
     fieldaction.cc
     fieldaction.h
-    game_debug_ui.cc
-    game_debug_ui.h
     game_main_menu_save_game.cc
     game_main_menu_save_game.h
     game_message_menu.cc
@@ -197,8 +233,6 @@ wl_library(wui
     helpwindow.h
     inputqueuedisplay.cc
     inputqueuedisplay.h
-    interactive_base.cc
-    interactive_base.h
     interactive_gamebase.cc
     interactive_gamebase.h
     interactive_player.cc
@@ -209,8 +243,6 @@ wl_library(wui
     itemwaresdisplay.h
     militarysitewindow.cc
     militarysitewindow.h
-    minimap.cc
-    minimap.h
     plot_area.cc
     plot_area.h
     portdockwaresdisplay.cc
@@ -251,7 +283,6 @@ wl_library(wui
     game_io
     graphic
     graphic_color
-    graphic_minimap_renderer
     graphic_playercolor
     graphic_surface
     graphic_text
@@ -262,7 +293,6 @@ wl_library(wui
     logic_constants
     logic_game_controller
     logic_widelands_geometry
-    note_sound
     notifications
     profile
     scripting_coroutine
@@ -273,12 +303,10 @@ wl_library(wui
     widelands_ball_of_mud
     wui_chat_ui
     wui_economy_options
-    wui_edge_overlay_manager
     wui_field_overlay_manager
-    wui_logmessage
+    wui_interactive_base
     wui_mapview
     wui_mapview_pixelfunctions
-    wui_quicknavigation
     wui_unique_window_handler
     wui_waresdisplay
 )

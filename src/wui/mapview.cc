@@ -31,7 +31,6 @@
 #include "logic/player.h"
 #include "wlapplication.h"
 #include "wui/interactive_base.h"
-#include "wui/interactive_player.h"
 #include "wui/mapviewpixelfunctions.h"
 
 namespace {
@@ -294,9 +293,15 @@ bool MapView::ViewArea::contains_map_pixel(const Vector2f& map_pixel) const {
 	return std::abs(dist.x) <= (rect_.w / 2.f) && std::abs(dist.y) <= (rect_.h / 2.f);
 }
 
-MapView::MapView(
-   UI::Panel* parent, int32_t x, int32_t y, uint32_t w, uint32_t h, InteractiveBase& player)
+MapView::MapView(UI::Panel* parent,
+                 int32_t x,
+                 int32_t y,
+                 uint32_t w,
+                 uint32_t h,
+                 InteractiveBase& player,
+                 Widelands::PlayerNumber pn)
    : UI::Panel(parent, x, y, w, h),
+     player_number_(pn),
      renderer_(new GameRenderer()),
      intbase_(player),
      view_{Vector2f(0.f, 0.f), 1.f},
@@ -400,9 +405,9 @@ void MapView::draw(RenderTarget& dst) {
 		draw_text = draw_text | TextToDraw::kStatistics;
 	}
 
-	if (upcast(InteractivePlayer const, interactive_player, &intbase())) {
+	if (player_number_ > 0) {
 		renderer_->rendermap(
-		   egbase, view_.viewpoint, view_.zoom, interactive_player->player(), draw_text, &dst);
+		   egbase, view_.viewpoint, view_.zoom, egbase.player(player_number_), draw_text, &dst);
 	} else {
 		renderer_->rendermap(
 		   egbase, view_.viewpoint, view_.zoom, static_cast<TextToDraw>(draw_text), &dst);

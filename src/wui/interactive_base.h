@@ -29,11 +29,11 @@
 #include "logic/map.h"
 #include "notifications/notifications.h"
 #include "profile/profile.h"
+#include "sound/note_sound.h"
+#include "sound/sound_handler.h"
 #include "ui_basic/box.h"
 #include "ui_basic/textarea.h"
 #include "ui_basic/unique_window.h"
-#include "sound/note_sound.h"
-#include "sound/sound_handler.h"
 #include "wui/chatoverlay.h"
 #include "wui/debugconsole.h"
 #include "wui/edge_overlay_manager.h"
@@ -67,7 +67,7 @@ public:
 	// Manages all UniqueWindows.
 	UniqueWindowHandler& unique_windows();
 
-	InteractiveBase(Widelands::EditorGameBase&, Section& global_s);
+	InteractiveBase(Widelands::EditorGameBase&, Section& global_s, Widelands::PlayerNumber pn = 0);
 	virtual ~InteractiveBase();
 
 	Widelands::EditorGameBase& egbase() const {

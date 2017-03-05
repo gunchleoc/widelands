@@ -8,7 +8,7 @@ wl_library(game_io
     game_interactive_player_packet.cc
     game_interactive_player_packet.h
     game_player_ai_persistent_packet.cc
-    game_player_ai_persistent_packet.h    
+    game_player_ai_persistent_packet.h
     game_loader.cc
     game_loader.h
     game_map_packet.cc
@@ -42,6 +42,7 @@ wl_library(game_io
     scripting_lua_interface
     scripting_lua_table
     wui
+    wui_interactive_base
     wui_mapview_pixelfunctions
     wui_mapview
 )

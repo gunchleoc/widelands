@@ -47,7 +47,6 @@
 #include "scripting/lua_interface.h"
 #include "wui/game_chat_menu.h"
 #include "wui/game_debug_ui.h"
-#include "wui/interactive_player.h"
 #include "wui/logmessage.h"
 #include "wui/mapviewpixelconstants.h"
 #include "wui/mapviewpixelfunctions.h"
@@ -71,8 +70,10 @@ struct InteractiveBaseInternals {
 	}
 };
 
-InteractiveBase::InteractiveBase(EditorGameBase& the_egbase, Section& global_s)
-   : MapView(nullptr, 0, 0, g_gr->get_xres(), g_gr->get_yres(), *this),
+InteractiveBase::InteractiveBase(EditorGameBase& the_egbase,
+                                 Section& global_s,
+                                 Widelands::PlayerNumber pn)
+   : MapView(nullptr, 0, 0, g_gr->get_xres(), g_gr->get_yres(), *this, pn),
      // Initialize chatoveraly before the toolbar so it is below
      show_workarea_preview_(global_s.get_bool("workareapreview", true)),
      chat_overlay_(new ChatOverlay(this, 10, 25, get_w() / 2, get_h() - 25)),
@@ -173,19 +174,6 @@ void InteractiveBase::set_sel_pos(Widelands::NodeAndTriangle<> const center) {
 			field_overlay_manager_->register_overlay(
 			   mr.location(), sel_.pic, 7, Vector2i::invalid(), jobid);
 		while (mr.advance(map));
-		if (upcast(InteractiveGameBase const, igbase, this))
-			if (upcast(Widelands::ProductionSite, productionsite, map[center.node].get_immovable())) {
-				if (upcast(InteractivePlayer const, iplayer, igbase)) {
-					const Widelands::Player& player = iplayer->player();
-					if (!player.see_all() &&
-					    (1 >= player.vision(Widelands::Map::get_index(center.node, map.get_width())) ||
-					     player.is_hostile(*productionsite->get_owner())))
-						return set_tooltip("");
-				}
-				set_tooltip(
-				   productionsite->info_string(Widelands::Building::InfoStringFormat::kTooltip));
-				return;
-			}
 	}
 	set_tooltip("");
 }

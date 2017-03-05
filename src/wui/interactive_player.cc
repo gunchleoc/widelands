@@ -62,7 +62,7 @@ InteractivePlayer::InteractivePlayer(Widelands::Game& g,
                                      Section& global_s,
                                      Widelands::PlayerNumber const plyn,
                                      bool const multiplayer)
-   : InteractiveGameBase(g, global_s, NONE, multiplayer),
+	: InteractiveGameBase(g, global_s, plyn, multiplayer),
      auto_roadbuild_mode_(global_s.get_bool("auto_roadbuild_mode", true)),
      flag_to_connect_(Widelands::Coords::null()) {
 	add_toolbar_button(
@@ -187,6 +187,24 @@ Widelands::PlayerNumber InteractivePlayer::player_number() const {
 int32_t InteractivePlayer::calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords>& c) {
 	assert(get_player());
 	return get_player()->get_buildcaps(c);
+}
+
+void InteractivePlayer::set_sel_pos(Widelands::NodeAndTriangle<> const center) {
+	InteractiveBase::set_sel_pos(center);
+	const Map& map = egbase().map();
+	if (!get_sel_triangles()) {
+		if (upcast(Widelands::ProductionSite, productionsite, map[center.node].get_immovable())) {
+				const Widelands::Player& pl = player();
+				if (!pl.see_all() &&
+					 (1 >= pl.vision(Widelands::Map::get_index(center.node, map.get_width())) ||
+					  pl.is_hostile(*productionsite->get_owner()))) {
+					return set_tooltip("");
+			}
+			set_tooltip(
+				productionsite->info_string(Widelands::Building::InfoStringFormat::kTooltip));
+			return;
+		}
+	}
 }
 
 /// Player has clicked on the given node; bring up the context menu.

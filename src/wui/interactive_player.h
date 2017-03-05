@@ -77,11 +77,11 @@ public:
 
 	void popup_message(Widelands::MessageId, const Widelands::Message&);
 	int32_t calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords>& c) override;
+	void set_sel_pos(Widelands::NodeAndTriangle<>) override;
 
 private:
 	void cmdSwitchPlayer(const std::vector<std::string>& args);
 
-	Widelands::PlayerNumber player_number_;
 	bool auto_roadbuild_mode_;
 	Widelands::Coords flag_to_connect_;
 

@@ -96,7 +96,8 @@ public:
 	        const int32_t y,
 	        const uint32_t w,
 	        const uint32_t h,
-	        InteractiveBase&);
+	        InteractiveBase&,
+	        Widelands::PlayerNumber);
 	virtual ~MapView();
 
 	// Called whenever the view changed, also during automatic animations.
@@ -160,6 +161,8 @@ protected:
 
 	// Move the view by 'delta_pixels'.
 	void pan_by(Vector2i delta_pixels);
+
+	Widelands::PlayerNumber player_number_;
 
 private:
 	void stop_dragging();

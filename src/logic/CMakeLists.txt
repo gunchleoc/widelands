@@ -33,7 +33,7 @@ wl_library(logic_game_controller
     profile
     ui_basic
     widelands_ball_of_mud
-    wui
+    wui_interactive_base
 )
 
 wl_library(logic_campaign_visibility
@@ -255,5 +255,6 @@ wl_library(logic
     ui_basic
     widelands_ball_of_mud
     wui
+    wui_interactive_base
     wui_mapview_pixelfunctions
 )
