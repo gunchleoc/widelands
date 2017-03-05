@@ -41,6 +41,17 @@ Widelands::EditorGameBase& get_egbase(lua_State* const L) {
 	return *g;
 }
 
+InteractiveBase& get_ibase(lua_State* const L) {
+	lua_getfield(L, LUA_REGISTRYINDEX, "ibase");
+	InteractiveBase* ibase = static_cast<InteractiveBase*>(lua_touserdata(L, -1));
+	lua_pop(L, 1);  // pop this userdata
+
+	if (!ibase)
+		throw LuaError("\"egbase\" field was nil. This should be impossible.");
+
+	return *ibase;
+}
+
 Widelands::MapObjectLoader* get_mol(lua_State* const L) {
 	lua_pushstring(L, "mol");
 	lua_gettable(L, LUA_REGISTRYINDEX);

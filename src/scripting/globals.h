@@ -23,9 +23,11 @@
 #include "logic/game.h"
 #include "map_io/map_object_loader.h"
 #include "map_io/map_object_saver.h"
+#include "wui/interactive_base.h"
 
 Widelands::Game& get_game(lua_State*);
 Widelands::EditorGameBase& get_egbase(lua_State*);
+InteractiveBase& get_ibase(lua_State*);
 Widelands::MapObjectLoader* get_mol(lua_State*);
 Widelands::MapObjectSaver* get_mos(lua_State*);
 

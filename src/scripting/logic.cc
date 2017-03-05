@@ -53,6 +53,10 @@ void setup_for_editor_and_game(lua_State* L, Widelands::EditorGameBase* g, Inter
 	// Push the editor game base
 	lua_pushlightuserdata(L, static_cast<void*>(g));
 	lua_setfield(L, LUA_REGISTRYINDEX, "egbase");
+
+	// Push the UI
+	lua_pushlightuserdata(L, static_cast<void*>(ibase));
+	lua_setfield(L, LUA_REGISTRYINDEX, "ibase");
 }
 
 // Can run script also from the map.
