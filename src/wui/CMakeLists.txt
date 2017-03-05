@@ -20,7 +20,7 @@ wl_library(wui_chat_ui
     logic
     profile
     ui_basic
-    wui
+    wui_logmessage
 )
 
 wl_library(wui_field_overlay_manager
@@ -95,6 +95,38 @@ wl_library(wui_common
     ui_basic
 )
 
+wl_library(wui_logmessage
+  SRCS
+    logmessage.cc
+    logmessage.h
+  DEPENDS
+    notifications
+)
+
+wl_library(wui_gamesetup
+  SRCS
+    login_box.cc
+    login_box.h
+    multiplayersetupgroup.cc
+    multiplayersetupgroup.h
+    playerdescrgroup.cc
+    playerdescrgroup.h
+  DEPENDS
+    ai
+    base_exceptions
+    base_i18n
+    base_log
+    graphic
+    graphic_playercolor
+    graphic_text
+    graphic_text_layout
+    logic
+    logic_game_settings
+    network
+    profile
+    ui_basic
+)
+
 wl_library(wui_quicknavigation
   SRCS
     quicknavigation.cc
@@ -136,6 +168,14 @@ wl_library(wui_waresdisplay
     ui_basic
 )
 
+wl_library(wui_unique_window_handler
+  SRCS
+    unique_window_handler.cc
+    unique_window_handler.h
+  DEPENDS
+    base_macros
+    ui_basic
+)
 
 wl_library(wui
   SRCS
@@ -159,8 +199,6 @@ wl_library(wui
     fieldaction.h
     game_debug_ui.cc
     game_debug_ui.h
-    game_statistics_menu.cc
-    game_statistics_menu.h
     game_main_menu_save_game.cc
     game_main_menu_save_game.h
     game_message_menu.cc
@@ -171,6 +209,8 @@ wl_library(wui
     game_options_menu.h
     game_options_sound_menu.cc
     game_options_sound_menu.h
+    game_statistics_menu.cc
+    game_statistics_menu.h
     game_summary.cc
     game_summary.h
     game_tips.cc
@@ -191,17 +231,10 @@ wl_library(wui
     interactive_spectator.h
     itemwaresdisplay.cc
     itemwaresdisplay.h
-    login_box.cc
-    login_box.h
-    logmessage.h
     militarysitewindow.cc
     militarysitewindow.h
     minimap.cc
     minimap.h
-    multiplayersetupgroup.cc
-    multiplayersetupgroup.h
-    playerdescrgroup.cc
-    playerdescrgroup.h
     plot_area.cc
     plot_area.h
     portdockwaresdisplay.cc
@@ -223,8 +256,6 @@ wl_library(wui
     transport_draw.cc
     tribal_encyclopedia.cc
     tribal_encyclopedia.h
-    unique_window_handler.cc
-    unique_window_handler.h
     ware_statistics_menu.cc
     ware_statistics_menu.h
     warehousewindow.cc
@@ -233,7 +264,6 @@ wl_library(wui
     watchwindow.h
   USES_SDL2
   DEPENDS
-    ai
     base_exceptions
     base_geometry
     base_i18n
@@ -255,9 +285,7 @@ wl_library(wui
     logic
     logic_constants
     logic_game_controller
-    logic_game_settings
     logic_widelands_geometry
-    network
     note_sound
     notifications
     profile
@@ -271,8 +299,10 @@ wl_library(wui
     wui_economy_options
     wui_edge_overlay_manager
     wui_field_overlay_manager
+    wui_logmessage
     wui_mapview
     wui_mapview_pixelfunctions
     wui_quicknavigation
+    wui_unique_window_handler
     wui_waresdisplay
 )

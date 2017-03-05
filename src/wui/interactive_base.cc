@@ -45,16 +45,12 @@
 #include "logic/player.h"
 #include "profile/profile.h"
 #include "scripting/lua_interface.h"
-#include "wlapplication.h"
-#include "wui/edge_overlay_manager.h"
-#include "wui/field_overlay_manager.h"
 #include "wui/game_chat_menu.h"
 #include "wui/game_debug_ui.h"
 #include "wui/interactive_player.h"
 #include "wui/logmessage.h"
 #include "wui/mapviewpixelconstants.h"
 #include "wui/mapviewpixelfunctions.h"
-#include "wui/minimap.h"
 #include "wui/unique_window_handler.h"
 
 using Widelands::Area;
