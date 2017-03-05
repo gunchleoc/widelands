@@ -682,7 +682,8 @@ void NetHost::run() {
 	s.unsigned_8(NETCMD_LAUNCH);
 	broadcast(s);
 
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	game.set_write_syncstream(g_options.pull_section("global").get_bool("write_syncstreams", true));
 
 	try {

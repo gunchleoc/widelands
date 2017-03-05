@@ -570,8 +570,10 @@ bool EditorInteractive::is_player_tribe_referenced(Widelands::PlayerNumber const
 }
 
 void EditorInteractive::run_editor(const std::string& filename, const std::string& script_to_run) {
-	Widelands::EditorGameBase egbase(nullptr);
+	LuaEditorInterface* lua = new LuaEditorInterface();
+	Widelands::EditorGameBase egbase(lua);
 	EditorInteractive& eia = *new EditorInteractive(egbase);
+	lua->init(&egbase, &eia); // NOCOM EditorInteractive should own lua
 	egbase.set_ibase(&eia);  // TODO(unknown): get rid of this
 	{
 		UI::ProgressWindow loader_ui("images/loadscreens/editor.jpg");

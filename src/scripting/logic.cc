@@ -23,6 +23,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "editor/editorinteractive.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "scripting/factory.h"
 #include "scripting/globals.h"
@@ -37,12 +38,14 @@
 #include "scripting/lua_ui.h"
 #include "scripting/persistence.h"
 #include "scripting/run_script.h"
+#include "wui/interactive_gamebase.h"
 
 namespace {
 
 // Setup the basic Widelands functions and pushes egbase into the Lua registry
 // so that it is available for all the other Lua functions.
-void setup_for_editor_and_game(lua_State* L, Widelands::EditorGameBase* g) {
+void setup_for_editor_and_game(lua_State* L, Widelands::EditorGameBase* g, InteractiveBase* ibase) {
+	// NOCOM use ibase for the ui
 	LuaBases::luaopen_wlbases(L);
 	LuaMaps::luaopen_wlmap(L);
 	LuaUi::luaopen_wlui(L);
@@ -62,9 +65,13 @@ std::unique_ptr<LuaTable> run_script_maybe_from_map(lua_State* L, const std::str
 
 }  // namespace
 
-LuaEditorInterface::LuaEditorInterface(Widelands::EditorGameBase* g)
-   : factory_(new EditorFactory()) {
-	setup_for_editor_and_game(lua_state_, g);
+LuaEditorInterface::LuaEditorInterface()
+	: factory_(new EditorFactory()) {
+
+}
+
+void LuaEditorInterface::init(Widelands::EditorGameBase* g, EditorInteractive* eia) {
+	setup_for_editor_and_game(lua_state_, g, eia);
 	LuaRoot::luaopen_wlroot(lua_state_, true);
 	LuaEditor::luaopen_wleditor(lua_state_);
 
@@ -121,8 +128,11 @@ static int L_math_random(lua_State* L) {
 	return 1;
 }
 
-LuaGameInterface::LuaGameInterface(Widelands::Game* g) : factory_(new GameFactory()) {
-	setup_for_editor_and_game(lua_state_, g);
+LuaGameInterface::LuaGameInterface() : factory_(new GameFactory()) {
+}
+
+void LuaGameInterface::init(Widelands::Game* g, InteractiveGameBase* igbase) {
+	setup_for_editor_and_game(lua_state_, g, igbase);
 
 	// Overwrite math.random
 	lua_getglobal(lua_state_, "math");

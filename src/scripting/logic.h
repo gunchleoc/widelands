@@ -27,12 +27,16 @@
 #include "scripting/lua_interface.h"
 
 class EditorFactory;
+class EditorInteractive;
 class GameFactory;
+class InteractiveBase;
 
 class LuaEditorInterface : public LuaInterface {
 public:
-	LuaEditorInterface(Widelands::EditorGameBase* g);
+	LuaEditorInterface();
 	virtual ~LuaEditorInterface();
+
+	void init(Widelands::EditorGameBase* g, EditorInteractive* eia);
 
 	std::unique_ptr<LuaTable> run_script(const std::string& script) override;
 
@@ -42,8 +46,10 @@ private:
 
 class LuaGameInterface : public LuaInterface {
 public:
-	LuaGameInterface(Widelands::Game* g);
+	LuaGameInterface();
 	virtual ~LuaGameInterface();
+
+	void init(Widelands::Game* g, InteractiveGameBase* igbase);
 
 	// Returns a given hook if one is defined, otherwise returns 0
 	std::unique_ptr<LuaTable> get_hook(const std::string& name);

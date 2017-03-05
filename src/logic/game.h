@@ -100,7 +100,7 @@ public:
 	friend struct ::GameMainMenuLoadGame;
 	friend struct ::WLApplication;
 
-	Game();
+	Game(LuaGameInterface* lua);
 	~Game();
 
 	// life cycle

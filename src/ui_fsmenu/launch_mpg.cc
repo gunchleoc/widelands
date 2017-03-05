@@ -384,7 +384,7 @@ void FullscreenMenuLaunchMPG::select_saved_game() {
 	if (!settings_->can_change_map())
 		return;
 
-	Widelands::Game game;  // The place all data is saved to.
+	Widelands::Game game(new LuaGameInterface());
 	FullscreenMenuLoadGame lsgm(game, settings_, ctrl_);
 	FullscreenMenuBase::MenuTarget code = lsgm.run<FullscreenMenuBase::MenuTarget>();
 

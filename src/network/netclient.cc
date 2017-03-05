@@ -159,7 +159,8 @@ void NetClient::run() {
 
 	d->server_is_waiting = true;
 
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	game.set_write_syncstream(g_options.pull_section("global").get_bool("write_syncstreams", true));
 
 	try {
@@ -703,7 +704,8 @@ void NetClient::handle_packet(RecvPacket& packet) {
 			bool invalid = false;
 			if (d->settings.savegame) {
 				// Saved game check - does Widelands recognize the file as saved game?
-				Widelands::Game game;
+				LuaGameInterface* lua = new LuaGameInterface();
+				Widelands::Game game(lua);
 				try {
 					Widelands::GameLoader gl(file_->filename, game);
 				} catch (...) {

@@ -64,14 +64,15 @@ initialization
 ============
 */
 EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
-   : gametime_(0),
-     lua_(lua_interface),
+	: lua_(lua_interface),
+	  gametime_(0),
      player_manager_(new PlayersManager(*this)),
      ibase_(nullptr),
      map_(nullptr),
      lasttrackserial_(0) {
-	if (!lua_)  // TODO(SirVer): this is sooo ugly, I can't say
-		lua_.reset(new LuaEditorInterface(this));
+	if (!lua_) {
+		throw wexception("Tried to start a game or the editor without a Lua interface!");
+	}
 }
 
 EditorGameBase::~EditorGameBase() {

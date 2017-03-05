@@ -117,8 +117,8 @@ void Game::SyncWrapper::data(void const* const sync_data, size_t const size) {
 	counter_ += size;
 }
 
-Game::Game()
-   : EditorGameBase(new LuaGameInterface(this)),
+Game::Game(LuaGameInterface* lua)
+   : EditorGameBase(lua),
      syncwrapper_(*this, synchash_),
      ctrl_(nullptr),
      writereplay_(true),
@@ -190,6 +190,7 @@ void Game::save_syncstream(bool const save) {
 bool Game::run_splayer_scenario_direct(const std::string& mapname,
                                        const std::string& script_to_run) {
 	assert(!get_map());
+	set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), 1, false));
 
 	// Replays can't handle scenarios
 	set_write_replay(false);
@@ -220,8 +221,6 @@ bool Game::run_splayer_scenario_direct(const std::string& mapname,
 		get_player(p)->set_ai(map().get_scenario_player_ai(p));
 	}
 	win_condition_displayname_ = "Scenario";
-
-	set_ibase(new InteractivePlayer(*this, g_options.pull_section("global"), 1, false));
 
 	loader_ui.step(_("Loading map…"));
 	maploader->load_map_complete(*this, Widelands::MapLoader::LoadType::kScenario);

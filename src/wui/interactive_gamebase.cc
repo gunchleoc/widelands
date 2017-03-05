@@ -62,6 +62,9 @@ InteractiveGameBase::InteractiveGameBase(Widelands::Game& g,
      chat_provider_(nullptr),
      multiplayer_(multiplayer),
      playertype_(pt) {
+	upcast(LuaGameInterface, lua, &g.lua());
+	lua->init(&g, this); // NOCOM own the Lua interface.
+
 	buildingnotes_subscriber_ = Notifications::subscribe<Widelands::NoteBuilding>(
 	   [this](const Widelands::NoteBuilding& note) {
 		   switch (note.action) {

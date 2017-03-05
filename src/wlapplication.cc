@@ -411,7 +411,8 @@ void WLApplication::run() {
 	} else if (game_type_ == REPLAY) {
 		replay();
 	} else if (game_type_ == LOADGAME) {
-		Widelands::Game game;
+		LuaGameInterface* lua = new LuaGameInterface();
+		Widelands::Game game(lua);
 		try {
 			game.run_load_game(filename_, script_to_run_);
 		} catch (const Widelands::GameDataError& e) {
@@ -422,7 +423,8 @@ void WLApplication::run() {
 			throw;
 		}
 	} else if (game_type_ == SCENARIO) {
-		Widelands::Game game;
+		LuaGameInterface* lua = new LuaGameInterface();
+		Widelands::Game game(lua);
 		try {
 			game.run_splayer_scenario_direct(filename_.c_str(), script_to_run_);
 		} catch (const Widelands::GameDataError& e) {
@@ -1059,7 +1061,8 @@ void WLApplication::mainmenu() {
  * Show tutorial UI, let player select tutorial and run it.
  */
 void WLApplication::mainmenu_tutorial() {
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	std::string filename;
 	//  Start UI for the tutorials.
 	FullscreenMenuCampaignMapSelect select_campaignmap(true);
@@ -1201,7 +1204,8 @@ bool WLApplication::new_game() {
 	SinglePlayerGameSettingsProvider sp;
 	FullscreenMenuLaunchSPG lgm(&sp);
 	const FullscreenMenuBase::MenuTarget code = lgm.run<FullscreenMenuBase::MenuTarget>();
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 
 	if (code == FullscreenMenuBase::MenuTarget::kBack) {
 		return false;
@@ -1253,7 +1257,8 @@ bool WLApplication::new_game() {
  * or aborted the game setup via some other means.
  */
 bool WLApplication::load_game() {
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	std::string filename;
 
 	SinglePlayerGameSettingsProvider sp;
@@ -1283,7 +1288,8 @@ bool WLApplication::load_game() {
  * or aborted the game setup via some other means.
  */
 bool WLApplication::campaign_game() {
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	std::string filename;
 	for (;;) {  // Campaign UI - Loop
 		int32_t campaign;
@@ -1322,7 +1328,8 @@ bool WLApplication::campaign_game() {
  * Show the replay menu and play a replay.
  */
 void WLApplication::replay() {
-	Widelands::Game game;
+	LuaGameInterface* lua = new LuaGameInterface();
+	Widelands::Game game(lua);
 	if (filename_.empty()) {
 		SinglePlayerGameSettingsProvider sp;
 		FullscreenMenuLoadGame rm(game, &sp, nullptr, true);

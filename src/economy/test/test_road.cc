@@ -65,7 +65,7 @@ struct WlTestFixture {
 };
 
 struct SimpleRoadTestsFixture : public WlTestFixture {
-	SimpleRoadTestsFixture() : g(nullptr), path(Coords(5, 5)) {
+	SimpleRoadTestsFixture() : g(new LuaInterface()), path(Coords(5, 5)) {
 		map = new TestingMap(32, 32);
 		g.set_map(map);
 

@@ -76,7 +76,7 @@ struct UserSettings {
  */
 struct GameSettings {
 	GameSettings() : playernum(0), usernum(0), scenario(false), multiplayer(false), savegame(false) {
-		std::unique_ptr<LuaInterface> lua(new LuaInterface);
+		std::unique_ptr<LuaInterface> lua(new LuaInterface());
 		std::unique_ptr<LuaTable> win_conditions(
 		   lua->run_script("scripting/win_conditions/init.lua"));
 		for (const int key : win_conditions->keys<int>()) {

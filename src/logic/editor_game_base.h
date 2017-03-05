@@ -210,6 +210,9 @@ public:
 	// Returns the mutable tribes. Prefer tribes() whenever possible.
 	Tribes* mutable_tribes();
 
+protected:
+	std::unique_ptr<LuaInterface> lua_;
+
 private:
 	/// Common function for create_critter and create_ship.
 	Bob& create_bob(Coords, const BobDescr&, Player* owner = nullptr);
@@ -259,7 +262,6 @@ private:
 	uint32_t gametime_;
 	ObjectManager objects_;
 
-	std::unique_ptr<LuaInterface> lua_;
 	std::unique_ptr<PlayersManager> player_manager_;
 
 	std::unique_ptr<World> world_;
