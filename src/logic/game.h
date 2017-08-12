@@ -35,8 +35,6 @@ struct ProgressWindow;
 }
 struct ComputerPlayer;
 class InteractivePlayer;
-struct GameMainMenuLoadGame;
-struct WLApplication;
 struct GameSettings;
 class GameController;
 
@@ -97,8 +95,6 @@ public:
 	friend struct GameClassPacket;
 	friend struct GamePlayerInfoPacket;
 	friend struct GameLoader;
-	friend struct ::GameMainMenuLoadGame;
-	friend struct ::WLApplication;
 
 	Game();
 	~Game();
@@ -175,8 +171,6 @@ public:
 
 	StreamWrite& syncstream();
 	Md5Checksum get_sync_hash() const;
-
-	bool get_allow_cheats();
 
 	void enqueue_command(Command* const);
 

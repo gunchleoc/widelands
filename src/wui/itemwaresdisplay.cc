@@ -67,16 +67,6 @@ void ItemWaresDisplay::set_capacity(uint32_t cap) {
 	}
 }
 
-/**
- * Set the items shown per row of the panel.
- */
-void ItemWaresDisplay::set_items_per_row(uint32_t nr) {
-	if (nr != items_per_row_) {
-		items_per_row_ = nr;
-		recalc_desired_size();
-	}
-}
-
 void ItemWaresDisplay::recalc_desired_size() {
 	uint32_t nrrows = (capacity_ + items_per_row_ - 1) / items_per_row_;
 	uint32_t rowitems = capacity_ >= items_per_row_ ? items_per_row_ : capacity_;
@@ -98,7 +88,7 @@ void ItemWaresDisplay::add(bool worker, Widelands::DescriptionIndex index) {
 void ItemWaresDisplay::draw(RenderTarget& dst) {
 	const Widelands::TribeDescr& tribe(player().tribe());
 
-	dst.fill_rect(Rectf(0, 0, get_w(), get_h()), RGBAColor(0, 0, 0, 0));
+	dst.fill_rect(Recti(0, 0, get_w(), get_h()), RGBAColor(0, 0, 0, 0));
 
 	for (uint32_t idx = 0; idx < items_.size(); ++idx) {
 		const Item& it = items_[idx];
@@ -117,7 +107,7 @@ void ItemWaresDisplay::draw(RenderTarget& dst) {
 		} else {
 			y += IWD_WareBaseLine;
 			if (tribe.get_ware_descr(it.index)->icon())
-				dst.blit(Vector2f(x, y), tribe.get_ware_descr(it.index)->icon());
+				dst.blit(Vector2i(x, y), tribe.get_ware_descr(it.index)->icon());
 		}
 	}
 }

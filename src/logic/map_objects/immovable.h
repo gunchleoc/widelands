@@ -81,7 +81,7 @@ struct BaseImmovable : public MapObject {
 		BIG        ///< big building
 	};
 
-	BaseImmovable(const MapObjectDescr&);
+	explicit BaseImmovable(const MapObjectDescr&);
 
 	virtual int32_t get_size() const = 0;
 	virtual bool get_passable() const = 0;
@@ -224,7 +224,7 @@ public:
 		increment_program_pointer();
 	}
 
-	void init(EditorGameBase&) override;
+	bool init(EditorGameBase&) override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void draw(uint32_t gametime,
@@ -329,7 +329,7 @@ private:
  * also adjusted automatically.
  */
 struct PlayerImmovable : public BaseImmovable {
-	PlayerImmovable(const MapObjectDescr&);
+	explicit PlayerImmovable(const MapObjectDescr&);
 	virtual ~PlayerImmovable();
 
 	Player* get_owner() const {
@@ -383,7 +383,7 @@ struct PlayerImmovable : public BaseImmovable {
 	void set_owner(Player*) override;
 
 protected:
-	void init(EditorGameBase&) override;
+	bool init(EditorGameBase&) override;
 	void cleanup(EditorGameBase&) override;
 
 private:

@@ -63,7 +63,6 @@
 #include "scripting/logic.h"
 #include "scripting/lua_table.h"
 #include "ui_basic/progresswindow.h"
-#include "wlapplication.h"
 #include "wui/game_tips.h"
 #include "wui/interactive_player.h"
 
@@ -137,13 +136,6 @@ void Game::sync_reset() {
 
 	synchash_.Reset();
 	log("[sync] Reset\n");
-}
-
-/**
- * Returns true if cheat codes have been activated (single-player only)
- */
-bool Game::get_allow_cheats() {
-	return true;
 }
 
 /**
@@ -728,7 +720,6 @@ void Game::send_player_change_soldier_capacity(Building& b, int32_t const val) {
 	   *new CmdChangeSoldierCapacity(get_gametime(), b.owner().player_number(), b, val));
 }
 
-/////////////////////// TESTING STUFF
 void Game::send_player_enemyflagaction(const Flag& flag,
                                        PlayerNumber const who_attacks,
                                        uint32_t const num_soldiers) {
