@@ -116,7 +116,7 @@ public:
 
 private:
 	struct Region {
-		Vector2i target_offset;
+		Vector2i target_offset = Vector2i::zero();
 		uint16_t w, h;
 		std::vector<Vector2i> source_offsets;  // indexed by frame nr.
 	};
@@ -138,7 +138,7 @@ private:
 	float scale_; // NOCOM read
 };
 
-PackedAnimation::PackedAnimation(const string& name, const LuaTable& table)
+PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
    : rectangle_(0, 0, 0, 0),
      hotspot_(0, 0),
      nr_frames_(0),
@@ -230,7 +230,7 @@ std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTab
 
 		for (const int offset_key : offsets_keys) {
 			std::unique_ptr<LuaTable> offset_table = offsets_table->get_table(offset_key);
-			Vector2i p;
+			Vector2i p =  Vector2i::zero();
 			get_point(*offset_table, &p);
 			region.source_offsets.push_back(p);
 		}
@@ -262,6 +262,8 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 		image->blit(rdst, *image.get(), rsrc, 1., BlendMode::UseAlpha);
 	}
 
+	Texture* target = new Texture(rectangle_.w, rectangle_.h);
+
 	if (pcmask_ && clr) {
 		std::unique_ptr<Texture> pc_image(new Texture(w, h));
 		pc_image->blit(Rectf(0, 0, w, h), *pcmask_, Rectf(0, 0, w, h), 1., BlendMode::Copy);
@@ -270,14 +272,16 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 			Rectf rdst = Rectf(region.target_offset, region.w, region.h);
 			pc_image->blit(rdst, *pc_image.get(), rsrc, 1., BlendMode::UseAlpha);
 		}
-		image.reset(dynamic_cast<Texture*>(playercolor_image(
-		   clr, dynamic_cast<Image*>(image.get()), dynamic_cast<Image*>(pc_image.get()))));
+		// NOCOM code duplication
+		target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *playercolor_image(
+							 *clr, (boost::format("packedanim:%s:%d:pc%s") % hash_ % framenumber % clr->hex_value()).str(), image.get(), pc_image.get()),
+						 Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1.,
+						 BlendMode::UseAlpha);
+	} else {
+		target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image.get(),
+						 Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1.,
+						 BlendMode::UseAlpha);
 	}
-
-	Texture* target = new Texture(rectangle_.w, rectangle_.h);
-	target->blit(Rectf(0, 0, rectangle_.w, rectangle_.h), *image.get(),
-	             Rectf(rectangle_.x, rectangle_.y, rectangle_.w, rectangle_.h), 1.,
-	             BlendMode::UseAlpha);
 	return target;
 }
 
@@ -586,7 +590,7 @@ uint32_t AnimationManager::load(const LuaTable& table) {
 	return animations_.size();
 }
 
-uint32_t AnimationManager::load_packed(const string& name, const LuaTable& table) {
+uint32_t AnimationManager::load_packed(const std::string& name, const LuaTable& table) {
 	animations_.push_back(std::unique_ptr<Animation>(new PackedAnimation(name, table)));
 	return animations_.size();
 }

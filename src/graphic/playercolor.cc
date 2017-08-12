@@ -28,6 +28,23 @@
 #include "graphic/texture.h"
 #include "io/filesystem/layered_filesystem.h"
 
+const Image* playercolor_image(const RGBColor& clr, const std::string& hash, const Image* image, const Image* color_mask) {
+	// Get from cache if we already have it
+	if (g_gr->images().has(hash)) {
+		return g_gr->images().get(hash);
+	}
+
+	// Calculate the image and add it to the cache
+	const int w = image->width();
+	const int h = image->height();
+	Texture* pc_image = new Texture(w, h);
+	pc_image->fill_rect(Rectf(0.f, 0.f, w, h), RGBAColor(0, 0, 0, 0));
+	pc_image->blit_blended(Rectf(0.f, 0.f, w, h), *image, *color_mask, Rectf(0.f, 0.f, w, h), clr);
+	g_gr->images().insert(hash, std::unique_ptr<const Texture>(std::move(pc_image)));
+	assert(g_gr->images().has(hash));
+	return g_gr->images().get(hash);
+}
+
 const Image* playercolor_image(const RGBColor& clr, const std::string& image_filename) {
 	const std::string hash = image_filename + "+pc" + clr.hex_value();
 
@@ -44,16 +61,7 @@ const Image* playercolor_image(const RGBColor& clr, const std::string& image_fil
 	}
 
 	// Now calculate the image and add it to the cache
-	const Image* image = g_gr->images().get(image_filename);
-	const Image* color_mask = g_gr->images().get(color_mask_filename);
-	const int w = image->width();
-	const int h = image->height();
-	Texture* pc_image = new Texture(w, h);
-	pc_image->fill_rect(Rectf(0.f, 0.f, w, h), RGBAColor(0, 0, 0, 0));
-	pc_image->blit_blended(Rectf(0.f, 0.f, w, h), *image, *color_mask, Rectf(0.f, 0.f, w, h), clr);
-	g_gr->images().insert(hash, std::unique_ptr<const Texture>(std::move(pc_image)));
-	assert(g_gr->images().has(hash));
-	return g_gr->images().get(hash);
+	return playercolor_image(clr, hash, g_gr->images().get(image_filename), g_gr->images().get(color_mask_filename));
 }
 
 const Image* playercolor_image(int player_number, const std::string& image_filename) {
