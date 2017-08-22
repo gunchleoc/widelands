@@ -97,6 +97,7 @@ public:
 		float h = percent_from_bottom * rectangle_.h / 100;
 		return Rectf(0.f, rectangle_.h - h, rectangle_.w, h);
 	}
+	// NOCOM exact same as NonPackedAnimation
 	Rectf destination_rectangle(const Vector2f& position,
 										 const Rectf& source_rect,
 										 float scale) const override {
@@ -108,8 +109,8 @@ public:
 	const Image* representative_image(const RGBColor* clr) const override;
 	const std::string& representative_image_filename() const override;
 	void blit(uint32_t time,
-	          const Rectf& dstrc,
-	          const Rectf& srcrc,
+	          const Rectf& source_rect,
+	          const Rectf& destination_rect,
 	          const RGBColor* clr,
 	          Surface*) const override;
 	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
@@ -295,13 +296,13 @@ const Image* PackedAnimation::image_for_frame(uint32_t framenumber, const RGBCol
 }
 
 void PackedAnimation::blit(uint32_t time,
-                           const Rectf& dstrc,
-                           const Rectf& srcrc,
+									const Rectf& source_rect,
+                           const Rectf& destination_rect,
                            const RGBColor* clr,
                            Surface* target) const {
 	assert(target);
 	const Image* blitme = image_for_frame(time / frametime_ % nr_frames(), clr);
-	target->blit(dstrc, *blitme, srcrc, 1., BlendMode::UseAlpha);
+	target->blit(destination_rect, *blitme, source_rect, 1., BlendMode::UseAlpha);
 }
 
 /**
