@@ -86,24 +86,10 @@ public:
 	uint16_t nr_frames() const override {
 		return nr_frames_;
 	}
-	uint32_t frametime() const override {
-		return frametime_;
-	}
-	const Vector2i& hotspot() const override {
-		return hotspot_;
-	}
-	// NOCOM test these
+
 	Rectf source_rectangle(int percent_from_bottom) const override {
 		float h = percent_from_bottom * rectangle_.h / 100;
 		return Rectf(0.f, rectangle_.h - h, rectangle_.w, h);
-	}
-	// NOCOM exact same as NonPackedAnimation
-	Rectf destination_rectangle(const Vector2f& position,
-										 const Rectf& source_rect,
-										 float scale) const override {
-		return Rectf(position.x - (hotspot_.x - source_rect.x / scale_) * scale,
-						 position.y - (hotspot_.y - source_rect.y / scale_) * scale,
-						 source_rect.w * scale / scale_, source_rect.h * scale / scale_);
 	}
 
 	const Image* representative_image(const RGBColor* clr) const override;
@@ -113,8 +99,6 @@ public:
 	          const Rectf& destination_rect,
 	          const RGBColor* clr,
 	          Surface*) const override;
-	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const;
-
 private:
 	struct Region {
 		Vector2i target_offset = Vector2i::zero();
@@ -125,9 +109,7 @@ private:
 	const Image* image_for_frame(uint32_t framenumber, const RGBColor* clr) const;
 
 	Recti rectangle_;
-	Vector2i hotspot_; // NOCOM put this member in Animation class
 	uint16_t nr_frames_;
-	uint32_t frametime_;
 
 	const Image* image_;   // Not owned
 	const Image* pcmask_;  // Not owned
@@ -135,25 +117,16 @@ private:
 	std::vector<Region> regions_;
 	std::vector<Region> pc_regions_;
 	std::string hash_;
-	bool play_once_;
-	float scale_; // NOCOM read
 };
 
 PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
-   : rectangle_(0, 0, 0, 0),
-     hotspot_(0, 0),
-     nr_frames_(0),
-     frametime_(FRAME_LENGTH),
+   : Animation(table),
+	  rectangle_(0, 0, 0, 0),
+     nr_frames_(1), // We'll have 1 frame if there is no region
      image_(nullptr),
-     pcmask_(nullptr),
-	  play_once_(false),
-	  scale_(1.0f) {
+     pcmask_(nullptr) {
 	try {
-		get_point(*table.get_table("hotspot"), &hotspot_);
 
-		if (table.has_key("play_once")) {
-			play_once_ = table.get_bool("play_once");
-		}
 
 		std::string image = table.get_string("image");
 		if (!g_fs->file_exists(image)) {
@@ -185,7 +158,7 @@ PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
 				const auto offsets_keys = offsets_table->keys<int>();
 				if (offsets_keys.size() < 2) {
 					throw wexception(
-					   "PAcked animation with one picture %s must not have 'fps'", hash_.c_str());
+					   "Packed animation with one picture %s must not have 'fps'", hash_.c_str());
 				}
 				frametime_ = 1000 / get_positive_int(table, "fps");
 			}
@@ -193,23 +166,10 @@ PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
 			if (pcmask_) {
 				pc_regions_ = *make_regions(*table.get_table("playercolor_regions").get());
 			}
-		} else {
-			// No regions? Only one frame then.
-			nr_frames_ = 1;
-			if (table.has_key("fps")) {
-				throw wexception(
-				   "Packed animation with one picture %s must not have 'fps'", hash_.c_str());
-			}
+		} else if (table.has_key("fps")) {
+			throw wexception(
+				"Packed animation with one picture %s must not have 'fps'", hash_.c_str());
 		}
-		if (table.has_key("scale")) {
-			scale_ = table.get_double("scale");
-			if (scale_ <= 0.0f) {
-				// NOCOM identify the animation somehow
-				throw wexception("Animation scale needs to be > 0.0f, but it is %f",
-				                 static_cast<double>(scale_));
-			}
-		}
-		assert(scale_ > 0);
 	} catch (const LuaError& e) {
 		throw wexception("Error in packed animation table: %s", e.what());
 	}
@@ -231,7 +191,7 @@ std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTab
 		std::unique_ptr<LuaTable> offsets_table = region_table->get_table("offsets");
 		const auto offsets_keys = offsets_table->keys<int>();
 		const uint16_t no_of_offsets = offsets_keys.size();
-		if (nr_frames_ && nr_frames_ != no_of_offsets) {
+		if (nr_frames_ != 1 && nr_frames_ != no_of_offsets) {
 			throw wexception("Packed animation '%s': region has different number of frames than "
 			                 "previous (%i != %i).",
 			                 hash_.c_str(), nr_frames_, no_of_offsets);
@@ -247,10 +207,6 @@ std::vector<PackedAnimation::Region>* PackedAnimation::make_regions(const LuaTab
 		result->push_back(region);
 	}
 	return result;
-}
-
-void PackedAnimation::trigger_sound(uint32_t /*time*/, uint32_t /*stereo_position*/) const {
-	// TODO(GunChleoc): Not implemented
 }
 
 const Image* PackedAnimation::representative_image(const RGBColor* clr) const {
@@ -303,6 +259,7 @@ void PackedAnimation::blit(uint32_t time,
 	assert(target);
 	const Image* blitme = image_for_frame(time / frametime_ % nr_frames(), clr);
 	target->blit(destination_rect, *blitme, source_rect, 1., BlendMode::UseAlpha);
+	trigger_sound(time, 128);
 }
 
 /**
@@ -319,22 +276,13 @@ public:
 	float height() const override;
 	float width() const override;
 	Rectf source_rectangle(int percent_from_bottom) const override;
-	Rectf destination_rectangle(const Vector2f& position,
-	                            const Rectf& source_rect,
-	                            float scale) const override;
 	uint16_t nr_frames() const override;
-	uint32_t frametime() const override;
-	const Vector2i& hotspot() const override {
-		return hotspot_;
-	}
 
 	virtual void blit(uint32_t time,
 	                  const Rectf& source_rect,
 	                  const Rectf& destination_rect,
 	                  const RGBColor* clr,
 	                  Surface* target) const override;
-
-	void trigger_sound(uint32_t framenumber, uint32_t stereo_position) const override;
 
 	std::vector<const Image*> images() const override;
 	std::vector<const Image*> pc_masks() const override;
@@ -348,43 +296,16 @@ private:
 	// Load the needed graphics from disk.
 	void load_graphics();
 
-	uint32_t current_frame(uint32_t time) const;
-
-	uint32_t frametime_;
-	Vector2i hotspot_ = Vector2i::zero();
 	bool hasplrclrs_;
 	std::vector<std::string> image_files_;
 	std::vector<std::string> pc_mask_image_files_;
-	float scale_;
-
 	std::vector<const Image*> frames_;
 	std::vector<const Image*> pcmasks_;
-
-	// name of sound effect that will be played at frame 0.
-	// TODO(sirver): this should be done using play_sound in a program instead of
-	// binding it to the animation.
-	std::string sound_effect_;
-	bool play_once_;
 };
 
 NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
-   : frametime_(FRAME_LENGTH), hasplrclrs_(false), scale_(1.0f), play_once_(false) {
+   : Animation(table), hasplrclrs_(false) {
 	try {
-		get_point(*table.get_table("hotspot"), &hotspot_);
-
-		if (table.has_key("sound_effect")) {
-			std::unique_ptr<LuaTable> sound_effects = table.get_table("sound_effect");
-
-			const std::string name = sound_effects->get_string("name");
-			const std::string directory = sound_effects->get_string("directory");
-			sound_effect_ = directory + g_fs->file_separator() + name;
-			g_sound_handler.load_fx_if_needed(directory, name, sound_effect_);
-		}
-
-		if (table.has_key("play_once")) {
-			play_once_ = table.get_bool("play_once");
-		}
-
 		image_files_ = table.get_table("pictures")->array_entries<std::string>();
 
 		if (image_files_.empty()) {
@@ -408,18 +329,9 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
 			}
 		}
 
-		if (table.has_key("scale")) {
-			scale_ = table.get_double("scale");
-			if (scale_ <= 0.0f) {
-				throw wexception("Animation scale needs to be > 0.0f, but it is %f. The first image of "
-				                 "this animation is %s",
-				                 static_cast<double>(scale_), image_files_[0].c_str());
-			}
-		}
-
 		assert(!image_files_.empty());
 		assert(pc_mask_image_files_.size() == image_files_.size() || pc_mask_image_files_.empty());
-		assert(scale_ > 0);
+
 	} catch (const LuaError& e) {
 		throw wexception("Error in animation table: %s", e.what());
 	}
@@ -490,10 +402,6 @@ std::vector<const Image*> NonPackedAnimation::pc_masks() const {
 	return pcmasks_;
 }
 
-uint32_t NonPackedAnimation::frametime() const {
-	return frametime_;
-}
-
 const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
 	assert(!image_files_.empty());
 	const Image* image = (hasplrclrs_ && clr) ? playercolor_image(*clr, image_files_[0]) :
@@ -512,40 +420,10 @@ const std::string& NonPackedAnimation::representative_image_filename() const {
 	return image_files_[0];
 }
 
-uint32_t NonPackedAnimation::current_frame(uint32_t time) const {
-	if (nr_frames() > 1) {
-		return (play_once_ && time / frametime_ > static_cast<uint32_t>(nr_frames() - 1)) ?
-		          static_cast<uint32_t>(nr_frames() - 1) :
-		          time / frametime_ % nr_frames();
-	}
-	return 0;
-}
-
-void NonPackedAnimation::trigger_sound(uint32_t time, uint32_t stereo_position) const {
-	if (sound_effect_.empty()) {
-		return;
-	}
-
-	const uint32_t framenumber = current_frame(time);
-
-	if (framenumber == 0) {
-		Notifications::publish(NoteSound(sound_effect_, stereo_position, 1));
-	}
-}
-
 Rectf NonPackedAnimation::source_rectangle(const int percent_from_bottom) const {
 	ensure_graphics_are_loaded();
 	float h = percent_from_bottom * frames_[0]->height() / 100;
 	return Rectf(0.f, frames_[0]->height() - h, frames_[0]->width(), h);
-}
-
-Rectf NonPackedAnimation::destination_rectangle(const Vector2f& position,
-                                                const Rectf& source_rect,
-                                                const float scale) const {
-	ensure_graphics_are_loaded();
-	return Rectf(position.x - (hotspot_.x - source_rect.x / scale_) * scale,
-	             position.y - (hotspot_.y - source_rect.y / scale_) * scale,
-	             source_rect.w * scale / scale_, source_rect.h * scale / scale_);
 }
 
 void NonPackedAnimation::blit(uint32_t time,
@@ -568,6 +446,80 @@ void NonPackedAnimation::blit(uint32_t time,
 }
 
 }  // namespace
+
+/*
+==============================================================================
+
+Common Animation functions
+
+==============================================================================
+*/
+
+Animation::Animation(const LuaTable& table) : scale_(1.0f), frametime_(FRAME_LENGTH), play_once_(false) {
+	try {
+		get_point(*table.get_table("hotspot"), &hotspot_);
+
+		if (table.has_key("scale")) {
+			scale_ = table.get_double("scale");
+			if (scale_ <= 0.0f) {
+				// NOCOM identify the animation somehow
+				throw wexception("Animation scale needs to be > 0.0f, but it is %f.",
+									  static_cast<double>(scale_));
+			}
+		}
+		assert(scale_ > 0);
+
+		if (table.has_key("sound_effect")) {
+			std::unique_ptr<LuaTable> sound_effects = table.get_table("sound_effect");
+
+			const std::string name = sound_effects->get_string("name");
+			const std::string directory = sound_effects->get_string("directory");
+			sound_effect_ = directory + g_fs->file_separator() + name;
+			g_sound_handler.load_fx_if_needed(directory, name, sound_effect_);
+
+			if (table.has_key("play_once")) {
+				play_once_ = table.get_bool("play_once");
+			}
+		}
+	} catch (const LuaError& e) {
+		throw wexception("Error in animation table: %s", e.what());
+	}
+}
+
+const Vector2i& Animation::hotspot() const {
+	return hotspot_;
+}
+
+uint32_t Animation::frametime() const {
+	return frametime_;
+}
+
+Rectf Animation::destination_rectangle(const Vector2f& position,
+                                                const Rectf& source_rect,
+                                                const float scale) const {
+	return Rectf(position.x - (hotspot_.x - source_rect.x / scale_) * scale,
+	             position.y - (hotspot_.y - source_rect.y / scale_) * scale,
+	             source_rect.w * scale / scale_, source_rect.h * scale / scale_);
+}
+
+uint32_t Animation::current_frame(uint32_t time) const {
+	if (nr_frames() > 1) {
+		return (play_once_ && time / frametime_ > static_cast<uint32_t>(nr_frames() - 1)) ?
+		          static_cast<uint32_t>(nr_frames() - 1) :
+		          time / frametime_ % nr_frames();
+	}
+	return 0;
+}
+
+void Animation::trigger_sound(uint32_t time, uint32_t stereo_position) const {
+	if (sound_effect_.empty()) {
+		return;
+	}
+
+	if (current_frame(time) == 0) {
+		Notifications::publish(NoteSound(sound_effect_, stereo_position, 1));
+	}
+}
 
 /*
 ==============================================================================

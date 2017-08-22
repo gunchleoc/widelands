@@ -52,15 +52,14 @@ constexpr int FRAME_LENGTH = 250;
  */
 class Animation {
 public:
-	Animation() {
-	}
+	explicit Animation(const LuaTable& table);
 	virtual ~Animation() {
 	}
 
 	/// The height of this animation.
 	virtual float height() const = 0;
 	virtual float width() const  = 0;
-	virtual const Vector2i& hotspot() const = 0;
+	const Vector2i& hotspot() const;
 
 	/// The size of the animation source images in pixels. Use 'percent_from_bottom' to crop the
 	/// animation.
@@ -70,14 +69,14 @@ public:
 	/// 'position' is where the top left corner of the animation will end up,
 	/// 'source_rect' is the rectangle calculated by source_rectangle,
 	/// 'scale' is the zoom scale.
-	virtual Rectf
-	destination_rectangle(const Vector2f& position, const Rectf& source_rect, float scale) const = 0;
+	Rectf
+	destination_rectangle(const Vector2f& position, const Rectf& source_rect, float scale) const;
 
 	/// The number of animation frames of this animation.
 	virtual uint16_t nr_frames() const = 0;
 
 	/// The number of milliseconds each frame will be displayed.
-	virtual uint32_t frametime() const = 0;
+	uint32_t frametime() const;
 
 	/// An image of the first frame, blended with the given player color.
 	/// The 'clr' is the player color used for blending - the parameter can be
@@ -98,20 +97,37 @@ public:
 	                  const RGBColor* clr,
 	                  Surface* target) const = 0;
 
-	/// Play the sound effect associated with this animation at the given time.
-	virtual void trigger_sound(uint32_t time, uint32_t stereo_position) const = 0;
-
+	/// We need to expose these for the packed animation,
+	/// so that the create_spritemap utility can use them
 	virtual std::vector<const Image*> images() const {
 		std::vector<const Image*> result;
 		return result;
 	}
+	/// We need to expose these for the packed animation,
+	/// so that the create_spritemap utility can use them
 	virtual std::vector<const Image*> pc_masks() const {
 		std::vector<const Image*> result;
 		return result;
 	}
 
+protected:
+	uint32_t current_frame(uint32_t time) const;
+
+	/// Play the sound effect associated with this animation at the given time.
+	void trigger_sound(uint32_t time, uint32_t stereo_position) const;
+
+	Vector2i hotspot_ = Vector2i::zero();
+	float scale_;
+	uint32_t frametime_;
+
 private:
 	DISALLOW_COPY_AND_ASSIGN(Animation);
+
+	// name of sound effect that will be played at frame 0.
+	// TODO(sirver): this should be done using play_sound in a program instead of
+	// binding it to the animation.
+	std::string sound_effect_;
+	bool play_once_;
 };
 
 /**
