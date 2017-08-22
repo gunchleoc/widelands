@@ -78,10 +78,10 @@ public:
 
 	// Implements Animation.
 	float width() const override {
-		return rectangle_.w;
+		return rectangle_.w / scale_;
 	}
 	float height() const override {
-		return rectangle_.h;
+		return rectangle_.h / scale_;
 	}
 	uint16_t nr_frames() const override {
 		return nr_frames_;
@@ -94,8 +94,8 @@ public:
 	}
 	// NOCOM test these
 	Rectf source_rectangle(int percent_from_bottom) const override {
-		float h = percent_from_bottom * height() / 100;
-		return Rectf(0.f, height(), width(), h);
+		float h = percent_from_bottom * rectangle_.h / 100;
+		return Rectf(0.f, rectangle_.h - h, rectangle_.w, h);
 	}
 	Rectf destination_rectangle(const Vector2f& position,
 										 const Rectf& source_rect,
@@ -146,7 +146,7 @@ PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
      image_(nullptr),
      pcmask_(nullptr),
 	  play_once_(false),
-	  scale_(1) {
+	  scale_(1.0f) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -200,6 +200,15 @@ PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
 				   "Packed animation with one picture %s must not have 'fps'", hash_.c_str());
 			}
 		}
+		if (table.has_key("scale")) {
+			scale_ = table.get_double("scale");
+			if (scale_ <= 0.0f) {
+				// NOCOM identify the animation somehow
+				throw wexception("Animation scale needs to be > 0.0f, but it is %f",
+				                 static_cast<double>(scale_));
+			}
+		}
+		assert(scale_ > 0);
 	} catch (const LuaError& e) {
 		throw wexception("Error in packed animation table: %s", e.what());
 	}
@@ -358,7 +367,7 @@ private:
 };
 
 NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
-   : frametime_(FRAME_LENGTH), hasplrclrs_(false), scale_(1), play_once_(false) {
+   : frametime_(FRAME_LENGTH), hasplrclrs_(false), scale_(1.0f), play_once_(false) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
