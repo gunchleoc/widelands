@@ -64,7 +64,7 @@ override_dh_auto_install:
 	        debian/tmp/usr/share/icons/hicolor/32x32/apps/widelands.xpm
 	# Remove binaries that are not intended for the user (according to SirVer)
 	# We want all binaries for our PPA...
-	# for b in wl_map_info wl_map_object_info wl_render_richtext ; do \
+	# for b in wl_create_spritemap wl_map_info wl_map_object_info wl_render_richtext ; do \
 	#  rm debian/tmp/usr/$${b} ;\
 	# done
 	# Move the main binary to the right location (no idea why it's misplaced)

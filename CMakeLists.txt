@@ -7,6 +7,7 @@ include("${CMAKE_SOURCE_DIR}/cmake/WlFunctions.cmake")
 option(OPTION_USE_GLBINDING "Use glbinding instead of GLEW" OFF)
 option(OPTION_GLEW_STATIC "Use static GLEW Library" OFF)
 option(OPTION_BUILD_WEBSITE_TOOLS "Build website-related tools" ON)
+option(OPTION_BUILD_UTILITIES "Build utilities, e.g. for creating spritemaps" ON)
 option(OPTION_BUILD_TRANSLATIONS "Build translations" ON)
 
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)

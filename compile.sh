@@ -4,66 +4,108 @@ echo "###########################################################"
 echo "#     Script to simplify the compilation of Widelands     #"
 echo "###########################################################"
 echo " "
-echo "  Because of the many different systems Widelands"
-echo "  might be compiled on, we unfortunally can not"
-echo "  provide a simple way to prepare your system for"
-echo "  compilation. To ensure your system is ready, best"
-echo "  check http://wl.widelands.org/wiki/BuildingWidelands"
+echo "  Because of the many different systems Widelands might be"
+echo "  compiled on, we unfortunately can not provide a simple"
+echo "  way to prepare your system for compilation. To ensure"
+echo "  that your system is ready, best check"
+echo "  http://wl.widelands.org/wiki/BuildingWidelands"
 echo " "
 echo "  You will often find helpful hands at our"
 echo "  * IRC Chat: http://wl.widelands.org/webchat/"
 echo "  * Forums: http://wl.widelands.org/forum/"
-echo "  * Mailinglist: http://wl.widelands.org/wiki/MailLists/"
+echo "  * Mailing List: http://wl.widelands.org/wiki/MailLists/"
 echo " "
 echo "  Please post your bug reports and feature requests at:"
 echo "  https://bugs.launchpad.net/widelands"
 echo " "
+echo "  For instructions on how to adjust options and build with"
+echo "  CMake, please take a look at"
+echo "  https://wl.widelands.org/wiki/BuildingWidelands/."
+echo " "
 echo "###########################################################"
 echo " "
 
-
-## Option to avoid building and linking website-related executables.
-BUILD_WEBSITE="ON"
-BUILD_TRANSLATIONS="ON"
+## Option to avoid building and linking website-related executables etc.
 BUILDTYPE="Debug"
+BUILD_TRANSLATIONS="ON"
+BUILD_UTILS="ON"
+BUILD_WEBSITE="ON"
+PRINT_HELP=0
 while [ "$1" != "" ]; do
-  if [ "$1" = "--no-website" -o "$1" = "-w" ]; then
+  if [ "$1" = "--help" ]; then
+    PRINT_HELP=1
+  elif [ "$1" = "--minimal" -o "$1" = "-m" ]; then
+    BUILDTYPE="Release"
+    BUILD_TRANSLATIONS="OFF"
+    BUILD_UTILS="OFF"
     BUILD_WEBSITE="OFF"
   elif [ "$1" = "--release" -o "$1" = "-r" ]; then
     BUILDTYPE="Release"
   elif [ "$1" = "--no-translations" -o "$1" = "-t" ]; then
     BUILD_TRANSLATIONS="OFF"
+  elif [ "$1" = "--no-utils" -o "$1" = "-u" ]; then
+    BUILD_UTILS="OFF"
+  elif [ "$1" = "--no-website" -o "$1" = "-w" ]; then
+    BUILD_WEBSITE="OFF"
   fi
   shift
 done
-if [ $BUILD_WEBSITE = "ON" ]; then
-  echo "A complete build will be created."
-  echo "You can use -w or --no-website to omit building and"
-  echo "linking website-related executables."
+if [ $PRINT_HELP = 1 ]; then
+  echo "  You can build Widelands as a debug or as a release build."
+  echo "  The debug build is the default option; in order to create"
+  echo "  a release build, call"
+  echo ""
+  echo "    ./compile.sh -r"
+  echo ""
+  echo "  The following options are available for speeding up the"
+  echo "  build:"
+  echo " "
+  echo "    -m or --minimal:"
+  echo "          Create the fastest build possible. This is a"
+  echo "          release build with no translations or additional"
+  echo "          executables."
+  echo " "
+  echo "    -u or --no-utils:"
+  echo "          Omit building and linking the utility"
+  echo "          executables (wl_create_spritemap)"
+  echo " "
+  echo "    -w or --no-website:"
+  echo "          Omit building and linking the website-related"
+  echo "          executables (wl_map_info, wl_map_object_info)"
+  echo " "
+  echo "    -t or --no-translations:"
+  echo "          Omit building translations"
+  echo " "
+  echo "###########################################################"
+  echo " "
+  exit 0
 else
-  echo "Any website-related code will be OMITTED in the build."
-  echo "Make sure that you have created and tested a full"
-  echo "build before submitting code to the repository!"
+  echo "  Building Widelands with the following options:"
+  echo ""
+  if [ $BUILDTYPE = "Release" ]; then
+    echo "    * RELEASE build"
+  else
+    echo "    * DEBUG build"
+  fi
+  if [ $BUILD_TRANSLATIONS = "ON" ]; then
+    echo "    * Translations"
+  else
+    echo "    * NO translations"
+  fi
+  if [ $BUILD_UTILS = "ON" ]; then
+    echo "    * Utility executables"
+  else
+    echo "    * NO utility executables"
+  fi
+  if [ $BUILD_WEBSITE = "ON" ]; then
+    echo "    * Website executables"
+  else
+    echo "    * NO website executables"
+  fi
 fi
+
 echo " "
-if [ $BUILD_TRANSLATIONS = "ON" ]; then
-  echo "Translations will be built."
-  echo "You can use -t or --no-translations to omit building them."
-else
-echo "Translations will not be built."
-fi
-echo " "
-echo "###########################################################"
-echo " "
-if [ $BUILDTYPE = "Release" ]; then
-  echo "Creating a Release build."
-else
-  echo "Creating a Debug build. Use -r to create a Release build."
-fi
-echo " "
-echo "For instructions on how to adjust options and build with"
-echo "CMake, please take a look at"
-echo "https://wl.widelands.org/wiki/BuildingWidelands/."
+echo "  Call ./compile.sh --help for further options"
 echo " "
 echo "###########################################################"
 echo " "
@@ -114,9 +156,9 @@ buildtool="" #Use ninja by default, fall back to make if that is not available.
   # Compile Widelands
   compile_widelands () {
     if [ $buildtool = "ninja" ] || [ $buildtool = "ninja-build" ] ; then
-      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
+      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
     else
-      cmake .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
+      cmake .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
     fi
 
     $buildtool
@@ -130,10 +172,14 @@ buildtool="" #Use ninja by default, fall back to make if that is not available.
 
     rm  -f ../wl_map_object_info || true
     rm  -f ../wl_map_info || true
+    rm  -f ../wl_create_spritemap || true
 
     mv VERSION ../VERSION
     mv src/widelands ../widelands
 
+    if [ $BUILD_UTILS = "ON" ]; then
+        mv ../build/src/utils/wl_create_spritemap ../wl_create_spritemap
+    fi
     if [ $BUILD_WEBSITE = "ON" ]; then
         mv ../build/src/website/wl_map_object_info ../wl_map_object_info
         mv ../build/src/website/wl_map_info ../wl_map_info
