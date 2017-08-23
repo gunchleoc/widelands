@@ -223,18 +223,17 @@ MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
                                const std::string& init_descname,
                                const LuaTable& table)
    : MapObjectDescr(init_type, init_name, init_descname) {
-	if (table.has_key("animations")) {
-		std::unique_ptr<LuaTable> anims(table.get_table("animations"));
-		for (const std::string& animation : anims->keys<std::string>()) {
-			add_animation(animation, g_gr->animations().load(*anims->get_table(animation)));
-		}
-	}
-	// NOCOM
 	if (table.has_key("spritemap_script")) {
 		LuaInterface lua;
 		std::unique_ptr<LuaTable> spritemap(lua.run_script(table.get_string("spritemap_script")));
 		for (const std::string& animation : spritemap->keys<std::string>()) {
 			add_animation(animation, g_gr->animations().load_packed(animation, *spritemap->get_table(animation)));
+		}
+	} else if (table.has_key("animations")) {
+		// NOCOM make sure that we only have 1 of them
+		std::unique_ptr<LuaTable> anims(table.get_table("animations"));
+		for (const std::string& animation : anims->keys<std::string>()) {
+			add_animation(animation, g_gr->animations().load(*anims->get_table(animation)));
 		}
 	}
 	if (table.has_key("animations") || table.has_key("spritemap_script")) {
