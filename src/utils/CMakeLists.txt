@@ -1,6 +1,8 @@
 wl_binary(wl_create_spritemap
   SRCS
     create_spritemap.cc
+    lua_filewrite.cc
+    lua_filewrite.h
   USES_SDL2
   DEPENDS
     base_i18n

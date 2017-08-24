@@ -22,10 +22,7 @@
 #include <vector>
 
 #include <SDL.h>
-#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
 
 #include "base/i18n.h"
 #include "base/log.h"
@@ -37,12 +34,12 @@
 #include "graphic/texture_atlas.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
-#include "io/filewrite.h"
 #include "logic/editor_game_base.h"
 #include "logic/map_objects/tribes/tribes.h"
 #include "logic/map_objects/world/critter.h"
 #include "logic/map_objects/world/world.h"
 #include "sound/sound_handler.h"
+#include "utils/lua_filewrite.h"
 
 using namespace Widelands;
 
@@ -94,121 +91,6 @@ void cleanup() {
 
 	SDL_Quit();
 }
-
-/*
- ==========================================================
- SPECIALIZED FILEWRITE
- ==========================================================
- */
-
-// Defines some convenience writing functions for the Lua format
-class LuaFileWrite : public FileWrite {
-public:
-	LuaFileWrite() : FileWrite(), level_(0) {
-	}
-
-	void write_string(const std::string& s, bool use_indent = false) {
-		std::string writeme = s;
-		if (use_indent) {
-			for (int i = 0; i < level_; ++i) {
-				writeme = (boost::format("   %s") % writeme).str();
-			}
-		}
-		data(writeme.c_str(), writeme.size());
-	}
-	void write_key(const std::string& key, bool use_indent = false) {
-		write_string((boost::format("%s = ") % key).str(), use_indent);
-	}
-	void write_value_string(const std::string& value, bool use_indent = false) {
-		write_string((boost::format("\"%s\"") % value).str(), use_indent);
-	}
-	void write_value_int(const int value, bool use_indent = false) {
-		write_string((boost::format("%d") % value).str(), use_indent);
-	}
-
-	std::string format_double(const double value) {
-		std::string result = (boost::format("%f") % value).str();
-		boost::regex re("(\\d+)\\.(\\d+?)[0]+$");
-		result = regex_replace(result, re, "\\1.\\2", boost::match_default);
-		return result;
-	}
-	void write_value_double(const double value, bool use_indent = false) {
-		write_string(format_double(value), use_indent);
-	}
-	void write_key_value(const std::string& key,
-	                     const std::string& quoted_value,
-	                     bool use_indent = false) {
-		write_string((boost::format("%s = %s") % key % quoted_value).str(), use_indent);
-	}
-	void write_key_value_string(const std::string& key,
-	                            const std::string& value,
-	                            bool use_indent = false) {
-		std::string quoted_value = value;
-		boost::replace_all(quoted_value, "\"", "\\\"");
-		write_key_value(key, "\"" + value + "\"", use_indent);
-	}
-	void write_key_value_int(const std::string& key, const int value, bool use_indent = false) {
-		write_key_value(key, boost::lexical_cast<std::string>(value), use_indent);
-	}
-	void
-	write_key_value_double(const std::string& key, const double value, bool use_indent = false) {
-		write_key_value(key, format_double(value), use_indent);
-	}
-	void
-	open_table(const std::string& name, bool newline = false, bool indent_for_preceding = false) {
-		if (newline) {
-			if (indent_for_preceding) {
-				write_string("\n");
-			}
-			if (name.empty()) {
-				write_string("{\n", newline || indent_for_preceding);
-			} else {
-				write_string(name + " = {\n", newline || indent_for_preceding);
-			}
-		} else {
-			if (name.empty()) {
-				write_string(" {", newline || indent_for_preceding);
-			} else {
-				write_string(name + " = { ", newline || indent_for_preceding);
-			}
-		}
-		++level_;
-	}
-	// No final comma makes for cleaner code. This defaults to having a comma.
-	void close_table(int current = -2,
-	                 int total = 0,
-	                 bool newline = false,
-	                 bool indent_for_following = false) {
-		--level_;
-		if (newline) {
-			write_string("\n");
-		} else {
-			write_string(" ");
-		}
-		if (current < total - 1) {
-			write_string("},", newline);
-		} else {
-			write_string("}", newline);
-		}
-		if (indent_for_following) {
-			write_string("\n");
-		}
-	}
-
-	// No final comma makes for cleaner code. This defaults to having a comma.
-	void close_element(int current = -2, int total = 0, bool newline = false) {
-		if (current < total - 1) {
-			if (newline) {
-				write_string(",\n");
-			} else {
-				write_string(", ");
-			}
-		}
-	}
-
-private:
-	int level_;
-};
 
 /*
  ==========================================================
