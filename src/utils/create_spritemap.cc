@@ -481,6 +481,13 @@ void write_animation(EditorGameBase& egbase,
 
 	const Animation& animation =
 	   g_gr->animations().get_animation(descr->get_animation(animation_name));
+	if (animation.type() != Animation::Type::kNonPacked) {
+		log("ABORTING. Animation '%s' for '%s' is working from a spritesheet already. Please double-check its init.lua file.\n",
+			 animation_name.c_str(),
+		    descr->name().c_str());
+		return;
+	}
+
 	const Vector2i& hotspot = animation.hotspot();
 
 	std::vector<const Image*> images = animation.images();
@@ -489,7 +496,7 @@ void write_animation(EditorGameBase& egbase,
 
 	// Only create spritemap if animation has more than 1 frame.
 	if (images.size() < 2) {
-		log("Animation has less than 2 images and doesn't need a spritemap.\n");
+		log("ABORTING. Animation has less than 2 images and doesn't need a spritemap.\n");
 		return;
 	}
 	const SpritemapData* spritemap = make_spritemap(images, animation_name + ".png", out_filesystem);

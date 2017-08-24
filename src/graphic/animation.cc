@@ -120,14 +120,12 @@ private:
 };
 
 PackedAnimation::PackedAnimation(const std::string& name, const LuaTable& table)
-   : Animation(table),
+   : Animation(table, Animation::Type::kPacked),
 	  rectangle_(0, 0, 0, 0),
      nr_frames_(1), // We'll have 1 frame if there is no region
      image_(nullptr),
      pcmask_(nullptr) {
 	try {
-
-
 		std::string image = table.get_string("image");
 		if (!g_fs->file_exists(image)) {
 			throw wexception("Packed animation %s - spritemap image %s does not exist.", hash_.c_str(),
@@ -304,7 +302,7 @@ private:
 };
 
 NonPackedAnimation::NonPackedAnimation(const LuaTable& table)
-   : Animation(table), hasplrclrs_(false) {
+   : Animation(table, Animation::Type::kNonPacked), hasplrclrs_(false) {
 	try {
 		image_files_ = table.get_table("pictures")->array_entries<std::string>();
 
@@ -455,7 +453,7 @@ Common Animation functions
 ==============================================================================
 */
 
-Animation::Animation(const LuaTable& table) : scale_(1.0f), frametime_(FRAME_LENGTH), play_once_(false) {
+Animation::Animation(const LuaTable& table, Type init_type) : type_(init_type), scale_(1.0f), frametime_(FRAME_LENGTH), play_once_(false) {
 	try {
 		get_point(*table.get_table("hotspot"), &hotspot_);
 
@@ -484,6 +482,11 @@ Animation::Animation(const LuaTable& table) : scale_(1.0f), frametime_(FRAME_LEN
 	} catch (const LuaError& e) {
 		throw wexception("Error in animation table: %s", e.what());
 	}
+}
+
+/// Animation type for safety in create_spritemap
+Animation::Type Animation::type() const {
+	return type_;
 }
 
 const Vector2i& Animation::hotspot() const {

@@ -52,9 +52,18 @@ constexpr int FRAME_LENGTH = 250;
  */
 class Animation {
 public:
-	explicit Animation(const LuaTable& table);
+	enum class Type {
+		kUndefined,
+		kPacked,
+		kNonPacked
+	};
+
+	explicit Animation(const LuaTable& table, Animation::Type type);
 	virtual ~Animation() {
 	}
+
+	/// Animation type for safety in create_spritemap
+	Animation::Type type() const;
 
 	/// The height of this animation.
 	virtual float height() const = 0;
@@ -122,6 +131,8 @@ protected:
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(Animation);
+
+	Animation::Type type_;
 
 	// name of sound effect that will be played at frame 0.
 	// TODO(sirver): this should be done using play_sound in a program instead of
