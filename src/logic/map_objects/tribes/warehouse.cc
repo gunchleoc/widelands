@@ -377,7 +377,7 @@ Warehouse::Warehouse(const WarehouseDescr& warehouse_descr)
 }
 
 Warehouse::~Warehouse() {
-	delete supply_;
+	supply_.reset();
 }
 
 /**

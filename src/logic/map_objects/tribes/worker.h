@@ -20,6 +20,8 @@
 #ifndef WL_LOGIC_MAP_OBJECTS_TRIBES_WORKER_H
 #define WL_LOGIC_MAP_OBJECTS_TRIBES_WORKER_H
 
+#include <memory>
+
 #include "economy/idleworkersupply.h"
 #include "economy/portdock.h"
 #include "economy/transfer.h"
@@ -290,7 +292,7 @@ private:
 	OPtr<PlayerImmovable> location_;   ///< meta location of the worker
 	Economy* economy_;                 ///< economy this worker is registered in
 	OPtr<WareInstance> carried_ware_;  ///< ware we are carrying
-	IdleWorkerSupply* supply_;         ///< supply while gowarehouse and not transfer
+	std::unique_ptr<IdleWorkerSupply> supply_;  ///< supply while gowarehouse and not transfer
 	Transfer* transfer_;               ///< where we are currently being sent
 	int32_t current_exp_;              ///< current experience
 

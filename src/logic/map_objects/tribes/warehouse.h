@@ -20,6 +20,8 @@
 #ifndef WL_LOGIC_MAP_OBJECTS_TRIBES_WAREHOUSE_H
 #define WL_LOGIC_MAP_OBJECTS_TRIBES_WAREHOUSE_H
 
+#include <memory>
+
 #include "base/macros.h"
 #include "base/wexception.h"
 #include "economy/request.h"
@@ -282,7 +284,7 @@ private:
 
 	AttackTarget attack_target_;
 	SoldierControl soldier_control_;
-	WarehouseSupply* supply_;
+	std::unique_ptr<WarehouseSupply> supply_;
 
 	std::vector<StockPolicy> ware_policy_;
 	std::vector<StockPolicy> worker_policy_;

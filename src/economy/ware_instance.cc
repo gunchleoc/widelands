@@ -188,9 +188,9 @@ WareInstance::WareInstance(DescriptionIndex const i, const WareDescr* const ware
 WareInstance::~WareInstance() {
 	if (supply_) {
 		FORMAT_WARNINGS_OFF;
-		molog("Ware %u still has supply %p\n", descr_index_, supply_);
+		molog("Ware %u still has supply %p\n", descr_index_, supply_.get());
 		FORMAT_WARNINGS_ON;
-		delete supply_;
+		supply_.reset();
 	}
 }
 
@@ -203,8 +203,7 @@ void WareInstance::cleanup(EditorGameBase& egbase) {
 	if (upcast(Flag, flag, location_.get(egbase)))
 		flag->remove_ware(egbase, this);
 
-	delete supply_;
-	supply_ = nullptr;
+	supply_.reset();
 
 	cancel_moving();
 	set_location(egbase, nullptr);
@@ -310,11 +309,10 @@ void WareInstance::update(Game& game) {
 	// Update whether we have a Supply or not
 	if (!transfer_ || !transfer_->get_request()) {
 		if (!supply_) {
-			supply_ = new IdleWareSupply(*this);
+			supply_.reset(new IdleWareSupply(*this));
 		}
 	} else {
-		delete supply_;
-		supply_ = nullptr;
+		supply_.reset();
 	}
 
 	// Deal with transfers
@@ -452,8 +450,7 @@ void WareInstance::set_transfer(Game& game, Transfer& t) {
 	// Set transfer state
 	transfer_ = &t;
 
-	delete supply_;
-	supply_ = nullptr;
+	supply_.reset();
 
 	// Schedule an update.
 	// Do not update immediately, because update() could try to reference
@@ -552,8 +549,9 @@ void WareInstance::Loader::load_finish() {
 
 	WareInstance& ware = get<WareInstance>();
 	if (!ware.transfer_ || !ware.transfer_->get_request()) {
-		if (!ware.supply_)
-			ware.supply_ = new IdleWareSupply(ware);
+		if (!ware.supply_) {
+			ware.supply_.reset(new IdleWareSupply(ware));
+		}
 	}
 }
 

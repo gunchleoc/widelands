@@ -1099,7 +1099,7 @@ void Worker::log_general_info(const EditorGameBase& egbase) {
 	molog("current_exp: %i / %i\n", current_exp_, descr().get_needed_experience());
 
 	FORMAT_WARNINGS_OFF;
-	molog("supply: %p\n", supply_);
+	molog("supply: %p\n", supply_.get());
 	FORMAT_WARNINGS_ON;
 }
 
@@ -1196,10 +1196,7 @@ bool Worker::init(EditorGameBase& egbase) {
 void Worker::cleanup(EditorGameBase& egbase) {
 	WareInstance* const ware = get_carried_ware(egbase);
 
-	if (supply_) {
-		delete supply_;
-		supply_ = nullptr;
-	}
+	supply_.reset();
 
 	if (ware)
 		if (egbase.objects().object_still_available(ware))
@@ -1983,8 +1980,7 @@ void Worker::gowarehouse_update(Game& game, State& /* state */) {
 	}
 
 	if (dynamic_cast<Warehouse const*>(location)) {
-		delete supply_;
-		supply_ = nullptr;
+		supply_.reset();
 
 		schedule_incorporate(game);
 		return;
@@ -2017,7 +2013,7 @@ void Worker::gowarehouse_update(Game& game, State& /* state */) {
 	// idle on a flag until the end of days (actually, until either the
 	// flag is removed or a warehouse connects to the Economy).
 	if (!supply_)
-		supply_ = new IdleWorkerSupply(*this);
+		supply_.reset(new IdleWorkerSupply(*this));
 
 	return start_task_idle(game, descr().get_animation("idle"), 1000);
 }
@@ -2026,14 +2022,12 @@ void Worker::gowarehouse_signalimmediate(Game&, State& /* state */, const std::s
 	if (signal == "transfer") {
 		// We are assigned a transfer, make sure our supply disappears immediately
 		// Otherwise, we might receive two transfers in a row.
-		delete supply_;
-		supply_ = nullptr;
+		supply_.reset();
 	}
 }
 
 void Worker::gowarehouse_pop(Game&, State&) {
-	delete supply_;
-	supply_ = nullptr;
+	supply_.reset();
 
 	if (transfer_) {
 		transfer_->has_failed();
