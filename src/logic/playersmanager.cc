@@ -75,6 +75,8 @@ Player* PlayersManager::add_player(PlayerNumber const player_number,
 			number_of_players_--;
 		}
 	}
+
+	assert(egbase_.tribes().tribe_exists(egbase_.tribes().tribe_index(tribe)));
 	p = new Player(egbase_, player_number, initialization_index,
 	               *egbase_.tribes().get_tribe_descr(egbase_.tribes().tribe_index(tribe)), name);
 	p->set_team_number(team);
