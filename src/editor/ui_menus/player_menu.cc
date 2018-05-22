@@ -156,7 +156,7 @@ void EditorPlayerMenu::update() {
 		}
 
 		// Get/Set (localized) tribe names
-		if (map->get_scenario_player_tribe(p) != UNDEFINED_TRIBE_NAME) {
+		if (!map->get_scenario_player_tribe(p).empty() && map->get_scenario_player_tribe(p) != UNDEFINED_TRIBE_NAME) {
 			selected_tribes_[p - 1] = map->get_scenario_player_tribe(p);
 		} else {
 			selected_tribes_[p - 1] = tribenames_[0];

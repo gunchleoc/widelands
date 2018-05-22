@@ -519,15 +519,21 @@ Load/save support
 
 constexpr uint8_t kCurrentPacketVersion = 2;
 
-void WareInstance::Loader::load(FileRead& fr) {
+void WareInstance::Loader::load(EditorGameBase& egbase, FileRead& fr) {
 	MapObject::Loader::load(fr);
 
 	WareInstance& ware = get<WareInstance>();
 	location_ = fr.unsigned_32();
 	transfer_nextstep_ = fr.unsigned_32();
 	if (fr.unsigned_8()) {
-		ware.transfer_ = new Transfer(dynamic_cast<Game&>(egbase()), ware);
-		ware.transfer_->read(fr, transfer_);
+		if (upcast(Game, game, &egbase)) {
+			ware.transfer_ = new Transfer(*game, ware);
+			ware.transfer_->read(fr, transfer_);
+		} else {
+			// NOCOM dirty hack
+			fr.unsigned_8();
+			fr.unsigned_32();
+		}
 	}
 }
 
@@ -593,7 +599,7 @@ MapObject::Loader* WareInstance::load(EditorGameBase& egbase,
 
 			std::unique_ptr<Loader> loader(new Loader);
 			loader->init(egbase, mol, *new WareInstance(wareindex, descr));
-			loader->load(fr);
+			loader->load(egbase, fr); // NOCOM added egbase for dirty hack
 
 			return loader.release();
 		} else {

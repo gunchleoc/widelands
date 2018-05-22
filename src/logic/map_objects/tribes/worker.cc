@@ -3056,8 +3056,16 @@ void Worker::Loader::load(FileRead& fr) {
 			worker.current_exp_ = fr.signed_32();
 
 			if (fr.unsigned_8()) {
-				worker.transfer_ = new Transfer(dynamic_cast<Game&>(egbase()), worker);
-				worker.transfer_->read(fr, transfer_);
+				log("NOCOM casting transfer\n");
+				if (upcast(Game, game, &egbase())) {
+					worker.transfer_ = new Transfer(*game, worker);
+					worker.transfer_->read(fr, transfer_);
+				} else {
+					// NOCOM dirty hack to consume the transfers
+					fr.unsigned_8();
+					fr.unsigned_32();
+				}
+				log("NOCOM transfer was read\n");
 			}
 			unsigned veclen;
 			// TODO(kxq): Remove compatibility_2017 associated code from here and above,

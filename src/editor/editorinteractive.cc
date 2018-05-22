@@ -191,6 +191,27 @@ void EditorInteractive::load(const std::string& filename) {
 	ml->load_map_complete(egbase(), Widelands::MapLoader::LoadType::kEditor);
 	egbase().load_graphics(loader_ui);
 	map_changed(MapWas::kReplaced);
+
+	// NOCOM
+	const Widelands::Field& fields_end = (*map)[map->max_index()];
+	for (Widelands::Field* field = &(*map)[0]; field < &fields_end; ++field) {
+		const Widelands::FCoords fcoords = map->get_fcoords(*field);
+
+		// NOCOM review which container to use
+		// Grab the bobs first, because we do some destroying below
+		std::set<Widelands::Bob*> field_bobs;
+		for (Widelands::Bob* bob = field->get_first_bob(); bob != nullptr; bob = bob->get_next_bob()) {
+			field_bobs.emplace(bob);
+		}
+
+		// Now recreate the bobs to get them all in an idle state
+		for (Widelands::Bob* bob : field_bobs) {
+			const Widelands::BobDescr& descr = bob->descr();
+			Widelands::Player* bob_owner = bob->get_owner();
+			bob->destroy(egbase());
+			descr.create(egbase(), bob_owner, fcoords);
+		}
+	}
 }
 
 void EditorInteractive::cleanup_for_load() {

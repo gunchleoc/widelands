@@ -109,7 +109,7 @@ protected:
 	struct Loader : MapObject::Loader {
 		Loader() = default;
 
-		void load(FileRead&);
+		void load(EditorGameBase& egbase, FileRead&);
 		void load_pointers() override;
 		void load_finish() override;
 

@@ -64,6 +64,9 @@ Transfer::Transfer(Game& game, Worker& w)
    : game_(game), request_(nullptr), ware_(nullptr), worker_(&w) {
 }
 
+// NOCOM if we make game a pointer, we can have nullptr for editor loading
+// Then assert != nullptr in the functions
+
 /**
  * Cleanup.
  */

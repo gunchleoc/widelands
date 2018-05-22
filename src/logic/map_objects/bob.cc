@@ -132,8 +132,10 @@ bool Bob::init(EditorGameBase& egbase) {
  * Perform independent cleanup as necessary.
  */
 void Bob::cleanup(EditorGameBase& egbase) {
-	while (!stack_.empty()) {  //  bobs in the editor do not have tasks
-		do_pop_task(dynamic_cast<Game&>(egbase));
+	if (is_a(Game, &egbase)) { // NOCOM
+		while (!stack_.empty()) {  //  bobs in the editor do not have tasks
+			do_pop_task(dynamic_cast<Game&>(egbase));
+		}
 	}
 
 	set_owner(nullptr);  // implicitly remove ourselves from owner's map

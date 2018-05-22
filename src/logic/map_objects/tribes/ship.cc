@@ -157,8 +157,12 @@ bool Ship::init(EditorGameBase& egbase) {
 	get_owner()->add_ship(serial());
 
 	// Assigning a ship name
-	shipname_ = get_owner()->pick_shipname();
-	molog("New ship: %s\n", shipname_.c_str());
+	if (is_a(Game, &egbase)) { // NOCOM
+		shipname_ = get_owner()->pick_shipname();
+		molog("New ship: %s\n", shipname_.c_str());
+	} else {
+		shipname_ = _("Ship");
+	}
 	Notifications::publish(NoteShip(this, NoteShip::Action::kGained));
 	return true;
 }
