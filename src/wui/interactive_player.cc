@@ -19,6 +19,8 @@
 
 #include "wui/interactive_player.h"
 
+#include <list>
+
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/bind.hpp>
@@ -51,6 +53,7 @@
 #include "wui/game_options_menu.h"
 #include "wui/game_statistics_menu.h"
 #include "wui/general_statistics_menu.h"
+#include "wui/mapviewpixelconstants.h"
 #include "wui/seafaring_statistics_menu.h"
 #include "wui/stock_menu.h"
 #include "wui/tribal_encyclopedia.h"
@@ -271,6 +274,9 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 	const auto text_to_draw = get_text_to_draw();
 	const float scale = 1.f / given_map_view->view().zoom;
 
+	// Defer drawing of some bobs to prevent them from disappearing behind rocks. Original renderpixel, bob.
+	std::list<std::pair<const Vector2f, Widelands::Bob*>> deferred_bobs;
+
 	for (size_t idx = 0; idx < fields_to_draw->size(); ++idx) {
 		auto* f = fields_to_draw->mutable_field(idx);
 
@@ -295,6 +301,32 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				f->roads |= it->second;
 			}
 
+			// Draw bobs from previous iteration that would have been hidden
+			// We use this boolean to prevent critters from walking on top of trees
+			bool has_big_immovable = false;
+			if (f->vision > 1) {
+				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
+				if (imm != nullptr && (imm->get_size() == Widelands::BaseImmovable::Size::BIG)) {
+					has_big_immovable = true;
+				}
+			}
+			for (auto bobs_iter = deferred_bobs.begin(); bobs_iter != deferred_bobs.end();) {
+				const Vector2f& original_pixel = bobs_iter->first;
+				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
+				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < 2 * kTriangleHeight) {
+					// This will prevent stonemasons from walking underneath rocks when walking back north to their quarry
+					// NCOCOM walking w or nw is still boken
+					if (!has_big_immovable || original_pixel.y < f->rendertarget_pixel.y - 2 * kTriangleHeight) {
+						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
+						bobs_iter = deferred_bobs.erase(bobs_iter);
+					} else {
+						++bobs_iter;
+					}
+				} else {
+					++bobs_iter;
+				}
+			}
+
 			draw_border_markers(*f, scale, *fields_to_draw, dst);
 
 			// Render stuff that belongs to the node.
@@ -306,8 +338,15 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 
 				for (Widelands::Bob* bob = f->fcoords.field->get_first_bob(); bob;
 					 bob = bob->get_next_bob()) {
-					bob->draw(gbase, f->rendertarget_pixel, scale, dst);
-					mapobjects_to_draw_text_for.push_back(std::make_pair(bob->calc_drawpos(gbase, f->rendertarget_pixel, scale).cast<int>(), bob));
+					const Vector2f bob_drawpos = bob->calc_drawpos(gbase, f->rendertarget_pixel, scale);
+					// Defer drawing of bobs so that they won't disappear behind rocks
+					// Ignore anything on a road - those bobs stay with the road
+					if (f->fcoords.field->get_roads() == Widelands::RoadType::kNone && bob_drawpos.y > f->rendertarget_pixel.y) {
+						deferred_bobs.push_back(std::make_pair(f->rendertarget_pixel, bob));
+					} else {
+						bob->draw(gbase, f->rendertarget_pixel, scale, dst);
+					}
+					mapobjects_to_draw_text_for.push_back(std::make_pair(bob_drawpos.cast<int>(), bob));
 				}
 			} else if (f->vision == 1) {
 				// We never show census or statistics for objects in the fog.
@@ -350,6 +389,13 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 			}
 		}
 	}
+
+	// Make sure that we don't skip any bobs at the bottom edge
+	for (const auto& drawme : deferred_bobs) {
+		drawme.second->draw(gbase, drawme.first, scale, dst);
+	}
+	deferred_bobs.clear();
+
 	// Blit census & Statistics.
 	draw_mapobject_infotexts(dst, scale, mapobjects_to_draw_text_for, text_to_draw, &plr);
 }
