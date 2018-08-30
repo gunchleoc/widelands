@@ -288,6 +288,8 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				f->roads |= it->second;
 			}
 
+			draw_border_markers(*f, scale, *fields_to_draw, dst);
+
 			// Detect immovable for drawing conditions
 			Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
 			const bool has_drawable_immovable = imm != nullptr && (imm->get_positions(gbase).front() == f->fcoords);
@@ -334,8 +336,6 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 					++bobs_iter;
 				}
 			}
-
-			draw_border_markers(*f, scale, *fields_to_draw, dst);
 
 			// Render stuff that belongs to the node.
 			if (f->vision > 1) {
