@@ -304,7 +304,6 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 
 			// Draw bobs from previous iteration that would have been hidden
 			// We use this boolean to prevent critters from walking on top of trees
-			// NOCOM bobs can walk in front of the top of the biggest rocks
 			bool has_big_immovable = false;
 			if (f->vision > 1) {
 				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
@@ -333,7 +332,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
 				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleHeight) {
 					// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
-					if (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - 2 * kTriangleHeight)) {
+					if (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - kTriangleHeight)) {
 						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
 						bobs_iter = bobs_walking_north.erase(bobs_iter);
 					} else {
