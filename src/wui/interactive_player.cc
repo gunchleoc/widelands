@@ -274,8 +274,9 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 	const auto text_to_draw = get_text_to_draw();
 	const float scale = 1.f / given_map_view->view().zoom;
 
-	// Defer drawing of some bobs to prevent them from disappearing behind rocks. Original renderpixel, bob.
-	std::list<std::pair<const Vector2f, Widelands::Bob*>> deferred_bobs;
+	// Defer drawing of some bobs to prevent them from disappearing behind rocks. Original field renderpixel, bob.
+	std::list<std::pair<const Vector2f, Widelands::Bob*>> bobs_walking_north;
+	std::list<std::pair<const Vector2f, Widelands::Bob*>> bobs_walking_west;
 
 	for (size_t idx = 0; idx < fields_to_draw->size(); ++idx) {
 		auto* f = fields_to_draw->mutable_field(idx);
@@ -303,6 +304,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 
 			// Draw bobs from previous iteration that would have been hidden
 			// We use this boolean to prevent critters from walking on top of trees
+			// NOCOM bobs can walk in front of the top of the biggest rocks
 			bool has_big_immovable = false;
 			if (f->vision > 1) {
 				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
@@ -310,15 +312,30 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 					has_big_immovable = true;
 				}
 			}
-			for (auto bobs_iter = deferred_bobs.begin(); bobs_iter != deferred_bobs.end();) {
+			for (auto bobs_iter = bobs_walking_west.begin(); bobs_iter != bobs_walking_west.end();) {
 				const Vector2f& original_pixel = bobs_iter->first;
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
 				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < 2 * kTriangleHeight) {
-					// This will prevent stonemasons from walking underneath rocks when walking back north to their quarry
-					// NCOCOM walking w or nw is still boken
-					if (!has_big_immovable || original_pixel.y < f->rendertarget_pixel.y - 2 * kTriangleHeight) {
+					// This will prevent stonemasons from walking underneath rocks when walking back west to their quarry
+					if (!has_big_immovable || (original_pixel.x > f->rendertarget_pixel.x)) {
 						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
-						bobs_iter = deferred_bobs.erase(bobs_iter);
+						bobs_iter = bobs_walking_west.erase(bobs_iter);
+					} else {
+						++bobs_iter;
+					}
+				} else {
+					++bobs_iter;
+				}
+			}
+
+			for (auto bobs_iter = bobs_walking_north.begin(); bobs_iter != bobs_walking_north.end();) {
+				const Vector2f& original_pixel = bobs_iter->first;
+				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
+				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleHeight) {
+					// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
+					if (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - 2 * kTriangleHeight)) {
+						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
+						bobs_iter = bobs_walking_north.erase(bobs_iter);
 					} else {
 						++bobs_iter;
 					}
@@ -341,8 +358,12 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 					const Vector2f bob_drawpos = bob->calc_drawpos(gbase, f->rendertarget_pixel, scale);
 					// Defer drawing of bobs so that they won't disappear behind rocks
 					// Ignore anything on a road - those bobs stay with the road
-					if (f->fcoords.field->get_roads() == Widelands::RoadType::kNone && bob_drawpos.y > f->rendertarget_pixel.y) {
-						deferred_bobs.push_back(std::make_pair(f->rendertarget_pixel, bob));
+					if (f->fcoords.field->get_roads() == Widelands::RoadType::kNone && (bob_drawpos.y > f->rendertarget_pixel.y)) {
+						// Fix z-layering for walking nw and ne
+						bobs_walking_north.push_back(std::make_pair(f->rendertarget_pixel, bob));
+					} else if (f->fcoords.field->get_roads() == Widelands::RoadType::kNone && (bob_drawpos.x > f->rendertarget_pixel.x)) {
+						// Fix z-layering for walking w
+						bobs_walking_west.push_back(std::make_pair(f->rendertarget_pixel, bob));
 					} else {
 						bob->draw(gbase, f->rendertarget_pixel, scale, dst);
 					}
@@ -390,11 +411,15 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 		}
 	}
 
-	// Make sure that we don't skip any bobs at the bottom edge
-	for (const auto& drawme : deferred_bobs) {
+	// Make sure that we don't skip any bobs at the bottom and right edges
+	for (const auto& drawme : bobs_walking_west) {
 		drawme.second->draw(gbase, drawme.first, scale, dst);
 	}
-	deferred_bobs.clear();
+	bobs_walking_west.clear();
+	for (const auto& drawme : bobs_walking_north) {
+		drawme.second->draw(gbase, drawme.first, scale, dst);
+	}
+	bobs_walking_north.clear();
 
 	// Blit census & Statistics.
 	draw_mapobject_infotexts(dst, scale, mapobjects_to_draw_text_for, text_to_draw, &plr);
