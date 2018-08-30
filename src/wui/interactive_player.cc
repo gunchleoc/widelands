@@ -88,21 +88,7 @@ float adjusted_field_brightness(const Widelands::FCoords& fcoords,
 	return brightness / 255.;
 }
 
-// Draws immovable if the field matches its actual position and returns true if the immovable was drawn there.
-bool draw_immovable_for_visible_field(const Widelands::EditorGameBase& egbase,
-                                       const FieldsToDraw::Field& field,
-                                       const float scale,
-									   Widelands::BaseImmovable* const imm,
-                                       RenderTarget* dst) {
-	if (imm != nullptr && imm->get_positions(egbase).front() == field.fcoords) {
-		imm->draw(
-		   egbase.get_gametime(), field.rendertarget_pixel, scale, dst);
-		return true;
-	}
-	return false;
-}
-
-void draw_immovables_for_formerly_visible_field(const FieldsToDraw::Field& field,
+void draw_immovable_for_formerly_visible_field(const FieldsToDraw::Field& field,
                                                 const Widelands::Player::Field& player_field,
                                                 const float scale,
                                                 RenderTarget* dst) {
@@ -302,21 +288,14 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				f->roads |= it->second;
 			}
 
+			// Detect immovable for drawing conditions
+			Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
+			const bool has_drawable_immovable = imm != nullptr && (imm->get_positions(gbase).front() == f->fcoords);
+			const bool has_big_immovable = has_drawable_immovable && (imm->get_size() == Widelands::BaseImmovable::Size::BIG);
+			const bool has_building = has_drawable_immovable && (imm->descr().type() >= Widelands::MapObjectType::BUILDING);
+
 			// Draw bobs from previous iteration that would have been hidden
 			// We use this boolean to prevent critters from walking on top of trees
-			bool has_big_immovable = false;
-			bool has_building = false;
-			if (f->vision > 1) {
-				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
-				if (imm != nullptr && imm->get_positions(gbase).front() == f->fcoords) {
-					if (imm->get_size() == Widelands::BaseImmovable::Size::BIG) {
-						has_big_immovable = true;
-					}
-					if (imm->descr().type() >= Widelands::MapObjectType::BUILDING) {
-						has_building = true;
-					}
-				}
-			}
 			for (auto bobs_iter = bobs_walking_west.begin(); bobs_iter != bobs_walking_west.end();) {
 				const Vector2f& original_pixel = bobs_iter->first;
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
@@ -360,8 +339,9 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 
 			// Render stuff that belongs to the node.
 			if (f->vision > 1) {
-				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
-				if (draw_immovable_for_visible_field(gbase, *f, scale, imm, dst)) {
+				if (has_drawable_immovable) {
+					imm->draw(
+					   gbase.get_gametime(), f->rendertarget_pixel, scale, dst);
 					mapobjects_to_draw_text_for.push_back(std::make_pair(f->rendertarget_pixel.cast<int>(), imm));
 				}
 
@@ -383,7 +363,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				}
 			} else if (f->vision == 1) {
 				// We never show census or statistics for objects in the fog.
-				draw_immovables_for_formerly_visible_field(*f, player_field, scale, dst);
+				draw_immovable_for_formerly_visible_field(*f, player_field, scale, dst);
 			}
 		}
 
