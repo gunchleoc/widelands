@@ -314,7 +314,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 			for (auto bobs_iter = bobs_walking_west.begin(); bobs_iter != bobs_walking_west.end();) {
 				const Vector2f& original_pixel = bobs_iter->first;
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
-				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < 2 * kTriangleHeight) {
+				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleWidth) {
 					// This will prevent stonemasons from walking underneath rocks when walking back west to their quarry
 					if (!has_big_immovable || (original_pixel.x > f->rendertarget_pixel.x)) {
 						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
@@ -330,7 +330,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 			for (auto bobs_iter = bobs_walking_north.begin(); bobs_iter != bobs_walking_north.end();) {
 				const Vector2f& original_pixel = bobs_iter->first;
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
-				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleHeight) {
+				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleWidth / 2) {
 					// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
 					if (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - kTriangleHeight)) {
 						bobs_iter->second->draw(gbase, original_pixel, scale, dst);
