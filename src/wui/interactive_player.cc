@@ -308,7 +308,7 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 			bool has_building = false;
 			if (f->vision > 1) {
 				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
-				if (imm != nullptr) {
+				if (imm != nullptr && imm->get_positions(gbase).front() == f->fcoords) {
 					if (imm->get_size() == Widelands::BaseImmovable::Size::BIG) {
 						has_big_immovable = true;
 					}
@@ -340,8 +340,8 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
 				const float horizontal_distance = std::abs(original_pixel.x - f->rendertarget_pixel.x);
 				if ((horizontal_distance < kTriangleWidth) && roadtype != Widelands::RoadType::kNone) {
-					// If the bob is on a road, only defer further if there is a building involved. This keeps carriers on road behind rocks and carriers beside big buildings on top of the building when they pass the hotspot.
-					if (!has_building) {
+					// If the bob is on a road, only defer further if there is a big building involved. This keeps carriers on road behind rocks and carriers beside big buildings on top of the building when they pass the hotspot.
+					if (!has_building || !has_big_immovable) {
 						bob->draw(gbase, original_pixel, scale, dst);
 						bobs_iter = bobs_walking_north.erase(bobs_iter);
 					} else {
