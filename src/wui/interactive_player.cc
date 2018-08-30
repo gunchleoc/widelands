@@ -305,10 +305,16 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 			// Draw bobs from previous iteration that would have been hidden
 			// We use this boolean to prevent critters from walking on top of trees
 			bool has_big_immovable = false;
+			bool has_building = false;
 			if (f->vision > 1) {
 				Widelands::BaseImmovable* imm = f->fcoords.field->get_immovable();
-				if (imm != nullptr && (imm->get_size() == Widelands::BaseImmovable::Size::BIG)) {
-					has_big_immovable = true;
+				if (imm != nullptr) {
+					if (imm->get_size() == Widelands::BaseImmovable::Size::BIG) {
+						has_big_immovable = true;
+					}
+					if (imm->descr().type() >= Widelands::MapObjectType::BUILDING) {
+						has_building = true;
+					}
 				}
 			}
 			for (auto bobs_iter = bobs_walking_west.begin(); bobs_iter != bobs_walking_west.end();) {
@@ -331,20 +337,20 @@ void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst
 				const Vector2f& original_pixel = std::get<0>(*bobs_iter);
 				const Widelands::RoadType roadtype = std::get<1>(*bobs_iter);
 				Widelands::Bob* bob = std::get<2>(*bobs_iter);
-				if (roadtype != Widelands::RoadType::kNone) {
-					bob->draw(gbase, original_pixel, scale, dst);
-					bobs_iter = bobs_walking_north.erase(bobs_iter);
-					continue;
-				}
 				// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
-				if (std::abs(original_pixel.x - f->rendertarget_pixel.x) < kTriangleWidth / 2) {
-					// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
-					if (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - kTriangleHeight)) {
+				const float horizontal_distance = std::abs(original_pixel.x - f->rendertarget_pixel.x);
+				if ((horizontal_distance < kTriangleWidth) && roadtype != Widelands::RoadType::kNone) {
+					// If the bob is on a road, only defer further if there is a building involved. This keeps carriers on road behind rocks and carriers beside big buildings on top of the building when they pass the hotspot.
+					if (!has_building) {
 						bob->draw(gbase, original_pixel, scale, dst);
 						bobs_iter = bobs_walking_north.erase(bobs_iter);
 					} else {
 						++bobs_iter;
 					}
+				} else if ((horizontal_distance < kTriangleWidth / 2) && (!has_big_immovable || (original_pixel.y < f->rendertarget_pixel.y - kTriangleHeight))) {
+					// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
+					bob->draw(gbase, original_pixel, scale, dst);
+					bobs_iter = bobs_walking_north.erase(bobs_iter);
 				} else {
 					++bobs_iter;
 				}
