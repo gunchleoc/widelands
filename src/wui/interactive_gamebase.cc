@@ -38,6 +38,7 @@
 #include "wui/constructionsitewindow.h"
 #include "wui/dismantlesitewindow.h"
 #include "wui/game_summary.h"
+#include "wui/mapviewpixelconstants.h"
 #include "wui/militarysitewindow.h"
 #include "wui/productionsitewindow.h"
 #include "wui/shipwindow.h"
@@ -169,7 +170,12 @@ void InteractiveGameBase::draw_overlay(RenderTarget& dst) {
 	}
 }
 
-void InteractiveGameBase::draw_mapobject_infotexts(RenderTarget* dst, float scale, const std::vector<std::pair<Vector2i, Widelands::MapObject*>>& mapobjects_to_draw_text_for, const TextToDraw text_to_draw, const Widelands::Player* plr) const {
+void InteractiveGameBase::add_wanted_infotext(Vector2i coords, Widelands::MapObject* mapobject) {
+	wanted_infotexts_.push_back(std::make_pair(coords, mapobject));
+}
+
+void InteractiveGameBase::draw_wanted_infotexts(RenderTarget* dst, float scale, const Widelands::Player* plr) {
+	const auto text_to_draw = get_text_to_draw();
 	// Rendering text is expensive, so let's just do it for only a few sizes.
 	// The formula is a bit fancy to avoid too much text overlap.
 	const float scale_for_text = std::round(2.f * (scale > 1.f ? std::sqrt(scale) : std::pow(scale, 2.f))) / 2.f;
@@ -177,7 +183,7 @@ void InteractiveGameBase::draw_mapobject_infotexts(RenderTarget* dst, float scal
 		return;
 	}
 
-	for (const auto& draw_my_text : mapobjects_to_draw_text_for) {
+	for (const auto& draw_my_text : wanted_infotexts_) {
 		TextToDraw draw_text_for_this_mapobject = text_to_draw;
 		const Widelands::Player* owner = draw_my_text.second->get_owner();
 		if (owner != nullptr && plr != nullptr && !plr->see_all() && plr->is_hostile(*owner)) {
@@ -188,6 +194,96 @@ void InteractiveGameBase::draw_mapobject_infotexts(RenderTarget* dst, float scal
 			draw_mapobject_infotext(dst, draw_my_text.first, scale_for_text, draw_my_text.second, draw_text_for_this_mapobject);
 		}
 	}
+	wanted_infotexts_.clear();
+}
+
+void InteractiveGameBase::draw_immovable_and_enqueue_bobs_for_visible_field(RenderTarget* dst, float scale, const FieldsToDraw::Field& field, bool has_drawable_immovable, Widelands::BaseImmovable* imm) {
+	// Draw immovable and enqueue its infotext
+	if (has_drawable_immovable) {
+		imm->draw(
+		   egbase().get_gametime(), field.rendertarget_pixel, scale, dst);
+		add_wanted_infotext(field.rendertarget_pixel.cast<int>(), imm);
+	}
+	// Draw bobs or enqueue them if we want to draw them later
+	draw_or_enqueue_bobs(dst, scale, field);
+}
+
+void InteractiveGameBase::draw_or_enqueue_bobs(RenderTarget* dst, float scale, const FieldsToDraw::Field& field) {
+	for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
+		 bob = bob->get_next_bob()) {
+		const Vector2f bob_drawpos = bob->calc_drawpos(egbase(), field.rendertarget_pixel, scale);
+		// Defer drawing of bobs so that they won't disappear behind rocks
+		// Ignore anything on a road - those bobs stay with the road
+		if (bob_drawpos.y > field.rendertarget_pixel.y) {
+			// Fix z-layering for walking nw and ne
+			bobs_walking_north_.push_back(std::make_tuple(field.rendertarget_pixel, static_cast<Widelands::RoadType>(field.fcoords.field->get_roads()), bob));
+		} else if (field.fcoords.field->get_roads() == Widelands::RoadType::kNone && (bob_drawpos.x > field.rendertarget_pixel.x)) {
+			// Fix z-layering for walking w
+			bobs_walking_west_.push_back(std::make_pair(field.rendertarget_pixel, bob));
+		} else {
+			bob->draw(egbase(), field.rendertarget_pixel, scale, dst);
+		}
+		add_wanted_infotext(bob_drawpos.cast<int>(), bob);
+	}
+}
+
+void InteractiveGameBase::draw_bobs_queue(RenderTarget* dst,
+										  float scale,
+										  const FieldsToDraw::Field& field,
+										  bool has_big_immovable,
+										  bool has_building) {
+	// Draw bobs from previous iteration that would have been hidden
+	// We use this boolean to prevent critters from walking on top of trees
+	for (auto bobs_iter = bobs_walking_west_.begin(); bobs_iter != bobs_walking_west_.end();) {
+		const Vector2f& original_pixel = bobs_iter->first;
+		// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
+		if (std::abs(original_pixel.x - field.rendertarget_pixel.x) < kTriangleWidth) {
+			// This will prevent stonemasons from walking underneath rocks when walking back west to their quarry
+			if (!has_big_immovable || (original_pixel.x > field.rendertarget_pixel.x)) {
+				bobs_iter->second->draw(egbase(), original_pixel, scale, dst);
+				bobs_iter = bobs_walking_west_.erase(bobs_iter);
+			} else {
+				++bobs_iter;
+			}
+		} else {
+			++bobs_iter;
+		}
+	}
+
+	for (auto bobs_iter = bobs_walking_north_.begin(); bobs_iter != bobs_walking_north_.end();) {
+		const Vector2f& original_pixel = std::get<0>(*bobs_iter);
+		const Widelands::RoadType roadtype = std::get<1>(*bobs_iter);
+		Widelands::Bob* bob = std::get<2>(*bobs_iter);
+		// Only consider drawing if we're in the correct column, so that we can use the check for the immovable
+		const float horizontal_distance = std::abs(original_pixel.x - field.rendertarget_pixel.x);
+		if ((horizontal_distance < kTriangleWidth) && roadtype != Widelands::RoadType::kNone) {
+			// If the bob is on a road, only defer further if there is a big building involved. This keeps carriers on road behind rocks and carriers beside big buildings on top of the building when they pass the hotspot.
+			if (!has_building || !has_big_immovable) {
+				bob->draw(egbase(), original_pixel, scale, dst);
+				bobs_iter = bobs_walking_north_.erase(bobs_iter);
+			} else {
+				++bobs_iter;
+			}
+		} else if ((horizontal_distance < kTriangleWidth / 2) && (!has_big_immovable || (original_pixel.y < field.rendertarget_pixel.y - kTriangleHeight))) {
+			// This will prevent stonemasons from walking underneath rocks when walking back north-east or north-west to their quarry
+			bob->draw(egbase(), original_pixel, scale, dst);
+			bobs_iter = bobs_walking_north_.erase(bobs_iter);
+		} else {
+			++bobs_iter;
+		}
+	}
+}
+
+void InteractiveGameBase::draw_all_remaining_bobs(RenderTarget* dst, float scale) {
+	// Make sure that we don't skip any bobs at the bottom and right edges
+	for (const auto& drawme : bobs_walking_west_) {
+		drawme.second->draw(egbase(), drawme.first, scale, dst);
+	}
+	bobs_walking_west_.clear();
+	for (const auto& drawme : bobs_walking_north_) {
+		std::get<2>(drawme)->draw(egbase(), std::get<0>(drawme), scale, dst);
+	}
+	bobs_walking_north_.clear();
 }
 
 

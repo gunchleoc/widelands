@@ -118,28 +118,25 @@ void InteractiveSpectator::draw_map_view(MapView* given_map_view, RenderTarget* 
 	const Widelands::Map& map = the_game.map();
 	auto* fields_to_draw = given_map_view->draw_terrain(the_game, dst);
 	const float scale = 1.f / given_map_view->view().zoom;
-	const uint32_t gametime = the_game.get_gametime();
 
-	const auto text_to_draw = get_text_to_draw();
 	const std::map<Widelands::Coords, const Image*> workarea_overlays = get_workarea_overlays(map);
-	std::vector<std::pair<Vector2i, Widelands::MapObject*>> mapobjects_to_draw_text_for;
 
 	for (size_t idx = 0; idx < fields_to_draw->size(); ++idx) {
 		const FieldsToDraw::Field& field = fields_to_draw->at(idx);
 
+		// Detect immovable for bobs' z-layering drawing conditions
+		Widelands::BaseImmovable* imm = field.fcoords.field->get_immovable();
+		const bool has_drawable_immovable = imm != nullptr && (imm->get_positions(the_game).front() == field.fcoords);
+		const bool has_big_immovable = has_drawable_immovable && (imm->get_size() == Widelands::BaseImmovable::Size::BIG);
+		const bool has_building = has_drawable_immovable && (imm->descr().type() >= Widelands::MapObjectType::BUILDING);
+
+		// Draw bobs that were enqueued to fix z-layering
+		draw_bobs_queue(dst, scale, field, has_big_immovable, has_building);
+
 		draw_border_markers(field, scale, *fields_to_draw, dst);
 
-		Widelands::BaseImmovable* const imm = field.fcoords.field->get_immovable();
-		if (imm != nullptr && imm->get_positions(the_game).front() == field.fcoords) {
-			imm->draw(gametime, field.rendertarget_pixel, scale, dst);
-			mapobjects_to_draw_text_for.push_back(std::make_pair(field.rendertarget_pixel.cast<int>(), imm));
-		}
-
-		for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
-		     bob = bob->get_next_bob()) {
-			bob->draw(the_game, field.rendertarget_pixel, scale, dst);
-			mapobjects_to_draw_text_for.push_back(std::make_pair(bob->calc_drawpos(the_game, field.rendertarget_pixel, scale).cast<int>(), bob));
-		}
+		// Draw immovable and bobs for current field. Some of the bobs are enqueued to fix z-layering issues.
+		draw_immovable_and_enqueue_bobs_for_visible_field(dst, scale, field, has_drawable_immovable, imm);
 
 		// Draw work area previews.
 		const auto it = workarea_overlays.find(field.fcoords);
@@ -172,8 +169,11 @@ void InteractiveSpectator::draw_map_view(MapView* given_map_view, RenderTarget* 
 		}
 	}
 
+	// Make sure that we don't skip any bobs at the bottom and right edges
+	draw_all_remaining_bobs(dst, scale);
+
 	// Blit census & Statistics.
-	draw_mapobject_infotexts(dst, scale, mapobjects_to_draw_text_for, text_to_draw, nullptr);
+	draw_wanted_infotexts(dst, scale, nullptr);
 }
 
 /**

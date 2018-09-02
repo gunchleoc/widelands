@@ -20,6 +20,7 @@
 #ifndef WL_WUI_INTERACTIVE_GAMEBASE_H
 #define WL_WUI_INTERACTIVE_GAMEBASE_H
 
+#include <list>
 #include <map>
 #include <memory>
 
@@ -99,8 +100,16 @@ public:
 	void start() override;
 
 protected:
-	/// Draws census and statistics on screen for the listed mapobjects
-	void draw_mapobject_infotexts(RenderTarget* dst, float scale, const std::vector<std::pair<Vector2i, Widelands::MapObject*>>& mapobjects_to_draw_text_for, const TextToDraw text_to_draw, const Widelands::Player* plr) const;
+	/// Adds a mapobject to the list for drawing census and statistics
+	void add_wanted_infotext(Vector2i coords, Widelands::MapObject* mapobject);
+	/// Draws all wanted census and statistics on screen and then clears the list
+	void draw_wanted_infotexts(RenderTarget* dst, float scale, const Widelands::Player* plr);
+	/// If the given field has a drawable immovable, draws it with all its info. Draws the field's bobs or adds them to the lists for drawing later. We split bobs that way to prevent z-layering issues.
+	void draw_immovable_and_enqueue_bobs_for_visible_field(RenderTarget* dst, float scale, const FieldsToDraw::Field& field, bool has_drawable_immovable, Widelands::BaseImmovable* imm);
+	/// Checks if any bobs in our lists should be drawn at the given field, then draws those and removes them from the lists
+	void draw_bobs_queue(RenderTarget* dst, float scale, const FieldsToDraw::Field& f, bool has_big_immovable, bool has_building);
+	/// Draw all remaining bobs in the lists and clear the lists. We do this to make sure that we don't skip any bobs at the bottom and right edges.
+	void draw_all_remaining_bobs(RenderTarget* dst, float scale);
 	void draw_overlay(RenderTarget&) override;
 
 	GameMainMenuWindows main_windows_;
@@ -124,6 +133,17 @@ private:
 		const bool minimize;
 		const bool show_workarea;
 	};
+
+	void draw_or_enqueue_bobs(RenderTarget* dst, float scale, const FieldsToDraw::Field& f);
+
+	// Defer drawing of some bobs to prevent them from disappearing behind rocks. The Vector2f is the original field's renderpixel.
+	// Bobs walking north-west or north-east that haven't been drawn yet
+	std::list<std::tuple<const Vector2f, Widelands::RoadType, Widelands::Bob*> > bobs_walking_north_;
+	// Bobs walking west that haven't been drawn yet
+	std::list<std::pair<const Vector2f, Widelands::Bob*> > bobs_walking_west_;
+	// Mapobjects that have an infotext that needs drawing
+	std::vector<std::pair<Vector2i, Widelands::MapObject*>> wanted_infotexts_;
+
 	// Building coordinates, window position, whether the window was minimized
 	std::map<uint32_t, std::unique_ptr<const WantedBuildingWindow>> wanted_building_windows_;
 	std::unique_ptr<Notifications::Subscriber<Widelands::NoteBuilding>> buildingnotes_subscriber_;
