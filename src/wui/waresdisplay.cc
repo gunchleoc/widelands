@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2017 by the Widelands Development Team
+ * Copyright (C) 2003-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 
 #include "base/i18n.h"
 #include "base/wexception.h"
-#include "graphic/font_handler1.h"
+#include "graphic/font_handler.h"
 #include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
 #include "graphic/text_layout.h"
@@ -332,7 +332,7 @@ void AbstractWaresDisplay::draw_ware(RenderTarget& dst, Widelands::DescriptionIn
 	              info_color_for_ware(id));
 
 	std::shared_ptr<const UI::RenderedText> rendered_text =
-	   UI::g_fh1->render(as_waresinfo(info_for_ware(id)));
+	   UI::g_fh->render(as_waresinfo(info_for_ware(id)));
 	rendered_text->draw(dst, Vector2i(p.x + w - rendered_text->width() - 1,
 	                                  p.y + WARE_MENU_PIC_HEIGHT + WARE_MENU_INFO_SIZE + 1 -
 	                                     rendered_text->height()));
@@ -366,16 +366,6 @@ void AbstractWaresDisplay::hide_ware(Widelands::DescriptionIndex ware) {
 	if (hidden_[ware])
 		return;
 	hidden_[ware] = true;
-}
-
-void AbstractWaresDisplay::unhide_ware(Widelands::DescriptionIndex ware) {
-	if (!hidden_[ware])
-		return;
-	hidden_[ware] = false;
-}
-
-bool AbstractWaresDisplay::ware_hidden(Widelands::DescriptionIndex ware) {
-	return hidden_[ware];
 }
 
 WaresDisplay::WaresDisplay(UI::Panel* const parent,

@@ -38,7 +38,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      basic_amount = 1
+      basic_amount = 1,
+      prohibited_till = 520
    },
 
    working_positions = {
@@ -62,7 +63,7 @@ tribes:new_productionsite_type {
             "sleep=14000",
             "return=skipped unless economy needs ration",
             "consume=barbarians_bread,fish,meat",
-            "play_sound=sound/barbarians/taverns tavern 100",
+            "playsound=sound/barbarians/taverns tavern 100",
             "animate=working 19000",
             "produce=ration"
          },

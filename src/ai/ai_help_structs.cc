@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 by the Widelands Development Team
+ * Copyright (C) 2009-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,9 +28,9 @@
 namespace Widelands {
 
 // couple of constants for calculation of road interconnections
-constexpr int kRoadNotFound = -1000;
-constexpr int kShortcutWithinSameEconomy = 1000;
-constexpr int kRoadToDifferentEconomy = 10000;
+constexpr int kRoadPossiblyBuildable = 200;
+constexpr int kConnectedByRoads = 400;
+constexpr int kNotConnectedByRoads = 600;
 constexpr int kNoAiTrainingMutation = 200;
 constexpr int kUpperDefaultMutationLimit = 150;
 constexpr int kLowerDefaultMutationLimit = 75;
@@ -42,7 +42,7 @@ CheckStepRoadAI::CheckStepRoadAI(Player* const pl, uint8_t const mc, bool const 
 
 bool CheckStepRoadAI::allowed(
    const Map& map, FCoords start, FCoords end, int32_t, CheckStep::StepId const id) const {
-	uint8_t endcaps = player->get_buildcaps(end);
+	const uint8_t endcaps = player->get_buildcaps(end);
 
 	// we should not cross fields with road or flags (or any other immovable)
 	if ((map.get_immovable(start)) && !(id == CheckStep::stepFirst)) {
@@ -81,6 +81,56 @@ bool CheckStepRoadAI::reachable_dest(const Map& map, const FCoords& dest) const 
 	}
 
 	return true;
+}
+
+// CheckStepOwnTerritory
+CheckStepOwnTerritory::CheckStepOwnTerritory(Player* const pl, uint8_t const mc, bool const oe)
+   : player(pl), movecaps(mc), open_end(oe) {
+}
+
+// Defines when movement is allowed:
+// 1. startfield is walkable (or it is the first step)
+// And endfield either:
+// 2a. is walkable
+// 2b. has our PlayerImmovable (building or flag)
+bool CheckStepOwnTerritory::allowed(
+   const Map& map, FCoords start, FCoords end, int32_t, CheckStep::StepId const id) const {
+	const uint8_t endcaps = player->get_buildcaps(end);
+	const uint8_t startcaps = player->get_buildcaps(start);
+
+	// We should not cross fields with road or flags (or any other immovable)
+	// Or rather we can step on it, but not go on from such field
+	if ((map.get_immovable(start)) && !(id == CheckStep::stepFirst)) {
+		return false;
+	}
+
+	// Start field must be walkable
+	if (!(startcaps & movecaps)) {
+		return false;
+	}
+
+	// Endfield can not be water
+	if (endcaps & MOVECAPS_SWIM) {
+		return false;
+	}
+
+	return true;
+}
+
+// We accept either walkable territory or field with own immovable
+bool CheckStepOwnTerritory::reachable_dest(const Map& map, const FCoords& dest) const {
+	const uint8_t endcaps = player->get_buildcaps(dest);
+	if (BaseImmovable const* const imm = map.get_immovable(dest)) {
+		if (imm->descr().type() >= MapObjectType::FLAG) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	if (endcaps & MOVECAPS_WALK) {
+		return true;
+	}
+	return false;
 }
 
 // We are looking for fields we can walk on
@@ -145,7 +195,9 @@ FindNodeUnownedBuildable::FindNodeUnownedBuildable(Player* p, Game& g) : player(
 }
 
 bool FindNodeUnownedBuildable::accept(const Map&, const FCoords& fc) const {
-	return (fc.field->nodecaps() & BUILDCAPS_SIZEMASK) && (fc.field->get_owned_by() == neutral());
+	return ((fc.field->nodecaps() & BUILDCAPS_SIZEMASK) ||
+	        (fc.field->nodecaps() & BUILDCAPS_MINE)) &&
+	       (fc.field->get_owned_by() == neutral());
 }
 
 // Unowned but walkable fields nearby
@@ -191,8 +243,14 @@ bool FindNodeWithFlagOrRoad::accept(const Map&, FCoords fc) const {
 	return false;
 }
 
-NearFlag::NearFlag(const Flag& f, int32_t const c, int32_t const d)
-   : flag(&f), cost(c), distance(d) {
+NearFlag::NearFlag(const Flag* f, int32_t const c) : flag(f), current_road_distance(c) {
+	to_be_checked = true;
+}
+
+NearFlag::NearFlag() {
+	flag = nullptr;
+	current_road_distance = 0;
+	to_be_checked = true;
 }
 
 EventTimeQueue::EventTimeQueue() {
@@ -236,11 +294,13 @@ BuildableField::BuildableField(const Widelands::FCoords& fc)
      unowned_land_nearby(0),
      enemy_owned_land_nearby(0U),
      unowned_buildable_spots_nearby(0U),
+     unowned_portspace_vicinity_nearby(0U),
      nearest_buildable_spot_nearby(0U),
      near_border(false),
      unowned_mines_spots_nearby(0),
      unowned_iron_mines_nearby(false),
      trees_nearby(0),
+     bushes_nearby(0),
      // explanation of starting values
      // this is done to save some work for AI (CPU utilization)
      // base rules are:
@@ -280,10 +340,6 @@ BuildableField::BuildableField(const Widelands::FCoords& fc)
      is_militarysite(false) {
 }
 
-int32_t BuildableField::own_military_sites_nearby_() {
-	return military_stationed + military_unstationed;
-}
-
 MineableField::MineableField(const Widelands::FCoords& fc)
    : coords(fc),
      field_info_expiration(20000),
@@ -293,7 +349,8 @@ MineableField::MineableField(const Widelands::FCoords& fc)
 }
 
 EconomyObserver::EconomyObserver(Widelands::Economy& e) : economy(e) {
-	dismantle_grace_time = std::numeric_limits<int32_t>::max();
+	dismantle_grace_time = std::numeric_limits<uint32_t>::max();
+	fields_block_last_time = 0;
 }
 
 int32_t BuildingObserver::total_count() const {
@@ -330,6 +387,52 @@ bool BuildingObserver::buildable(Widelands::Player& p) {
 // so this observer will be used for this
 MineTypesObserver::MineTypesObserver()
    : in_construction(0), finished(0), is_critical(false), unoccupied(0) {
+}
+
+// Reset counter for all field types
+void MineFieldsObserver::zero() {
+	for (auto& material : stat) {
+		material.second = 0;
+	}
+}
+
+// Increase counter by one for specific ore/minefield type
+void MineFieldsObserver::add(const Widelands::DescriptionIndex idx) {
+	stat[idx] += 1;
+}
+
+// Add ore into critical_ores
+void MineFieldsObserver::add_critical_ore(const Widelands::DescriptionIndex idx) {
+	critical_ores.insert(idx);
+}
+
+// Does the player has at least one mineable field with positive amount for each critical ore?
+bool MineFieldsObserver::has_critical_ore_fields() {
+	for (auto ore : critical_ores) {
+		if (get(ore) == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Returns count of fields with desired ore
+uint16_t MineFieldsObserver::get(const Widelands::DescriptionIndex idx) {
+	if (stat.count(idx) == 0) {
+		return 0;
+	}
+	return stat[idx];
+}
+
+// Count of types of mineable fields, up to 4 currently
+uint8_t MineFieldsObserver::count_types() {
+	uint16_t count = 0;
+	for (auto material : stat) {
+		if (material.second > 0) {
+			count += 1;
+		}
+	}
+	return count;
 }
 
 ExpansionType::ExpansionType() {
@@ -394,9 +497,7 @@ void Neuron::set_type(uint8_t new_type) {
 }
 
 // FNeuron is basically a single uint32_t integer, and the AI can query every bit of that uint32_t
-FNeuron::FNeuron(uint32_t c, uint16_t i) {
-	core = c;
-	id = i;
+FNeuron::FNeuron(uint32_t c, uint16_t i) : core(c), id(i) {
 }
 
 // Returning a result depending on combinations of 5 bools
@@ -465,33 +566,30 @@ void ManagementData::review(const uint32_t gametime,
                             const uint32_t old_land,
                             const uint16_t attackers,
                             const int16_t trained_soldiers,
-                            const int16_t latest_attackers,
-                            const uint16_t conq_ws,
                             const uint16_t strength,
-                            const uint32_t existing_ps) {
+                            const uint32_t existing_ps,
+                            const uint32_t first_iron_mine_time) {
 
-	const int16_t main_bonus =
-	   ((static_cast<int32_t>(land - old_land) > 0 && land > max_e_land * 5 / 6 && attackers > 0 &&
-	     trained_soldiers > 0 && latest_attackers > 0) ?
-	       kBonus :
-	       0);
+	// bonuses (1000 or nothing)
+	const uint16_t territory_bonus = (land > old_land || land > max_e_land) ? 1000 : 0;
+	const uint16_t iron_mine_bonus = (first_iron_mine_time < 2 * 60 * 60 * 1000) ? 1000 : 0;
+	const uint16_t attack_bonus = (attackers > 0) ? 1000 : 0;
+	const uint16_t training_bonus = (trained_soldiers > 0) ? 1000 : 0;
 
-	const int16_t land_delta_bonus = static_cast<int16_t>(land - old_land) * kLandDeltaMultiplier;
+	// scores (numbers dependant on performance)
+	const uint16_t land_score = land / kCurrentLandDivider;
+	const uint16_t strength_score = std::min<uint16_t>(strength, 100) * kStrengthMultiplier;
+	const uint16_t attack_score = std::min<uint16_t>(attackers, 40) * 50;
+	const uint32_t ps_sites_score = kPSitesRatioMultiplier * std::pow(existing_ps, 3) / 1000 / 1000;
 
-	const uint32_t ps_sites_bonus = kPSitesRatioMultiplier * std::pow(existing_ps, 3) / 1000 / 1000;
+	score = territory_bonus + iron_mine_bonus + attack_bonus + training_bonus + land_score +
+	        strength_score + ps_sites_score + attack_score;
 
-	score = land / kCurrentLandDivider + land_delta_bonus + main_bonus +
-	        attackers * kAttackersMultiplier + ((attackers > 0) ? kAttackBonus : -kAttackBonus) +
-	        trained_soldiers * kTrainedSoldiersScore + kConqueredWhBonus * conq_ws +
-	        strength * kStrengthMultiplier + ps_sites_bonus - 500 * kPSitesRatioMultiplier;
-
-	log(" %2d %s: reviewing AI mngm. data, sc: %5d Pr.p: %d (l:%4d/%s/%4d, "
-	    "at:%4d(%3d),ts:%4d/%2d,cWH:%2d,str:%2d/%4d,ps:%4d/%4d)\n",
+	log(" %2d %s: reviewing AI mngm. data, sc: %5d Pr.p: %d (Bonuses:Te:%s I:%s A:%s Tr:%s, "
+	    "Scores:Land:%5d Str:%4d PS:%4d, Att:%4d\n",
 	    pn, gamestring_with_leading_zeros(gametime), score, primary_parent,
-	    land / kCurrentLandDivider, (main_bonus) ? "*" : " ", land_delta_bonus,
-	    attackers * kAttackersMultiplier, latest_attackers, trained_soldiers * kTrainedSoldiersScore,
-	    trained_soldiers, conq_ws, strength, strength * kStrengthMultiplier, existing_ps,
-	    ps_sites_bonus);
+	    (territory_bonus) ? "Y" : "N", (iron_mine_bonus) ? "Y" : "N", (attack_bonus) ? "Y" : "N",
+	    (training_bonus) ? "Y" : "N", land_score, strength_score, ps_sites_score, attack_score);
 
 	if (score < -10000 || score > 30000) {
 		log("%2d %s: reviewing AI mngm. data, score too extreme: %4d\n", pn,
@@ -511,24 +609,26 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 	primary_parent = std::rand() % 4;
 	const uint8_t parent2 = std::rand() % 4;
 
-	std::vector<int16_t> AI_military_numbers_P1(kMagicNumbersSize);
-	std::vector<int8_t> input_weights_P1(kNeuronPoolSize);
-	std::vector<int8_t> input_func_P1(kNeuronPoolSize);
-	std::vector<uint32_t> f_neurons_P1(kFNeuronPoolSize);
+	std::vector<int16_t> AI_military_numbers_P1(
+	   Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	std::vector<int8_t> input_weights_P1(Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	std::vector<int8_t> input_func_P1(Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	std::vector<uint32_t> f_neurons_P1(Widelands::Player::AiPersistentState::kFNeuronPoolSize);
 	ai_dna_handler.fetch_dna(
 	   AI_military_numbers_P1, input_weights_P1, input_func_P1, f_neurons_P1, primary_parent + 1);
 
-	std::vector<int16_t> AI_military_numbers_P2(kMagicNumbersSize);
-	std::vector<int8_t> input_weights_P2(kNeuronPoolSize);
-	std::vector<int8_t> input_func_P2(kNeuronPoolSize);
-	std::vector<uint32_t> f_neurons_P2(kFNeuronPoolSize);
+	std::vector<int16_t> AI_military_numbers_P2(
+	   Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	std::vector<int8_t> input_weights_P2(Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	std::vector<int8_t> input_func_P2(Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	std::vector<uint32_t> f_neurons_P2(Widelands::Player::AiPersistentState::kFNeuronPoolSize);
 	ai_dna_handler.fetch_dna(
 	   AI_military_numbers_P2, input_weights_P2, input_func_P2, f_neurons_P2, parent2 + 1);
 
 	log("    ... Primary parent: %d, secondary parent: %d\n", primary_parent, parent2);
 
 	// First setting of military numbers, they go directly to persistent data
-	for (uint16_t i = 0; i < kMagicNumbersSize; i += 1) {
+	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kMagicNumbersSize; ++i) {
 		// Child inherits DNA with probability 1/kSecondParentProbability from main parent
 		DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ? DnaParent::kPrimary :
 		                                                                       DnaParent::kSecondary;
@@ -543,9 +643,6 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 		case DnaParent::kSecondary:
 			set_military_number_at(i, AI_military_numbers_P2[i]);
 			break;
-		default:
-			log("Invalid dna_donor for military numbers\n");
-			NEVER_HERE();
 		}
 	}
 
@@ -553,7 +650,7 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 	persistent_data->neuron_functs.clear();
 	persistent_data->f_neurons.clear();
 
-	for (uint16_t i = 0; i < kNeuronPoolSize; i += 1) {
+	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kNeuronPoolSize; ++i) {
 		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?
 		                               DnaParent::kPrimary :
 		                               DnaParent::kSecondary;
@@ -567,13 +664,10 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 			persistent_data->neuron_weights.push_back(input_weights_P2[i]);
 			persistent_data->neuron_functs.push_back(input_func_P2[i]);
 			break;
-		default:
-			log("Invalid dna_donor for neurons\n");
-			NEVER_HERE();
 		}
 	}
 
-	for (uint16_t i = 0; i < kFNeuronPoolSize; i += 1) {
+	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kFNeuronPoolSize; ++i) {
 		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?
 		                               DnaParent::kPrimary :
 		                               DnaParent::kSecondary;
@@ -584,15 +678,11 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 		case DnaParent::kSecondary:
 			persistent_data->f_neurons.push_back(f_neurons_P2[i]);
 			break;
-		default:
-			log("Invalid dna_donor for f-neurons\n");
-			NEVER_HERE();
 		}
 	}
 
-	persistent_data->magic_numbers_size = kMagicNumbersSize;
-	persistent_data->neuron_pool_size = kNeuronPoolSize;
-	persistent_data->f_neuron_pool_size = kFNeuronPoolSize;
+	assert(persistent_data->magic_numbers.size() ==
+	       Widelands::Player::AiPersistentState::kMagicNumbersSize);
 }
 // Decides if mutation takes place and how intensive it will be
 MutatingIntensity ManagementData::do_mutate(const uint8_t is_preferred,
@@ -609,8 +699,16 @@ MutatingIntensity ManagementData::do_mutate(const uint8_t is_preferred,
 // Mutating, but all done on persistent data
 void ManagementData::mutate(const uint8_t pn) {
 
+	// Below numbers are used to dictate intensity of mutation
+	// Probability that a value will be mutated = 1 / probability
+	// (lesser number means higher probability and higher mutation)
 	int16_t probability =
 	   shift_weight_value(get_military_number_at(kMutationRatePosition), false) + 101;
+	// Some of mutation will be agressive - over full range of values, the number below
+	// say how many (aproximately) they will be
+	uint16_t preferred_numbers_count = 0;
+	// This is used to store status whether wild card was or was not used
+	bool wild_card = false;
 
 	// When doing training mutation probability is to be bigger than not in training mode
 	if (ai_training_mode_) {
@@ -620,29 +718,32 @@ void ManagementData::mutate(const uint8_t pn) {
 		if (probability < kLowerDefaultMutationLimit) {
 			probability = kLowerDefaultMutationLimit;
 		}
+		preferred_numbers_count = 1;
 	} else {
 		probability = kNoAiTrainingMutation;
 	}
 
 	set_military_number_at(kMutationRatePosition, probability - 101);
-
 	// decreasing probability (or rather increasing probability of mutation) if weaker player
 	if (ai_type == Widelands::AiType::kWeak) {
-		probability /= 2;
-		log("%2d: Weak mode, increasing mutation probability to 1 / %d\n", pn, probability);
+		probability /= 15;
+		preferred_numbers_count = 25;
 	} else if (ai_type == Widelands::AiType::kVeryWeak) {
-		probability /= 4;
-		log("%2d: Very weak mode, increasing mutation probability to 1 / %d\n", pn, probability);
+		probability /= 40;
+		preferred_numbers_count = 50;
 	}
 
 	// Wildcard for ai trainingmode
-	if (ai_training_mode_ && std::rand() % 8 == 0) {
+	if (ai_training_mode_ && std::rand() % 8 == 0 && ai_type == Widelands::AiType::kNormal) {
 		probability /= 3;
+		preferred_numbers_count = 5;
+		wild_card = true;
 	}
 
 	assert(probability > 0 && probability <= 201);
 
-	log("%2d: mutating DNA with probability 1 / %3d:\n", pn, probability);
+	log("%2d: mutating DNA with probability 1 / %3d, preffered numbers target %d%s:\n", pn,
+	    probability, preferred_numbers_count, (wild_card) ? ", wild card" : "");
 
 	if (probability < 201) {
 
@@ -650,10 +751,12 @@ void ManagementData::mutate(const uint8_t pn) {
 		{
 			// Preferred numbers are ones that will be mutated agressively in full range
 			// [-kWeightRange, kWeightRange]
-			std::set<int32_t> preferred_numbers = {std::rand() % kMagicNumbersSize *
-			                                       pref_number_probability};
+			std::set<int32_t> preferred_numbers;
+			for (int i = 0; i < preferred_numbers_count; i++) {
+				preferred_numbers.insert(std::rand() % pref_number_probability);
+			}
 
-			for (uint16_t i = 0; i < kMagicNumbersSize; i += 1) {
+			for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kMagicNumbersSize; ++i) {
 				if (i == kMutationRatePosition) {  // mutated above
 					continue;
 				}
@@ -676,8 +779,10 @@ void ManagementData::mutate(const uint8_t pn) {
 		// Modifying pool of neurons
 		{
 			// Neurons to be mutated more agressively
-			std::set<int32_t> preferred_neurons = {std::rand() % kNeuronPoolSize *
-			                                       pref_number_probability};
+			std::set<int32_t> preferred_neurons;
+			for (int i = 0; i < preferred_numbers_count; i++) {
+				preferred_neurons.insert(std::rand() % pref_number_probability);
+			}
 			for (auto& item : neuron_pool) {
 
 				const MutatingIntensity mutating_intensity =
@@ -707,8 +812,13 @@ void ManagementData::mutate(const uint8_t pn) {
 		// Modifying pool of f-neurons
 		{
 			// FNeurons to be mutated more agressively
-			std::set<int32_t> preferred_f_neurons = {std::rand() % kFNeuronPoolSize *
-			                                         pref_number_probability};
+			std::set<int32_t> preferred_f_neurons;
+			// preferred_numbers_count is multiplied by 3 because FNeuron store more than
+			// one value
+			for (int i = 0; i < 3 * preferred_numbers_count; i++) {
+				preferred_f_neurons.insert(std::rand() % pref_number_probability);
+			}
+
 			for (auto& item : f_neuron_pool) {
 				uint8_t changed_bits = 0;
 				// is this a preferred neuron
@@ -744,50 +854,48 @@ void ManagementData::mutate(const uint8_t pn) {
 // Now we copy persistent to local
 void ManagementData::copy_persistent_to_local() {
 
-	assert(persistent_data->neuron_weights.size() == kNeuronPoolSize);
-	assert(persistent_data->neuron_functs.size() == kNeuronPoolSize);
+	assert(persistent_data->neuron_weights.size() ==
+	       Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	assert(persistent_data->neuron_functs.size() ==
+	       Widelands::Player::AiPersistentState::kNeuronPoolSize);
 	neuron_pool.clear();
-	for (uint32_t i = 0; i < kNeuronPoolSize; i = i + 1) {
+	for (uint32_t i = 0; i < Widelands::Player::AiPersistentState::kNeuronPoolSize; ++i) {
 		neuron_pool.push_back(
 		   Neuron(persistent_data->neuron_weights[i], persistent_data->neuron_functs[i], i));
 	}
 
-	assert(persistent_data->f_neurons.size() == kFNeuronPoolSize);
+	assert(persistent_data->f_neurons.size() ==
+	       Widelands::Player::AiPersistentState::kFNeuronPoolSize);
 	f_neuron_pool.clear();
-	for (uint32_t i = 0; i < kFNeuronPoolSize; i = i + 1) {
+	for (uint32_t i = 0; i < Widelands::Player::AiPersistentState::kFNeuronPoolSize; ++i) {
 		f_neuron_pool.push_back(FNeuron(persistent_data->f_neurons[i], i));
 	}
 
-	persistent_data->magic_numbers_size = kMagicNumbersSize;
-	persistent_data->neuron_pool_size = kNeuronPoolSize;
-	persistent_data->f_neuron_pool_size = kFNeuronPoolSize;
+	assert(persistent_data->magic_numbers.size() ==
+	       Widelands::Player::AiPersistentState::kMagicNumbersSize);
 
 	test_consistency();
 	log("    ... DNA initialized\n");
 }
 
 void ManagementData::test_consistency(bool itemized) {
-
-	assert(persistent_data->neuron_weights.size() == persistent_data->neuron_pool_size);
-	assert(persistent_data->neuron_functs.size() == persistent_data->neuron_pool_size);
-	assert(neuron_pool.size() == persistent_data->neuron_pool_size);
-	assert(neuron_pool.size() == kNeuronPoolSize);
-
-	assert(persistent_data->magic_numbers_size == kMagicNumbersSize);
-	assert(persistent_data->magic_numbers.size() == kMagicNumbersSize);
-
-	assert(persistent_data->f_neurons.size() == persistent_data->f_neuron_pool_size);
-	assert(f_neuron_pool.size() == persistent_data->f_neuron_pool_size);
-	assert(f_neuron_pool.size() == kFNeuronPoolSize);
+	assert(persistent_data->magic_numbers.size() ==
+	       Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	assert(persistent_data->neuron_weights.size() ==
+	       Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	assert(persistent_data->neuron_functs.size() ==
+	       Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	assert(neuron_pool.size() == Widelands::Player::AiPersistentState::kNeuronPoolSize);
+	assert(f_neuron_pool.size() == Widelands::Player::AiPersistentState::kFNeuronPoolSize);
 
 	if (itemized) {
 		// comparing contents of neuron and fneuron pools
-		for (uint16_t i = 0; i < kNeuronPoolSize; i += 1) {
+		for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kNeuronPoolSize; ++i) {
 			assert(persistent_data->neuron_weights[i] == neuron_pool[i].get_weight());
 			assert(persistent_data->neuron_functs[i] == neuron_pool[i].get_type());
 			assert(neuron_pool[i].get_id() == i);
 		}
-		for (uint16_t i = 0; i < kFNeuronPoolSize; i += 1) {
+		for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kFNeuronPoolSize; ++i) {
 			assert(persistent_data->f_neurons[i] == f_neuron_pool[i].get_int());
 			assert(f_neuron_pool[i].get_id() == i);
 		}
@@ -802,20 +910,16 @@ void ManagementData::dump_data(const PlayerNumber pn) {
 
 // Querying military number at a possition
 int16_t ManagementData::get_military_number_at(uint8_t pos) {
-	assert(pos < kMagicNumbersSize);
-	return persistent_data->magic_numbers[pos];
+	assert(pos < Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	return persistent_data->magic_numbers.at(pos);
 }
 
 // Setting military number (persistent numbers are used also for local use)
 void ManagementData::set_military_number_at(const uint8_t pos, int16_t value) {
-	assert(pos < kMagicNumbersSize);
-
-	while (pos >= persistent_data->magic_numbers.size()) {
-		persistent_data->magic_numbers.push_back(0);
-	}
-
-	value = Neuron::clip_weight_to_range(value);
-	persistent_data->magic_numbers[pos] = value;
+	assert(pos < Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	assert(persistent_data->magic_numbers.size() ==
+	       Widelands::Player::AiPersistentState::kMagicNumbersSize);
+	persistent_data->magic_numbers.at(pos) = Neuron::clip_weight_to_range(value);
 }
 
 uint16_t MineTypesObserver::total_count() const {
@@ -870,56 +974,42 @@ bool BlockedFields::is_blocked(Coords coords) {
 	return (blocked_fields_.count(coords.hash()) != 0);
 }
 
-FlagsForRoads::Candidate::Candidate(uint32_t coords, int32_t distance, bool economy)
-   : coords_hash(coords), air_distance(distance), different_economy(economy) {
+// As a policy, we just set some default value, that will be updated later on
+FlagsForRoads::Candidate::Candidate(uint32_t coords, int32_t distance, bool different_economy)
+   : coords_hash(coords), air_distance(distance) {
 	new_road_possible = false;
-	accessed_via_roads = false;
-	// Values are only very rough, and are dependant on the map size
-	new_road_length = 2 * Widelands::kMapDimensions.at(Widelands::kMapDimensions.size() - 1);
-	current_roads_distance = 2 * (Widelands::kMapDimensions.size() - 1);  // must be big enough
-	reduction_score = -air_distance;  // allows reasonable ordering from the start
+	// Just custom values
+	new_road_length = kRoadPossiblyBuildable;
+	current_road_length = (different_economy) ? kNotConnectedByRoads : kConnectedByRoads;
 }
 
+// Used when sorting cadidate flags from best one
 bool FlagsForRoads::Candidate::operator<(const Candidate& other) const {
-	if (reduction_score == other.reduction_score) {
-		return coords_hash < other.coords_hash;
-	} else {
-		return reduction_score > other.reduction_score;
-	}
+	const int32_t other_rs = other.reduction_score();
+	const int32_t this_rs = reduction_score();
+	return std::tie(other.new_road_possible, other_rs) < std::tie(new_road_possible, this_rs);
 }
 
 bool FlagsForRoads::Candidate::operator==(const Candidate& other) const {
 	return coords_hash == other.coords_hash;
 }
 
-void FlagsForRoads::Candidate::calculate_score() {
-	if (!new_road_possible) {
-		reduction_score = kRoadNotFound - air_distance;  // to have at least some ordering preserved
-	} else if (different_economy) {
-		reduction_score = kRoadToDifferentEconomy - air_distance - 2 * new_road_length;
-	} else if (!accessed_via_roads) {
-		if (air_distance + 6 > new_road_length) {
-			reduction_score = kShortcutWithinSameEconomy - air_distance - 2 * new_road_length;
-		} else {
-			reduction_score = kRoadNotFound;
-		}
-	} else {
-		reduction_score = current_roads_distance - 2 * new_road_length;
-	}
+int32_t FlagsForRoads::Candidate::reduction_score() const {
+	return current_road_length - new_road_length - (new_road_length - air_distance) / 3;
 }
 
 void FlagsForRoads::print() {  // this is for debugging and development purposes
-	for (auto& candidate_flag : queue) {
+	for (auto& candidate_flag : flags_queue) {
 		log("   %starget: %3dx%3d, saving: %5d (%3d), air distance: %3d, new road: %6d, score: %5d "
 		    "%s\n",
-		    (candidate_flag.reduction_score >= min_reduction && candidate_flag.new_road_possible) ?
+		    (candidate_flag.reduction_score() >= min_reduction && candidate_flag.new_road_possible) ?
 		       "+" :
 		       " ",
 		    Coords::unhash(candidate_flag.coords_hash).x,
 		    Coords::unhash(candidate_flag.coords_hash).y,
-		    candidate_flag.current_roads_distance - candidate_flag.new_road_length, min_reduction,
+		    candidate_flag.current_road_length - candidate_flag.new_road_length, min_reduction,
 		    candidate_flag.air_distance, candidate_flag.new_road_length,
-		    candidate_flag.reduction_score,
+		    candidate_flag.reduction_score(),
 		    (candidate_flag.new_road_possible) ? ", new road possible" : " ");
 	}
 }
@@ -927,7 +1017,7 @@ void FlagsForRoads::print() {  // this is for debugging and development purposes
 // Queue is ordered but some target flags are only estimations so we take such a candidate_flag
 // first
 bool FlagsForRoads::get_best_uncalculated(uint32_t* winner) {
-	for (auto& candidate_flag : queue) {
+	for (auto& candidate_flag : flags_queue) {
 		if (!candidate_flag.new_road_possible) {
 			*winner = candidate_flag.coords_hash;
 			return true;
@@ -937,77 +1027,57 @@ bool FlagsForRoads::get_best_uncalculated(uint32_t* winner) {
 }
 
 // Road from starting flag to this flag can be built
-void FlagsForRoads::road_possible(Widelands::Coords coords, uint32_t distance) {
-	// std::set does not allow updating
-	Candidate new_candidate_flag = Candidate(0, 0, false);
-	for (auto candidate_flag : queue) {
+void FlagsForRoads::road_possible(Widelands::Coords coords, const uint32_t new_road) {
+	for (auto& candidate_flag : flags_queue) {
 		if (candidate_flag.coords_hash == coords.hash()) {
-			new_candidate_flag = candidate_flag;
-			assert(new_candidate_flag.coords_hash == candidate_flag.coords_hash);
-			queue.erase(candidate_flag);
-			break;
+			candidate_flag.new_road_length = new_road;
+			candidate_flag.new_road_possible = true;
+			candidate_flag.reduction_score();
+			return;
 		}
 	}
-
-	new_candidate_flag.new_road_length = distance;
-	new_candidate_flag.new_road_possible = true;
-	new_candidate_flag.calculate_score();
-	queue.insert(new_candidate_flag);
+	NEVER_HERE();
 }
 
-// Remove the flag from candidates as interconnecting road is not possible
-void FlagsForRoads::road_impossible(Widelands::Coords coords) {
-	const uint32_t hash = coords.hash();
-	for (auto candidate_flag : queue) {
+// find_reachable_fields returns duplicates so we deal with them
+bool FlagsForRoads::has_candidate(const uint32_t hash) {
+	for (auto& candidate_flag : flags_queue) {
 		if (candidate_flag.coords_hash == hash) {
-			queue.erase(candidate_flag);
+			return true;
+		}
+	}
+	return false;
+}
+
+// Updating walking distance into flags_queue
+void FlagsForRoads::set_cur_road_distance(Widelands::Coords coords, int32_t cur_distance) {
+	for (auto& candidate_flag : flags_queue) {
+		if (candidate_flag.coords_hash == coords.hash()) {
+			candidate_flag.current_road_length = cur_distance;
+			candidate_flag.reduction_score();
 			return;
 		}
 	}
 }
 
-// Updating walking distance over existing roads
-// Queue does not allow modifying its members so we erase and then eventually insert modified member
-void FlagsForRoads::set_road_distance(Widelands::Coords coords, int32_t distance) {
-	const uint32_t hash = coords.hash();
-	Candidate new_candidate_flag = Candidate(0, 0, false);
-	bool replacing = false;
-	for (auto candidate_flag : queue) {
-		if (candidate_flag.coords_hash == hash) {
-			assert(!candidate_flag.different_economy);
-			if (distance < candidate_flag.current_roads_distance) {
-				new_candidate_flag = candidate_flag;
-				queue.erase(candidate_flag);
-				replacing = true;
-				break;
-			}
-			break;
-		}
-	}
-	if (replacing) {
-		new_candidate_flag.current_roads_distance = distance;
-		new_candidate_flag.accessed_via_roads = true;
-		new_candidate_flag.calculate_score();
-		queue.insert(new_candidate_flag);
-	}
-}
-
+// Returns mostly best candidate, as a result of sorting
 bool FlagsForRoads::get_winner(uint32_t* winner_hash) {
 	// If AI can ask for 2nd position, but there is only one viable candidate
 	// we return the first one of course
 	bool has_winner = false;
-	for (auto candidate_flag : queue) {
-		if (candidate_flag.reduction_score < min_reduction || !candidate_flag.new_road_possible) {
+	for (auto candidate_flag : flags_queue) {
+		if (candidate_flag.reduction_score() < min_reduction || !candidate_flag.new_road_possible ||
+		    candidate_flag.new_road_length * 2 > candidate_flag.current_road_length) {
 			continue;
 		}
 		assert(candidate_flag.air_distance > 0);
-		assert(candidate_flag.reduction_score >= min_reduction);
+		assert(candidate_flag.reduction_score() >= min_reduction);
 		assert(candidate_flag.new_road_possible);
 		*winner_hash = candidate_flag.coords_hash;
 		has_winner = true;
 
-		if (std::rand() % 3 > 0) {
-			// with probability of 2/3 we accept this flag
+		if (std::rand() % 4 > 0) {
+			// with probability of 3/4 we accept this flag
 			return true;
 		}
 	}
@@ -1023,7 +1093,6 @@ PlayersStrengths::PlayersStrengths() : update_time(0) {
 
 // Constructor to be used
 PlayersStrengths::PlayerStat::PlayerStat(Widelands::TeamNumber tc,
-                                         bool e,
                                          uint32_t pp,
                                          uint32_t op,
                                          uint32_t o60p,
@@ -1032,7 +1101,6 @@ PlayersStrengths::PlayerStat::PlayerStat(Widelands::TeamNumber tc,
                                          uint32_t oland,
                                          uint32_t o60l)
    : team_number(tc),
-     is_enemy(e),
      players_power(pp),
      old_players_power(op),
      old60_players_power(o60p),
@@ -1065,17 +1133,9 @@ void PlayersStrengths::add(Widelands::PlayerNumber pn,
                            uint32_t oland,
                            uint32_t o60l) {
 	if (all_stats.count(opn) == 0) {
-		bool enemy = false;
-		if (pn == opn) {
-			;
-		} else if (pltn == 0 || mytn == 0) {
-			enemy = true;
-		} else if (pltn != mytn) {
-			enemy = true;
-		}
 		this_player_number = pn;
-		all_stats.insert(
-		   std::make_pair(opn, PlayerStat(pltn, enemy, pp, op, o60p, cs, land, oland, o60l)));
+		this_player_team = mytn;
+		all_stats.insert(std::make_pair(opn, PlayerStat(pltn, pp, op, o60p, cs, land, oland, o60l)));
 	} else {
 		all_stats[opn].players_power = pp;
 		all_stats[opn].old_players_power = op;
@@ -1084,6 +1144,25 @@ void PlayersStrengths::add(Widelands::PlayerNumber pn,
 		all_stats[opn].players_land = land;
 		all_stats[opn].old_players_land = oland;
 		all_stats[opn].old60_players_land = oland;
+		assert(this_player_number == pn);
+		if (this_player_team != mytn) {
+			log("%2d: Team changed %d -> %d\n", pn, this_player_team, mytn);
+			this_player_team = mytn;
+		};
+		if (all_stats[opn].team_number != pltn) {
+			log("%2d: Team changed for player %d: %d -> %d\n", pn, opn, all_stats[opn].team_number,
+			    pltn);
+			all_stats[opn].team_number = pltn;
+		};
+	}
+}
+
+// Very tiny possibility that player that has a statistics info here
+// does not exist anymore
+void PlayersStrengths::remove_stat(const Widelands::PlayerNumber pn) {
+	if (all_stats.count(pn) > 0) {
+		log("%d: AI: Erasing statistics for player %d\n", this_player_number, pn);
+		all_stats.erase(pn);
 	}
 }
 
@@ -1104,7 +1183,7 @@ void PlayersStrengths::recalculate_team_power() {
 // This just goes over information about all enemies and where they were seen the last time
 bool PlayersStrengths::any_enemy_seen_lately(const uint32_t gametime) {
 	for (auto& item : all_stats) {
-		if (item.second.is_enemy && player_seen_lately(item.first, gametime)) {
+		if (get_is_enemy(item.first) && player_seen_lately(item.first, gametime)) {
 			return true;
 		}
 	}
@@ -1115,7 +1194,7 @@ bool PlayersStrengths::any_enemy_seen_lately(const uint32_t gametime) {
 uint8_t PlayersStrengths::enemies_seen_lately_count(const uint32_t gametime) {
 	uint8_t count = 0;
 	for (auto& item : all_stats) {
-		if (item.second.is_enemy && player_seen_lately(item.first, gametime)) {
+		if (get_is_enemy(item.first) && player_seen_lately(item.first, gametime)) {
 			count += 1;
 		}
 	}
@@ -1130,13 +1209,23 @@ void PlayersStrengths::set_last_time_seen(const uint32_t seentime, Widelands::Pl
 	all_stats[pn].last_time_seen = seentime;
 }
 
-bool PlayersStrengths::get_is_enemy(Widelands::PlayerNumber pn) {
-	if (all_stats.count(pn) == 0) {
-		// Should happen only rarely so we print a warning here
-		log("%d: WARNING: player has no statistics yet\n", this_player_number);
+bool PlayersStrengths::get_is_enemy(Widelands::PlayerNumber other_player_number) {
+	// So this is me
+	if (other_player_number == this_player_number) {
 		return false;
 	}
-	return all_stats[pn].is_enemy;
+	// If we do not belong to any team, all others are our enemies
+	if (this_player_team == 0) {
+		return true;
+	}
+	if (all_stats.count(other_player_number) == 0) {
+		// Should happen only rarely so we print a warning here
+		log("%d: WARNING: player has no statistics yet for player %d\n", this_player_number,
+		    other_player_number);
+		return false;
+	}
+	// finally we compare my team number of the other player team number
+	return all_stats[other_player_number].team_number != this_player_team;
 }
 
 // Was the player seen less then 2 minutes ago
@@ -1271,14 +1360,6 @@ uint32_t PlayersStrengths::get_old_visible_enemies_power(const uint32_t gametime
 		}
 	}
 	return pw;
-}
-
-// This is casualities of player
-uint32_t PlayersStrengths::get_player_casualities(Widelands::PlayerNumber pn) {
-	if (all_stats.count(pn) > 0) {
-		return all_stats[pn].players_casualities;
-	}
-	return 0;
 }
 
 // This is strength of player plus third of strength of other members of his team

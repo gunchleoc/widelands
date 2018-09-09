@@ -80,6 +80,17 @@ if (APPLE OR WIN32 OR
   endif()
 endif()
 
+# Disable no symbols warning on macOS, but only on versions where this is
+# supported. It is not supported on OS X 10.7 (DARWIN_MAJOR_VERSION == 11).
+if (APPLE)
+    if (${DARWIN_MAJOR_VERSION} GREATER 11)
+        SET(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+        SET(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+        SET(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+        SET(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+    endif()
+endif()
+
 # TODO(sirver): One day, this should be enabled. Then we have no more cycles in our dependencies....
 # set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_NO_CYCLES ON)
 
@@ -94,27 +105,40 @@ endif (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(WL_DEBUG_FLAGS "-g -DDEBUG")
+  option(OPTION_ASAN "Build with AddressSanitizer" ON)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 6.3))
-    message(STATUS "GCC 6.3.0 breaks -03, setting -02")
+  if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.2))
+    message(STATUS "GCC >6.2.0 breaks -03, setting -02")
     set(WL_OPTIMIZE_FLAGS "-O2")
   else()
     set(WL_OPTIMIZE_FLAGS "-O3")
   endif ()
   set(WL_DEBUG_FLAGS "-DNDEBUG -DNOPARACHUTE")
+  option(OPTION_ASAN "Build with AddressSanitizer" OFF)
 elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-  if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 6.3))
-    message(STATUS "GCC 6.3.0 breaks -03, setting -02")
+  if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.2))
+    message(STATUS "GCC >6.2.0 breaks -03, setting -02")
     set(WL_OPTIMIZE_FLAGS "-O2")
   else()
     set(WL_OPTIMIZE_FLAGS "-O3")
   endif ()
   set(WL_DEBUG_FLAGS "-DNDEBUG -DNOPARACHUTE")
+  option(OPTION_ASAN "Build with AddressSanitizer" ON)
 else()
   message(FATAL_ERROR "Unknown CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 endif()
 
 wl_add_flag(WL_GENERIC_CXX_FLAGS "-std=c++11")
+
+if(OPTION_ASAN)
+  message(STATUS "Using AddressSanitizer http://clang.llvm.org/docs/AddressSanitizer.html")
+  # See http://clang.llvm.org/docs/AddressSanitizer.html
+  wl_add_flag(WL_COMPILE_DIAGNOSTICS "-fsanitize=address")
+  wl_add_flag(WL_COMPILE_DIAGNOSTICS "-fno-omit-frame-pointer")
+  set (CMAKE_EXE_LINKER_FLAGS "-fsanitize=address" CACHE STRING "Set by widelands CMakeLists.txt" FORCE)
+else()
+  message(STATUS "Not using AddressSanitizer.")
+endif(OPTION_ASAN)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Weverything")
@@ -144,6 +168,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Werror=non-pod-varargs")
 
   wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Qunused-arguments")
+
+  wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Wint-to-void-pointer-cast")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3.8)
+      wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Winconsistent-missing-override")
+  endif()
 else()
   # Assuming GCC 4.8 or higher.
   if(WIN32)
@@ -272,6 +301,7 @@ install(
     data/images
     data/scripting
     data/shaders
+    data/templates
     data/tribes
     data/txts
     data/world

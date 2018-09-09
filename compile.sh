@@ -4,108 +4,174 @@ echo "###########################################################"
 echo "#     Script to simplify the compilation of Widelands     #"
 echo "###########################################################"
 echo " "
-echo "  Because of the many different systems Widelands might be"
-echo "  compiled on, we unfortunately can not provide a simple"
-echo "  way to prepare your system for compilation. To ensure"
-echo "  that your system is ready, best check"
-echo "  http://wl.widelands.org/wiki/BuildingWidelands"
+echo "  Because of the many different systems Widelands"
+echo "  might be compiled on, we unfortunally can not"
+echo "  provide a simple way to prepare your system for"
+echo "  compilation. To ensure your system is ready, best"
+echo "  check http://wl.widelands.org/wiki/BuildingWidelands"
 echo " "
 echo "  You will often find helpful hands at our"
 echo "  * IRC Chat: http://wl.widelands.org/webchat/"
 echo "  * Forums: http://wl.widelands.org/forum/"
-echo "  * Mailing List: http://wl.widelands.org/wiki/MailLists/"
+echo "  * Mailinglist: http://wl.widelands.org/wiki/MailLists/"
 echo " "
 echo "  Please post your bug reports and feature requests at:"
 echo "  https://bugs.launchpad.net/widelands"
 echo " "
-echo "  For instructions on how to adjust options and build with"
-echo "  CMake, please take a look at"
-echo "  https://wl.widelands.org/wiki/BuildingWidelands/."
-echo " "
 echo "###########################################################"
 echo " "
+print_help () {
+    # Print help for our options
+    echo "Per default, this script will create a full debug build."
+    echo "Unless explicitly switched off, AddressSanitizer will"
+    echo "be used as well with debug builds."
+    echo " "
+    echo "The following options are available:"
+    echo " "
+    echo "-h or --help          Print this help."
+    echo " "
+    echo " "
+    echo "Omission options:"
+    echo " "
+    echo "-w or --no-website    Omit building of website binaries."
+    echo " "
+    echo "-t or --no-translations"
+    echo "                      Omit building translations."
+    echo " "
+    echo "-a or --no-asan       If in debug mode, switch off the AddressSanitizer."
+    echo "                      Release builds are created without AddressSanitizer"
+    echo "                      per default."
+    echo " "
+    echo "-u or --no-utils:"
+    echo "                      Omit building and linking the utility"
+    echo "                      executables (wl_create_spritemap)"
+    echo " "
+    echo " "
+    echo "Compiler options:"
+    echo " "
+    echo "-r or --release       Create a release build. If this is not set,"
+    echo "                      a debug build will be created."
+    echo " "
+    echo "--gcc                 Try to build with GCC rather than the system default."
+    echo "                      If you built with Clang before, you will have to clean"
+    echo "                      your build directory before switching compilers."
+    echo "                      Expects that the compiler is in '/usr/bin/'."
+    echo " "
+    echo "--clang               Try to build with Clang rather than the system default."
+    echo "                      If you built with GCC before, you will have to clean"
+    echo "                      your build directory before switching compilers."
+    echo "                      Expects that the compiler is in '/usr/bin/'."
+    echo " "
+    echo " "
+    echo "Compact options:"
+    echo " "
+    echo "-m or --minimal:"
+    echo "                      Create the fastest build possible. This is a"
+    echo "                      release build with no translations or additional"
+    echo "                      executables."
+    echo " "
+    echo " "
+    echo "For the AddressSanitizer output to be useful, some systems (e.g. Ubuntu Linux)"
+    echo "require that you set a symlink to the symbolizer. For example:"
+    echo " "
+    echo "    sudo ln -s /usr/bin/llvm-symbolizer-3.8 /usr/bin/llvm-symbolizer"
+    echo " "
+    echo "More info about AddressSanitizer at:"
+    echo " "
+    echo "    http://clang.llvm.org/docs/AddressSanitizer.html"
+    echo " "
+    return
+  }
 
-## Option to avoid building and linking website-related executables etc.
-BUILDTYPE="Debug"
+## Options to control the build.
+BUILD_WEBSITE="ON"
 BUILD_TRANSLATIONS="ON"
 BUILD_UTILS="ON"
-BUILD_WEBSITE="ON"
-PRINT_HELP=0
+BUILD_TYPE="Debug"
+USE_ASAN="ON"
+COMPILER="default"
 while [ "$1" != "" ]; do
-  if [ "$1" = "--help" ]; then
-    PRINT_HELP=1
-  elif [ "$1" = "--minimal" -o "$1" = "-m" ]; then
-    BUILDTYPE="Release"
-    BUILD_TRANSLATIONS="OFF"
-    BUILD_UTILS="OFF"
-    BUILD_WEBSITE="OFF"
-  elif [ "$1" = "--release" -o "$1" = "-r" ]; then
-    BUILDTYPE="Release"
+  if [ "$1" = "--release" -o "$1" = "-r" ]; then
+    BUILD_TYPE="Release"
+    USE_ASAN="OFF"
+  elif [ "$1" = "--no-asan" -o "$1" = "-a" ]; then
+    USE_ASAN="OFF"
   elif [ "$1" = "--no-translations" -o "$1" = "-t" ]; then
     BUILD_TRANSLATIONS="OFF"
-  elif [ "$1" = "--no-utils" -o "$1" = "-u" ]; then
-    BUILD_UTILS="OFF"
   elif [ "$1" = "--no-website" -o "$1" = "-w" ]; then
     BUILD_WEBSITE="OFF"
+  elif [ "$1" = "--no-utils" -o "$1" = "-u" ]; then
+    BUILD_UTILS="OFF"
+  elif [ "$1" = "--gcc" ]; then
+    if [ -f /usr/bin/gcc -a /usr/bin/g++ ]; then
+      export CC=/usr/bin/gcc
+      export CXX=/usr/bin/g++
+    fi
+  elif [ "$1" = "--clang" ]; then
+    if [ -f /usr/bin/clang -a /usr/bin/clang++ ]; then
+      export CC=/usr/bin/clang
+      export CXX=/usr/bin/clang++
+    fi
+  elif [ "$1" = "--help" -o "$1" = "-h" ]; then
+    print_help
+    exit 0
+  elif [ "$1" = "--minimal" -o "$1" = "-m" ]; then
+    BUILDTYPE="Release"
+    USE_ASAN="OFF"
+    BUILD_TRANSLATIONS="OFF"
+    BUILD_WEBSITE="OFF"
+    BUILD_UTILS="OFF"
   fi
   shift
 done
-if [ $PRINT_HELP = 1 ]; then
-  echo "  You can build Widelands as a debug or as a release build."
-  echo "  The debug build is the default option; in order to create"
-  echo "  a release build, call"
-  echo ""
-  echo "    ./compile.sh -r"
-  echo ""
-  echo "  The following options are available for speeding up the"
-  echo "  build:"
-  echo " "
-  echo "    -m or --minimal:"
-  echo "          Create the fastest build possible. This is a"
-  echo "          release build with no translations or additional"
-  echo "          executables."
-  echo " "
-  echo "    -u or --no-utils:"
-  echo "          Omit building and linking the utility"
-  echo "          executables (wl_create_spritemap)"
-  echo " "
-  echo "    -w or --no-website:"
-  echo "          Omit building and linking the website-related"
-  echo "          executables (wl_map_info, wl_map_object_info)"
-  echo " "
-  echo "    -t or --no-translations:"
-  echo "          Omit building translations"
-  echo " "
-  echo "###########################################################"
-  echo " "
-  exit 0
-else
-  echo "  Building Widelands with the following options:"
-  echo ""
-  if [ $BUILDTYPE = "Release" ]; then
-    echo "    * RELEASE build"
-  else
-    echo "    * DEBUG build"
-  fi
-  if [ $BUILD_TRANSLATIONS = "ON" ]; then
-    echo "    * Translations"
-  else
-    echo "    * NO translations"
-  fi
-  if [ $BUILD_UTILS = "ON" ]; then
-    echo "    * Utility executables"
-  else
-    echo "    * NO utility executables"
-  fi
-  if [ $BUILD_WEBSITE = "ON" ]; then
-    echo "    * Website executables"
-  else
-    echo "    * NO website executables"
-  fi
-fi
 
+if [ $BUILD_WEBSITE = "ON" ]; then
+  echo "A complete build will be created."
+  echo "You can use -w or --no-website to omit building and"
+  echo "linking website-related executables."
+else
+  echo "Any website-related code will be OMITTED in the build."
+  echo "Make sure that you have created and tested a full"
+  echo "build before submitting code to the repository!"
+fi
 echo " "
-echo "  Call ./compile.sh --help for further options"
+if [ $BUILD_TRANSLATIONS = "ON" ]; then
+  echo "Utils will be built."
+  echo "You can use -u or ----no-utils to omit building them."
+else
+echo "Utils will not be built."
+fi
+echo " "
+if [ $BUILD_TRANSLATIONS = "ON" ]; then
+  echo "Translations will be built."
+  echo "You can use -t or --no-translations to omit building them."
+else
+echo "Translations will not be built."
+fi
+echo " "
+echo "###########################################################"
+echo " "
+if [ $BUILD_TYPE = "Release" ]; then
+  echo "Creating a Release build."
+else
+  echo "Creating a Debug build. Use -r to create a Release build."
+fi
+echo " "
+if [ $USE_ASAN = "ON" ]; then
+  echo "Will build with AddressSanitizer."
+  echo "http://clang.llvm.org/docs/AddressSanitizer.html"
+  echo "You can use -a or --no-asan to switch it off."
+else
+  echo "Will build without AddressSanitizer."
+fi
+echo " "
+echo "###########################################################"
+echo " "
+echo "Call 'compile.sh -h' or 'compile.sh --help' for help."
+echo ""
+echo "For instructions on how to adjust options and build with"
+echo "CMake, please take a look at"
+echo "https://wl.widelands.org/wiki/BuildingWidelands/."
 echo " "
 echo "###########################################################"
 echo " "
@@ -156,9 +222,9 @@ buildtool="" #Use ninja by default, fall back to make if that is not available.
   # Compile Widelands
   compile_widelands () {
     if [ $buildtool = "ninja" ] || [ $buildtool = "ninja-build" ] ; then
-      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
+      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_ASAN=$USE_ASAN
     else
-      cmake .. -DCMAKE_BUILD_TYPE=$BUILDTYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS
+      cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOPTION_BUILD_WEBSITE_TOOLS=$BUILD_WEBSITE -DOPTION_BUILD_TRANSLATIONS=$BUILD_TRANSLATIONS -DOPTION_BUILD_UTILITIES=$BUILD_UTILS -DOPTION_ASAN=$USE_ASAN
     fi
 
     $buildtool
@@ -172,7 +238,6 @@ buildtool="" #Use ninja by default, fall back to make if that is not available.
 
     rm  -f ../wl_map_object_info || true
     rm  -f ../wl_map_info || true
-    rm  -f ../wl_create_spritemap || true
 
     mv VERSION ../VERSION
     mv src/widelands ../widelands
@@ -249,17 +314,21 @@ echo "###########################################################"
 echo "# Congratulations! Widelands has been built successfully  #"
 echo "# with the following settings:                            #"
 echo "#                                                         #"
-if [ $BUILDTYPE = "Release" ]; then
+if [ $BUILD_TYPE = "Release" ]; then
   echo "# - Release build                                         #"
 else
   echo "# - Debug build                                           #"
+fi
+if [ $BUILD_UTILS = "ON" ]; then
+  echo "# - Utils                                                 #"
+else
+  echo "# - No utils                                              #"
 fi
 if [ $BUILD_TRANSLATIONS = "ON" ]; then
   echo "# - Translations                                          #"
 else
   echo "# - No translations                                       #"
 fi
-
 if [ $BUILD_WEBSITE = "ON" ]; then
   echo "# - Website-related executables                           #"
 else
@@ -272,4 +341,3 @@ echo "#                                                         #"
 echo "# You can update Widelands via running ./update.sh        #"
 echo "# in the same directory that you ran this script in.      #"
 echo "###########################################################"
-######################################

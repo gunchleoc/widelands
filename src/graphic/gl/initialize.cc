@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2017 by the Widelands Development Team
+ * Copyright (C) 2006-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -84,6 +84,9 @@ SDL_GLContext initialize(
 	// See graphic/gl/system_headers.h for an explanation of the next line.
 	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
+	// LeakSanitizer reports a memory leak which is triggered somewhere above this line, probably
+	// coming from the gaphics drivers
+
 	if (err != GLEW_OK) {
 		log("glewInit returns %i\nYour OpenGL installation must be __very__ broken. %s\n", err,
 		    glewGetErrorString(err));

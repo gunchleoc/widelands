@@ -44,7 +44,7 @@ tribes:new_productionsite_type {
    aihints = {
       needs_water = true,
       shipyard = true,
-      prohibited_till = 1500
+      prohibited_till = 1050
    },
 
    working_positions = {
@@ -71,7 +71,7 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start constructing a ship because ...
          descname = _"constructing a ship",
          actions = {
-            "check_map=seafaring",
+            "checkmap=seafaring",
             "construct=empire_shipconstruction buildship 6",
             "animate=working 35000",
             "return=completed"

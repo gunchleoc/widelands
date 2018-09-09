@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2017 by the Widelands Development Team
+ * Copyright (C) 2002-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -170,10 +170,10 @@ ImmovableProgram::ImmovableProgram(const std::string& init_name,
 			action = new ActRemove(arguments.get(), *immovable);
 		} else if (parts[0] == "seed") {
 			action = new ActSeed(arguments.get(), *immovable);
-		} else if (parts[0] == "play_sound") {
+		} else if (parts[0] == "playsound") {
 			action = new ActPlaySound(arguments.get(), *immovable);
-		} else if (parts[0] == "construction") {
-			action = new ActConstruction(arguments.get(), *immovable);
+		} else if (parts[0] == "construct") {
+			action = new ActConstruct(arguments.get(), *immovable);
 		} else {
 			throw GameDataError("unknown command type \"%s\" in immovable \"%s\"", parts[0].c_str(),
 			                    immovable->name().c_str());
@@ -204,6 +204,9 @@ ImmovableDescr::ImmovableDescr(const std::string& init_descname,
      editor_category_(nullptr) {
 	if (!is_animation_known("idle")) {
 		throw GameDataError("Immovable %s has no idle animation", table.get_string("name").c_str());
+	}
+	if (input_type == MapObjectDescr::OwnerType::kTribe && helptext_script().empty()) {
+		throw GameDataError("Tribe immovable %s has no helptext script", name().c_str());
 	}
 
 	if (table.has_key("size")) {
@@ -286,7 +289,7 @@ const EditorCategory* ImmovableDescr::editor_category() const {
 }
 
 bool ImmovableDescr::has_terrain_affinity() const {
-	return terrain_affinity_.get() != nullptr;
+	return terrain_affinity_ != nullptr;
 }
 
 const TerrainAffinity& ImmovableDescr::terrain_affinity() const {
@@ -473,10 +476,10 @@ void Immovable::draw_construction(const uint32_t gametime,
                                   const Vector2f& point_on_dst,
                                   const float scale,
                                   RenderTarget* dst) {
-	const ImmovableProgram::ActConstruction* constructionact = nullptr;
+	const ImmovableProgram::ActConstruct* constructionact = nullptr;
 	if (program_ptr_ < program_->size())
 		constructionact =
-		   dynamic_cast<const ImmovableProgram::ActConstruction*>(&(*program_)[program_ptr_]);
+		   dynamic_cast<const ImmovableProgram::ActConstruct*>(&(*program_)[program_ptr_]);
 
 	const uint32_t steptime = constructionact ? constructionact->buildtime() : 5000;
 
@@ -547,6 +550,7 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 
 	Immovable& imm = dynamic_cast<Immovable&>(*get_object());
 
+	// Supporting older versions for map loading
 	if (packet_version >= 5) {
 		PlayerNumber pn = fr.unsigned_8();
 		if (pn && pn <= kMaxPlayers) {
@@ -575,10 +579,10 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 	char const* const animname = fr.c_string();
 	try {
 		imm.anim_ = imm.descr().get_animation(animname);
-	} catch (const MapObjectDescr::AnimationNonexistent&) {
+	} catch (const GameDataError& e) {
 		imm.anim_ = imm.descr().main_animation();
-		log("Warning: (%s) Animation \"%s\" not found, using animation %s).\n",
-		    imm.descr().name().c_str(), animname, imm.descr().get_animation_name(imm.anim_).c_str());
+		log("Warning: Immovable: %s, using animation %s instead.\n", e.what(),
+		    imm.descr().get_animation_name(imm.anim_).c_str());
 	}
 	imm.animstart_ = fr.signed_32();
 	if (packet_version >= 4) {
@@ -801,7 +805,7 @@ ImmovableProgram::ActPlaySound::ActPlaySound(char* parameters, const ImmovableDe
 		g_sound_handler.load_fx_if_needed(
 		   FileSystem::fs_dirname(name), FileSystem::fs_filename(name.c_str()), name);
 	} catch (const WException& e) {
-		throw GameDataError("play_sound: %s", e.what());
+		throw GameDataError("playsound: %s", e.what());
 	}
 }
 
@@ -1034,7 +1038,7 @@ void ImmovableProgram::ActSeed::execute(Game& game, Immovable& immovable) const 
 	immovable.program_step(game);
 }
 
-ImmovableProgram::ActConstruction::ActConstruction(char* parameters, ImmovableDescr& descr) {
+ImmovableProgram::ActConstruct::ActConstruct(char* parameters, ImmovableDescr& descr) {
 	try {
 		if (descr.owner_type() != MapObjectDescr::OwnerType::kTribe)
 			throw GameDataError("only usable for tribe immovable");
@@ -1055,23 +1059,23 @@ ImmovableProgram::ActConstruction::ActConstruction(char* parameters, ImmovableDe
 		animid_ = descr.get_animation(animation_name);
 
 	} catch (const WException& e) {
-		throw GameDataError("construction: %s", e.what());
+		throw GameDataError("construct: %s", e.what());
 	}
 }
 
 constexpr uint8_t kCurrentPacketVersionConstructionData = 1;
 
-struct ActConstructionData : ImmovableActionData {
+struct ActConstructData : ImmovableActionData {
 	const char* name() const override {
-		return "construction";
+		return "construct";
 	}
 	void save(FileWrite& fw, Immovable& imm) override {
 		fw.unsigned_8(kCurrentPacketVersionConstructionData);
 		delivered.save(fw, imm.get_owner()->tribe());
 	}
 
-	static ActConstructionData* load(FileRead& fr, Immovable& imm) {
-		ActConstructionData* d = new ActConstructionData;
+	static ActConstructData* load(FileRead& fr, Immovable& imm) {
+		ActConstructData* d = new ActConstructData;
 
 		try {
 			uint8_t packet_version = fr.unsigned_8();
@@ -1079,12 +1083,12 @@ struct ActConstructionData : ImmovableActionData {
 				d->delivered.load(fr, imm.get_owner()->tribe());
 			} else {
 				throw UnhandledVersionError(
-				   "ActConstructionData", packet_version, kCurrentPacketVersionConstructionData);
+				   "ActConstructData", packet_version, kCurrentPacketVersionConstructionData);
 			}
 		} catch (const WException& e) {
 			delete d;
 			d = nullptr;
-			throw GameDataError("ActConstructionData: %s", e.what());
+			throw GameDataError("ActConstructData: %s", e.what());
 		}
 
 		return d;
@@ -1093,11 +1097,11 @@ struct ActConstructionData : ImmovableActionData {
 	Buildcost delivered;
 };
 
-void ImmovableProgram::ActConstruction::execute(Game& g, Immovable& imm) const {
-	ActConstructionData* d = imm.get_action_data<ActConstructionData>();
+void ImmovableProgram::ActConstruct::execute(Game& g, Immovable& imm) const {
+	ActConstructData* d = imm.get_action_data<ActConstructData>();
 	if (!d) {
 		// First execution
-		d = new ActConstructionData;
+		d = new ActConstructData;
 		imm.set_action_data(d);
 
 		imm.start_animation(g, animid_);
@@ -1144,7 +1148,7 @@ void ImmovableProgram::ActConstruction::execute(Game& g, Immovable& imm) const {
  * If the immovable is not currently in construction mode, return \c false.
  */
 bool Immovable::construct_remaining_buildcost(Game& /* game */, Buildcost* buildcost) {
-	ActConstructionData* d = get_action_data<ActConstructionData>();
+	ActConstructData* d = get_action_data<ActConstructData>();
 	if (!d)
 		return false;
 
@@ -1165,7 +1169,7 @@ bool Immovable::construct_remaining_buildcost(Game& /* game */, Buildcost* build
  * If the immovable is not currently in construction mode, return \c false.
  */
 bool Immovable::construct_ware(Game& game, DescriptionIndex index) {
-	ActConstructionData* d = get_action_data<ActConstructionData>();
+	ActConstructData* d = get_action_data<ActConstructData>();
 	if (!d)
 		return false;
 
@@ -1185,8 +1189,8 @@ bool Immovable::construct_ware(Game& game, DescriptionIndex index) {
 	Buildcost remaining;
 	construct_remaining_buildcost(game, &remaining);
 
-	const ImmovableProgram::ActConstruction* action =
-	   dynamic_cast<const ImmovableProgram::ActConstruction*>(&(*program_)[program_ptr_]);
+	const ImmovableProgram::ActConstruct* action =
+	   dynamic_cast<const ImmovableProgram::ActConstruct*>(&(*program_)[program_ptr_]);
 	assert(action != nullptr);
 
 	if (remaining.empty()) {
@@ -1201,8 +1205,9 @@ bool Immovable::construct_ware(Game& game, DescriptionIndex index) {
 
 ImmovableActionData*
 ImmovableActionData::load(FileRead& fr, Immovable& imm, const std::string& name) {
-	if (name == "construction")
-		return ActConstructionData::load(fr, imm);
+	// TODO(GunChleoc): Use "construct" only after Build 20
+	if (name == "construction" || name == "construct")
+		return ActConstructData::load(fr, imm);
 	else {
 		log("ImmovableActionData::load: type %s not known", name.c_str());
 		return nullptr;

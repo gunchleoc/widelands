@@ -36,7 +36,7 @@ tribes:new_productionsite_type {
 
    aihints = {
       mines = "iron",
-      prohibited_till = 1200
+      prohibited_till = 1000
    },
 
    working_positions = {
@@ -62,10 +62,10 @@ tribes:new_productionsite_type {
             "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
             "animate=working 20000",
             "mine=iron 4 100 5 2",
-            "produce=iron_ore",
+            "produce=iron_ore:2",
             "animate=working 20000",
             "mine=iron 4 100 5 2",
-            "produce=iron_ore:2",
+            "produce=iron_ore",
             "animate=working 20000",
             "mine=iron 4 100 5 2",
             "produce=iron_ore:2"

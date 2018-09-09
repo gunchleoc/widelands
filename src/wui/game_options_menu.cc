@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2017 by the Widelands Development Team
+ * Copyright (C) 2002-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -73,7 +73,7 @@ GameOptionsMenu::GameOptionsMenu(InteractiveGameBase& gb,
             0,
             width,
             0,
-            g_gr->images().get("images/ui_basic/but4.png"),
+            UI::ButtonStyle::kWuiMenu,
             _("Sound Options"),
             /** TRANSLATORS: Button tooltip */
             _("Set sound effect and music options")),
@@ -83,7 +83,7 @@ GameOptionsMenu::GameOptionsMenu(InteractiveGameBase& gb,
                 0,
                 width,
                 35,
-                g_gr->images().get("images/ui_basic/but4.png"),
+                UI::ButtonStyle::kWuiMenu,
                 g_gr->images().get("images/wui/menus/menu_save_game.png"),
                 /** TRANSLATORS: Button tooltip */
                 _("Save Game")),
@@ -93,7 +93,7 @@ GameOptionsMenu::GameOptionsMenu(InteractiveGameBase& gb,
                 0,
                 width,
                 35,
-                g_gr->images().get("images/ui_basic/but4.png"),
+                UI::ButtonStyle::kWuiMenu,
                 g_gr->images().get("images/wui/menus/menu_exit_game.png"),
                 /** TRANSLATORS: Button tooltip */
                 _("Exit Game")) {
@@ -114,14 +114,18 @@ GameOptionsMenu::GameOptionsMenu(InteractiveGameBase& gb,
 	exit_game_.sigclicked.connect(
 	   boost::bind(&GameOptionsMenu::clicked_exit_game, boost::ref(*this)));
 
-	windows_.sound_options.assign_toggle_button(&sound_);
+	if (windows_.sound_options.window) {
+		sound_.set_perm_pressed(true);
+	}
+	windows_.sound_options.opened.connect(boost::bind(&UI::Button::set_perm_pressed, &sound_, true));
+	windows_.sound_options.closed.connect(
+	   boost::bind(&UI::Button::set_perm_pressed, &sound_, false));
 
 	if (get_usedefaultpos())
 		center_to_parent();
 }
 
 GameOptionsMenu::~GameOptionsMenu() {
-	windows_.sound_options.unassign_toggle_button();
 }
 
 void GameOptionsMenu::clicked_save_game() {

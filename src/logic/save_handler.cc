@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2017 by the Widelands Development Team
+ * Copyright (C) 2002-2018 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 #include "base/wexception.h"
 #include "game_io/game_saver.h"
 #include "io/filesystem/filesystem.h"
-#include "logic/constants.h"
+#include "logic/filesystem_constants.h"
 #include "logic/game.h"
 #include "logic/game_controller.h"
 #include "wui/interactive_base.h"
@@ -46,7 +46,7 @@ SaveHandler::SaveHandler()
      allow_saving_(true),
      save_requested_(false),
      saving_next_tick_(false),
-     autosave_filename_("wl_autosave"),
+     autosave_filename_(kAutosavePrefix),
      fs_type_(FileSystem::ZIP),
      autosave_interval_in_ms_(kDefaultAutosaveInterval * 60 * 1000),
      number_of_rolls_(5) {
@@ -58,7 +58,7 @@ void SaveHandler::roll_save_files(const std::string& filename) {
 	log("Autosave: Rolling savefiles (count): %d\n", rolls);
 	rolls--;
 	std::string filename_previous =
-	   create_file_name(get_base_dir(), (boost::format("%s_%02d") % filename % rolls).str());
+	   create_file_name(kSaveDir, (boost::format("%s_%02d") % filename % rolls).str());
 	if (rolls > 0 && g_fs->file_exists(filename_previous)) {
 		g_fs->fs_unlink(filename_previous);  // Delete last of the rolling files
 		log("Autosave: Deleted %s\n", filename_previous.c_str());
@@ -66,7 +66,7 @@ void SaveHandler::roll_save_files(const std::string& filename) {
 	rolls--;
 	while (rolls >= 0) {
 		const std::string filename_next =
-		   create_file_name(get_base_dir(), (boost::format("%s_%02d") % filename % rolls).str());
+		   create_file_name(kSaveDir, (boost::format("%s_%02d") % filename % rolls).str());
 		if (g_fs->file_exists(filename_next)) {
 			g_fs->fs_rename(
 			   filename_next, filename_previous);  // e.g. wl_autosave_08 -> wl_autosave_09
@@ -83,13 +83,10 @@ void SaveHandler::roll_save_files(const std::string& filename) {
  * @return true if game should be saved ad next think().
  */
 bool SaveHandler::check_next_tick(Widelands::Game& game, uint32_t realtime) {
-
 	// Perhaps save is due now?
 	if (autosave_interval_in_ms_ <= 0 || next_save_realtime_ > realtime) {
 		return false;  // no autosave or not due, yet
 	}
-
-	next_save_realtime_ = realtime + autosave_interval_in_ms_;
 
 	// check if game is paused (in any way)
 	if (game.game_controller()->is_paused_or_zero_speed()) {
@@ -125,11 +122,17 @@ bool SaveHandler::save_and_handle_error(Widelands::Game& game,
 			g_fs->fs_rename(backup_filename, complete_filename);
 		}
 		// Wait 30 seconds until next save try
-		next_save_realtime_ += 30000;
+		next_save_realtime_ = SDL_GetTicks() + 30000;
 	} else {
 		// if backup file was created, time to remove it
-		if (backup_filename.length() > 0 && g_fs->file_exists(backup_filename))
+		if (backup_filename.length() > 0 && g_fs->file_exists(backup_filename)) {
 			g_fs->fs_unlink(backup_filename);
+		}
+
+		// Count save interval from end of save.
+		// This prevents us from going into endless autosave cycles if the save should take longer
+		// than the autosave interval.
+		next_save_realtime_ = SDL_GetTicks() + autosave_interval_in_ms_;
 	}
 	return result;
 }
@@ -138,12 +141,11 @@ bool SaveHandler::save_and_handle_error(Widelands::Game& game,
  * Check if autosave is needed and allowed or save was requested by user.
  */
 void SaveHandler::think(Widelands::Game& game) {
-
 	if (!allow_saving_ || game.is_replay()) {
 		return;
 	}
 
-	uint32_t realtime = SDL_GetTicks();
+	const uint32_t realtime = SDL_GetTicks();
 	initialize(realtime);
 
 	// Are we saving now?
@@ -165,13 +167,13 @@ void SaveHandler::think(Widelands::Game& game) {
 		}
 
 		// Saving now
-		const std::string complete_filename = create_file_name(get_base_dir(), filename);
+		const std::string complete_filename = create_file_name(kSaveDir, filename);
 		std::string backup_filename;
 
 		// always overwrite a file
 		if (g_fs->file_exists(complete_filename)) {
 			filename += "2";
-			backup_filename = create_file_name(get_base_dir(), filename);
+			backup_filename = create_file_name(kSaveDir, filename);
 			if (g_fs->file_exists(backup_filename)) {
 				g_fs->fs_unlink(backup_filename);
 			}
@@ -185,7 +187,6 @@ void SaveHandler::think(Widelands::Game& game) {
 		log("Autosave: save took %d ms\n", SDL_GetTicks() - realtime);
 		game.get_ibase()->log_message(_("Game saved"));
 		saving_next_tick_ = false;
-
 	} else {
 		saving_next_tick_ = check_next_tick(game, realtime);
 	}
@@ -222,8 +223,8 @@ std::string SaveHandler::create_file_name(const std::string& dir,
 	boost::trim(complete_filename);
 
 	// Now check if the extension matches (ignoring case)
-	if (!boost::iends_with(filename, WLGF_SUFFIX)) {
-		complete_filename += WLGF_SUFFIX;
+	if (!boost::iends_with(filename, kSavegameExtension)) {
+		complete_filename += kSavegameExtension;
 	}
 
 	return complete_filename;
@@ -242,7 +243,7 @@ bool SaveHandler::save_game(Widelands::Game& game,
 	ScopedTimer save_timer("SaveHandler::save_game() took %ums");
 
 	// Make sure that the base directory exists
-	g_fs->ensure_directory_exists(get_base_dir());
+	g_fs->ensure_directory_exists(kSaveDir);
 
 	// Make a filesystem out of this
 	std::unique_ptr<FileSystem> fs;
