@@ -1,16 +1,19 @@
+add_subdirectory(lua)
+
 wl_binary(wl_create_spritemap
   SRCS
     create_spritemap.cc
-    lua_filewrite.cc
-    lua_filewrite.h
   USES_SDL2
   DEPENDS
     base_i18n
     base_log
     base_macros
     graphic
-    io_fileread
+    graphic_image_io
+    graphic_surface
+    graphic_texture_atlas
     io_filesystem
     logic
+    lua_tree
     sound
 )

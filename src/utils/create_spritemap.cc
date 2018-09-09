@@ -39,7 +39,7 @@
 #include "logic/map_objects/world/critter.h"
 #include "logic/map_objects/world/world.h"
 #include "sound/sound_handler.h"
-#include "utils/lua_filewrite.h"
+#include "utils/lua/lua_tree.h"
 
 using namespace Widelands;
 
@@ -406,39 +406,32 @@ const SpritemapData* make_spritemap(std::vector<const Image*> images,
  */
 
 // Add Texture Atlas regions to Lua file
-void write_regions(LuaFileWrite* lua_fw,
+void write_regions(LuaTree::Object* lua_regions,
                    std::map<std::string, std::unique_ptr<Texture>>* textures_in_atlas,
                    std::vector<Recti>* regions,
                    size_t no_of_frames) {
+
 	for (size_t i = 0; i < regions->size(); ++i) {
+		LuaTree::Object* lua_region = lua_regions->add_object();
+
 		// Rectangle
-		lua_fw->open_table("", true, i > 0);
 		const Recti& dest_rect = regions->at(i);
-		lua_fw->open_table("rectangle", false, true);
-		lua_fw->write_value_int(dest_rect.x);
-		lua_fw->close_element();
-		lua_fw->write_value_int(dest_rect.y);
-		lua_fw->close_element();
-		lua_fw->write_value_int(dest_rect.w);
-		lua_fw->close_element();
-		lua_fw->write_value_int(dest_rect.h);
-		lua_fw->close_element(0, 0);
-		lua_fw->close_table(0, 2, false, true);
+		LuaTree::Object* lua_table = lua_region->add_object("rectangle");
+		lua_table->add_int("", dest_rect.x);
+		lua_table->add_int("", dest_rect.y);
+		lua_table->add_int("", dest_rect.w);
+		lua_table->add_int("", dest_rect.h);
 
 		// Offsets
-		lua_fw->open_table("offsets", false, true);
+		lua_table = lua_region->add_object("offsets");
 		for (size_t frame_index = 0; frame_index < no_of_frames; ++frame_index) {
-			lua_fw->open_table("");
 			const Recti& source_rect =
 			   textures_in_atlas->at(region_name(i, frame_index))->blit_data().rect.cast<int>();
-			lua_fw->write_value_int(source_rect.x);
-			lua_fw->close_element();
-			lua_fw->write_value_int(source_rect.y);
-			lua_fw->close_element(0, 0);
-			lua_fw->close_table(frame_index, no_of_frames);
+
+			LuaTree::Object* lua_offset = lua_table->add_object();
+			lua_offset->add_int("", source_rect.x);
+			lua_offset->add_int("", source_rect.y);
 		}
-		lua_fw->close_table(0, 0);                      // Offsets
-		lua_fw->close_table(i, regions->size(), true);  // Region
 	}
 }
 
@@ -502,64 +495,42 @@ void write_animation(EditorGameBase& egbase,
 	const SpritemapData* spritemap = make_spritemap(images, animation_name + ".png", out_filesystem);
 	if (spritemap) {
 		// Now write the Lua file
-		LuaFileWrite lua_fw;
-		lua_fw.open_table(animation_name, true, true);
+		std::unique_ptr<LuaTree::Element> lua_object(new LuaTree::Element());
+		LuaTree::Object* lua_animation = lua_object->add_object(animation_name);
+		lua_animation->add_raw("image", "path.dirname(__file__) .. \"" + animation_name + ".png\"");
+		// NOCOM get rid - we will add these to the map objects
+		lua_animation->add_raw("representative_image", "path.dirname(__file__) .. \"" +
+								   std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
 
-		lua_fw.write_key("image", true);
-		lua_fw.write_string("path.dirname(__file__) .. \"" + animation_name + ".png\"");
-		lua_fw.close_element(0, 2, true);
-		lua_fw.write_key(
-		   "representative_image", true);  // NOCOM get rid - we will add these to the map objects
-		lua_fw.write_string(
-		   "path.dirname(__file__) .. \"" +
-		   std::string(g_fs->fs_filename(animation.representative_image_filename().c_str())) + "\"");
-		lua_fw.close_element(0, 2, true);
+		LuaTree::Object* lua_table = lua_animation->add_object("rectangle");
+		lua_table->add_int("", 0);
+		lua_table->add_int("", 0);
+		lua_table->add_int("", animation.width());
+		lua_table->add_int("", animation.height());
 
-		lua_fw.open_table("rectangle", false, true);
-		lua_fw.write_value_int(0);
-		lua_fw.close_element();
-		lua_fw.write_value_int(0);
-		lua_fw.close_element();
-		lua_fw.write_value_int(animation.width());
-		lua_fw.close_element();
-		lua_fw.write_value_int(animation.height());
-		lua_fw.close_element(0, 0);
-		lua_fw.close_table();
-		lua_fw.write_string("\n");
+		lua_table = lua_animation->add_object("hotspot");
+		lua_table->add_int("", hotspot.x - spritemap->rectangle.x);
+		lua_table->add_int("", hotspot.y - spritemap->rectangle.y);
 
-		lua_fw.open_table("hotspot", false, true);
-		lua_fw.write_value_int(hotspot.x - spritemap->rectangle.x);
-		lua_fw.close_element();
-		lua_fw.write_value_int(hotspot.y - spritemap->rectangle.y);
-		lua_fw.close_element(0, 0);
-		lua_fw.close_table();
 		if (animation.nr_frames() > 1) {
 			uint32_t frametime = animation.frametime();
 			if (frametime > 0 && 1000 / animation.frametime() != kDefaultFps) {
-				lua_fw.write_string("\n");
-				lua_fw.write_key_value_int("fps", 1000 / animation.frametime(), true);
-				lua_fw.close_element();
+				lua_animation->add_int("fps", 1000 / animation.frametime());
 			}
 		}
 
-		lua_fw.open_table("regions", true, true);
-		write_regions(&lua_fw, spritemap->textures_in_atlas, spritemap->regions, images.size());
+		write_regions(lua_animation->add_object("regions"), spritemap->textures_in_atlas, spritemap->regions, images.size());
 
 		// NOCOM I'm not seeing any player color for Wood Hardener
 		std::vector<const Image*> pc_masks = animation.pc_masks();
 		if (!pc_masks.empty()) {
-			lua_fw.close_table(0, 2, true);  // Regions
 			const SpritemapData* pc_spritemap =
 			   make_spritemap(pc_masks, animation_name + "_pc.png", out_filesystem);
-			lua_fw.open_table("playercolor_regions", true, true);
 			write_regions(
-			   &lua_fw, pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
+			   lua_animation->add_object("playercolor_regions"), pc_spritemap->textures_in_atlas, pc_spritemap->regions, pc_masks.size());
 		}
-		lua_fw.close_table(0, 0, true);  // Regions
 
-		lua_fw.close_table(0, 2, true);  // Animation
-		lua_fw.write_string("\n");
-		lua_fw.write(*out_filesystem, "new_spritemap.lua");
+		lua_animation->write_to_file(*out_filesystem, "new_spritemap.lua");
 	}
 	log("Done!\n");
 }
