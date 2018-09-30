@@ -21,6 +21,8 @@
  * from Wesnoth -- http://www.wesnoth.org
  */
 
+// NOCOM this class is now obsolete - keep it around for the Japanese wrapping though, we'll might not have implemented that in the font renderer yet.
+
 #include "graphic/wordwrap.h"
 
 #include <SDL_ttf.h>

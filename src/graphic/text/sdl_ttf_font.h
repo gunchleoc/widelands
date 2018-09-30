@@ -51,6 +51,7 @@ public:
 	}
 
 	virtual void dimensions(const std::string&, int, uint16_t*, uint16_t*) = 0;
+	virtual int text_width(const std::string& text) const = 0;
 	virtual std::shared_ptr<const Image>
 	render(const std::string&, const RGBColor& clr, int, TextureCache*) = 0;
 
@@ -65,6 +66,7 @@ public:
 	~SdlTtfFont() override;
 
 	void dimensions(const std::string&, int, uint16_t* w, uint16_t* h) override;
+	int text_width(const std::string& text) const override;
 	std::shared_ptr<const Image>
 	render(const std::string&, const RGBColor& clr, int, TextureCache*) override;
 	uint16_t ascent(int) const override;

@@ -27,6 +27,7 @@
 #include "base/vector.h"
 #include "graphic/image.h"
 #include "graphic/rendertarget.h"
+#include "graphic/text/sdl_ttf_font.h"
 #include "graphic/texture.h"
 
 namespace UI {
@@ -47,7 +48,7 @@ private:
 	             bool visited,
 	             const RGBColor& color,
 	             bool is_background_color_set,
-	             DrawMode init_mode);
+	             DrawMode init_mode, const std::string& text, const RT::SdlTtfFont* font);
 	// The image is managed by a pernament cache
 	RenderedRect(const Recti& init_rect,
 	             const Image* init_image,
@@ -65,7 +66,8 @@ public:
 
 	/// RenderedRect will contain a normal image that is managed by a transient cache.
 	/// Use this if the image is managed by an instance of TextureCache.
-	explicit RenderedRect(std::shared_ptr<const Image> init_image);
+	/// Specify 'text' and 'font' if this is a text node
+	explicit RenderedRect(std::shared_ptr<const Image> init_image, const std::string& text = "", const RT::SdlTtfFont* font = nullptr);
 
 	/// RenderedRect will contain a normal image that is managed by a permanent cache.
 	/// Use this if the image is managed by g_gr->images().
@@ -102,6 +104,12 @@ public:
 	/// Whether the RenderedRect's image should be blitted once or tiled
 	DrawMode mode() const;
 
+	/// The text being rendered in this rect. Can be empty.
+	const std::string text() const;
+
+	/// The font being used for rendering text in this rect. Can be nullptr.
+	const RT::SdlTtfFont* font() const;
+
 private:
 	Recti rect_;
 	// We have 2 image objects depending on the caching situation - only use one of them at the same
@@ -112,6 +120,8 @@ private:
 	const RGBColor background_color_;
 	const bool is_background_color_set_;
 	const DrawMode mode_;
+	const std::string text_;
+	const RT::SdlTtfFont* font_;
 };
 
 struct RenderedText {
@@ -145,6 +155,16 @@ struct RenderedText {
 	/// Draw the rects without cropping. 'position' and 'align' are used to control the overall
 	/// drawing position
 	void draw(RenderTarget& dst, const Vector2i& position, UI::Align align = UI::Align::kLeft) const;
+
+	enum class LineSkip {
+		kStartOfLine,
+		kEndOfLine,
+		kLineForward,
+		kLineBack
+	};
+
+	Vector2i calculate_caret_position(size_t caretpos) const;
+	int calculate_cursor_position(size_t caretpos, LineSkip lineskip) const;
 
 private:
 	/// Helper function for draw(). Blits the rect's background color and images. The rect will be

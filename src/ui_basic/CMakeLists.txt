@@ -69,7 +69,6 @@ wl_library(ui_basic
     graphic_text
     graphic_text_constants
     graphic_text_layout
-    graphic_wordwrap
     io_filesystem
     notifications
     profile

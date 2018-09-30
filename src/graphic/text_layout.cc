@@ -48,7 +48,7 @@ void replace_entities(std::string* text) {
 	boost::replace_all(*text, "&nbsp;", " ");
 	boost::replace_all(*text, "&amp;", "&");  // Must be performed last
 }
-
+// NOCOM get rid of this function
 int text_width(const std::string& text, int ptsize) {
 	return UI::g_fh->render(
 	                  as_editorfont(

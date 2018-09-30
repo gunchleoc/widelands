@@ -63,6 +63,14 @@ void SdlTtfFont::dimensions(const std::string& txt, int style, uint16_t* gw, uin
 	*gh = h;
 }
 
+int SdlTtfFont::text_width(const std::string& text) const {
+	int w = 0;
+	if (TTF_SizeUTF8(get_ttf_font(), text.c_str(), &w, nullptr)) {
+		log("%s\n", TTF_GetError());
+	}
+	return w;
+}
+
 std::shared_ptr<const Image> SdlTtfFont::render(const std::string& txt,
                                                 const RGBColor& clr,
                                                 int style,

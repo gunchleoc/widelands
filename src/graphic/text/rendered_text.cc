@@ -21,6 +21,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+#include "graphic/text/bidi.h"
 #include "graphic/graphic.h"
 #include "graphic/text_layout.h"
 
@@ -31,14 +33,17 @@ RenderedRect::RenderedRect(const Recti& init_rect,
                            bool visited,
                            const RGBColor& color,
                            bool is_background_color_set,
-                           DrawMode init_mode)
+                           DrawMode init_mode,
+						   const std::string& text, const RT::SdlTtfFont* font)
    : rect_(init_rect),
      transient_image_(init_image),
      permanent_image_(nullptr),
      visited_(visited),
      background_color_(color),
      is_background_color_set_(is_background_color_set),
-     mode_(init_mode) {
+     mode_(init_mode),
+	 text_(text),
+	 font_(font) {
 }
 RenderedRect::RenderedRect(const Recti& init_rect,
                            const Image* init_image,
@@ -52,7 +57,9 @@ RenderedRect::RenderedRect(const Recti& init_rect,
      visited_(visited),
      background_color_(color),
      is_background_color_set_(is_background_color_set),
-     mode_(init_mode) {
+     mode_(init_mode),
+	 text_(""),
+	 font_(nullptr) {
 }
 
 RenderedRect::RenderedRect(const Recti& init_rect, const Image* init_image)
@@ -61,13 +68,15 @@ RenderedRect::RenderedRect(const Recti& init_rect, const Image* init_image)
 RenderedRect::RenderedRect(const Recti& init_rect, const RGBColor& color)
    : RenderedRect(init_rect, nullptr, false, color, true, DrawMode::kTile) {
 }
-RenderedRect::RenderedRect(std::shared_ptr<const Image> init_image)
+RenderedRect::RenderedRect(std::shared_ptr<const Image> init_image, const std::string& text, const RT::SdlTtfFont* font)
    : RenderedRect(Recti(0, 0, init_image->width(), init_image->height()),
                   init_image,
                   false,
                   RGBColor(0, 0, 0),
                   false,
-                  DrawMode::kBlit) {
+                  DrawMode::kBlit,
+				  text,
+				  font) {
 }
 RenderedRect::RenderedRect(const Image* init_image)
    : RenderedRect(Recti(0, 0, init_image->width(), init_image->height()),
@@ -120,6 +129,14 @@ RenderedRect::DrawMode RenderedRect::mode() const {
 	return mode_;
 }
 
+const std::string RenderedRect::text() const {
+	return text_;
+}
+
+const RT::SdlTtfFont* RenderedRect::font() const {
+	return font_;
+}
+
 // RenderedText
 int RenderedText::width() const {
 	int result = 0;
@@ -148,6 +165,7 @@ void RenderedText::draw(RenderTarget& dst,
 	// For cropping images that don't fit
 	int offset_x = 0;
 	if (cropmode == CropMode::kSelf) {
+		// NOCOM dependency on text_layout - move the function to "align"
 		UI::correct_for_align(align, width(), &aligned_pos);
 		if (align != UI::Align::kLeft) {
 			for (const auto& rect : rects) {
@@ -167,6 +185,130 @@ void RenderedText::draw(RenderTarget& dst,
 	for (const auto& rect : rects) {
 		blit_rect(dst, offset_x, aligned_pos, *rect, region, align, cropmode);
 	}
+}
+
+/// Calculate the caret position for letter number caretpos
+/// NOCOM find better names for caret/cursor
+Vector2i RenderedText::calculate_caret_position(size_t caretpos) const {
+	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
+	Vector2i result = Vector2i::zero();
+	int counter = 0; // NOCOM for testing only
+	for (const auto& rect : rects) {
+		if (rect->font() == nullptr) {
+			// This is not a text node
+			continue;
+		}
+		const size_t text_size = rect->text().size();
+		log("NOCOM rect %d, text_size: %lu\n", ++counter, text_size);
+		if (caretpos > text_size) {
+			caretpos -= text_size;
+			// Make sure we don't get smaller than the start of the text
+			caretpos = std::max(caretpos, static_cast<size_t>(0));
+			log("NOCOM new caret pos: %lu\n", caretpos);
+		} else {
+			// Make sure we don't get bigger than the end of the text
+			caretpos = std::min(caretpos, text_size);
+			// Blit caret here
+			log("NOCOM blitting caret at pos %lu. ", caretpos);
+			const std::string line_to_caret = rect->text().substr(0, caretpos);
+			const int temp = rect->font()->text_width(line_to_caret);
+			log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), temp);
+			result = Vector2i(rect->x() + temp,
+							  rect->y());
+			log("NOCOM caretpt: %d, %d\n", result.x, result.y);
+			// Don't calculate it twice
+			return result;
+		}
+	}
+	return result;
+}
+/// returns -1 if skipping forward fails - this needs to be handled by caller
+int RenderedText::calculate_cursor_position(size_t caretpos, LineSkip lineskip) const {
+	int result = 0;
+	log("NOCOM %lu rects, caret is %lu\n", rects.size(), caretpos);
+	// NOCOM empty lines don't work
+	int last_y = -1;
+	int current_wanted_ypos = -1;
+	int previous_ypos = 0;
+	int current_wanted_xpos = -1;
+
+	// Find out where we want to go
+	for (const auto& rect : rects) {
+		if (rect->font() == nullptr) {
+			// This is not a text node
+			continue;
+		}
+		const int y = rect->y();
+		if (y != last_y) {
+			previous_ypos = last_y;
+		}
+
+		const size_t text_size = rect->text().size();
+		if (caretpos > text_size) {
+			caretpos -= text_size;
+			// Make sure we don't get smaller than the start of the text
+			caretpos = std::max(caretpos, static_cast<size_t>(0));
+		} else {
+			// Make sure we don't get bigger than the end of the text
+			current_wanted_xpos = std::min(caretpos, text_size);
+			current_wanted_ypos = rect->y();
+			break;
+		}
+	}
+
+	if (current_wanted_xpos == -1) {
+		// We did not find anything
+		return 0;
+	}
+
+	assert(current_wanted_ypos != -1);
+
+	// Skip to start or end of line
+	if (lineskip == LineSkip::kStartOfLine || lineskip == LineSkip::kEndOfLine) {
+		for (const auto& rect : rects) {
+			if (rect->y() < current_wanted_ypos) {
+				result += rect->text().size();
+			} else if (rect->y() == current_wanted_ypos) {
+				if (lineskip == LineSkip::kStartOfLine) {
+					return result;
+				} else {
+					result += rect->text().size();
+				}
+			} else {
+				return result;
+			}
+		}
+		// In case we didn't find anything
+		if (lineskip == LineSkip::kStartOfLine) {
+			return 0;
+		} else {
+			return -1;
+		}
+	}
+
+	// Skip line
+	if (lineskip == LineSkip::kLineForward) {
+		for (const auto& rect : rects) {
+			if (rect->y() <= current_wanted_ypos) {
+				result += rect->text().size();
+			} else {
+				return result + current_wanted_xpos;
+			}
+		}
+		// We didn't find anything
+		return -1;
+	} else if (lineskip == LineSkip::kLineBack) {
+		for (const auto& rect : rects) {
+			if (rect->y() <= previous_ypos) {
+				result += rect->text().size();
+			} else {
+				return result + current_wanted_xpos;
+			}
+		}
+		// We didn't find anything
+		return 0;
+	}
+	NEVER_HERE();
 }
 
 void RenderedText::blit_rect(RenderTarget& dst,

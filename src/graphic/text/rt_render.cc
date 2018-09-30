@@ -630,7 +630,7 @@ std::shared_ptr<UI::RenderedText> TextNode::render(TextureCache* texture_cache) 
 	assert(rendered_image != nullptr);
 	std::shared_ptr<UI::RenderedText> rendered_text(new UI::RenderedText());
 	rendered_text->rects.push_back(
-	   std::unique_ptr<UI::RenderedRect>(new UI::RenderedRect(rendered_image)));
+	   std::unique_ptr<UI::RenderedRect>(new UI::RenderedRect(rendered_image, txt_, &font_)));
 	return rendered_text;
 }
 
