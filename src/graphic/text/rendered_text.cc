@@ -200,7 +200,7 @@ Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 			continue;
 		}
 		const int text_size = rect->text().size();
-		log("NOCOM rect %d, text_size: %lu\n", ++counter, text_size);
+		log("NOCOM rect %d, text_size: %d\n", ++counter, text_size);
 		if (caret_index > text_size) {
 			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text

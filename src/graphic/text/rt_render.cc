@@ -774,7 +774,7 @@ public:
 	}
 
 	std::string debug_info() const override {
-		return "sp";
+		return (boost::format("sp-%dx%d") % width() % height()).str();
 	}
 
 	uint16_t height() const override {
@@ -1022,13 +1022,25 @@ std::shared_ptr<UI::RenderedText> ImgRenderNode::render(TextureCache* texture_ca
 }
 // End: Helper Stuff
 
+enum class TagType {
+	kText,
+	kBr,
+	kDiv,
+	kRt,
+	kFont,
+	kHspace,
+	kImg,
+	kP,
+	kVspace
+};
+
 class TagHandler;
 TagHandler* create_taghandler(Tag& tag,
                               FontCache& fc,
                               NodeStyle& ns,
                               ImageCache* image_cache,
                               RendererStyle& renderer_style,
-                              const UI::FontSets& fontsets);
+                              const UI::FontSets& fontsets, TagType preceding_tag);
 
 class TagHandler {
 public:
@@ -1045,6 +1057,9 @@ public:
 	     renderer_style_(renderer_style),
 	     fontsets_(fontsets) {
 	}
+
+	virtual TagType type() const = 0;
+
 	virtual ~TagHandler() {
 	}
 
@@ -1155,14 +1170,19 @@ void TagHandler::make_text_nodes(const std::string& txt,
 }
 
 void TagHandler::emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) {
+	// If we have more than one br tag in a row, we want to add a vertical space.
+	// So, we need to give tags knowledge about the type of the preceding tag.
+	TagType preceding_tag = TagType::kRt;
 	for (Child* c : tag_.children()) {
 		if (c->tag) {
 			std::unique_ptr<TagHandler> th(create_taghandler(
-			   *c->tag, font_cache_, nodestyle_, image_cache_, renderer_style_, fontsets_));
+			   *c->tag, font_cache_, nodestyle_, image_cache_, renderer_style_, fontsets_, preceding_tag));
 			th->enter();
 			th->emit_nodes(nodes);
+			preceding_tag = th->type();
 		} else {
 			make_text_nodes(c->text, nodes, nodestyle_);
+			preceding_tag = TagType::kText;
 		}
 	}
 }
@@ -1174,8 +1194,12 @@ public:
 	               NodeStyle ns,
 	               ImageCache* image_cache,
 	               RendererStyle& init_renderer_style,
-	               const UI::FontSets& fontsets)
+	               const UI::FontSets& fontsets, TagType)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets) {
+	}
+
+	TagType type() const override {
+		return TagType::kFont;
 	}
 
 	void enter() override {
@@ -1206,8 +1230,12 @@ public:
 	            NodeStyle ns,
 	            ImageCache* image_cache,
 	            RendererStyle& init_renderer_style,
-	            const UI::FontSets& fontsets)
+	            const UI::FontSets& fontsets, TagType)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), indent_(0) {
+	}
+
+	TagType type() const override {
+		return TagType::kP;
 	}
 
 	void enter() override {
@@ -1260,8 +1288,12 @@ public:
 	              NodeStyle ns,
 	              ImageCache* image_cache,
 	              RendererStyle& init_renderer_style,
-	              const UI::FontSets& fontsets)
+	              const UI::FontSets& fontsets, TagType)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), render_node_(nullptr) {
+	}
+
+	TagType type() const override {
+		return TagType::kImg;
 	}
 
 	void enter() override {
@@ -1306,8 +1338,12 @@ public:
 	                 NodeStyle ns,
 	                 ImageCache* image_cache,
 	                 RendererStyle& init_renderer_style,
-	                 const UI::FontSets& fontsets)
+	                 const UI::FontSets& fontsets, TagType)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), space_(0) {
+	}
+
+	TagType type() const override {
+		return TagType::kVspace;
 	}
 
 	void enter() override {
@@ -1331,10 +1367,14 @@ public:
 	                 NodeStyle ns,
 	                 ImageCache* image_cache,
 	                 RendererStyle& init_renderer_style,
-	                 const UI::FontSets& fontsets)
+	                 const UI::FontSets& fontsets, TagType)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets),
 	     background_image_(nullptr),
 	     space_(0) {
+	}
+
+	TagType type() const override {
+		return TagType::kHspace;
 	}
 
 	void enter() override {
@@ -1393,13 +1433,26 @@ public:
 	             NodeStyle ns,
 	             ImageCache* image_cache,
 	             RendererStyle& init_renderer_style,
-	             const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets) {
+	             const UI::FontSets& fontsets, TagType preceding_tag)
+	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), preceding_tag_(preceding_tag) {
+	}
+
+	TagType type() const override {
+		return TagType::kBr;
 	}
 
 	void emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) override {
 		nodes.push_back(std::shared_ptr<RenderNode>(new NewlineNode(nodestyle_)));
+		// If we have more than one br tag in a row, add a vertical space
+		if (preceding_tag_ == type()) {
+			uint16_t w, h = 0;
+			SdlTtfFont& font_ = dynamic_cast<SdlTtfFont&>(font_cache_.get_font(&nodestyle_));
+			font_.dimensions(" ", nodestyle_.font_style, &w, &h);
+			nodes.push_back(std::shared_ptr<RenderNode>(new SpaceNode(nodestyle_, 0, h, false)));
+		}
 	}
+private:
+	TagType preceding_tag_;
 };
 
 class DivTagHandler : public TagHandler {
@@ -1410,6 +1463,7 @@ public:
 	              ImageCache* image_cache,
 	              RendererStyle& init_renderer_style,
 	              const UI::FontSets& fontsets,
+				  TagType,
 	              uint16_t max_w = 0,
 	              bool shrink_to_fit = true)
 	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets),
@@ -1417,6 +1471,10 @@ public:
 	     trim_spaces_(true),
 	     w_(max_w),
 	     render_node_(new DivTagRenderNode(ns)) {
+	}
+
+	TagType type() const override {
+		return TagType::kDiv;
 	}
 
 	/*
@@ -1627,7 +1685,11 @@ public:
 	             RendererStyle& init_renderer_style,
 	             const UI::FontSets& fontsets,
 	             uint16_t w)
-	   : DivTagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets, w, true) {
+	   : DivTagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets, TagType::kRt, w, true) {
+	}
+
+	TagType type() const override {
+		return TagType::kRt;
 	}
 
 	// Handle attributes that are in rt, but not in div.
@@ -1645,8 +1707,9 @@ TagHandler* create_taghandler(Tag& tag,
                               NodeStyle& ns,
                               ImageCache* image_cache,
                               RendererStyle& renderer_style,
-                              const UI::FontSets& fontsets) {
-	return new T(tag, fc, ns, image_cache, renderer_style, fontsets);
+                              const UI::FontSets& fontsets,
+							  TagType preceding_tag) {
+	return new T(tag, fc, ns, image_cache, renderer_style, fontsets, preceding_tag);
 }
 using TagHandlerMap = std::map<const std::string,
                                TagHandler* (*)(Tag& tag,
@@ -1654,14 +1717,15 @@ using TagHandlerMap = std::map<const std::string,
                                                NodeStyle& ns,
                                                ImageCache* image_cache,
                                                RendererStyle& renderer_style,
-                                               const UI::FontSets& fontsets)>;
+                                               const UI::FontSets& fontsets, TagType preceding_tag)>;
 
 TagHandler* create_taghandler(Tag& tag,
                               FontCache& fc,
                               NodeStyle& ns,
                               ImageCache* image_cache,
                               RendererStyle& renderer_style,
-                              const UI::FontSets& fontsets) {
+                              const UI::FontSets& fontsets,
+							  TagType preceding_tag) {
 	static TagHandlerMap map;
 	if (map.empty()) {
 		map["br"] = &create_taghandler<BrTagHandler>;
@@ -1678,7 +1742,7 @@ TagHandler* create_taghandler(Tag& tag,
 		   (boost::format("No Tag handler for %s. This is a bug, please submit a report.") %
 		    tag.name())
 		      .str());
-	return i->second(tag, fc, ns, image_cache, renderer_style, fontsets);
+	return i->second(tag, fc, ns, image_cache, renderer_style, fontsets, preceding_tag);
 }
 
 Renderer::Renderer(ImageCache* image_cache,

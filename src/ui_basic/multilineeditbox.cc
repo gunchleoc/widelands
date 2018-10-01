@@ -37,16 +37,9 @@ namespace {
 // NOCOM rename and use properly
 static const uint32_t RICHTEXT_MARGIN = 2;
 
+/// Escape, convert newlines and apply editorfont
 std::string make_richtext(const std::string& text) {
-	// NOCOM code duplication with multilinetextarea
 	std::string temp = richtext_escape(text);
-	// Double paragraphs should generate an empty line.
-	// We do this here rather than in the font renderer, because a single \n
-	// should only create a new line without any added space.
-	// \n\n or \n\n\n will give us 1 blank line,
-	// \n\n\n or \n\n\n\” will give us 2 blank lines etc.
-	// NOCOM: Revisit this once the old font renderer is completely gone.
-	boost::replace_all(temp, "\n\n", "<br>&nbsp;<br>");
 	boost::replace_all(temp, "\n", "<br>");
 	return as_editorfont(temp);
 }
