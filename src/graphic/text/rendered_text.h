@@ -163,8 +163,8 @@ struct RenderedText {
 		kLineBack
 	};
 
-	Vector2i calculate_caret_position(size_t caretpos) const;
-	int calculate_cursor_position(size_t caretpos, LineSkip lineskip) const;
+	Vector2i handle_caret(int caret_index, RenderTarget* dst = nullptr) const;
+	int shift_caret(int caret_index, LineSkip lineskip) const;
 
 private:
 	/// Helper function for draw(). Blits the rect's background color and images. The rect will be

@@ -1140,6 +1140,7 @@ void TagHandler::make_text_nodes(const std::string& txt,
 			if (!word.empty()) {
 				replace_entities(&word);
 				word = i18n::make_ligatures(word.c_str());
+				// NOCOM do this for RTL too
 				if (i18n::has_script_character(word.c_str(), UI::FontSets::Selector::kCJK)) {
 					std::vector<std::string> units = i18n::split_cjk_word(word.c_str());
 					for (const std::string& unit : units) {

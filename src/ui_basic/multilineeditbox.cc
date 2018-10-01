@@ -19,6 +19,7 @@
 
 #include "ui_basic/multilineeditbox.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 
 #include "base/utf8.h"
@@ -34,7 +35,21 @@
 
 namespace {
 // NOCOM rename and use properly
-	static const uint32_t RICHTEXT_MARGIN = 2;
+static const uint32_t RICHTEXT_MARGIN = 2;
+
+std::string make_richtext(const std::string& text) {
+	// NOCOM code duplication with multilinetextarea
+	std::string temp = richtext_escape(text);
+	// Double paragraphs should generate an empty line.
+	// We do this here rather than in the font renderer, because a single \n
+	// should only create a new line without any added space.
+	// \n\n or \n\n\n will give us 1 blank line,
+	// \n\n\n or \n\n\n\” will give us 2 blank lines etc.
+	// NOCOM: Revisit this once the old font renderer is completely gone.
+	boost::replace_all(temp, "\n\n", "<br>&nbsp;<br>");
+	boost::replace_all(temp, "\n", "<br>");
+	return as_editorfont(temp);
+}
 } // namespace
 
 namespace UI {
@@ -54,7 +69,7 @@ struct MultilineEditbox::Data {
 	/// Position of the cursor inside the text.
 	/// 0 indicates that the cursor is before the first character,
 	/// text.size() inidicates that the cursor is after the last character.
-	uint32_t cursor_pos;
+	uint32_t caret_index;
 	Vector2i caret_position;
 
 	const int lineheight;
@@ -71,7 +86,7 @@ struct MultilineEditbox::Data {
 	void update();
 
 	void scroll_cursor_into_view();
-	void set_cursor_pos(uint32_t cursor_pos);
+	void set_cursor_pos(uint32_t caret_index);
 
 	uint32_t prev_char(uint32_t cursor);
 	uint32_t next_char(uint32_t cursor);
@@ -100,7 +115,7 @@ MultilineEditbox::Data::Data(MultilineEditbox& o, const UI::PanelStyleInfo* styl
    : scrollbar(
         &o, o.get_w() - Scrollbar::kSize, 0, Scrollbar::kSize, o.get_h(), UI::PanelStyle::kWui),
      background_style(style),
-     cursor_pos(0),
+     caret_index(0),
 	 caret_position(Vector2i::zero()),
      lineheight(text_height()),
      maxbytes(std::min(g_gr->max_texture_size_for_font_rendering() *
@@ -159,9 +174,9 @@ void MultilineEditbox::Data::erase_bytes(uint32_t start, uint32_t end) {
 	text.erase(start, nbytes);
 	update();
 
-	if (cursor_pos >= end)
-		set_cursor_pos(cursor_pos - nbytes);
-	else if (cursor_pos > start)
+	if (caret_index >= end)
+		set_cursor_pos(caret_index - nbytes);
+	else if (caret_index > start)
 		set_cursor_pos(start);
 }
 
@@ -233,15 +248,15 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			}
 			FALLS_THROUGH;
 		case SDLK_DELETE:
-			if (d_->cursor_pos < d_->text.size()) {
-				d_->erase_bytes(d_->cursor_pos, d_->next_char(d_->cursor_pos));
+			if (d_->caret_index < d_->text.size()) {
+				d_->erase_bytes(d_->caret_index, d_->next_char(d_->caret_index));
 				changed();
 			}
 			break;
 
 		case SDLK_BACKSPACE:
-			if (d_->cursor_pos > 0) {
-				d_->erase_bytes(d_->prev_char(d_->cursor_pos), d_->cursor_pos);
+			if (d_->caret_index > 0) {
+				d_->erase_bytes(d_->prev_char(d_->caret_index), d_->caret_index);
 				changed();
 			}
 			break;
@@ -253,7 +268,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			FALLS_THROUGH;
 		case SDLK_LEFT: {
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
-				uint32_t newpos = d_->prev_char(d_->cursor_pos);
+				uint32_t newpos = d_->prev_char(d_->caret_index);
 				while (newpos > 0 && isspace(d_->text[newpos]))
 					newpos = d_->prev_char(newpos);
 				while (newpos > 0) {
@@ -264,7 +279,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 				}
 				d_->set_cursor_pos(newpos);
 			} else {
-				d_->set_cursor_pos(d_->prev_char(d_->cursor_pos));
+				d_->set_cursor_pos(d_->prev_char(d_->caret_index));
 			}
 			break;
 		}
@@ -276,14 +291,14 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			FALLS_THROUGH;
 		case SDLK_RIGHT:
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
-				uint32_t newpos = d_->next_char(d_->cursor_pos);
+				uint32_t newpos = d_->next_char(d_->caret_index);
 				while (newpos < d_->text.size() && isspace(d_->text[newpos]))
 					newpos = d_->next_char(newpos);
 				while (newpos < d_->text.size() && !isspace(d_->text[newpos]))
 					newpos = d_->next_char(newpos);
 				d_->set_cursor_pos(newpos);
 			} else {
-				d_->set_cursor_pos(d_->next_char(d_->cursor_pos));
+				d_->set_cursor_pos(d_->next_char(d_->caret_index));
 			}
 			break;
 
@@ -293,9 +308,9 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			}
 			FALLS_THROUGH;
 		case SDLK_DOWN:
-			if (d_->cursor_pos < d_->text.size()) {
+			if (d_->caret_index < d_->text.size()) {
 				// NOCOM skipping is still broken
-				const int new_position = d_->rendered_text->calculate_cursor_position(d_->cursor_pos, RenderedText::LineSkip::kLineBack);
+				const int new_position = d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineBack);
 				d_->set_cursor_pos(new_position > -1 ? new_position : d_->text.size());
 			}
 			break;
@@ -306,8 +321,8 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			}
 			FALLS_THROUGH;
 		case SDLK_UP:
-			if (d_->cursor_pos > 0) {
-				d_->set_cursor_pos(d_->rendered_text->calculate_cursor_position(d_->cursor_pos, RenderedText::LineSkip::kLineForward));
+			if (d_->caret_index > 0) {
+				d_->set_cursor_pos(d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineForward));
 			}
 			break;
 
@@ -320,7 +335,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				d_->set_cursor_pos(0);
 			} else {
-				d_->set_cursor_pos(d_->rendered_text->calculate_cursor_position(d_->cursor_pos, RenderedText::LineSkip::kStartOfLine));
+				d_->set_cursor_pos(d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kStartOfLine));
 			}
 			break;
 
@@ -333,14 +348,14 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				d_->set_cursor_pos(d_->text.size());
 			} else {
-				const int new_position = d_->rendered_text->calculate_cursor_position(d_->cursor_pos, RenderedText::LineSkip::kEndOfLine);
+				const int new_position = d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kEndOfLine);
 				d_->set_cursor_pos(new_position > -1 ? new_position : d_->text.size());
 			}
 			break;
 
 		case SDLK_KP_ENTER:
 		case SDLK_RETURN:
-			d_->insert(d_->cursor_pos, "\n");
+			d_->insert(d_->caret_index, "\n");
 			d_->update();
 			changed();
 			break;
@@ -356,7 +371,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 
 bool MultilineEditbox::handle_textinput(const std::string& input_text) {
 	if (d_->text.size() + input_text.size() <= d_->maxbytes) {
-		d_->insert(d_->cursor_pos, input_text);
+		d_->insert(d_->caret_index, input_text);
 		changed();
 		d_->update();
 	}
@@ -405,9 +420,7 @@ void MultilineEditbox::draw(RenderTarget& dst) {
 		// NOCOM Vector2i caret_position = d_->rendered_text->calculate_caret_position(d_->cursor_pos);
 		log("NOCOM caret pos: %d, %d\n", d_->caret_position.x, d_->caret_position.y);
 
-		static const Image* caret_image = g_gr->images().get("images/ui_basic/caret.png");
-		// NOCOM take care of d_->scrollbar.get_scrollpos()
-		dst.blit(Vector2i(d_->caret_position.x, d_->caret_position.y + (text_height() - caret_image->height()) / 2), caret_image);
+		d_->rendered_text->handle_caret(d_->caret_index, &dst);
 	}
 }
 
@@ -420,8 +433,8 @@ void MultilineEditbox::draw(RenderTarget& dst) {
  */
 void MultilineEditbox::Data::insert(uint32_t where, const std::string& s) {
 	text.insert(where, s);
-	if (cursor_pos >= where) {
-		set_cursor_pos(cursor_pos + s.size());
+	if (caret_index >= where) {
+		set_cursor_pos(caret_index + s.size());
 	}
 }
 
@@ -432,10 +445,10 @@ void MultilineEditbox::Data::insert(uint32_t where, const std::string& s) {
 void MultilineEditbox::Data::set_cursor_pos(uint32_t newpos) {
 	assert(newpos <= text.size());
 
-	if (cursor_pos == newpos)
+	if (caret_index == newpos)
 		return;
 
-	cursor_pos = newpos;
+	caret_index = newpos;
 
 	scroll_cursor_into_view();
 }
@@ -444,7 +457,7 @@ void MultilineEditbox::Data::set_cursor_pos(uint32_t newpos) {
  * Ensure that the cursor is visible.
  */
 void MultilineEditbox::Data::scroll_cursor_into_view() {
-	caret_position = rendered_text->calculate_caret_position(cursor_pos);
+	caret_position = rendered_text->handle_caret(caret_index);
 
 	int32_t top = caret_position.y * lineheight;
 
@@ -469,8 +482,8 @@ void MultilineEditbox::Data::update_rendered_text() {
 		return;
 	}
 
-	rendered_text = UI::g_fh->render(as_editorfont(text, UI_FONT_SIZE_SMALL- UI::g_fh->fontset()->size_offset()), owner.get_w() - Scrollbar::kSize - 2 * RICHTEXT_MARGIN);
-	caret_position = rendered_text->calculate_caret_position(cursor_pos);
+	rendered_text = UI::g_fh->render(make_richtext(text), owner.get_w() - Scrollbar::kSize - 2 * RICHTEXT_MARGIN);
+	caret_position = rendered_text->handle_caret(caret_index);
 
 	ww_valid = true;
 

@@ -188,34 +188,39 @@ void RenderedText::draw(RenderTarget& dst,
 }
 
 /// Calculate the caret position for letter number caretpos
-/// NOCOM find better names for caret/cursor
-Vector2i RenderedText::calculate_caret_position(size_t caretpos) const {
+Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
+	static const Image* caret_image = g_gr->images().get("images/ui_basic/caret.png");
 	Vector2i result = Vector2i::zero();
 	int counter = 0; // NOCOM for testing only
 	for (const auto& rect : rects) {
 		if (rect->font() == nullptr) {
 			// This is not a text node
+			--caret_index; // NOCOM detect if we're a newline node
 			continue;
 		}
-		const size_t text_size = rect->text().size();
+		const int text_size = rect->text().size();
 		log("NOCOM rect %d, text_size: %lu\n", ++counter, text_size);
-		if (caretpos > text_size) {
-			caretpos -= text_size;
+		if (caret_index > text_size) {
+			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
-			caretpos = std::max(caretpos, static_cast<size_t>(0));
-			log("NOCOM new caret pos: %lu\n", caretpos);
+			caret_index = std::max(caret_index, 0);
+			log("NOCOM new caret pos: %d\n", caret_index);
 		} else {
 			// Make sure we don't get bigger than the end of the text
-			caretpos = std::min(caretpos, text_size);
+			caret_index = std::max(caret_index, 0);
+			caret_index = std::min(caret_index, text_size);
 			// Blit caret here
-			log("NOCOM blitting caret at pos %lu. ", caretpos);
-			const std::string line_to_caret = rect->text().substr(0, caretpos);
+			log("NOCOM blitting caret at pos %d. ", caret_index);
+			const std::string line_to_caret = rect->text().substr(0, caret_index);
 			const int temp = rect->font()->text_width(line_to_caret);
 			log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), temp);
 			result = Vector2i(rect->x() + temp,
 							  rect->y());
 			log("NOCOM caretpt: %d, %d\n", result.x, result.y);
+			if (dst) {
+				dst->blit(Vector2i(result.x, result.y + (rect->height() - caret_image->height()) / 2), caret_image);
+			}
 			// Don't calculate it twice
 			return result;
 		}
@@ -223,9 +228,9 @@ Vector2i RenderedText::calculate_caret_position(size_t caretpos) const {
 	return result;
 }
 /// returns -1 if skipping forward fails - this needs to be handled by caller
-int RenderedText::calculate_cursor_position(size_t caretpos, LineSkip lineskip) const {
+int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 	int result = 0;
-	log("NOCOM %lu rects, caret is %lu\n", rects.size(), caretpos);
+	log("NOCOM %lu rects, caret is %d\n", rects.size(), caret_index);
 	// NOCOM empty lines don't work
 	int last_y = -1;
 	int current_wanted_ypos = -1;
@@ -243,14 +248,14 @@ int RenderedText::calculate_cursor_position(size_t caretpos, LineSkip lineskip) 
 			previous_ypos = last_y;
 		}
 
-		const size_t text_size = rect->text().size();
-		if (caretpos > text_size) {
-			caretpos -= text_size;
+		const int text_size = rect->text().size();
+		if (caret_index > text_size) {
+			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
-			caretpos = std::max(caretpos, static_cast<size_t>(0));
+			caret_index = std::max(caret_index, 0);
 		} else {
 			// Make sure we don't get bigger than the end of the text
-			current_wanted_xpos = std::min(caretpos, text_size);
+			current_wanted_xpos = std::min(caret_index, text_size);
 			current_wanted_ypos = rect->y();
 			break;
 		}
