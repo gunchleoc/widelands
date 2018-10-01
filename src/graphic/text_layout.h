@@ -37,12 +37,6 @@
 void replace_entities(std::string* text);
 
 /**
-  * Returns the exact width of the text rendered as editorfont for the given font size.
-  * This function is inefficient; only call when we need the exact width.
-  */
-int text_width(const std::string& text, int ptsize = UI_FONT_SIZE_SMALL);
-
-/**
   * Returns the exact height of the text rendered for the given font size and face.
   * This function is inefficient; only call when we need the exact height.
   */

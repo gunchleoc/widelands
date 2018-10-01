@@ -21,7 +21,7 @@
  * from Wesnoth -- http://www.wesnoth.org
  */
 
-// NOCOM this class is now obsolete - keep it around for the Japanese wrapping though, we'll might not have implemented that in the font renderer yet.
+// NOCOM this class is now obsolete
 
 #include "graphic/wordwrap.h"
 
@@ -121,7 +121,7 @@ void WordWrap::compute_end_of_line(const std::string& text,
 	}
 
 	// Optimism: perhaps the entire line fits?
-	if (uint32_t(text_width(text.substr(line_start, orig_end - line_start), fontsize_)) <=
+	if (uint32_t(font_->text_width(text.substr(line_start, orig_end - line_start))) <=
 	    wrapwidth_ - safety_margin) {
 		line_end = orig_end;
 		next_line_start = orig_end + 1;
@@ -194,7 +194,7 @@ void WordWrap::compute_end_of_line(const std::string& text,
 	// Now make sure that it really fits.
 	std::string::size_type test_cutoff = line_start + end * 2 / 3;
 	while ((end > 0) && (static_cast<uint32_t>(line_start + end) > test_cutoff)) {
-		if (uint32_t(text_width(text.substr(line_start, end), fontsize_)) >
+		if (uint32_t(font_->text_width(text.substr(line_start, end))) >
 		    wrapwidth_ - safety_margin) {
 			--end;
 		} else {
@@ -226,7 +226,7 @@ bool WordWrap::line_fits(const std::string& text, uint32_t safety_margin) const 
 	// calc_width_for_wrapping is fast, but it will underestimate the width.
 	// So, we test again with text_width to make sure that the line really fits.
 	return quick_width(i18n::make_ligatures(text.c_str())) <= wrapwidth_ - safety_margin &&
-	       uint32_t(text_width(text, fontsize_)) <= wrapwidth_ - safety_margin;
+	       uint32_t(font_->text_width(text)) <= wrapwidth_ - safety_margin;
 }
 
 /**
@@ -238,7 +238,7 @@ uint32_t WordWrap::width() const {
 	uint32_t calculated_width = 0;
 
 	for (uint32_t line = 0; line < lines_.size(); ++line) {
-		uint32_t linewidth = text_width(lines_[line].text, fontsize_);
+		uint32_t linewidth = font_->text_width(lines_[line].text);
 		if (linewidth > calculated_width)
 			calculated_width = linewidth;
 	}
@@ -322,7 +322,7 @@ void WordWrap::draw(RenderTarget& dst, Vector2i where, Align align, uint32_t car
 		if (draw_caret_ && line == caretline) {
 			std::string line_to_caret = lines_[line].text.substr(0, caretpos);
 			// TODO(GunChleoc): Arabic: Fix cursor position for BIDI text.
-			int caret_x = text_width(line_to_caret, fontsize_);
+			int caret_x = font_->text_width(line_to_caret);
 
 			const Image* caret_image = g_gr->images().get("images/ui_basic/caret.png");
 			Vector2i caretpt = Vector2i::zero();

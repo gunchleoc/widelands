@@ -48,15 +48,6 @@ void replace_entities(std::string* text) {
 	boost::replace_all(*text, "&nbsp;", " ");
 	boost::replace_all(*text, "&amp;", "&");  // Must be performed last
 }
-// NOCOM get rid of this function
-int text_width(const std::string& text, int ptsize) {
-	return UI::g_fh->render(
-	                  as_editorfont(
-	                     text.substr(
-	                        0, g_gr->max_texture_size_for_font_rendering() / text_height() - 1),
-	                     ptsize - UI::g_fh->fontset()->size_offset()))
-	   ->width();
-}
 
 int text_height(int ptsize, UI::FontSet::Face face) {
 	return UI::g_fh->render(as_aligned(UI::g_fh->fontset()->representative_character(),
@@ -96,7 +87,7 @@ std::string as_editorfont(const std::string& text, int ptsize, const RGBColor& c
 	   "<rt keep_spaces=1><p><font face=sans size=%i bold=1 shadow=1 color=%s>%s</font></p></rt>");
 	f % ptsize;
 	f % clr.hex_value();
-	f % richtext_escape(text);
+	f % text;
 	return f.str();
 }
 

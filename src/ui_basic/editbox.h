@@ -76,6 +76,7 @@ private:
 	std::unique_ptr<EditBoxImpl> m_;
 
 	void check_caret();
+	void update();
 
 	bool history_active_;
 	int16_t history_position_;

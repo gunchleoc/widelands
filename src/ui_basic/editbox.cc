@@ -63,6 +63,7 @@ struct EditBoxImpl {
 
 	/// Current text in the box.
 	std::string text;
+	std::shared_ptr<const UI::RenderedText> rendered_text;
 
 	/// Position of the caret.
 	uint32_t caret;
@@ -136,6 +137,7 @@ void EditBox::set_text(const std::string& t) {
 		m_->text.erase(m_->text.begin() + m_->maxLength, m_->text.end());
 	if (caretatend || m_->caret > m_->text.size())
 		m_->caret = m_->text.size();
+	update();
 }
 
 /**
@@ -150,10 +152,10 @@ void EditBox::set_max_length(uint32_t const n) {
 
 	if (m_->text.size() > m_->maxLength) {
 		m_->text.erase(m_->text.begin() + m_->maxLength, m_->text.end());
-		if (m_->caret > m_->text.size())
+		if (m_->caret > m_->text.size()) {
 			m_->caret = m_->text.size();
-
-		check_caret();
+		}
+		update();
 	}
 }
 
@@ -219,8 +221,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 				while ((m_->text[--m_->caret] & 0xc0) == 0x80)
 					m_->text.erase(m_->text.begin() + m_->caret);
 				m_->text.erase(m_->text.begin() + m_->caret);
-				check_caret();
-				changed();
+				update();
 			}
 			return true;
 
@@ -300,7 +301,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 				if (history_[++history_position_].size() > 0) {
 					m_->text = history_[history_position_];
 					m_->caret = m_->text.size();
-					check_caret();
+					update();
 				}
 			}
 			return true;
@@ -318,7 +319,7 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 				if (history_[--history_position_] != m_->text) {
 					m_->text = history_[history_position_];
 					m_->caret = m_->text.size();
-					check_caret();
+					update();
 				}
 			}
 			return true;
@@ -335,8 +336,7 @@ bool EditBox::handle_textinput(const std::string& input_text) {
 	if ((m_->text.size() + input_text.length()) < m_->maxLength) {
 		m_->text.insert(m_->caret, input_text);
 		m_->caret += input_text.length();
-		check_caret();
-		changed();
+		update();
 	}
 	return true;
 }
@@ -365,12 +365,8 @@ void EditBox::draw(RenderTarget& dst) {
 	}
 
 	const int max_width = get_w() - 2 * kMarginX;
-
-	std::shared_ptr<const UI::RenderedText> rendered_text =
-	   UI::g_fh->render(as_editorfont(m_->text, m_->fontsize));
-
-	const int linewidth = rendered_text->width();
-	const int lineheight = m_->text.empty() ? text_height(m_->fontsize) : rendered_text->height();
+	const int linewidth = m_->rendered_text->width();
+	const int lineheight = m_->text.empty() ? text_height(m_->fontsize) : m_->rendered_text->height();
 
 	Vector2i point(kMarginX, get_h() / 2);
 	if (m_->align == UI::Align::kRight) {
@@ -387,31 +383,27 @@ void EditBox::draw(RenderTarget& dst) {
 		// We want this always on, e.g. for mixed language savegame filenames
 		if (i18n::has_rtl_character(m_->text.c_str(), 100)) {  // Restrict check for efficiency
 			// TODO(GunChleoc): Arabic: Fix scrolloffset
-			rendered_text->draw(dst, point, Recti(linewidth - max_width, 0, linewidth, lineheight));
+			m_->rendered_text->draw(dst, point, Recti(linewidth - max_width, 0, linewidth, lineheight));
 		} else {
 			if (m_->align == UI::Align::kRight) {
 				// TODO(GunChleoc): Arabic: Fix scrolloffset
-				rendered_text->draw(
+				m_->rendered_text->draw(
 				   dst, point, Recti(point.x + m_->scrolloffset + kMarginX, 0, max_width, lineheight));
 			} else {
-				rendered_text->draw(dst, point, Recti(-m_->scrolloffset, 0, max_width, lineheight));
+				m_->rendered_text->draw(dst, point, Recti(-m_->scrolloffset, 0, max_width, lineheight));
 			}
 		}
 	} else {
-		rendered_text->draw(dst, point, Recti(0, 0, max_width, lineheight));
+		m_->rendered_text->draw(dst, point, Recti(0, 0, max_width, lineheight));
 	}
 
 	if (has_focus()) {
 		// Draw the caret
-		std::string line_to_caret = m_->text.substr(0, m_->caret);
 		// TODO(GunChleoc): Arabic: Fix cursor position for BIDI text.
-		int caret_x = text_width(line_to_caret, m_->fontsize);
-
 		const uint16_t fontheight = text_height(m_->fontsize);
-
 		const Image* caret_image = g_gr->images().get("images/ui_basic/caret.png");
-		Vector2i caretpt = Vector2i::zero();
-		caretpt.x = point.x + m_->scrolloffset + caret_x - caret_image->width() + kLineMargin;
+		Vector2i caretpt = m_->rendered_text->calculate_caret_position(m_->caret);
+		caretpt.x = point.x + m_->scrolloffset + caretpt.x - caret_image->width() + kLineMargin;
 		caretpt.y = point.y + (fontheight - caret_image->height()) / 2;
 		dst.blit(caretpt, caret_image);
 	}
@@ -421,10 +413,9 @@ void EditBox::draw(RenderTarget& dst) {
  * Check the caret's position and scroll it into view if necessary.
  */
 void EditBox::check_caret() {
-	std::string leftstr(m_->text, 0, m_->caret);
-	std::string rightstr(m_->text, m_->caret, std::string::npos);
-	int32_t leftw = text_width(leftstr, m_->fontsize);
-	int32_t rightw = text_width(rightstr, m_->fontsize);
+	const Vector2i caretpt = m_->rendered_text->calculate_caret_position(m_->caret);
+	const int leftw = caretpt.x;
+	const int rightw = m_->rendered_text->width() - leftw;
 
 	int32_t caretpos = 0;
 
@@ -449,5 +440,12 @@ void EditBox::check_caret() {
 		if (m_->scrolloffset < 0)
 			m_->scrolloffset = 0;
 	}
+}
+
+void EditBox::update() {
+	m_->rendered_text =
+	   UI::g_fh->render(as_editorfont(richtext_escape(m_->text), m_->fontsize));
+	check_caret();
+	changed();
 }
 }
