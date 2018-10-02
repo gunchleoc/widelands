@@ -13,7 +13,7 @@ wl_binary(wl_render_richtext
     graphic
     graphic_image_io
     graphic_surface
-    graphic_text
+    graphic_text_errors
     graphic_text_test_render
     io_filesystem
     io_stream
@@ -27,5 +27,6 @@ wl_library(graphic_text_test_render
     base_i18n
     graphic_image_cache
     graphic_text
+    graphic_text_cache
     io_filesystem
 )

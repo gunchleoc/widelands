@@ -2,30 +2,62 @@
 # Reactivate in debian/rules too once work resumes on this
 # add_subdirectory(test)
 
+wl_library(graphic_text_cache
+  SRCS
+    texture_cache.h
+    transient_cache.h
+  USES_SDL2
+  DEPENDS
+    base_macros
+    graphic_surface
+)
+
+wl_library(graphic_text_errors
+  SRCS
+    rt_errors.h
+    rt_errors_impl.h
+  DEPENDS
+    base_exceptions
+)
+
+wl_library(graphic_text_font_backend
+  SRCS
+    font_io.cc
+    font_io.h
+    sdl_ttf_font.cc
+    sdl_ttf_font.h
+  USES_SDL2
+  USES_SDL2_TTF
+  DEPENDS
+    graphic_sdl_utils
+    graphic_surface
+    graphic_text_cache
+    graphic_text_errors
+    io_fileread
+    io_filesystem
+)
+
+wl_library(graphic_text_stream
+  SRCS
+    textstream.cc
+    textstream.h
+  DEPENDS
+    graphic_text_errors
+)
+
 wl_library(graphic_text
   SRCS
     bidi.cc
     bidi.h
-    font_io.cc
-    font_io.h
     font_set.cc
     font_set.h
-    rt_errors.h
-    rt_errors_impl.h
     rt_parse.cc
     rt_parse.h
     rt_render.cc
     rt_render.h
     rendered_text.cc
     rendered_text.h
-    sdl_ttf_font.cc
-    sdl_ttf_font.h
-    textstream.cc
-    textstream.h
-    texture_cache.h
-    transient_cache.h
   USES_SDL2
-  USES_SDL2_TTF
   USES_ICU
   DEPENDS
     base_exceptions
@@ -39,10 +71,12 @@ wl_library(graphic_text
     graphic_image_cache
     graphic_image_io
     graphic_playercolor
-    graphic_sdl_utils
     graphic_surface
+    graphic_text_cache
+    graphic_text_errors
+    graphic_text_font_backend
     graphic_text_layout
-    io_fileread
+    graphic_text_stream
     io_filesystem
     scripting_lua_interface
     scripting_lua_table

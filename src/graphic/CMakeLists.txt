@@ -252,6 +252,7 @@ wl_library(graphic_fonthandler
     font_handler.h
   DEPENDS
     base_macros
+    graphic_text_cache
     graphic_image_cache
     graphic_text
 )
@@ -292,6 +293,7 @@ wl_library(graphic_wordwrap
     graphic_fonthandler
     graphic_text
     graphic_text_constants
+    graphic_text_font_backend
     graphic_text_layout
 )
 

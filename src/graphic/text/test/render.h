@@ -24,6 +24,7 @@
 #include <string>
 
 #include "graphic/text/rt_render.h"
+#include "graphic/text/texture_cache.h"
 
 class SDLSurface;
 

@@ -28,7 +28,6 @@
 #include "graphic/image_cache.h"
 #include "graphic/text/rt_render.h"
 #include "graphic/text/test/paths.h"
-#include "graphic/text/texture_cache.h"
 #include "io/filesystem/layered_filesystem.h"
 
 StandaloneRenderer::StandaloneRenderer() {
