@@ -44,6 +44,7 @@
 #include "graphic/text/font_io.h"
 #include "graphic/text/font_set.h"
 #include "graphic/text/rendered_text.h"
+#include "graphic/text/rt_errors.h"
 #include "graphic/text/rt_parse.h"
 #include "graphic/text/sdl_ttf_font.h"
 #include "graphic/text/textstream.h"
@@ -604,11 +605,11 @@ public:
 	std::shared_ptr<UI::RenderedText> render(TextureCache* texture_cache) override;
 
 protected:
-	uint16_t w_, h_;
+	int w_, h_;
 	const std::string txt_;
 	NodeStyle nodestyle_;
 	FontCache& fontcache_;
-	SdlTtfFont& font_;
+	IFont& font_;
 };
 
 TextNode::TextNode(FontCache& font, NodeStyle& ns, const std::string& txt)
@@ -616,7 +617,7 @@ TextNode::TextNode(FontCache& font, NodeStyle& ns, const std::string& txt)
      txt_(txt),
      nodestyle_(ns),
      fontcache_(font),
-     font_(dynamic_cast<SdlTtfFont&>(fontcache_.get_font(&nodestyle_))) {
+     font_(fontcache_.get_font(&nodestyle_)) {
 	font_.dimensions(txt_, ns.font_style, &w_, &h_);
 	check_size();
 }
@@ -630,7 +631,7 @@ std::shared_ptr<UI::RenderedText> TextNode::render(TextureCache* texture_cache) 
 	assert(rendered_image != nullptr);
 	std::shared_ptr<UI::RenderedText> rendered_text(new UI::RenderedText());
 	rendered_text->rects.push_back(
-	   std::unique_ptr<UI::RenderedRect>(new UI::RenderedRect(rendered_image, txt_, &font_)));
+	   std::unique_ptr<UI::RenderedRect>(new UI::RenderedRect(rendered_image, true, txt_, &font_)));
 	return rendered_text;
 }
 
@@ -739,7 +740,7 @@ bool WordSpacerNode::show_spaces_;
  */
 class NewlineNode : public RenderNode {
 public:
-	explicit NewlineNode(NodeStyle& ns) : RenderNode(ns) {
+	explicit NewlineNode(NodeStyle& ns, IFont* font = nullptr, uint16_t h = 0) : RenderNode(ns), font_(font), h_(h) {
 	}
 
 	std::string debug_info() const override {
@@ -747,7 +748,7 @@ public:
 	}
 
 	uint16_t height() const override {
-		return 0;
+		return h_;
 	}
 	uint16_t width() const override {
 		return INFINITE_WIDTH;
@@ -755,12 +756,27 @@ public:
 	uint16_t hotspot_y() const override {
 		return 0;
 	}
-	std::shared_ptr<UI::RenderedText> render(TextureCache* /* texture_cache */) override {
-		return std::shared_ptr<UI::RenderedText>(new UI::RenderedText());
+	std::shared_ptr<UI::RenderedText> render(TextureCache* texture_cache) override {
+		std::shared_ptr<UI::RenderedText> rendered_text(new UI::RenderedText());
+		if (font_ != nullptr) {
+			log("NOCOM consumes caret\n");
+			const std::string hash = (boost::format("rt:nl:%d") % h_).str();
+			std::shared_ptr<const Image> rendered_image = texture_cache->get(hash);
+			if (rendered_image == nullptr) {
+				rendered_image = texture_cache->insert(hash, std::make_shared<Texture>(0, h_));
+			}
+			// Adding a text string without font specification will consume a caret position in RenderedText
+			rendered_text->rects.push_back(
+			   std::unique_ptr<UI::RenderedRect>(new UI::RenderedRect(rendered_image, true, "", font_)));
+		}
+		return rendered_text;
 	}
 	bool is_non_mandatory_space() const override {
 		return true;
 	}
+private:
+	IFont* font_;
+	const uint16_t h_;
 };
 
 /*
@@ -1172,6 +1188,7 @@ void TagHandler::make_text_nodes(const std::string& txt,
 void TagHandler::emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) {
 	// If we have more than one br tag in a row, we want to add a vertical space.
 	// So, we need to give tags knowledge about the type of the preceding tag.
+	// NOCOM does not work for the 1st line
 	TagType preceding_tag = TagType::kRt;
 	for (Child* c : tag_.children()) {
 		if (c->tag) {
@@ -1442,13 +1459,14 @@ public:
 	}
 
 	void emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) override {
-		nodes.push_back(std::shared_ptr<RenderNode>(new NewlineNode(nodestyle_)));
+		int w, h = 0;
+		IFont& font_ = font_cache_.get_font(&nodestyle_);
+		font_.dimensions(" ", nodestyle_.font_style, &w, &h);
 		// If we have more than one br tag in a row, add a vertical space
 		if (preceding_tag_ == type()) {
-			uint16_t w, h = 0;
-			SdlTtfFont& font_ = dynamic_cast<SdlTtfFont&>(font_cache_.get_font(&nodestyle_));
-			font_.dimensions(" ", nodestyle_.font_style, &w, &h);
-			nodes.push_back(std::shared_ptr<RenderNode>(new SpaceNode(nodestyle_, 0, h, false)));
+			nodes.push_back(std::shared_ptr<RenderNode>(new NewlineNode(nodestyle_, &font_, h)));
+		} else {
+			nodes.push_back(std::shared_ptr<RenderNode>(new NewlineNode(nodestyle_, &font_)));
 		}
 	}
 private:

@@ -49,26 +49,33 @@ SdlTtfFont::~SdlTtfFont() {
 	font_ = nullptr;
 }
 
-void SdlTtfFont::dimensions(const std::string& txt, int style, uint16_t* gw, uint16_t* gh) {
+void SdlTtfFont::dimensions(const std::string& text, int style, int* gw, int* gh) {
 	set_style(style);
+	dimensions(text, gw, gh);
+}
 
+int SdlTtfFont::text_width(const std::string& text) const {
+	int w, h = 0;
+	dimensions(text, &w, &h);
+	return w;
+}
+
+int SdlTtfFont::lineskip() const {
+	return TTF_FontLineSkip(get_ttf_font());
+}
+
+void SdlTtfFont::dimensions(const std::string& text, int* gw, int* gh) const {
 	int w, h;
-	TTF_SizeUTF8(font_, txt.c_str(), &w, &h);
+	if (TTF_SizeUTF8(font_, text.c_str(), &w, &h)) {
+		log("%s\n", TTF_GetError());
+	}
 
-	if (style & SHADOW) {
+	if (style_ & SHADOW) {
 		w += SHADOW_OFFSET;
 		h += SHADOW_OFFSET;
 	}
 	*gw = w;
 	*gh = h;
-}
-
-int SdlTtfFont::text_width(const std::string& text) const {
-	int w = 0;
-	if (TTF_SizeUTF8(get_ttf_font(), text.c_str(), &w, nullptr)) {
-		log("%s\n", TTF_GetError());
-	}
-	return w;
 }
 
 std::shared_ptr<const Image> SdlTtfFont::render(const std::string& txt,

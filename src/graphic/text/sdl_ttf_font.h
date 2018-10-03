@@ -50,8 +50,9 @@ public:
 	virtual ~IFont() {
 	}
 
-	virtual void dimensions(const std::string&, int, uint16_t*, uint16_t*) = 0;
+	virtual void dimensions(const std::string& text, int, int*, int*) = 0;
 	virtual int text_width(const std::string& text) const = 0;
+	virtual int lineskip() const = 0;
 	virtual std::shared_ptr<const Image>
 	render(const std::string&, const RGBColor& clr, int, TextureCache*) = 0;
 
@@ -65,8 +66,9 @@ public:
 	SdlTtfFont(TTF_Font* ttf, const std::string& face, int ptsize, std::string* ttf_memory_block);
 	~SdlTtfFont() override;
 
-	void dimensions(const std::string&, int, uint16_t* w, uint16_t* h) override;
+	void dimensions(const std::string& text, int, int* w, int* h) override;
 	int text_width(const std::string& text) const override;
+	int lineskip() const override;
 	std::shared_ptr<const Image>
 	render(const std::string&, const RGBColor& clr, int, TextureCache*) override;
 	uint16_t ascent(int) const override;
@@ -75,6 +77,7 @@ public:
 	}
 
 private:
+	void dimensions(const std::string& text, int* w, int* h) const;
 	void set_style(int);
 
 	TTF_Font* font_;

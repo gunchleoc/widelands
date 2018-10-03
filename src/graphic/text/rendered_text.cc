@@ -22,8 +22,8 @@
 #include <memory>
 
 #include "base/macros.h"
-#include "graphic/text/bidi.h"
 #include "graphic/graphic.h"
+#include "graphic/text/bidi.h"
 #include "graphic/text_layout.h"
 
 namespace UI {
@@ -33,8 +33,8 @@ RenderedRect::RenderedRect(const Recti& init_rect,
                            bool visited,
                            const RGBColor& color,
                            bool is_background_color_set,
-                           DrawMode init_mode,
-						   const std::string& text, const RT::SdlTtfFont* font)
+                           DrawMode init_mode, bool advances_caret,
+						   const std::string& text, const RT::IFont* font)
    : rect_(init_rect),
      transient_image_(init_image),
      permanent_image_(nullptr),
@@ -42,6 +42,7 @@ RenderedRect::RenderedRect(const Recti& init_rect,
      background_color_(color),
      is_background_color_set_(is_background_color_set),
      mode_(init_mode),
+	 advances_caret_(advances_caret),
 	 text_(text),
 	 font_(font) {
 }
@@ -58,6 +59,7 @@ RenderedRect::RenderedRect(const Recti& init_rect,
      background_color_(color),
      is_background_color_set_(is_background_color_set),
      mode_(init_mode),
+	 advances_caret_(false),
 	 text_(""),
 	 font_(nullptr) {
 }
@@ -68,13 +70,14 @@ RenderedRect::RenderedRect(const Recti& init_rect, const Image* init_image)
 RenderedRect::RenderedRect(const Recti& init_rect, const RGBColor& color)
    : RenderedRect(init_rect, nullptr, false, color, true, DrawMode::kTile) {
 }
-RenderedRect::RenderedRect(std::shared_ptr<const Image> init_image, const std::string& text, const RT::SdlTtfFont* font)
+RenderedRect::RenderedRect(std::shared_ptr<const Image> init_image, bool advances_caret, const std::string& text, const RT::IFont* font)
    : RenderedRect(Recti(0, 0, init_image->width(), init_image->height()),
                   init_image,
                   false,
                   RGBColor(0, 0, 0),
                   false,
                   DrawMode::kBlit,
+				  advances_caret,
 				  text,
 				  font) {
 }
@@ -133,8 +136,12 @@ const std::string RenderedRect::text() const {
 	return text_;
 }
 
-const RT::SdlTtfFont* RenderedRect::font() const {
+const RT::IFont* RenderedRect::font() const {
 	return font_;
+}
+
+bool RenderedRect::advances_caret() const {
+	return advances_caret_;
 }
 
 // RenderedText
@@ -189,18 +196,23 @@ void RenderedText::draw(RenderTarget& dst,
 
 /// Calculate the caret position for letter number caretpos
 Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
+	log("NOCOM caret wanted at: %d\n", caret_index);
 	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
-	static const Image* caret_image = g_gr->images().get("images/ui_basic/caret.png");
 	Vector2i result = Vector2i::zero();
 	int counter = 0; // NOCOM for testing only
 	for (const auto& rect : rects) {
-		if (rect->font() == nullptr) {
-			// This is not a text node
-			--caret_index; // NOCOM detect if we're a newline node
+		if (!rect->advances_caret()) {
+			// This is not a text or newline node NOCOM document
 			continue;
 		}
+		if (rect->text().empty()) {
+			log("NOCOM newline\n");
+			--caret_index;
+		}
+		log("NOCOM text: '%s'\n", rect->text().c_str());
+
 		const int text_size = rect->text().size();
-		log("NOCOM rect %d, text_size: %d\n", ++counter, text_size);
+		log("NOCOM rect %d: %d %d %d %d, text_size: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), text_size);
 		if (caret_index > text_size) {
 			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
@@ -213,13 +225,17 @@ Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 			// Blit caret here
 			log("NOCOM blitting caret at pos %d. ", caret_index);
 			const std::string line_to_caret = rect->text().substr(0, caret_index);
-			const int temp = rect->font()->text_width(line_to_caret);
-			log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), temp);
-			result = Vector2i(rect->x() + temp,
-							  rect->y());
+			const int caret_offset_x = (!rect->text().empty()) ? rect->font()->text_width(line_to_caret) : 0;
+			log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), caret_offset_x);
+			result = Vector2i(rect->x() + caret_offset_x, rect->y());
 			log("NOCOM caretpt: %d, %d\n", result.x, result.y);
 			if (dst) {
-				dst->blit(Vector2i(result.x, result.y + (rect->height() - caret_image->height()) / 2), caret_image);
+				// NOCOM caret pos is broken for editbox, fine for multilineeditbox
+				if (rect->text().empty()) {
+					result.y += rect->height();
+				}
+				// NOCOM hard-coded color
+				dst->fill_rect(Recti(result.x, result.y, 1, rect->font()->lineskip()), RGBAColor(255, 255, 255, 0));
 			}
 			// Don't calculate it twice
 			return result;
@@ -229,6 +245,7 @@ Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 }
 /// returns -1 if skipping forward fails - this needs to be handled by caller
 int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
+	// NOCOM fix this function
 	int result = 0;
 	log("NOCOM %lu rects, caret is %d\n", rects.size(), caret_index);
 	// NOCOM empty lines don't work
@@ -239,8 +256,8 @@ int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 
 	// Find out where we want to go
 	for (const auto& rect : rects) {
-		if (rect->font() == nullptr) {
-			// This is not a text node
+		if (rect->font() == nullptr && rect->text().empty()) {
+			// This is not a text or newline node NOCOM document
 			continue;
 		}
 		const int y = rect->y();

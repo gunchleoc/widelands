@@ -48,7 +48,7 @@ private:
 	             bool visited,
 	             const RGBColor& color,
 	             bool is_background_color_set,
-	             DrawMode init_mode, const std::string& text, const RT::SdlTtfFont* font);
+	             DrawMode init_mode, bool advances_caret, const std::string& text, const RT::IFont* font);
 	// The image is managed by a pernament cache
 	RenderedRect(const Recti& init_rect,
 	             const Image* init_image,
@@ -66,8 +66,8 @@ public:
 
 	/// RenderedRect will contain a normal image that is managed by a transient cache.
 	/// Use this if the image is managed by an instance of TextureCache.
-	/// Specify 'text' and 'font' if this is a text node
-	explicit RenderedRect(std::shared_ptr<const Image> init_image, const std::string& text = "", const RT::SdlTtfFont* font = nullptr);
+	/// Specify 'advances_caret', 'text' and 'font' if this is a text node
+	explicit RenderedRect(std::shared_ptr<const Image> init_image, bool advances_caret = false, const std::string& text = "", const RT::IFont* font = nullptr);
 
 	/// RenderedRect will contain a normal image that is managed by a permanent cache.
 	/// Use this if the image is managed by g_gr->images().
@@ -108,7 +108,10 @@ public:
 	const std::string text() const;
 
 	/// The font being used for rendering text in this rect. Can be nullptr.
-	const RT::SdlTtfFont* font() const;
+	const RT::IFont* font() const;
+
+	/// Whether this node will advance the caret
+	bool advances_caret() const;
 
 private:
 	Recti rect_;
@@ -120,8 +123,9 @@ private:
 	const RGBColor background_color_;
 	const bool is_background_color_set_;
 	const DrawMode mode_;
+	const bool advances_caret_;
 	const std::string text_;
-	const RT::SdlTtfFont* font_;
+	const RT::IFont* font_;
 };
 
 struct RenderedText {
