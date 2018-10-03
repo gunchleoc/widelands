@@ -302,8 +302,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			FALLS_THROUGH;
 		case SDLK_DOWN:
 			if (d_->caret_index < d_->text.size()) {
-				// NOCOM skipping is still broken
-				const int new_position = d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineBack);
+				const int new_position = d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineForward);
 				d_->set_cursor_pos(new_position > -1 ? new_position : d_->text.size());
 			}
 			break;
@@ -315,7 +314,7 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 			FALLS_THROUGH;
 		case SDLK_UP:
 			if (d_->caret_index > 0) {
-				d_->set_cursor_pos(d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineForward));
+				d_->set_cursor_pos(d_->rendered_text->shift_caret(d_->caret_index, RenderedText::LineSkip::kLineBack));
 			}
 			break;
 
@@ -409,9 +408,9 @@ void MultilineEditbox::draw(RenderTarget& dst) {
 	   dst, Vector2i::zero(), Recti(0, d_->scrollbar.get_scrollpos(), d_->rendered_text->width(),
 									   d_->rendered_text->height() - d_->scrollbar.get_scrollpos()), g_fh->fontset()->is_rtl() ? UI::Align::kRight : UI::Align::kLeft);
 	if (has_focus()) {
-		log("NOCOM ************************************\ntext to render: %s\n", d_->text.c_str());
+		//log("NOCOM ************************************\ntext to render: %s\n", d_->text.c_str());
 		// NOCOM Vector2i caret_position = d_->rendered_text->calculate_caret_position(d_->cursor_pos);
-		log("NOCOM caret pos: %d, %d\n", d_->caret_position.x, d_->caret_position.y);
+		//log("NOCOM caret pos: %d, %d\n", d_->caret_position.x, d_->caret_position.y);
 
 		d_->rendered_text->handle_caret(d_->caret_index, &dst);
 	}

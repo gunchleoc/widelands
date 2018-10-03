@@ -243,6 +243,8 @@ autofit_ui_text(const std::string& text, int width, RGBColor color, int fontsize
 
 namespace UI {
 
+// TODO(GunChleoc): Move these functions to "align" or to separate file
+
 /**
  * This mirrors the horizontal alignment for RTL languages.
  *

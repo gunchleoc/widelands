@@ -172,7 +172,6 @@ void RenderedText::draw(RenderTarget& dst,
 	// For cropping images that don't fit
 	int offset_x = 0;
 	if (cropmode == CropMode::kSelf) {
-		// NOCOM dependency on text_layout - move the function to "align"
 		UI::correct_for_align(align, width(), &aligned_pos);
 		if (align != UI::Align::kLeft) {
 			for (const auto& rect : rects) {
@@ -196,39 +195,39 @@ void RenderedText::draw(RenderTarget& dst,
 
 /// Calculate the caret position for letter number caretpos
 Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
-	log("NOCOM caret wanted at: %d\n", caret_index);
+	//log("NOCOM caret wanted at: %d\n", caret_index);
 	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
 	Vector2i result = Vector2i::zero();
-	int counter = 0; // NOCOM for testing only
+	//int counter = 0; // NOCOM for testing only
 	for (const auto& rect : rects) {
 		if (!rect->advances_caret()) {
 			// This is not a text or newline node NOCOM document
 			continue;
 		}
 		if (rect->text().empty()) {
-			log("NOCOM newline\n");
+			//log("NOCOM newline\n");
 			--caret_index;
 		}
-		log("NOCOM text: '%s'\n", rect->text().c_str());
+		//log("NOCOM text: '%s'\n", rect->text().c_str());
 
 		const int text_size = rect->text().size();
-		log("NOCOM rect %d: %d %d %d %d, text_size: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), text_size);
+		//log("NOCOM rect %d: %d %d %d %d, text_size: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), text_size);
 		if (caret_index > text_size) {
 			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
 			caret_index = std::max(caret_index, 0);
-			log("NOCOM new caret pos: %d\n", caret_index);
+			//log("NOCOM new caret pos: %d\n", caret_index);
 		} else {
 			// Make sure we don't get bigger than the end of the text
 			caret_index = std::max(caret_index, 0);
 			caret_index = std::min(caret_index, text_size);
 			// Blit caret here
-			log("NOCOM blitting caret at pos %d. ", caret_index);
+			//log("NOCOM blitting caret at pos %d. ", caret_index);
 			const std::string line_to_caret = rect->text().substr(0, caret_index);
 			const int caret_offset_x = (!rect->text().empty()) ? rect->font()->text_width(line_to_caret) : 0;
-			log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), caret_offset_x);
+			//log("NOCOM line to caret: %s, width = %d\n", line_to_caret.c_str(), caret_offset_x);
 			result = Vector2i(rect->x() + caret_offset_x, rect->y());
-			log("NOCOM caretpt: %d, %d\n", result.x, result.y);
+			//log("NOCOM caretpt: %d, %d\n", result.x, result.y);
 			if (dst) {
 				// NOCOM caret pos is broken for editbox, fine for multilineeditbox
 				if (rect->text().empty()) {
@@ -245,7 +244,6 @@ Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 }
 /// returns -1 if skipping forward fails - this needs to be handled by caller
 int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
-	// NOCOM fix this function
 	int result = 0;
 	log("NOCOM %lu rects, caret is %d\n", rects.size(), caret_index);
 	// NOCOM empty lines don't work
@@ -254,18 +252,34 @@ int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 	int previous_ypos = 0;
 	int current_wanted_xpos = -1;
 
+	int counter = 0; // NOCOM for testing only
+	log("NOCOM ################ shift caret\n");
+
+	// NOCOM up and down have broken x coordinates
+
 	// Find out where we want to go
 	for (const auto& rect : rects) {
-		if (rect->font() == nullptr && rect->text().empty()) {
+		// NOCOM pull out code duplication?
+		if (!rect->advances_caret()) {
 			// This is not a text or newline node NOCOM document
 			continue;
 		}
-		const int y = rect->y();
+
+		// NOCOM this doesn't work properly
+		if (rect->text().empty()) {
+			log("NOCOM newline\n");
+			++result;
+		}
+
+
+		// If text is empty, assume it's a br tag's rect
+		const int y = rect->text().empty() ? rect->y() + rect->height() : rect->y();
 		if (y != last_y) {
 			previous_ypos = last_y;
 		}
 
 		const int text_size = rect->text().size();
+		log("NOCOM rect %d: %d %d %d %d, text_size: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), text_size);
 		if (caret_index > text_size) {
 			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
@@ -277,6 +291,7 @@ int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 			break;
 		}
 	}
+	log("NOCOM wanted pos: %d, %d\n********************\n", current_wanted_xpos, current_wanted_ypos);
 
 	if (current_wanted_xpos == -1) {
 		// We did not find anything
@@ -285,25 +300,31 @@ int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 
 	assert(current_wanted_ypos != -1);
 
+	counter = 0;
 	// Skip to start or end of line
 	if (lineskip == LineSkip::kStartOfLine || lineskip == LineSkip::kEndOfLine) {
 		for (const auto& rect : rects) {
+			log("NOCOM rect %d: %d %d %d %d, text_size: %lu, result: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), result);
 			if (rect->y() < current_wanted_ypos) {
 				result += rect->text().size();
 			} else if (rect->y() == current_wanted_ypos) {
 				if (lineskip == LineSkip::kStartOfLine) {
+					log("NOCOM start of line at: %d\n", result);
 					return result;
 				} else {
 					result += rect->text().size();
 				}
 			} else {
+				log("NOCOM end of line at: %d\n", result);
 				return result;
 			}
 		}
 		// In case we didn't find anything
 		if (lineskip == LineSkip::kStartOfLine) {
+			log("NOCOM start of line not found\n");
 			return 0;
 		} else {
+			log("NOCOM end of line not found\n");
 			return -1;
 		}
 	}
