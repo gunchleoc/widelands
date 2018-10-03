@@ -163,12 +163,12 @@ struct RenderedText {
 	enum class LineSkip {
 		kStartOfLine,
 		kEndOfLine,
-		kLineForward,
-		kLineBack
+		kLineDown,
+		kLineUp
 	};
 
 	Vector2i handle_caret(int caret_index, RenderTarget* dst = nullptr) const;
-	int shift_caret(int caret_index, LineSkip lineskip) const;
+	int skip_caret(int caret_index, LineSkip lineskip) const;
 
 private:
 	/// Helper function for draw(). Blits the rect's background color and images. The rect will be

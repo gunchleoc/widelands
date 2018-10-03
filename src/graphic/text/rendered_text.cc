@@ -243,71 +243,75 @@ Vector2i RenderedText::handle_caret(int caret_index, RenderTarget* dst) const {
 	return result;
 }
 /// returns -1 if skipping forward fails - this needs to be handled by caller
-int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
+int RenderedText::skip_caret(int caret_index, LineSkip lineskip) const {
+	log("NOCOM ################ skip caret\n");
 	int result = 0;
 	log("NOCOM %lu rects, caret is %d\n", rects.size(), caret_index);
-	// NOCOM empty lines don't work
-	int last_y = -1;
-	int current_wanted_ypos = -1;
-	int previous_ypos = 0;
-	int current_wanted_xpos = -1;
+
+	int original_xpos = -1;
+	int original_ypos = -1;
+	int current_ypos = rects.front()->y();
+	int previous_ypos = current_ypos;
 
 	int counter = 0; // NOCOM for testing only
-	log("NOCOM ################ shift caret\n");
-
-	// NOCOM up and down have broken x coordinates
 
 	// Find out where we want to go
 	for (const auto& rect : rects) {
-		// NOCOM pull out code duplication?
 		if (!rect->advances_caret()) {
 			// This is not a text or newline node NOCOM document
 			continue;
 		}
 
-		// NOCOM this doesn't work properly
+		// NOCOM test newlines for line skip
 		if (rect->text().empty()) {
 			log("NOCOM newline\n");
 			++result;
 		}
 
-
-		// If text is empty, assume it's a br tag's rect
-		const int y = rect->text().empty() ? rect->y() + rect->height() : rect->y();
-		if (y != last_y) {
-			previous_ypos = last_y;
+		if (rect->y() != current_ypos) {
+			previous_ypos = current_ypos;
+			current_ypos = rect->y();
 		}
 
 		const int text_size = rect->text().size();
-		log("NOCOM rect %d: %d %d %d %d, text_size: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), text_size);
 		if (caret_index > text_size) {
 			caret_index -= text_size;
 			// Make sure we don't get smaller than the start of the text
 			caret_index = std::max(caret_index, 0);
 		} else {
-			// Make sure we don't get bigger than the end of the text
-			current_wanted_xpos = std::min(caret_index, text_size);
-			current_wanted_ypos = rect->y();
+			// This is the node that the caret is in. Get the exact caret x position.
+			original_xpos = rect->x();
+			if (caret_index > 0 && text_size > 0) {
+				const std::string line_to_offset = rect->text().substr(0, std::min(caret_index, text_size));
+				original_xpos += rect->font()->text_width(line_to_offset);
+			}
+
+			log("NOCOM original rect %d: %d %d %d %d, text_size: %lu, '%s'\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), rect->text().c_str());
+			original_ypos = rect->y();
 			break;
 		}
 	}
-	log("NOCOM wanted pos: %d, %d\n********************\n", current_wanted_xpos, current_wanted_ypos);
+	log("NOCOM original pos: %d, %d\n********************\n", original_xpos, original_ypos);
 
-	if (current_wanted_xpos == -1) {
+	if (original_xpos == -1) {
 		// We did not find anything
 		return 0;
 	}
 
-	assert(current_wanted_ypos != -1);
+	assert(original_ypos != -1);
 
 	counter = 0;
 	// Skip to start or end of line
 	if (lineskip == LineSkip::kStartOfLine || lineskip == LineSkip::kEndOfLine) {
 		for (const auto& rect : rects) {
+			if (!rect->advances_caret()) {
+				// If it doesn't affect the caret, we're not interested
+				continue;
+			}
 			log("NOCOM rect %d: %d %d %d %d, text_size: %lu, result: %d\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), result);
-			if (rect->y() < current_wanted_ypos) {
+			if (rect->y() < original_ypos) {
 				result += rect->text().size();
-			} else if (rect->y() == current_wanted_ypos) {
+			} else if (rect->y() == original_ypos) {
 				if (lineskip == LineSkip::kStartOfLine) {
 					log("NOCOM start of line at: %d\n", result);
 					return result;
@@ -325,33 +329,59 @@ int RenderedText::shift_caret(int caret_index, LineSkip lineskip) const {
 			return 0;
 		} else {
 			log("NOCOM end of line not found\n");
-			return -1;
+			return result;
 		}
+		NEVER_HERE();
 	}
 
 	// Skip line
-	if (lineskip == LineSkip::kLineForward) {
-		for (const auto& rect : rects) {
-			if (rect->y() <= current_wanted_ypos) {
-				result += rect->text().size();
-			} else {
-				return result + current_wanted_xpos;
+	auto calculate_x_offset = [this](const int xpos, const RenderedRect* rect) {
+		const int available_width = xpos - rect->x();
+		if (available_width <= 0) {
+			return 0;
+		}
+		log("Calculating x offset\n");
+		int x_offset = 0;
+		int text_size = rect->text().size();
+		for (; x_offset < text_size; ++x_offset) {
+			const std::string line_to_offset = rect->text().substr(0, x_offset);
+			log("NOCOM line to offset: %s\n", line_to_offset.c_str());
+			if (rect->font()->text_width(line_to_offset) >= available_width) {
+				break;
 			}
 		}
-		// We didn't find anything
-		return -1;
-	} else if (lineskip == LineSkip::kLineBack) {
-		for (const auto& rect : rects) {
-			if (rect->y() <= previous_ypos) {
+		log("NOCOM available: %d, offset: %d\n", available_width, x_offset);
+		return x_offset;
+	 };
+
+	for (const auto& rect : rects) {
+		if (!rect->advances_caret()) {
+			// If it doesn't affect the caret, we're not interested
+			// Avoids getting stuck in the outer rt and p tags when skipping line back
+			continue;
+		}
+
+		// NOCOM skipping up is broken if line is longer than previous line
+		const bool consume_this_rect =
+				(lineskip == LineSkip::kLineDown && rect->y() <= original_ypos) ||
+				(lineskip == LineSkip::kLineUp && rect->y() < previous_ypos);
+		if (consume_this_rect) {
+			result += rect->text().size();
+			log("NOCOM previous line rect %d: %d %d %d %d, text_size: %lu, result: %d, '%s'\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), result, rect->text().c_str());
+		} else {
+			if (rect->x() + rect->width() < original_xpos) {
 				result += rect->text().size();
+				log("NOCOM current line rect %d: %d %d %d %d, text_size: %lu, result: %d, '%s'\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), result, rect->text().c_str());
 			} else {
-				return result + current_wanted_xpos;
+				result += calculate_x_offset(original_xpos, rect.get());
+				log("NOCOM result rect %d: %d %d %d %d, text_size: %lu, result: %d, '%s'\n", ++counter, rect->x(), rect->y(), rect->width(), rect->height(), rect->text().size(), result, rect->text().c_str());
+				return result;
 			}
 		}
-		// We didn't find anything
-		return 0;
 	}
-	NEVER_HERE();
+	// We didn't find anything
+	log("NOCOM nothing found\n");
+	return result;
 }
 
 void RenderedText::blit_rect(RenderTarget& dst,
