@@ -52,8 +52,6 @@ protected:
 	bool handle_textinput(const std::string& text) override;
 
 private:
-	void scrollpos_changed(int32_t);
-
 	struct Data;
 	std::unique_ptr<Data> d_;
 };

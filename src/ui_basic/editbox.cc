@@ -398,7 +398,7 @@ void EditBox::draw(RenderTarget& dst) {
 
 	if (has_focus()) {
 		// Draw the caret
-		m_->rendered_text->handle_caret(m_->caret_index, &dst);
+		m_->rendered_text->handle_caret(m_->caret_index, Vector2i(m_->scrolloffset + kMarginX, 0), &dst);
 	}
 }
 
