@@ -167,7 +167,7 @@ struct RenderedText {
 		kLineUp
 	};
 
-	Vector2i handle_caret(int caret_index, const Vector2i& scroll_offset = Vector2i::zero(), RenderTarget* dst = nullptr) const;
+	Vector2i handle_caret(int caret_index, const Vector2i& caret_offset = Vector2i::zero(), RenderTarget* dst = nullptr) const;
 	int skip_caret(int caret_index, LineSkip lineskip) const;
 
 private:

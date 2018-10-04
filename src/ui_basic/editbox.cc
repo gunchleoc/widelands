@@ -398,7 +398,7 @@ void EditBox::draw(RenderTarget& dst) {
 
 	if (has_focus()) {
 		// Draw the caret
-		m_->rendered_text->handle_caret(m_->caret_index, Vector2i(m_->scrolloffset + kMarginX, 0), &dst);
+		m_->rendered_text->handle_caret(m_->caret_index, Vector2i(0 - m_->scrolloffset + kMarginX, 0), &dst);
 	}
 }
 
@@ -406,8 +406,7 @@ void EditBox::draw(RenderTarget& dst) {
  * Check the caret's position and scroll it into view if necessary.
  */
 void EditBox::check_caret() {
-	const Vector2i caretpt = m_->rendered_text->handle_caret(m_->caret_index);
-	const int leftw = caretpt.x;
+	const int leftw = m_->rendered_text->handle_caret(m_->caret_index).x;
 	const int rightw = m_->rendered_text->width() - leftw;
 
 	int32_t caretpos = 0;
@@ -421,10 +420,17 @@ void EditBox::check_caret() {
 		caretpos = kMarginX + m_->scrolloffset + leftw;
 	}
 
+	// NOCOM why / 5?
+	/*
 	if (caretpos < kMarginX)
 		m_->scrolloffset += kMarginX - caretpos + get_w() / 5;
 	else if (caretpos > get_w() - kMarginX)
 		m_->scrolloffset -= caretpos - get_w() + kMarginX + get_w() / 5;
+		*/
+	if (caretpos < kMarginX)
+		m_->scrolloffset += kMarginX - caretpos + get_w();
+	else if (caretpos > get_w() - kMarginX)
+		m_->scrolloffset -= caretpos - get_w() + kMarginX + get_w();
 
 	if (m_->align == UI::Align::kLeft) {
 		if (m_->scrolloffset > 0)

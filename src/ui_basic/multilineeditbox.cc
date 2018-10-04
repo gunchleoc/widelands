@@ -397,7 +397,7 @@ void MultilineEditbox::draw(RenderTarget& dst) {
 		// NOCOM Vector2i caret_position = d_->rendered_text->calculate_caret_position(d_->cursor_pos);
 		//log("NOCOM caret pos: %d, %d\n", d_->caret_position.x, d_->caret_position.y);
 
-		d_->rendered_text->handle_caret(d_->caret_index, Vector2i(0, d_->scrollbar.get_scrollpos()), &dst);
+		d_->rendered_text->handle_caret(d_->caret_index, Vector2i(0, 0 - d_->scrollbar.get_scrollpos()), &dst);
 	}
 }
 

@@ -194,7 +194,7 @@ void RenderedText::draw(RenderTarget& dst,
 }
 
 /// Calculate the caret position for letter number caretpos
-Vector2i RenderedText::handle_caret(int caret_index, const Vector2i& scroll_offset, RenderTarget* dst) const {
+Vector2i RenderedText::handle_caret(int caret_index, const Vector2i& caret_offset, RenderTarget* dst) const {
 	//log("NOCOM caret wanted at: %d\n", caret_index);
 	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
 	Vector2i result = Vector2i::zero();
@@ -234,7 +234,7 @@ Vector2i RenderedText::handle_caret(int caret_index, const Vector2i& scroll_offs
 					result.y += rect->height();
 				}
 				// NOCOM hard-coded color
-				dst->fill_rect(Recti(result.x - scroll_offset.x, result.y - scroll_offset.y, 1, rect->font()->lineskip()), RGBAColor(255, 255, 255, 0));
+				dst->fill_rect(Recti(result.x + caret_offset.x, result.y + caret_offset.y, 1, rect->font()->lineskip()), RGBAColor(255, 255, 255, 0));
 			}
 			// Don't calculate it twice
 			return result;
