@@ -193,8 +193,40 @@ void RenderedText::draw(RenderTarget& dst,
 	}
 }
 
+
+void RenderedText::calculate_rows() {
+	rows.clear();
+	if (rects.empty()) {
+		return;
+	}
+
+	int current_y = rects.front()->y();
+	rows.push_back(std::unique_ptr<Row>(new Row()));
+	Row* current_row = rows.back().get();
+
+	// Organize the rects into rows, according to their y coordinate
+	for (const auto& rect : rects) {
+		if (rect->y() != current_y) {
+			rows.push_back(std::unique_ptr<Row>(new Row()));
+			current_row = rows.back().get();
+		}
+		current_y = rect->y();
+		current_row->row.push_back(rect.get());
+		if (rect->advances_caret() && rect->text().empty()) {
+			// This is a newline node
+			++current_row->caret_positions; // NOCOM rename to caret_positions
+		} else {
+			current_row->caret_positions += rect->text().size();
+		}
+	}
+	log("NOCOM ********************* %lu rows:\n", rows.size());
+}
+
 /// Calculate the caret position for letter number caretpos
 Vector2i RenderedText::handle_caret(int caret_index, const Vector2i& caret_offset, RenderTarget* dst) const {
+	// Assert that calculate_rows() has been run.
+	assert(!rows.empty() || rects.empty());
+
 	//log("NOCOM caret wanted at: %d\n", caret_index);
 	// TODO(GunChleoc): Arabic: Fix caret position for BIDI text.
 	Vector2i result = Vector2i::zero();
@@ -244,6 +276,9 @@ Vector2i RenderedText::handle_caret(int caret_index, const Vector2i& caret_offse
 }
 /// returns -1 if skipping forward fails - this needs to be handled by caller
 int RenderedText::skip_caret(int caret_index, LineSkip lineskip) const {
+	// Assert that calculate_rows() has been run.
+	assert(!rows.empty() || rects.empty());
+
 	log("NOCOM ################ skip caret\n");
 	int result = 0;
 	log("NOCOM %lu rects, caret is %d\n", rects.size(), caret_index);

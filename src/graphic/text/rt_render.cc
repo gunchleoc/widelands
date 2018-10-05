@@ -745,7 +745,6 @@ public:
 	std::shared_ptr<UI::RenderedText> render(TextureCache* texture_cache) override {
 		std::shared_ptr<UI::RenderedText> rendered_text(new UI::RenderedText());
 		if (font_ != nullptr) {
-			log("NOCOM consumes caret\n");
 			const std::string hash = (boost::format("rt:nl:%d") % h_).str();
 			std::shared_ptr<const Image> rendered_image = texture_cache->get(hash);
 			if (rendered_image == nullptr) {
@@ -849,6 +848,7 @@ public:
 	     desired_width_(),
 	     w_(0),
 	     h_(0),
+		 calculate_rows_(false),
 	     background_color_(0, 0, 0),
 	     is_background_color_set_(false),
 	     background_image_(nullptr) {
@@ -873,6 +873,12 @@ public:
 
 	DesiredWidth desired_width() const {
 		return desired_width_;
+	}
+
+	/// Configure the node to precalculate rows, to be used for caret positioning in the RenderedText
+	/// The calculation should only be carried out on the main DivRenderNode.
+	void set_calculate_rows() {
+		calculate_rows_ = true;
 	}
 
 	std::shared_ptr<UI::RenderedText> render(TextureCache* texture_cache) override {
@@ -916,6 +922,10 @@ public:
 		}
 		nodes_to_render_.clear();
 
+		if (calculate_rows_) {
+			rendered_text->calculate_rows();
+		}
+
 		return rendered_text;
 	}
 	const std::vector<Reference> get_references() override {
@@ -949,6 +959,7 @@ private:
 	uint16_t w_, h_;
 	std::vector<std::shared_ptr<RenderNode>> nodes_to_render_;
 	Borders margin_;
+	bool calculate_rows_;
 	RGBColor background_color_;
 	bool is_background_color_set_;
 	const Image* background_image_;  // Not owned.
@@ -1329,6 +1340,12 @@ public:
 		Borders padding, margin;
 
 		handle_unique_attributes();
+
+		// Calculate rows if we're in editor mode
+		if (type() == TagType::kRt && !trim_spaces_) {
+			render_node_->set_calculate_rows();
+		}
+
 		const AttrMap& a = tag_.attrs();
 		if (a.has("background")) {
 			RGBColor clr;
@@ -1540,6 +1557,10 @@ public:
 		trim_spaces_ = (a.has("keep_spaces") ? !a["keep_spaces"].get_bool() : true);
 		shrink_to_fit_ = shrink_to_fit_ && trim_spaces_;
 	}
+protected:
+	// We want to calculate the rows in the main node if we're in editor mode.
+	// Pre-calculated rows will also come in useful when we implement clickable text.
+	bool calculate_rows_;
 };
 Renderer::Renderer(ImageCache* image_cache,
                    TextureCache* texture_cache,
@@ -1724,7 +1745,6 @@ void TagHandler::make_text_nodes(const std::string& txt,
 void TagHandler::emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) {
 	// If we have more than one br tag in a row, we want to add a vertical space.
 	// So, we need to give tags knowledge about the type of the preceding tag.
-	// NOCOM does not work for the 1st line
 	TagType preceding_tag = TagType::kRt;
 	bool no_text_yet = true;
 	for (Child* c : tag_.children()) {

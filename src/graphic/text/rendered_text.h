@@ -160,6 +160,7 @@ struct RenderedText {
 	/// drawing position
 	void draw(RenderTarget& dst, const Vector2i& position, UI::Align align = UI::Align::kLeft) const;
 
+	/// Skip mode for the skip_caret function
 	enum class LineSkip {
 		kStartOfLine,
 		kEndOfLine,
@@ -167,10 +168,22 @@ struct RenderedText {
 		kLineUp
 	};
 
+	/// Organize the rects into rows for faster caret calculation
+	void calculate_rows();
+	/// Calculate and return the x,y coordinates for the given caret index. If the offset and render target are given, blit the caret too.
 	Vector2i handle_caret(int caret_index, const Vector2i& caret_offset = Vector2i::zero(), RenderTarget* dst = nullptr) const;
+	/// Calculate the caret index for skipping to start/end of line or a row up/down.
 	int skip_caret(int caret_index, LineSkip lineskip) const;
 
 private:
+	/// Struct containing all rects in a row on screen, and the caret positions the row will advance
+	struct Row {
+		int caret_positions = 0;
+		std::vector<RenderedRect*> row;
+	};
+	/// Rows view of the rects. This is empty unless we're in editor mode
+	std::vector<std::unique_ptr<Row>> rows;
+
 	/// Helper function for draw(). Blits the rect's background color and images. The rect will be
 	/// positioned according to 'aligned_position' and cropped according to 'region'. 'offxet_x' and
 	/// 'align' are used by the cropping algorithm when we use CropMode::kSelf mode.
