@@ -97,7 +97,7 @@ struct NoteObjectCreate {
 
 	const MapObjectType type;
 	const Coords& coords;
-	const Player* owner;
+	Player* owner;
 	const DescriptionIndex index;
 	const std::string name;
 

@@ -812,25 +812,35 @@ int LuaPlayerBase::place_building(lua_State* L) {
    .. method:: place_ship(field)
 
       Places a ship for the player's tribe, which will be
-      owned by the player.
+      owned by the player. Ships can only be placed on sea coordinates.
 
       :arg field: where the ship should be placed.
       :type field: :class:`wl.map.Field`
 
-      :returns: The new ship that was created.
+      :returns: The new ship that was created, or ``nil`` if creating the ship failed.
 */
-// UNTESTED
 int LuaPlayerBase::place_ship(lua_State* L) {
-	LuaMaps::LuaField* c = *get_user_class<LuaMaps::LuaField>(L, 2);
-
+	LuaMaps::LuaField* field = *get_user_class<LuaMaps::LuaField>(L, 2);
 	EditorGameBase& egbase = get_egbase(L);
-	Player& player = get(L, egbase);
+	Field* map_field = egbase.map().get_fcoords(field->coords()).field;
 
-	const ShipDescr* descr = egbase.tribes().get_ship_descr(player.tribe().ship());
-	Bob& ship = egbase.create_ship(c->coords(), descr->name(), &player);
-
-	LuaMaps::upcasted_map_object_to_lua(L, &ship);
-
+	if (map_field->maxcaps() & MOVECAPS_SWIM) {
+		try {
+			Player& player = get(L, egbase);
+			const ShipDescr* descr = egbase.tribes().get_ship_descr(player.tribe().ship());
+			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, field->coords(), descr->name(), &player));
+			Widelands::Bob* ship = map_field->get_first_bob();
+			assert(ship != nullptr);
+			assert(ship->descr().type() == Widelands::MapObjectType::SHIP);
+			LuaMaps::upcasted_map_object_to_lua(L, ship);
+		} catch (const GameDataError& e) {
+			log("WARNING: Unable to place ship: %s\n", e.what());
+			lua_pushnil(L);
+		}
+	} else {
+		log ("WARNING: Ships cannot be placed on land coordinates (%d, %d)\n", field->coords().x, field->coords().y);
+		lua_pushnil(L);
+	}
 	return 1;
 }
 

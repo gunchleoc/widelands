@@ -143,8 +143,6 @@ public:
 	                                      MapObjectDescr::OwnerType,
 	                                      Player* owner,
 	                                      const BuildingDescr* former_building);
-	Bob& create_ship(const Coords&, int ship_type_idx, Player* owner = nullptr);
-	Bob& create_ship(const Coords&, const std::string& name, Player* owner = nullptr);
 
 	uint32_t get_gametime() const {
 		return gametime_;
@@ -200,8 +198,17 @@ private:
 	/// Common function for create_critter and create_ship.
 	Bob& create_bob(Coords, const BobDescr&, Player* owner = nullptr);
 
-	/// Gets the critter type 'name' from the world and creates one at 'coords'
-	Bob& create_critter(const Coords& coords, const std::string& name);
+	/**
+	  * Gets the critter type 'name' from the world and creates one at 'coords'.
+	  * Throws GameDataError if the critter type is unknown.
+	  */
+	void create_critter(const Coords& coords, const std::string& name);
+
+	/**
+	  * Gets the ship type 'name' from the world and creates one at 'coords'.
+	  * Throws GameDataError if the ship type is unknown.
+	  */
+	void create_ship(const Coords&, const std::string& name, Player* owner);
 
 	/// \param preferred_player
 	///  When conquer is false, this can be used to prefer a player over other

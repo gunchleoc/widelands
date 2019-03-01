@@ -820,15 +820,15 @@ void ImmovableProgram::ActPlaySound::execute(Game& game, Immovable& immovable) c
 ImmovableProgram::ActTransform::ActTransform(char* parameters, ImmovableDescr& descr) {
 	try {
 		tribe = true;
-		bob = false;
+		ship = false;
 		probability = 0;
 
 		std::vector<std::string> params = split_string(parameters, " ");
 		for (uint32_t i = 0; i < params.size(); ++i) {
 			if (params[i] == "bob")
-				bob = true;
+				ship = true;
 			else if (params[i] == "immovable")
-				bob = false;
+				ship = false;
 			else if (params[i][0] >= '0' && params[i][0] <= '9') {
 				long int const value = atoi(params[i].c_str());
 				if (value < 1 || 254 < value)
@@ -872,8 +872,8 @@ void ImmovableProgram::ActTransform::execute(Game& game, Immovable& immovable) c
 		MapObjectDescr::OwnerType owner_type = immovable.descr().owner_type();
 		immovable.remove(game);  //  Now immovable is a dangling reference!
 
-		if (bob) {
-			game.create_ship(c, type_name, player);
+		if (ship) {
+			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, c, type_name, player));
 		} else {
 			game.create_immovable_with_name(
 			   c, type_name, owner_type, player, nullptr /* former_building_descr */);

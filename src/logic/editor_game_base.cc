@@ -77,6 +77,9 @@ EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
 	case MapObjectType::CRITTER:
 		create_critter(note.coords, note.name);
 		break;
+	case MapObjectType::SHIP:
+		create_ship(note.coords, note.name, note.owner);
+		break;
 	default:
 		NEVER_HERE();
 	}
@@ -388,17 +391,13 @@ Bob& EditorGameBase::create_bob(Coords c, const BobDescr& descr, Player* owner) 
 	return descr.create(*this, owner, c);
 }
 
-/**
- * Instantly create a critter at the given x/y location.
- *
- */
 
-Bob& EditorGameBase::create_critter(const Coords& coords, const std::string& name) {
+void EditorGameBase::create_critter(const Coords& coords, const std::string& name) {
 	const BobDescr* descr = dynamic_cast<const BobDescr*>(world().get_critter_descr(name));
 	if (descr == nullptr) {
 		throw GameDataError("create_critter %s at (%d,%d): critter not known", name.c_str(), coords.x, coords.y);
 	}
-	return create_bob(coords, *descr);
+	create_bob(coords, *descr);
 }
 
 /*
@@ -465,18 +464,13 @@ Immovable& EditorGameBase::do_create_immovable(const Coords& c,
  * idx is the bob type.
  */
 
-Bob& EditorGameBase::create_ship(const Coords& c, int const ship_type_idx, Player* owner) {
-	const BobDescr* descr = dynamic_cast<const BobDescr*>(tribes().get_ship_descr(ship_type_idx));
-	return create_bob(c, *descr, owner);
-}
-
-Bob& EditorGameBase::create_ship(const Coords& c, const std::string& name, Player* owner) {
+void EditorGameBase::create_ship(const Coords& c, const std::string& name, Player* owner) {
 	try {
-		int idx = tribes().safe_ship_index(name);
-		return create_ship(c, idx, owner);
+		const BobDescr* descr = dynamic_cast<const BobDescr*>(tribes().get_ship_descr(tribes().safe_ship_index(name)));
+		create_bob(c, *descr, owner);
 	} catch (const GameDataError& e) {
-		throw GameDataError("create_ship(%i,%i,%s,%s): ship not found: %s", c.x, c.y, name.c_str(),
-		                    owner->get_name().c_str(), e.what());
+		throw GameDataError("create_ship(%s,%s) at (%d,%d): ship not found: %s", name.c_str(),
+							owner->get_name().c_str(), c.x, c.y, e.what());
 	}
 }
 

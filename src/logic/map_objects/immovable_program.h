@@ -96,7 +96,7 @@ struct ImmovableProgram {
 
 	private:
 		std::string type_name;
-		bool bob;
+		bool ship;
 		bool tribe;
 		uint8_t probability;
 	};
