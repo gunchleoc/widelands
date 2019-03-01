@@ -145,9 +145,8 @@ public:
 	///
 	/// Does not perform any sanity checks.
 	/// If former_buildings is not empty this is an enhancing.
-	Building& create(ObjectManager& objects,
-	                 Player*,
-	                 Coords,
+	Building& create(Player*,
+	                 const Coords& pos,
 	                 bool construct,
 	                 bool loading = false,
 	                 FormerBuildings former_buildings = FormerBuildings()) const;
@@ -239,7 +238,7 @@ public:
 	Flag& base_flag() override;
 	virtual uint32_t get_playercaps() const;
 
-	virtual Coords get_position() const {
+	Coords get_position() const {
 		return position_;
 	}
 	PositionList get_positions(const EditorGameBase&) const override;
@@ -335,7 +334,7 @@ protected:
 
 	void start_animation(EditorGameBase&, uint32_t anim);
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 

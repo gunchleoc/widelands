@@ -64,7 +64,7 @@ public:
 	~BobDescr() override {
 	}
 
-	Bob& create(EditorGameBase&, Player* owner, const Coords&) const;
+	Bob& create(Player* owner, const Coords&) const;
 
 	MapObjectDescr::OwnerType get_owner_type() const {
 		return owner_type_;
@@ -235,7 +235,7 @@ public:
 		return animstart_;
 	}
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void schedule_destroy(Game&);
@@ -244,7 +244,7 @@ public:
 	Vector2f calc_drawpos(const EditorGameBase&, const Vector2f& field_on_dst, float scale) const;
 	void set_owner(Player*);
 
-	void set_position(EditorGameBase&, const Coords&);
+	void set_position(const Coords& coords);
 	const FCoords& get_position() const {
 		return position_;
 	}

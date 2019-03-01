@@ -142,8 +142,8 @@ void ConstructionSite::set_building(const BuildingDescr& building_descr) {
 Initialize the construction site by starting orders
 ===============
 */
-bool ConstructionSite::init(ObjectManager& objects) {
-	PartiallyFinishedBuilding::init(objects);
+bool ConstructionSite::init() {
+	PartiallyFinishedBuilding::init();
 
 	const std::map<DescriptionIndex, uint8_t>* buildcost;
 	if (!old_buildings_.empty()) {
@@ -192,7 +192,7 @@ void ConstructionSite::cleanup(EditorGameBase& egbase) {
 		// Put the real building in place
 		DescriptionIndex becomes_idx = owner().tribe().building_index(building_->name());
 		old_buildings_.push_back(becomes_idx);
-		Building& b = building_->create(egbase, get_owner(), position_, false, false, old_buildings_);
+		Building& b = building_->create(get_owner(), position_, false, false, old_buildings_);
 		if (Worker* const builder = builder_.get(egbase)) {
 			builder->reset_tasks(dynamic_cast<Game&>(egbase));
 			builder->set_location(&b);
@@ -279,7 +279,7 @@ bool ConstructionSite::get_building_work(Game& game, Worker& worker, bool) {
 			queue->set_filled(queue->get_filled() - 1);
 			const WareDescr& wd = *owner().tribe().get_ware_descr(queue->get_index());
 			WareInstance& ware = *new WareInstance(queue->get_index(), &wd);
-			ware.init(game.objects());
+			ware.init();
 			worker.start_task_dropoff(game, ware);
 			return true;
 		}

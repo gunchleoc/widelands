@@ -47,7 +47,7 @@ public:
 	uint32_t get_playercaps() const override;
 	const Image* representative_image() const override;
 	void cleanup(EditorGameBase&) override;
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void set_economy(Economy*) override;
 
 	uint32_t get_nrwaresqueues() {

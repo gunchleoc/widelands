@@ -627,7 +627,7 @@ int do_set_soldiers(lua_State* L,
 		} else if (d > 0) {
 			for (; d; --d) {
 				Soldier& soldier = dynamic_cast<Soldier&>(
-				   soldier_descr.create(egbase, owner, nullptr, building_position));
+				   soldier_descr.create(owner, nullptr, building_position));
 				soldier.set_level(sp.first.health, sp.first.attack, sp.first.defense, sp.first.evade);
 				if (sc->incorporate_soldier(egbase, soldier)) {
 					soldier.remove(egbase);
@@ -4336,7 +4336,7 @@ int LuaFlag::set_wares(lua_State* L) {
 			const WareDescr& wd = *tribes.get_ware_descr(index);
 			for (int32_t j = 0; j < d; j++) {
 				WareInstance& ware = *new WareInstance(index, &wd);
-				ware.init(egbase.objects());
+				ware.init();
 				f->add_ware(egbase, ware);
 			}
 		}
@@ -4526,7 +4526,7 @@ int LuaRoad::create_new_worker(PlayerImmovable& pi,
 		egbase.map().get_neighbour(idle_position, path[i], &idle_position);
 
 	Carrier& carrier =
-	   dynamic_cast<Carrier&>(wdes->create(egbase, r.get_owner(), &r, idle_position));
+	   dynamic_cast<Carrier&>(wdes->create(r.get_owner(), &r, idle_position));
 
 	if (upcast(Game, game, &egbase)) {
 		carrier.start_task_road(*game);

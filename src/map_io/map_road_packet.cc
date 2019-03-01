@@ -36,7 +36,7 @@ namespace Widelands {
 constexpr uint16_t kCurrentPacketVersion = 1;
 
 void MapRoadPacket::read(FileSystem& fs,
-                         EditorGameBase& egbase,
+                         EditorGameBase&,
                          bool const skip,
                          MapObjectLoader& mol) {
 	if (skip)
@@ -57,7 +57,7 @@ void MapRoadPacket::read(FileSystem& fs,
 				try {
 					//  If this is already known, get it.
 					//  Road data is read somewhere else
-					mol.register_object(serial, *new Road()).init(egbase);
+					mol.register_object(serial, *new Road()).init();
 				} catch (const WException& e) {
 					throw GameDataError("%u: %s", serial, e.what());
 				}

@@ -77,11 +77,11 @@ uint32_t BobDescr::vision_range() const {
 /**
  * Create a bob of this type
  */
-Bob& BobDescr::create(EditorGameBase& egbase, Player* const owner, const Coords& coords) const {
+Bob& BobDescr::create(Player* const owner, const Coords& coords) const {
 	Bob& bob = create_object();
 	bob.set_owner(owner);
-	bob.set_position(egbase, coords); // NOCOM
-	bob.init(egbase.objects());
+	bob.set_position(coords);
+	bob.init();
 
 	return bob;
 }
@@ -117,8 +117,8 @@ Bob::~Bob() {
  *
  * \note Make sure you call this from derived classes!
  */
-bool Bob::init(ObjectManager& objects) {
-	MapObject::init(objects);
+bool Bob::init() {
+	MapObject::init();
 /* NOCOM
 	if (upcast(Game, game, &objects))
 		schedule_act(*game, 1);
@@ -819,7 +819,7 @@ int32_t Bob::start_walk(Game& game, WalkingDir const dir, uint32_t const a, bool
 	walkstart_ = game.get_gametime();
 	walkend_ = walkstart_ + tdelta;
 
-	set_position(game, newnode);
+	set_position(newnode);
 	set_animation(game, a);
 
 	return tdelta;  // yep, we were successful
@@ -862,9 +862,9 @@ void Bob::set_owner(Player* const player) {
  * Performs the necessary (un)linking in the \ref Field structures and
  * updates the owner's viewing area, if the bob has an owner.
  */
-void Bob::set_position(EditorGameBase& egbase, const Coords& coords) {
+void Bob::set_position(const Coords& coords) {
 	FCoords oldposition = position_;
-
+/* NOCOM
 	if (position_.field) {
 		*linkpprev_ = linknext_;
 		if (linknext_)
@@ -900,6 +900,7 @@ void Bob::set_position(EditorGameBase& egbase, const Coords& coords) {
 		ss.signed_16(coords.x);
 		ss.signed_16(coords.y);
 	}
+	*/
 }
 
 /// Give debug information.
@@ -995,7 +996,7 @@ void Bob::Loader::load(FileRead& fr) {
 				bob.set_owner(owner);
 			}
 
-			bob.set_position(egbase(), read_coords_32(&fr));
+			bob.set_position(read_coords_32(&fr));
 
 			std::string animname = fr.c_string();
 			bob.anim_ = animname.size() ? bob.descr().get_animation(animname) : 0;

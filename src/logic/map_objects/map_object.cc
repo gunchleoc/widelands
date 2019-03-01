@@ -463,8 +463,8 @@ void MapObject::schedule_destroy(Game& game) {
  *
  * \warning Make sure you call this from derived classes!
  */
-bool MapObject::init(ObjectManager& objects) {
-	objects.insert(this);
+bool MapObject::init() {
+	Notifications::publish(NoteObjectManager(this));
 	return true;
 }
 

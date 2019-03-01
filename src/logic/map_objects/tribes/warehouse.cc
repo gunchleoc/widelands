@@ -492,8 +492,8 @@ void Warehouse::load_finish(EditorGameBase& egbase) {
 	}
 }
 
-bool Warehouse::init(ObjectManager& objects) {
-	Building::init(objects);
+bool Warehouse::init() {
+	Building::init();
 
 	Player* player = get_owner();
 
@@ -550,7 +550,7 @@ bool Warehouse::init(ObjectManager& objects) {
 	*/
 
 	if (descr().get_isport()) {
-		init_portdock(objects);
+		init_portdock();
 		PortDock* pd = portdock_;
 		// should help diagnose problems with marine
 		if (!pd->get_fleet()) {
@@ -579,9 +579,9 @@ void Warehouse::init_containers(const Player& player) {
  * Find a contiguous set of water fields close to the port for docking
  * and initialize the @ref PortDock instance.
  */
-void Warehouse::init_portdock(EditorGameBase& egbase) {
+void Warehouse::init_portdock() {
 	molog("Setting up port dock fields\n");
-
+/* NOCOM
 	std::vector<Coords> dock = egbase.map().find_portdock(get_position());
 	if (dock.empty()) {
 		log("Attempting to setup port without neighboring water (coords: %3dx%3d).\n",
@@ -597,7 +597,8 @@ void Warehouse::init_portdock(EditorGameBase& egbase) {
 	for (const Coords& coords : dock) {
 		portdock_->add_position(coords);
 	}
-	portdock_->init(egbase.objects());
+	portdock_->init();
+	*/
 
 	if (get_economy() != nullptr)
 		portdock_->set_economy(get_economy());
@@ -616,7 +617,7 @@ void Warehouse::destroy(EditorGameBase& egbase) {
 
 // if the port still exists and we are in game we first try to restore the portdock
 void Warehouse::restore_portdock_or_destroy(EditorGameBase& egbase) {
-	Warehouse::init_portdock(egbase);
+	Warehouse::init_portdock();
 	if (!portdock_) {
 		log(" Portdock could not be restored, removing the port now (coords: %3dx%3d)\n",
 		    get_position().x, get_position().y);
@@ -918,7 +919,7 @@ Worker& Warehouse::launch_worker(Game& game, DescriptionIndex worker_id, const R
 				// NOTE: This code lies about the TrainingAttributes of the new worker
 				supply_->remove_workers(worker_id, 1);
 				const WorkerDescr& workerdescr = *game.tribes().get_worker_descr(worker_id);
-				return workerdescr.create(game, get_owner(), this, position_);
+				return workerdescr.create(get_owner(), this, position_);
 			}
 		}
 
@@ -976,7 +977,7 @@ void Warehouse::incorporate_worker(EditorGameBase& egbase, Worker* w) {
 WareInstance& Warehouse::launch_ware(Game& game, DescriptionIndex const ware_index) {
 	// Create the ware
 	WareInstance& ware = *new WareInstance(ware_index, owner().tribe().get_ware_descr(ware_index));
-	ware.init(game.objects());
+	ware.init();
 	if (do_launch_ware(game, ware)) {
 		supply_->remove_wares(ware_index, 1);
 	}
@@ -1097,7 +1098,7 @@ void Warehouse::create_worker(Game& game, DescriptionIndex const worker) {
 			remove_workers(owner().tribe().safe_worker_index(input), buildcost.second);
 	}
 
-	incorporate_worker(game, &w_desc.create(game, get_owner(), this, position_));
+	incorporate_worker(game, &w_desc.create(get_owner(), this, position_));
 
 	// Update PlannedWorkers::amount here if appropriate, because this function
 	// may have been called directly by the Economy.

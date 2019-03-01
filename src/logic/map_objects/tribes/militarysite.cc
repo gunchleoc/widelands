@@ -400,8 +400,8 @@ void MilitarySite::update_statistics_string(std::string* s) {
 	        .str();
 }
 
-bool MilitarySite::init(ObjectManager& objects) {
-	Building::init(objects);
+bool MilitarySite::init() {
+	Building::init();
 /* NOCOM
 	upcast(Game, game, &objects);
 

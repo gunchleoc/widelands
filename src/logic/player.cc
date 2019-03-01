@@ -525,7 +525,7 @@ Building& Player::force_building(Coords const location,
 	map.get_brn(map.get_fcoords(location), &flag_loc);
 	force_flag(flag_loc);
 
-	return descr->create(egbase(), this, map.get_fcoords(location), false, false, former_buildings);
+	return descr->create(this, map.get_fcoords(location), false, false, former_buildings);
 }
 
 Building& Player::force_csite(Coords const location,
@@ -591,7 +591,7 @@ Building* Player::build(Coords c,
 	if (constructionsite)
 		return &egbase().warp_constructionsite(c, player_number_, idx, false, former_buildings);
 	else {
-		return &descr->create(egbase(), this, c, false, false, former_buildings);
+		return &descr->create(this, c, false, false, former_buildings);
 	}
 }
 

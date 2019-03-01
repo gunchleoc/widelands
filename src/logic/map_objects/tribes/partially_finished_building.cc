@@ -66,8 +66,8 @@ void PartiallyFinishedBuilding::cleanup(EditorGameBase& egbase) {
 	Building::cleanup(egbase);
 }
 
-bool PartiallyFinishedBuilding::init(ObjectManager& objects) {
-	Building::init(objects);
+bool PartiallyFinishedBuilding::init() {
+	Building::init();
 
 	/* NOCOM
 	if (upcast(Game, game, &objects))

@@ -146,7 +146,7 @@ public:
 	/// * Conquers land if the the warehouse type is configured to do that.
 	/// * Sends a message to the player about the creation of this warehouse.
 	/// * Sets up @ref PortDock for ports
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 
 	void cleanup(EditorGameBase&) override;
 
@@ -250,7 +250,7 @@ private:
 		Warehouse* const warehouse_;
 	};
 
-	void init_portdock(EditorGameBase& egbase);
+	void init_portdock();
 
 	/// Initializes the container sizes for the owner's tribe.
 	void init_containers(const Player& owner);

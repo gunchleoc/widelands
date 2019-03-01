@@ -112,7 +112,7 @@ struct BaseImmovable : public MapObject {
 	static std::string size_to_string(int32_t size);
 
 protected:
-	void set_position(EditorGameBase&, const Coords&);
+	void set_position(const Coords&);
 	void unset_position(EditorGameBase&, const Coords&);
 };
 
@@ -139,8 +139,7 @@ public:
 	}
 	ImmovableProgram const* get_program(const std::string&) const;
 
-	Immovable& create(ObjectManager& objects,
-	                  const Coords&,
+	Immovable& create(const Coords&,
 	                  const Widelands::BuildingDescr* former_building_descr) const;
 
 	MapObjectDescr::OwnerType owner_type() const {
@@ -224,7 +223,7 @@ public:
 		increment_program_pointer();
 	}
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void draw(uint32_t gametime,
@@ -377,7 +376,7 @@ struct PlayerImmovable : public BaseImmovable {
 	void set_owner(Player*) override;
 
 protected:
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 
 private:

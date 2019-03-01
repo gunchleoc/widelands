@@ -34,7 +34,7 @@
  */
 int32_t EditorPlaceImmovableTool::handle_click_impl(const Widelands::World&,
                                                     const Widelands::NodeAndTriangle<>& center,
-                                                    EditorInteractive& parent,
+                                                    EditorInteractive&,
                                                     EditorActionArgs* args,
                                                     Widelands::Map* map) {
 	const int32_t radius = args->sel_radius;

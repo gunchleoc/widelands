@@ -73,11 +73,11 @@ Battle::Battle(Game& game, Soldier* first_soldier, Soldier* second_soldier)
 	// Ensures only live soldiers engage in a battle
 	assert(first_soldier->get_current_health() && second_soldier->get_current_health());
 
-	init(game);
+	init();
 }
 
-bool Battle::init(ObjectManager& objects) {
-	MapObject::init(objects);
+bool Battle::init() {
+	MapObject::init();
 
 	/* NOCOM
 	creationtime_ = objects.get_gametime();

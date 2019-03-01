@@ -146,15 +146,14 @@ WorkerProgram const* WorkerDescr::get_program(const std::string& programname) co
 /**
  * Custom creation routing that accounts for the location.
  */
-Worker& WorkerDescr::create(EditorGameBase& egbase,
-                            Player* owner,
+Worker& WorkerDescr::create(Player* owner,
                             PlayerImmovable* const location,
-                            Coords const coords) const {
+                            const Coords& coords) const {
 	Worker& worker = dynamic_cast<Worker&>(create_object());
 	worker.set_owner(owner);
 	worker.set_location(location);
-	worker.set_position(egbase, coords);
-	worker.init(egbase.objects());
+	worker.set_position(coords);
+	worker.init();
 	return worker;
 }
 

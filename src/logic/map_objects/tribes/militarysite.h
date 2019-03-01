@@ -82,7 +82,7 @@ public:
 	explicit MilitarySite(const MilitarySiteDescr&);
 	~MilitarySite() override;
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void remove_worker(Worker&) override;

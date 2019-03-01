@@ -205,7 +205,7 @@ public:
 
 	InputQueue& inputqueue(DescriptionIndex, WareWorker) override;
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 

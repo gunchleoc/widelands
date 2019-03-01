@@ -94,8 +94,8 @@ void Fleet::set_economy(Economy* e) {
  * Initialize the fleet, including a search through the map
  * to rejoin with the next other fleet we can find.
  */
-bool Fleet::init(ObjectManager& objects) {
-	MapObject::init(objects);
+bool Fleet::init() {
+	MapObject::init();
 
 	/* NOCOM
 	if (ships_.empty() && ports_.empty()) {

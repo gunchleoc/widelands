@@ -150,7 +150,7 @@ struct Flag : public PlayerImmovable, public RoutingNode {
 	void log_general_info(const EditorGameBase&) const override;
 
 protected:
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 
 	void draw(uint32_t gametime,

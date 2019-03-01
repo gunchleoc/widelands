@@ -129,7 +129,7 @@ void WorkersQueue::set_filled(Quantity filled) {
 	while (get_filled() < filled) {
 		// Create new worker
 		Worker& w =
-		   worker_descr->create(egbase, get_owner(), &owner_, owner_.get_positions(egbase).front());
+		   worker_descr->create(get_owner(), &owner_, owner_.get_positions(egbase).front());
 		assert(w.get_location(egbase) == &owner_);
 		w.start_task_idle(*game, 0, -1);
 		workers_.push_back(&w);

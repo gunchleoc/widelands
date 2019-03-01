@@ -165,7 +165,7 @@ void ExpeditionBootstrap::get_waiting_workers_and_wares(Game& game,
 			const DescriptionIndex ware_index = iq->get_index();
 			for (uint32_t j = 0; j < iq->get_filled(); ++j) {
 				WareInstance* temp = new WareInstance(ware_index, tribe.get_ware_descr(ware_index));
-				temp->init(game.objects());
+				temp->init();
 				temp->set_location(game, portdock_);
 				return_wares->emplace_back(temp);
 			}

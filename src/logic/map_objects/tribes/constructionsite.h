@@ -103,7 +103,7 @@ public:
 		return *building_;
 	}
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 
 	bool burn_on_destroy() override;

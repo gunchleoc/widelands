@@ -194,8 +194,8 @@ WareInstance::~WareInstance() {
 	}
 }
 
-bool WareInstance::init(ObjectManager& objects) {
-	return MapObject::init(objects);
+bool WareInstance::init() {
+	return MapObject::init();
 }
 
 void WareInstance::cleanup(EditorGameBase& egbase) {

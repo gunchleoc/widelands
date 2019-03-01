@@ -168,9 +168,8 @@ BuildingDescr::BuildingDescr(const std::string& init_descname,
 	}
 }
 
-Building& BuildingDescr::create(ObjectManager& objects,
-                                Player* owner,
-                                Coords const pos,
+Building& BuildingDescr::create(Player* owner,
+                                const Coords& pos,
                                 bool const construct,
                                 bool loading,
                                 Building::FormerBuildings const former_buildings) const {
@@ -181,10 +180,10 @@ Building& BuildingDescr::create(ObjectManager& objects,
 		b.old_buildings_.push_back(idx);
 	}
 	if (loading) {
-		b.Building::init(objects);
+		b.Building::init();
 		return b;
 	}
-	b.init(objects);
+	b.init();
 	return b;
 }
 
@@ -335,8 +334,8 @@ Common building initialization code. You must call this from
 derived class' init.
 ===============
 */
-bool Building::init(ObjectManager& objects) {
-	PlayerImmovable::init(objects);
+bool Building::init() {
+	PlayerImmovable::init();
 	/* NOCOM
 
 	// Set the building onto the map

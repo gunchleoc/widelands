@@ -144,14 +144,14 @@ void PortDock::draw(uint32_t, const TextToDraw, const Vector2f&, float, RenderTa
 	// do nothing
 }
 
-bool PortDock::init(ObjectManager& objects) {
-	PlayerImmovable::init(objects);
+bool PortDock::init() {
+	PlayerImmovable::init();
 
 	for (const Coords& coords : dockpoints_) {
 		// NOCOM set_position(objects, coords);
 	}
 
-	init_fleet(objects);
+	init_fleet();
 	return true;
 }
 
@@ -159,10 +159,10 @@ bool PortDock::init(ObjectManager& objects) {
  * Create our initial singleton @ref Fleet. The fleet code ensures
  * that we merge with a larger fleet when possible.
  */
-void PortDock::init_fleet(ObjectManager& objects) {
+void PortDock::init_fleet() {
 	Fleet* fleet = new Fleet(get_owner());
 	// NOCOM fleet->add_port(egbase, this);
-	fleet->init(objects);
+	fleet->init();
 	// Note: the Fleet calls our set_fleet automatically
 }
 
@@ -476,7 +476,7 @@ void PortDock::Loader::load(FileRead& fr) {
 	pd.dockpoints_.resize(nrdockpoints);
 	for (uint16_t i = 0; i < nrdockpoints; ++i) {
 		pd.dockpoints_[i] = read_coords_32(&fr, egbase().map().extent());
-		pd.set_position(egbase(), pd.dockpoints_[i]);
+		pd.set_position(pd.dockpoints_[i]);
 	}
 
 	pd.need_ship_ = fr.unsigned_8();
@@ -517,8 +517,9 @@ void PortDock::Loader::load_finish() {
 	}
 
 	// This shouldn't be necessary, but let's check just in case
-	if (!pd.fleet_)
-		pd.init_fleet(egbase());
+	if (!pd.fleet_) {
+		pd.init_fleet();
+	}
 }
 
 MapObject::Loader* PortDock::load(EditorGameBase& egbase, MapObjectLoader& mol, FileRead& fr) {

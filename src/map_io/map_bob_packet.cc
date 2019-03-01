@@ -55,7 +55,7 @@ void MapBobPacket::read_bob(FileRead& fr,
 			throw GameDataError("world does not define bob type \"%s\"", name.c_str());
 
 		const CritterDescr& descr = *world.get_critter_descr(idx);
-		descr.create(egbase, nullptr, coords);
+		descr.create(nullptr, coords);
 		// We do not register this object as needing loading. This packet is only
 		// in fresh maps, that are just started. As soon as the game saves
 		// itself, it will write a map_objects packet instead of binary/bob that

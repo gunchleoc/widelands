@@ -59,7 +59,7 @@ int32_t EditorPlaceCritterTool::handle_click_impl(const Widelands::World& world,
 			if (mr.location().field->nodecaps() & descr.movecaps()) {
 				if (Widelands::Bob* const bob = mr.location().field->get_first_bob())
 					bob->remove(egbase);  //  There is already a bob. Remove it.
-				descr.create(egbase, nullptr, mr.location());
+				descr.create(nullptr, mr.location());
 			}
 			++i;
 		} while (mr.advance(*map));
@@ -86,7 +86,7 @@ int32_t EditorPlaceCritterTool::handle_undo_impl(
 				if (mr.location().field->nodecaps() & descr.movecaps()) {
 					if (Widelands::Bob* const bob = mr.location().field->get_first_bob())
 						bob->remove(egbase);  //  There is already a bob. Remove it.
-					descr.create(egbase, nullptr, mr.location());
+					descr.create(nullptr, mr.location());
 				}
 			} else if (Widelands::Bob* const bob = mr.location().field->get_first_bob()) {
 				bob->remove(egbase);

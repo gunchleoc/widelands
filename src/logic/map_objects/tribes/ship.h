@@ -108,7 +108,7 @@ struct Ship : Bob {
 
 	void init_auto_task(Game&) override;
 
-	bool init(ObjectManager& objects) override;
+	bool init() override;
 	void cleanup(EditorGameBase&) override;
 
 	void start_task_ship(Game&);
@@ -254,7 +254,7 @@ private:
 	/// Set the ship's state to 'state' and if the ship state has changed, publish a notification.
 	void set_ship_state_and_notify(ShipStates state, NoteShip::Action action);
 
-	bool init_fleet(ObjectManager& objects);
+	bool init_fleet();
 	void set_fleet(Fleet* fleet);
 
 	void send_message(Game& game,

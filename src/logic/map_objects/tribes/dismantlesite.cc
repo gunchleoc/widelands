@@ -65,7 +65,6 @@ DismantleSite::DismantleSite(const DismantleSiteDescr& gdescr) : PartiallyFinish
 }
 
 DismantleSite::DismantleSite(const DismantleSiteDescr& gdescr,
-                             ObjectManager& objects,
                              const Coords& c,
                              Player* plr,
                              bool loading,
@@ -82,9 +81,9 @@ DismantleSite::DismantleSite(const DismantleSiteDescr& gdescr,
 	set_building(*cur_descr);
 
 	if (loading) {
-		Building::init(objects);
+		Building::init();
 	} else {
-		init(objects);
+		init();
 	}
 }
 
@@ -105,8 +104,8 @@ void DismantleSite::update_statistics_string(std::string* s) {
 Initialize the construction site by starting orders
 ===============
 */
-bool DismantleSite::init(ObjectManager& objects) {
-	PartiallyFinishedBuilding::init(objects);
+bool DismantleSite::init() {
+	PartiallyFinishedBuilding::init();
 
 	for (const auto& ware : count_returned_wares(this)) {
 		WaresQueue* wq = new WaresQueue(*this, ware.first, ware.second);
@@ -187,7 +186,7 @@ bool DismantleSite::get_building_work(Game& game, Worker& worker, bool) {
 
 			const WareDescr& wd = *owner().tribe().get_ware_descr(wq.get_index());
 			WareInstance& ware = *new WareInstance(wq.get_index(), &wd);
-			ware.init(game.objects());
+			ware.init();
 			worker.start_task_dropoff(game, ware);
 
 			working_ = false;

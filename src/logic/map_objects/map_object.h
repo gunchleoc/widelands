@@ -50,8 +50,10 @@ struct DirAnimations;
 namespace Widelands {
 
 class EditorCategory;
+class MapObject;
 class MapObjectLoader;
 class Player;
+struct ObjectManager;
 struct Path;
 
 // This enum lists the available classes of Map Objects.
@@ -216,6 +218,15 @@ public:
 							  Player* init_owner = nullptr,
 							  const BuildingDescr* init_former_building = nullptr) :
 		NoteObjectCreate(init_type, init_coords, init_owner_type, init_owner, init_former_building, init_index, "") {}
+};
+
+struct NoteObjectManager {
+	CAN_BE_SENT_AS_NOTE(NoteId::ObjectManager)
+
+	MapObject* object;
+	explicit NoteObjectManager(MapObject* init_object) : object(init_object) {
+		assert(object != nullptr);
+	}
 };
 
 /**
@@ -439,7 +450,7 @@ protected:
 	/// Called only when the oject is logically created in the simulation. If
 	/// called again, such as when the object is loaded from a savegame, it will
 	/// cause bugs.
-	virtual bool init(ObjectManager& objects);
+	virtual bool init();
 
 	virtual void cleanup(EditorGameBase&);
 
@@ -485,9 +496,9 @@ inline int32_t get_reverse_dir(int32_t const dir) {
 struct ObjectManager {
 	using MapObjectMap = boost::unordered_map<Serial, MapObject*>;
 
-	ObjectManager() {
-		lastserial_ = 0;
-	}
+	ObjectManager() : lastserial_(0), subscriber_(
+						   Notifications::subscribe<NoteObjectManager>([this](const NoteObjectManager& note) { insert(note.object); }))
+	{}
 	~ObjectManager();
 
 	void cleanup(EditorGameBase&);
@@ -521,6 +532,8 @@ struct ObjectManager {
 private:
 	Serial lastserial_;
 	MapObjectMap objects_;
+
+	std::unique_ptr<Notifications::Subscriber<NoteObjectManager>> subscriber_;
 
 	DISALLOW_COPY_AND_ASSIGN(ObjectManager);
 };

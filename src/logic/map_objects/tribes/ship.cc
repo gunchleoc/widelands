@@ -150,9 +150,9 @@ void Ship::init_auto_task(Game& game) {
 	start_task_ship(game);
 }
 
-bool Ship::init(ObjectManager& objects) {
-	Bob::init(objects);
-	init_fleet(objects);
+bool Ship::init() {
+	Bob::init();
+	init_fleet();
 	assert(get_owner());
 	get_owner()->add_ship(serial());
 
@@ -168,11 +168,11 @@ bool Ship::init(ObjectManager& objects) {
  * The fleet code will automatically merge us into a larger
  * fleet, if one is reachable.
  */
-bool Ship::init_fleet(ObjectManager& objects) {
+bool Ship::init_fleet() {
 	assert(get_owner() != nullptr);
 	Fleet* fleet = new Fleet(get_owner());
 	fleet->add_ship(this);
-	return fleet->init(objects);
+	return fleet->init();
 	// fleet calls the set_fleet function appropriately
 }
 
@@ -659,7 +659,7 @@ void Ship::ship_update_idle(Game& game, Bob::State& state) {
 					}
 					worker->set_economy(nullptr);
 					worker->set_location(cs);
-					worker->set_position(game, cs->get_position());
+					worker->set_position(cs->get_position());
 					worker->reset_tasks(game);
 					PartiallyFinishedBuilding::request_builder_callback(
 					   game, *cs->get_builder_request(), worker->descr().worker_index(), worker, *cs);
@@ -678,7 +678,7 @@ void Ship::ship_update_idle(Game& game, Bob::State& state) {
 			ship_state_ = ShipStates::kTransport;            // That's it, expedition finished
 
 			// Bring us back into a fleet and a economy.
-			init_fleet(game);
+			init_fleet();
 
 			// for case that there are any workers left on board
 			// (applicable when port construction space is kLost)
@@ -940,7 +940,7 @@ void Ship::exp_cancel(Game& game) {
 
 	// Bring us back into a fleet and a economy.
 	set_economy(game, nullptr);
-	init_fleet(game);
+	init_fleet();
 	if (!get_fleet() || !get_fleet()->has_ports()) {
 		// We lost our last reachable port, so we reset the expedition's state
 		ship_state_ = ShipStates::kExpeditionWaiting;

@@ -299,8 +299,8 @@ void TrainingSite::init_kick_state(const TrainingAttribute& art, const TrainingS
 /**
  * Setup the building and request soldiers
  */
-bool TrainingSite::init(ObjectManager& objects) {
-	ProductionSite::init(objects);
+bool TrainingSite::init() {
+	ProductionSite::init();
 
 	/* NOCOM
 	upcast(Game, game, &objects);

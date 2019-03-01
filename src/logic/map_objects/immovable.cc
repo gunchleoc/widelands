@@ -97,19 +97,19 @@ static std::string const base_immovable_name = "unknown";
  *
  * \note this function will remove the immovable (if existing) currently connected to this position.
  */
-void BaseImmovable::set_position(EditorGameBase& egbase, const Coords& c) {
-	assert(c);
+void BaseImmovable::set_position(const Coords& coords) {
+	assert(coords);
+/* NOCOM
+	if (fcoords.field->immovable && fcoords.field->immovable != this) {
+		// NOCOM fcoords.field->immovable->remove(egbase);
+	}
 
-	Map* map = egbase.mutable_map();
-	FCoords f = map->get_fcoords(c);
-	if (f.field->immovable && f.field->immovable != this)
-		f.field->immovable->remove(egbase);
-
-	f.field->immovable = this;
+	fcoords.field->immovable = this;
 
 	if (get_size() >= SMALL) {
-		map->recalc_for_field_area(egbase.world(), Area<FCoords>(f, 2));
+		// NOCOM map->recalc_for_field_area(egbase.world(), Area<FCoords>(f, 2));
 	}
+*/
 }
 
 /**
@@ -333,12 +333,11 @@ ImmovableProgram const* ImmovableDescr::get_program(const std::string& program_n
  * If this immovable was created by a building, 'former_building' can be set
  * in order to display information about it.
  */
-Immovable& ImmovableDescr::create(ObjectManager& objects,
-                                  const Coords& coords,
+Immovable& ImmovableDescr::create(const Coords& coords,
                                   const BuildingDescr* former_building_descr) const {
 	Immovable& result = *new Immovable(*this, former_building_descr);
 	result.position_ = coords;
-	result.init(objects);
+	result.init();
 	return result;
 }
 
@@ -400,8 +399,8 @@ void Immovable::increment_program_pointer() {
 /**
  * Actually initialize the immovable.
  */
-bool Immovable::init(ObjectManager& objects) {
-	BaseImmovable::init(objects);
+bool Immovable::init() {
+	BaseImmovable::init();
 /* NOCOM
 	set_position(objects, position_);
 
@@ -564,7 +563,7 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 
 	// Position
 	imm.position_ = read_coords_32(&fr, egbase().map().extent());
-	imm.set_position(egbase(), imm.position_);
+	imm.set_position(imm.position_);
 
 	if (packet_version > kCurrentPacketVersionImmovableNoFormerBuildings) {
 		Player* owner = imm.get_owner();
@@ -1310,8 +1309,8 @@ void PlayerImmovable::set_owner(Player* new_owner) {
 /**
  * Initialize the immovable.
  */
-bool PlayerImmovable::init(ObjectManager& objects) {
-	return BaseImmovable::init(objects);
+bool PlayerImmovable::init() {
+	return BaseImmovable::init();
 }
 
 /**

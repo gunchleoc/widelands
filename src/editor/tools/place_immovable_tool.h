@@ -31,8 +31,7 @@ struct EditorPlaceImmovableTool : public EditorTool, public MultiSelect {
 	}
 
 	int32_t handle_click_impl(const Widelands::World& world,
-	                          const Widelands::NodeAndTriangle<>& center,
-	                          EditorInteractive& parent,
+	                          const Widelands::NodeAndTriangle<>& center, EditorInteractive&,
 	                          EditorActionArgs* args,
 	                          Widelands::Map* map) override;
 
