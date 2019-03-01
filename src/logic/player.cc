@@ -547,8 +547,7 @@ Building& Player::force_csite(Coords const location,
 
 	terraform_for_building(eg, pn, location, tribes.get_building_descr(b_idx));
 
-	return eg.warp_constructionsite(
-	   map.get_fcoords(location), player_number_, b_idx, false, former_buildings);
+	return eg.warp_constructionsite(location, player_number_, b_idx, false, former_buildings);
 }
 
 /*
@@ -576,7 +575,8 @@ Building* Player::build(Coords c,
 	// Validate build position
 	const Map& map = egbase().map();
 	map.normalize_coords(c);
-	buildcaps = get_buildcaps(map.get_fcoords(c));
+	FCoords fcoords = map.get_fcoords(c);
+	buildcaps = get_buildcaps(fcoords);
 
 	if (descr->get_ismine()) {
 		if (!(buildcaps & BUILDCAPS_MINE))
@@ -591,7 +591,7 @@ Building* Player::build(Coords c,
 	if (constructionsite)
 		return &egbase().warp_constructionsite(c, player_number_, idx, false, former_buildings);
 	else {
-		return &descr->create(this, c, false, false, former_buildings);
+		return &descr->create(this, fcoords, false, false, former_buildings);
 	}
 }
 

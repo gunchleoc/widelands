@@ -65,12 +65,12 @@ DismantleSite::DismantleSite(const DismantleSiteDescr& gdescr) : PartiallyFinish
 }
 
 DismantleSite::DismantleSite(const DismantleSiteDescr& gdescr,
-                             const Coords& c,
+                             const FCoords& fccords,
                              Player* plr,
                              bool loading,
                              Building::FormerBuildings& former_buildings)
    : PartiallyFinishedBuilding(gdescr) {
-	position_ = c;
+	position_ = fccords;
 	set_owner(plr);
 
 	assert(!former_buildings.empty());

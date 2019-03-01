@@ -73,7 +73,7 @@ PortDock::~PortDock() {
  *
  * @note This only works properly when called before @ref init
  */
-void PortDock::add_position(Coords where) {
+void PortDock::add_position(const FCoords& where) {
 	dockpoints_.push_back(where);
 }
 
@@ -147,8 +147,8 @@ void PortDock::draw(uint32_t, const TextToDraw, const Vector2f&, float, RenderTa
 bool PortDock::init() {
 	PlayerImmovable::init();
 
-	for (const Coords& coords : dockpoints_) {
-		// NOCOM set_position(objects, coords);
+	for (const FCoords& fcoords : dockpoints_) {
+		set_position(fcoords);
 	}
 
 	init_fleet();
@@ -202,8 +202,8 @@ void PortDock::cleanup(EditorGameBase& egbase) {
 	if (fleet_)
 		fleet_->remove_port(egbase, this);
 
-	for (const Coords& coords : dockpoints_) {
-		unset_position(egbase, coords);
+	for (const FCoords& fcoords : dockpoints_) {
+		unset_position(egbase, fcoords);
 	}
 
 	if (expedition_bootstrap_) {
@@ -475,8 +475,8 @@ void PortDock::Loader::load(FileRead& fr) {
 
 	pd.dockpoints_.resize(nrdockpoints);
 	for (uint16_t i = 0; i < nrdockpoints; ++i) {
-		pd.dockpoints_[i] = read_coords_32(&fr, egbase().map().extent());
-		pd.set_position(egbase().map().get_fcoords(pd.dockpoints_[i]));
+		pd.dockpoints_[i] = egbase().map().get_fcoords(read_coords_32(&fr, egbase().map().extent()));
+		pd.set_position(pd.dockpoints_[i]);
 	}
 
 	pd.need_ship_ = fr.unsigned_8();
@@ -550,7 +550,7 @@ void PortDock::save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw) 
 
 	fw.unsigned_32(mos.get_object_file_index(*warehouse_));
 	fw.unsigned_16(dockpoints_.size());
-	for (const Coords& coords : dockpoints_) {
+	for (const FCoords& coords : dockpoints_) {
 		write_coords_32(&fw, coords);
 	}
 

@@ -105,7 +105,7 @@ bool Road::get_passable() const {
 
 BaseImmovable::PositionList Road::get_positions(const EditorGameBase& egbase) const {
 	const Map& map = egbase.map();
-	Coords curf = map.get_fcoords(path_.get_start());
+	FCoords curf = map.get_fcoords(path_.get_start());
 
 	PositionList rv;
 	const Path::StepVector::size_type nr_steps = path_.get_nsteps();

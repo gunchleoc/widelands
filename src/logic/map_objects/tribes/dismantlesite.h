@@ -67,7 +67,7 @@ class DismantleSite : public PartiallyFinishedBuilding {
 public:
 	explicit DismantleSite(const DismantleSiteDescr& descr);
 	explicit DismantleSite(const DismantleSiteDescr& descr,
-	                       const Coords&,
+	                       const FCoords& fccords,
 	                       Player*,
 	                       bool,
 	                       Building::FormerBuildings& former_buildings);

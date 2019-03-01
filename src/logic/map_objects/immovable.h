@@ -88,7 +88,7 @@ struct BaseImmovable : public MapObject {
 
 	virtual void set_owner(Player* player);
 
-	using PositionList = std::vector<Coords>;
+	using PositionList = std::vector<FCoords>;
 	/**
 	 * Return all coordinates occupied by this Immovable. We gurantee that the
 	 * list always contains one entry and the first one is the main position
@@ -113,7 +113,7 @@ struct BaseImmovable : public MapObject {
 
 protected:
 	void set_position(const FCoords& fcoords);
-	void unset_position(EditorGameBase&, const Coords&);
+	void unset_position(EditorGameBase&, const FCoords&);
 };
 
 class Immovable;
@@ -139,7 +139,7 @@ public:
 	}
 	ImmovableProgram const* get_program(const std::string&) const;
 
-	Immovable& create(const Coords&,
+	Immovable& create(const FCoords& fcoords,
 	                  const Widelands::BuildingDescr* former_building_descr) const;
 
 	MapObjectDescr::OwnerType owner_type() const {
@@ -208,7 +208,7 @@ public:
 	          const Widelands::BuildingDescr* former_building_descr = nullptr);
 	~Immovable() override;
 
-	Coords get_position() const {
+	FCoords get_position() const {
 		return position_;
 	}
 	PositionList get_positions(const EditorGameBase&) const override;
@@ -250,7 +250,7 @@ protected:
 	// The building type that created this immovable, if any.
 	const BuildingDescr* former_building_descr_;
 
-	Coords position_;
+	FCoords position_;
 
 	uint32_t anim_;
 	int32_t animstart_;

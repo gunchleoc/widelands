@@ -78,7 +78,7 @@ public:
 	explicit PortDock(Warehouse* warehouse);
 	~PortDock() override;
 
-	void add_position(Widelands::Coords where);
+	void add_position(const FCoords& where);
 	Warehouse* get_warehouse() const;
 
 	Fleet* get_fleet() const {

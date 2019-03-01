@@ -169,7 +169,7 @@ BuildingDescr::BuildingDescr(const std::string& init_descname,
 }
 
 Building& BuildingDescr::create(Player* owner,
-                                const Coords& pos,
+                                const FCoords& pos,
                                 bool const construct,
                                 bool loading,
                                 Building::FormerBuildings const former_buildings) const {
@@ -394,7 +394,7 @@ void Building::cleanup(EditorGameBase& egbase) {
 
 	if (get_size() == BIG) {
 		const Map& map = egbase.map();
-		Coords neighb;
+		FCoords neighb;
 
 		map.get_ln(position_, &neighb);
 		unset_position(egbase, neighb);
@@ -430,7 +430,7 @@ BaseImmovable::PositionList Building::get_positions(const EditorGameBase& egbase
 	rv.push_back(position_);
 	if (get_size() == BIG) {
 		const Map& map = egbase.map();
-		Coords neighb;
+		FCoords neighb;
 
 		map.get_ln(position_, &neighb);
 		rv.push_back(neighb);

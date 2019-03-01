@@ -116,14 +116,13 @@ void BaseImmovable::set_position(const FCoords& fcoords) {
  *
  * Only call this during cleanup.
  */
-void BaseImmovable::unset_position(EditorGameBase& egbase, const Coords& c) {
+void BaseImmovable::unset_position(EditorGameBase& egbase, const FCoords& f) {
 	Map* map = egbase.mutable_map();
-	FCoords const f = map->get_fcoords(c);
 
 	// this is to help to debug failing assertion below (see bug 1542238)
 	if (f.field->immovable != this) {
-		log(" Internal error: Immovable at %3dx%3d does not match: is %s but %s was expected.\n", c.x,
-		    c.y, (f.field->immovable) ? f.field->immovable->descr().name().c_str() : "None",
+		log(" Internal error: Immovable at %3dx%3d does not match: is %s but %s was expected.\n", f.x,
+		    f.y, (f.field->immovable) ? f.field->immovable->descr().name().c_str() : "None",
 		    descr().name().c_str());
 	}
 
@@ -332,10 +331,10 @@ ImmovableProgram const* ImmovableDescr::get_program(const std::string& program_n
  * If this immovable was created by a building, 'former_building' can be set
  * in order to display information about it.
  */
-Immovable& ImmovableDescr::create(const Coords& coords,
+Immovable& ImmovableDescr::create(const FCoords& fcoords,
                                   const BuildingDescr* former_building_descr) const {
 	Immovable& result = *new Immovable(*this, former_building_descr);
-	result.position_ = coords;
+	result.position_ = fcoords;
 	result.init();
 	return result;
 }
@@ -561,7 +560,7 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 	}
 
 	// Position
-	imm.position_ = read_coords_32(&fr, egbase().map().extent());
+	imm.position_ = egbase().map().get_fcoords(read_coords_32(&fr, egbase().map().extent()));
 	imm.set_position(egbase().map().get_fcoords(imm.position_));
 
 	if (packet_version > kCurrentPacketVersionImmovableNoFormerBuildings) {

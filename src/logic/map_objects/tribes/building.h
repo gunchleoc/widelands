@@ -146,7 +146,7 @@ public:
 	/// Does not perform any sanity checks.
 	/// If former_buildings is not empty this is an enhancing.
 	Building& create(Player*,
-	                 const Coords& pos,
+	                 const FCoords& pos,
 	                 bool construct,
 	                 bool loading = false,
 	                 FormerBuildings former_buildings = FormerBuildings()) const;
@@ -238,7 +238,7 @@ public:
 	Flag& base_flag() override;
 	virtual uint32_t get_playercaps() const;
 
-	Coords get_position() const {
+	const FCoords& get_position() const {
 		return position_;
 	}
 	PositionList get_positions(const EditorGameBase&) const override;
@@ -350,7 +350,8 @@ protected:
 	void set_attack_target(AttackTarget* new_attack_target);
 	void set_soldier_control(SoldierControl* new_soldier_control);
 
-	Coords position_;
+	// NOCOM(GunChleoc): Can we move this up to PlayerImmovable or BaseImmovable?
+	FCoords position_;
 	Flag* flag_;
 
 	uint32_t anim_;

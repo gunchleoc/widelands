@@ -353,7 +353,7 @@ Building& EditorGameBase::warp_building(const Coords& c,
                                         Building::FormerBuildings former_buildings) {
 	Player* plr = get_player(owner);
 	const TribeDescr& tribe = plr->tribe();
-	return tribe.get_building_descr(idx)->create(plr, c, false, true, former_buildings);
+	return tribe.get_building_descr(idx)->create(plr, map().get_fcoords(c), false, true, former_buildings);
 }
 
 /**
@@ -363,14 +363,14 @@ Building& EditorGameBase::warp_building(const Coords& c,
  * \li former_buildings : the former buildings. If it is not empty, this is
  * an enhancement.
  */
-Building& EditorGameBase::warp_constructionsite(const Coords& c,
+Building& EditorGameBase::warp_constructionsite(const Coords& coords,
                                                 PlayerNumber const owner,
                                                 DescriptionIndex idx,
                                                 bool loading,
                                                 Building::FormerBuildings former_buildings) {
 	Player* plr = get_player(owner);
 	const TribeDescr& tribe = plr->tribe();
-	return tribe.get_building_descr(idx)->create(plr, c, true, loading, former_buildings);
+	return tribe.get_building_descr(idx)->create(plr, map().get_fcoords(coords), true, loading, former_buildings);
 }
 
 /**
@@ -390,7 +390,7 @@ Building& EditorGameBase::warp_dismantlesite(const Coords& c,
 
 	upcast(const DismantleSiteDescr, ds_descr, descr);
 
-	return *new DismantleSite(*ds_descr, c, plr, loading, former_buildings);
+	return *new DismantleSite(*ds_descr, map().get_fcoords(c), plr, loading, former_buildings);
 }
 
 /**
@@ -433,7 +433,7 @@ void EditorGameBase::create_immovable(const Coords& c,
 	}
 
 	inform_players_about_immovable(Map::get_index(c, map().get_width()), descr);
-	Immovable& immovable = descr->create(c, former_building);
+	Immovable& immovable = descr->create(map().get_fcoords(c), former_building);
 	if (owner != nullptr) {
 		immovable.set_owner(owner);
 	}

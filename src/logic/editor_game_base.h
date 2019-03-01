@@ -126,7 +126,7 @@ public:
 	              DescriptionIndex,
 	              Building::FormerBuildings former_buildings = Building::FormerBuildings());
 	Building&
-	warp_constructionsite(const Coords&,
+	warp_constructionsite(const Coords& coords,
 	                      PlayerNumber,
 	                      DescriptionIndex,
 	                      bool loading = false,
