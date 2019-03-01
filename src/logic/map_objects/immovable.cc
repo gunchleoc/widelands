@@ -97,19 +97,18 @@ static std::string const base_immovable_name = "unknown";
  *
  * \note this function will remove the immovable (if existing) currently connected to this position.
  */
-void BaseImmovable::set_position(const Coords& coords) {
-	assert(coords);
-/* NOCOM
+void BaseImmovable::set_position(const FCoords& fcoords) {
+	assert(fcoords);
+	/* NOCOM
 	if (fcoords.field->immovable && fcoords.field->immovable != this) {
-		// NOCOM fcoords.field->immovable->remove(egbase);
-	}
+		fcoords.field->immovable->remove(egbase);
+	}*/
 
 	fcoords.field->immovable = this;
 
 	if (get_size() >= SMALL) {
 		// NOCOM map->recalc_for_field_area(egbase.world(), Area<FCoords>(f, 2));
 	}
-*/
 }
 
 /**
@@ -563,7 +562,7 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 
 	// Position
 	imm.position_ = read_coords_32(&fr, egbase().map().extent());
-	imm.set_position(imm.position_);
+	imm.set_position(egbase().map().get_fcoords(imm.position_));
 
 	if (packet_version > kCurrentPacketVersionImmovableNoFormerBuildings) {
 		Player* owner = imm.get_owner();

@@ -112,7 +112,7 @@ struct BaseImmovable : public MapObject {
 	static std::string size_to_string(int32_t size);
 
 protected:
-	void set_position(const Coords&);
+	void set_position(const FCoords& fcoords);
 	void unset_position(EditorGameBase&, const Coords&);
 };
 

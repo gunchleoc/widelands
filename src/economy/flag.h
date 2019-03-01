@@ -164,7 +164,7 @@ protected:
 	static void
 	flag_job_request_callback(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
 
-	void set_flag_position(Coords coords);
+	void set_flag_position(const FCoords& fcoords);
 
 private:
 	struct PendingWare {
@@ -179,7 +179,8 @@ private:
 		std::string program;
 	};
 
-	Coords position_;
+	FCoords position_;
+	Field* field_;
 	int32_t animstart_;
 
 	Building* building_;  ///< attached building (replaces road WALK_NW)

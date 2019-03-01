@@ -125,7 +125,7 @@ Flag::Flag(EditorGameBase& egbase, Player* owning_player, const Coords& coords, 
 
 	set_owner(owning_player);
 
-	set_flag_position(coords);
+	set_flag_position(egbase.map().get_fcoords(coords));
 
 	upcast(Road, road, egbase.map().get_immovable(coords));
 	upcast(Game, game, &egbase);
@@ -150,8 +150,8 @@ Flag::Flag(EditorGameBase& egbase, Player* owning_player, const Coords& coords, 
 	}
 }
 
-void Flag::set_flag_position(Coords coords) {
-	position_ = coords;
+void Flag::set_flag_position(const FCoords& fcoords) {
+	position_ = fcoords;
 }
 
 int32_t Flag::get_size() const {
@@ -741,10 +741,7 @@ void Flag::update_wares(Game& game, Flag* const other) {
 bool Flag::init() {
 	PlayerImmovable::init();
 	set_position(position_);
-// NOCOM working on set_position
 	/* NOCOM
-
-
 	animstart_ = objects.get_gametime();
 	*/
 	return true;
