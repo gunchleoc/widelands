@@ -400,10 +400,10 @@ void MilitarySite::update_statistics_string(std::string* s) {
 	        .str();
 }
 
-bool MilitarySite::init(EditorGameBase& egbase) {
-	Building::init(egbase);
-
-	upcast(Game, game, &egbase);
+bool MilitarySite::init(ObjectManager& objects) {
+	Building::init(objects);
+/* NOCOM
+	upcast(Game, game, &objects);
 
 	for (Worker* worker : get_workers()) {
 		if (upcast(Soldier, soldier, worker)) {
@@ -416,9 +416,10 @@ bool MilitarySite::init(EditorGameBase& egbase) {
 	update_soldier_request();
 
 	//  schedule the first healing
-	nexthealtime_ = egbase.get_gametime() + 1000;
+	nexthealtime_ = objects.get_gametime() + 1000;
 	if (game)
 		schedule_act(*game, 1000);
+		*/
 	return true;
 }
 

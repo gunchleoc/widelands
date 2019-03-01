@@ -66,11 +66,13 @@ void PartiallyFinishedBuilding::cleanup(EditorGameBase& egbase) {
 	Building::cleanup(egbase);
 }
 
-bool PartiallyFinishedBuilding::init(EditorGameBase& egbase) {
-	Building::init(egbase);
+bool PartiallyFinishedBuilding::init(ObjectManager& objects) {
+	Building::init(objects);
 
-	if (upcast(Game, game, &egbase))
+	/* NOCOM
+	if (upcast(Game, game, &objects))
 		request_builder(*game);
+		*/
 
 	Notifications::publish(NoteSound("create_construction_site", position_, 255));
 	return true;

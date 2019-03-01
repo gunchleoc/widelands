@@ -299,10 +299,11 @@ void TrainingSite::init_kick_state(const TrainingAttribute& art, const TrainingS
 /**
  * Setup the building and request soldiers
  */
-bool TrainingSite::init(EditorGameBase& egbase) {
-	ProductionSite::init(egbase);
+bool TrainingSite::init(ObjectManager& objects) {
+	ProductionSite::init(objects);
 
-	upcast(Game, game, &egbase);
+	/* NOCOM
+	upcast(Game, game, &objects);
 
 	for (Soldier* soldier : soldiers_) {
 		soldier->set_location_initially(*this);
@@ -312,6 +313,7 @@ bool TrainingSite::init(EditorGameBase& egbase) {
 			soldier->start_task_idle(*game, 0, -1);
 		}
 	}
+	*/
 	update_soldier_request();
 	return true;
 }

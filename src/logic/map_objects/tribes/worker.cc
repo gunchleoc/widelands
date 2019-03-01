@@ -85,7 +85,7 @@ bool Worker::run_createware(Game& game, State& state, const Action& action) {
 	Player& player = *get_owner();
 	DescriptionIndex const wareid(action.iparam1);
 	WareInstance& ware = *new WareInstance(wareid, player.tribe().get_ware_descr(wareid));
-	ware.init(game);
+	ware.init(game.objects());
 
 	set_carried_ware(game, &ware);
 
@@ -1168,16 +1168,17 @@ void Worker::set_economy(Economy* const economy) {
 /**
  * Initialize the worker
  */
-bool Worker::init(EditorGameBase& egbase) {
-	Bob::init(egbase);
+bool Worker::init(ObjectManager& objects) {
+	Bob::init(objects);
 
 	// a worker should always start out at a fixed location
 	// (this assert is not longer true for save games. Where it lives
 	// is unknown to this worker till he is initialized
 	//  assert(get_location(egbase));
-
+/* NOCOM
 	if (upcast(Game, game, &egbase))
 		create_needed_experience(*game);
+		*/
 	return true;
 }
 

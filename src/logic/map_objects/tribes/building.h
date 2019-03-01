@@ -145,7 +145,7 @@ public:
 	///
 	/// Does not perform any sanity checks.
 	/// If former_buildings is not empty this is an enhancing.
-	Building& create(EditorGameBase&,
+	Building& create(ObjectManager& objects,
 	                 Player*,
 	                 Coords,
 	                 bool construct,
@@ -335,7 +335,7 @@ protected:
 
 	void start_animation(EditorGameBase&, uint32_t anim);
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 

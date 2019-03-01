@@ -4336,7 +4336,7 @@ int LuaFlag::set_wares(lua_State* L) {
 			const WareDescr& wd = *tribes.get_ware_descr(index);
 			for (int32_t j = 0; j < d; j++) {
 				WareInstance& ware = *new WareInstance(index, &wd);
-				ware.init(egbase);
+				ware.init(egbase.objects());
 				f->add_ware(egbase, ware);
 			}
 		}

@@ -52,7 +52,7 @@ public:
 	Battle(Game&, Soldier*, Soldier*);  //  to create a new battle in the game
 
 	// Implements MapObject.
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 	bool has_new_save_support() override {
 		return true;

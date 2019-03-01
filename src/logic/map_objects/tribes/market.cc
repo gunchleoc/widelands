@@ -185,7 +185,7 @@ void Market::launch_batch(const int trade_id, Game* game) {
 			// Give the carrier a ware.
 			WareInstance* ware =
 			   new WareInstance(item_pair.first, game->tribes().get_ware_descr(item_pair.first));
-			ware->init(*game);
+			ware->init(game->objects());
 			carrier->set_carried_ware(*game, ware);
 
 			// We have to remove this item from our economy. Otherwise it would be
@@ -235,7 +235,7 @@ void Market::traded_ware_arrived(const int trade_id,
 	auto& trade_order = trade_orders_.at(trade_id);
 
 	WareInstance* ware = new WareInstance(ware_index, game->tribes().get_ware_descr(ware_index));
-	ware->init(*game);
+	ware->init(game->objects());
 
 	// TODO(sirver,trading): This is a hack. We should have a worker that
 	// carriers stuff out. At the moment this assumes this market is barbarians

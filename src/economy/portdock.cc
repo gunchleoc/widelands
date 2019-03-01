@@ -144,14 +144,14 @@ void PortDock::draw(uint32_t, const TextToDraw, const Vector2f&, float, RenderTa
 	// do nothing
 }
 
-bool PortDock::init(EditorGameBase& egbase) {
-	PlayerImmovable::init(egbase);
+bool PortDock::init(ObjectManager& objects) {
+	PlayerImmovable::init(objects);
 
 	for (const Coords& coords : dockpoints_) {
-		set_position(egbase, coords);
+		// NOCOM set_position(objects, coords);
 	}
 
-	init_fleet(egbase);
+	init_fleet(objects);
 	return true;
 }
 
@@ -159,10 +159,10 @@ bool PortDock::init(EditorGameBase& egbase) {
  * Create our initial singleton @ref Fleet. The fleet code ensures
  * that we merge with a larger fleet when possible.
  */
-void PortDock::init_fleet(EditorGameBase& egbase) {
+void PortDock::init_fleet(ObjectManager& objects) {
 	Fleet* fleet = new Fleet(get_owner());
-	fleet->add_port(egbase, this);
-	fleet->init(egbase);
+	// NOCOM fleet->add_port(egbase, this);
+	fleet->init(objects);
 	// Note: the Fleet calls our set_fleet automatically
 }
 

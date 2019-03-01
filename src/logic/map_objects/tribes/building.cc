@@ -168,7 +168,7 @@ BuildingDescr::BuildingDescr(const std::string& init_descname,
 	}
 }
 
-Building& BuildingDescr::create(EditorGameBase& egbase,
+Building& BuildingDescr::create(ObjectManager& objects,
                                 Player* owner,
                                 Coords const pos,
                                 bool const construct,
@@ -181,10 +181,10 @@ Building& BuildingDescr::create(EditorGameBase& egbase,
 		b.old_buildings_.push_back(idx);
 	}
 	if (loading) {
-		b.Building::init(egbase);
+		b.Building::init(objects);
 		return b;
 	}
-	b.init(egbase);
+	b.init(objects);
 	return b;
 }
 
@@ -335,24 +335,25 @@ Common building initialization code. You must call this from
 derived class' init.
 ===============
 */
-bool Building::init(EditorGameBase& egbase) {
-	PlayerImmovable::init(egbase);
+bool Building::init(ObjectManager& objects) {
+	PlayerImmovable::init(objects);
+	/* NOCOM
 
 	// Set the building onto the map
-	const Map& map = egbase.map();
+	const Map& map = objects.map();
 	Coords neighb;
 
-	set_position(egbase, position_);
+	set_position(objects, position_);
 
 	if (get_size() == BIG) {
 		map.get_ln(position_, &neighb);
-		set_position(egbase, neighb);
+		set_position(objects, neighb);
 
 		map.get_tln(position_, &neighb);
-		set_position(egbase, neighb);
+		set_position(objects, neighb);
 
 		map.get_trn(position_, &neighb);
-		set_position(egbase, neighb);
+		set_position(objects, neighb);
 	}
 
 	// Make sure the flag is there
@@ -361,15 +362,16 @@ bool Building::init(EditorGameBase& egbase) {
 	{
 		Flag* flag = dynamic_cast<Flag*>(map.get_immovable(neighb));
 		if (!flag)
-			flag = new Flag(egbase, get_owner(), neighb);
+			flag = new Flag(objects, get_owner(), neighb);
 		flag_ = flag;
-		flag->attach_building(egbase, *this);
+		flag->attach_building(objects, *this);
 	}
 
 	// Start the animation
-	start_animation(egbase, descr().get_unoccupied_animation());
+	start_animation(objects, descr().get_unoccupied_animation());
 
-	leave_time_ = egbase.get_gametime();
+	leave_time_ = objects.get_gametime();
+	*/
 	return true;
 }
 

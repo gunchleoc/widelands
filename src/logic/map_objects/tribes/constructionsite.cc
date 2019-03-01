@@ -142,8 +142,8 @@ void ConstructionSite::set_building(const BuildingDescr& building_descr) {
 Initialize the construction site by starting orders
 ===============
 */
-bool ConstructionSite::init(EditorGameBase& egbase) {
-	PartiallyFinishedBuilding::init(egbase);
+bool ConstructionSite::init(ObjectManager& objects) {
+	PartiallyFinishedBuilding::init(objects);
 
 	const std::map<DescriptionIndex, uint8_t>* buildcost;
 	if (!old_buildings_.empty()) {
@@ -279,7 +279,7 @@ bool ConstructionSite::get_building_work(Game& game, Worker& worker, bool) {
 			queue->set_filled(queue->get_filled() - 1);
 			const WareDescr& wd = *owner().tribe().get_ware_descr(queue->get_index());
 			WareInstance& ware = *new WareInstance(queue->get_index(), &wd);
-			ware.init(game);
+			ware.init(game.objects());
 			worker.start_task_dropoff(game, ware);
 			return true;
 		}

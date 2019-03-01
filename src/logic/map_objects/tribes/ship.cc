@@ -150,9 +150,9 @@ void Ship::init_auto_task(Game& game) {
 	start_task_ship(game);
 }
 
-bool Ship::init(EditorGameBase& egbase) {
-	Bob::init(egbase);
-	init_fleet(egbase);
+bool Ship::init(ObjectManager& objects) {
+	Bob::init(objects);
+	init_fleet(objects);
 	assert(get_owner());
 	get_owner()->add_ship(serial());
 
@@ -168,11 +168,11 @@ bool Ship::init(EditorGameBase& egbase) {
  * The fleet code will automatically merge us into a larger
  * fleet, if one is reachable.
  */
-bool Ship::init_fleet(EditorGameBase& egbase) {
+bool Ship::init_fleet(ObjectManager& objects) {
 	assert(get_owner() != nullptr);
 	Fleet* fleet = new Fleet(get_owner());
 	fleet->add_ship(this);
-	return fleet->init(egbase);
+	return fleet->init(objects);
 	// fleet calls the set_fleet function appropriately
 }
 

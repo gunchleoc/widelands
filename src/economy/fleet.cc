@@ -94,9 +94,10 @@ void Fleet::set_economy(Economy* e) {
  * Initialize the fleet, including a search through the map
  * to rejoin with the next other fleet we can find.
  */
-bool Fleet::init(EditorGameBase& egbase) {
-	MapObject::init(egbase);
+bool Fleet::init(ObjectManager& objects) {
+	MapObject::init(objects);
 
+	/* NOCOM
 	if (ships_.empty() && ports_.empty()) {
 		molog("Empty fleet initialized; disband immediately\n");
 		remove(egbase);
@@ -104,6 +105,8 @@ bool Fleet::init(EditorGameBase& egbase) {
 	}
 
 	return find_other_fleet(egbase);
+	*/
+	return false;
 }
 
 struct StepEvalFindFleet {

@@ -492,8 +492,8 @@ void Warehouse::load_finish(EditorGameBase& egbase) {
 	}
 }
 
-bool Warehouse::init(EditorGameBase& egbase) {
-	Building::init(egbase);
+bool Warehouse::init(ObjectManager& objects) {
+	Building::init(objects);
 
 	Player* player = get_owner();
 
@@ -502,9 +502,10 @@ bool Warehouse::init(EditorGameBase& egbase) {
 	// Even though technically, a warehouse might be completely empty,
 	// we let warehouse see always for simplicity's sake (since there's
 	// almost always going to be a carrier inside, that shouldn't hurt).
-	if (upcast(Game, game, &egbase)) {
+	/* NOCOM
+	if (upcast(Game, game, &objects)) {
 		player->see_area(
-		   Area<FCoords>(egbase.map().get_fcoords(get_position()), descr().vision_range()));
+		   Area<FCoords>(objects.map().get_fcoords(get_position()), descr().vision_range()));
 
 		{
 			uint32_t const act_time = schedule_act(*game, WORKER_WITHOUT_COST_SPAWN_INTERVAL);
@@ -540,15 +541,16 @@ bool Warehouse::init(EditorGameBase& egbase) {
 	}
 
 	if (uint32_t const conquer_radius = descr().get_conquers()) {
-		egbase.conquer_area(
+		objects.conquer_area(
 		   PlayerArea<Area<FCoords>>(
 		      player->player_number(),
-		      Area<FCoords>(egbase.map().get_fcoords(get_position()), conquer_radius)),
+		      Area<FCoords>(objects.map().get_fcoords(get_position()), conquer_radius)),
 		   true);
 	}
+	*/
 
 	if (descr().get_isport()) {
-		init_portdock(egbase);
+		init_portdock(objects);
 		PortDock* pd = portdock_;
 		// should help diagnose problems with marine
 		if (!pd->get_fleet()) {
@@ -595,7 +597,7 @@ void Warehouse::init_portdock(EditorGameBase& egbase) {
 	for (const Coords& coords : dock) {
 		portdock_->add_position(coords);
 	}
-	portdock_->init(egbase);
+	portdock_->init(egbase.objects());
 
 	if (get_economy() != nullptr)
 		portdock_->set_economy(get_economy());
@@ -974,7 +976,7 @@ void Warehouse::incorporate_worker(EditorGameBase& egbase, Worker* w) {
 WareInstance& Warehouse::launch_ware(Game& game, DescriptionIndex const ware_index) {
 	// Create the ware
 	WareInstance& ware = *new WareInstance(ware_index, owner().tribe().get_ware_descr(ware_index));
-	ware.init(game);
+	ware.init(game.objects());
 	if (do_launch_ware(game, ware)) {
 		supply_->remove_wares(ware_index, 1);
 	}

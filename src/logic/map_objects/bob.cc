@@ -80,8 +80,8 @@ uint32_t BobDescr::vision_range() const {
 Bob& BobDescr::create(EditorGameBase& egbase, Player* const owner, const Coords& coords) const {
 	Bob& bob = create_object();
 	bob.set_owner(owner);
-	bob.set_position(egbase, coords);
-	bob.init(egbase);
+	bob.set_position(egbase, coords); // NOCOM
+	bob.init(egbase.objects());
 
 	return bob;
 }
@@ -117,14 +117,15 @@ Bob::~Bob() {
  *
  * \note Make sure you call this from derived classes!
  */
-bool Bob::init(EditorGameBase& egbase) {
-	MapObject::init(egbase);
-
-	if (upcast(Game, game, &egbase))
+bool Bob::init(ObjectManager& objects) {
+	MapObject::init(objects);
+/* NOCOM
+	if (upcast(Game, game, &objects))
 		schedule_act(*game, 1);
 	else
 		// In editor: play idle task forever
-		set_animation(egbase, descr().get_animation("idle"));
+		set_animation(objects, descr().get_animation("idle"));
+		*/
 	return true;
 }
 

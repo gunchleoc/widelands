@@ -235,7 +235,7 @@ public:
 		return animstart_;
 	}
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void schedule_destroy(Game&);

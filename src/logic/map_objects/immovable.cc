@@ -333,12 +333,12 @@ ImmovableProgram const* ImmovableDescr::get_program(const std::string& program_n
  * If this immovable was created by a building, 'former_building' can be set
  * in order to display information about it.
  */
-Immovable& ImmovableDescr::create(EditorGameBase& egbase,
+Immovable& ImmovableDescr::create(ObjectManager& objects,
                                   const Coords& coords,
                                   const BuildingDescr* former_building_descr) const {
 	Immovable& result = *new Immovable(*this, former_building_descr);
 	result.position_ = coords;
-	result.init(egbase);
+	result.init(objects);
 	return result;
 }
 
@@ -400,10 +400,10 @@ void Immovable::increment_program_pointer() {
 /**
  * Actually initialize the immovable.
  */
-bool Immovable::init(EditorGameBase& egbase) {
-	BaseImmovable::init(egbase);
-
-	set_position(egbase, position_);
+bool Immovable::init(ObjectManager& objects) {
+	BaseImmovable::init(objects);
+/* NOCOM
+	set_position(objects, position_);
 
 	//  Set animation data according to current program state.
 	ImmovableProgram const* prog = program_;
@@ -412,11 +412,12 @@ bool Immovable::init(EditorGameBase& egbase) {
 		assert(prog != nullptr);
 	}
 	if (upcast(ImmovableProgram::ActAnimate const, act_animate, &(*prog)[program_ptr_]))
-		start_animation(egbase, act_animate->animation());
+		start_animation(objects, act_animate->animation());
 
-	if (upcast(Game, game, &egbase)) {
+	if (upcast(Game, game, &objects)) {
 		switch_program(*game, "program");
 	}
+	*/
 	return true;
 }
 
@@ -1309,8 +1310,8 @@ void PlayerImmovable::set_owner(Player* new_owner) {
 /**
  * Initialize the immovable.
  */
-bool PlayerImmovable::init(EditorGameBase& egbase) {
-	return BaseImmovable::init(egbase);
+bool PlayerImmovable::init(ObjectManager& objects) {
+	return BaseImmovable::init(objects);
 }
 
 /**

@@ -88,9 +88,9 @@ Road& Road::create(EditorGameBase& egbase, Flag& start, Flag& end, const Path& p
 	road.flags_[FlagStart] = &start;
 	road.flags_[FlagEnd] = &end;
 	// flagidx_ is set when attach_road() is called, i.e. in init()
-	road.set_path(egbase, path);
+	road.set_path(egbase, path); // NOCOM
 
-	road.init(egbase);
+	road.init(egbase.objects());
 
 	return road;
 }
@@ -217,11 +217,11 @@ void Road::unmark_map(EditorGameBase& egbase) {
 /**
  * Initialize the road.
  */
-bool Road::init(EditorGameBase& egbase) {
-	PlayerImmovable::init(egbase);
+bool Road::init(ObjectManager& objects) {
+	PlayerImmovable::init(objects);
 
 	if (2 <= path_.get_nsteps())
-		link_into_flags(egbase);
+		link_into_flags(objects);
 	return true;
 }
 
@@ -514,7 +514,7 @@ void Road::postsplit(Game& game, Flag& flag) {
 	}
 
 	// Initialize the new road
-	newroad.init(game);
+	newroad.init(game.objects());
 	newroad.wallet_ = wallet_;
 
 	// Actually reassign workers after the new road has initialized,

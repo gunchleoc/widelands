@@ -102,7 +102,7 @@ public:
 	          float scale,
 	          RenderTarget* dst) override;
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 
 	void add_neighbours(std::vector<RoutingNodeNeighbour>& neighbours);
@@ -137,7 +137,7 @@ public:
 private:
 	friend struct Fleet;
 
-	void init_fleet(EditorGameBase& egbase);
+	void init_fleet(ObjectManager& objects);
 	void set_fleet(Fleet* fleet);
 	void update_shippingitem(Game&, std::vector<ShippingItem>::iterator);
 	void set_need_ship(Game&, bool need);

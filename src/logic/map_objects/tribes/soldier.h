@@ -175,7 +175,7 @@ class Soldier : public Worker {
 public:
 	explicit Soldier(const SoldierDescr&);
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 
 	void set_level(uint32_t health, uint32_t attack, uint32_t defense, uint32_t evade);

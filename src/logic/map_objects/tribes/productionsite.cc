@@ -435,8 +435,8 @@ void ProductionSite::calc_statistics() {
 /**
  * Initialize the production site.
  */
-bool ProductionSite::init(EditorGameBase& egbase) {
-	Building::init(egbase);
+bool ProductionSite::init(ObjectManager& objects) {
+	Building::init(objects);
 
 	const BillOfMaterials& input_wares = descr().input_wares();
 	const BillOfMaterials& input_workers = descr().input_workers();
@@ -462,8 +462,10 @@ bool ProductionSite::init(EditorGameBase& egbase) {
 				wp->worker_request = &request_worker(worker_index);
 	}
 
-	if (upcast(Game, game, &egbase))
+	/* NOCOM
+	if (upcast(Game, game, &objects))
 		try_start_working(*game);
+		*/
 	return true;
 }
 
@@ -808,7 +810,7 @@ bool ProductionSite::get_building_work(Game& game, Worker& worker, bool const su
 			   *owner().tribe().get_ware_descr(ware_type_with_count.first);
 			{
 				WareInstance& ware = *new WareInstance(ware_index, &ware_ware_descr);
-				ware.init(game);
+				ware.init(game.objects());
 				worker.start_task_dropoff(game, ware);
 			}
 			get_owner()->ware_produced(ware_index);  //  for statistics
@@ -830,7 +832,7 @@ bool ProductionSite::get_building_work(Game& game, Worker& worker, bool const su
 				Worker& recruit = dynamic_cast<Worker&>(worker_descr.create_object());
 				recruit.set_owner(worker.get_owner());
 				recruit.set_position(game, worker.get_position());
-				recruit.init(game);
+				recruit.init(game.objects());
 				recruit.set_location(this);
 				recruit.start_task_leavebuilding(game, true);
 				worker.start_task_releaserecruit(game, recruit);
@@ -849,7 +851,7 @@ bool ProductionSite::get_building_work(Game& game, Worker& worker, bool const su
 			queue->set_filled(queue->get_filled() - 1);
 			const WareDescr& wd = *owner().tribe().get_ware_descr(queue->get_index());
 			WareInstance& ware = *new WareInstance(queue->get_index(), &wd);
-			ware.init(game);
+			ware.init(game.objects());
 			worker.start_task_dropoff(game, ware);
 			return true;
 		}

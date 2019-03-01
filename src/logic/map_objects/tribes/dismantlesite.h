@@ -67,14 +67,14 @@ class DismantleSite : public PartiallyFinishedBuilding {
 public:
 	explicit DismantleSite(const DismantleSiteDescr& descr);
 	explicit DismantleSite(const DismantleSiteDescr& descr,
-	                       EditorGameBase&,
+	                       ObjectManager& objects,
 	                       const Coords&,
 	                       Player*,
 	                       bool,
 	                       Building::FormerBuildings& former_buildings);
 
 	bool burn_on_destroy() override;
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 
 	bool get_building_work(Game&, Worker&, bool success) override;
 

@@ -143,7 +143,7 @@ Flag::Flag(EditorGameBase& egbase, Player* owning_player, const Coords& coords, 
 		}
 	}
 
-	init(egbase);
+	init(egbase.objects());
 
 	if (!eco && road && game) {
 		road->postsplit(*game, *this);
@@ -738,12 +738,14 @@ void Flag::update_wares(Game& game, Flag* const other) {
 	always_call_for_flag_ = nullptr;
 }
 
-bool Flag::init(EditorGameBase& egbase) {
-	PlayerImmovable::init(egbase);
+bool Flag::init(ObjectManager& objects) {
+	PlayerImmovable::init(objects);
 
-	set_position(egbase, position_);
+	/* NOCOM
+	set_position(objects, position_);
 
-	animstart_ = egbase.get_gametime();
+	animstart_ = objects.get_gametime();
+	*/
 	return true;
 }
 

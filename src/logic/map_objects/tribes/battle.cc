@@ -76,12 +76,13 @@ Battle::Battle(Game& game, Soldier* first_soldier, Soldier* second_soldier)
 	init(game);
 }
 
-bool Battle::init(EditorGameBase& egbase) {
-	MapObject::init(egbase);
+bool Battle::init(ObjectManager& objects) {
+	MapObject::init(objects);
 
-	creationtime_ = egbase.get_gametime();
+	/* NOCOM
+	creationtime_ = objects.get_gametime();
 
-	Game& game = dynamic_cast<Game&>(egbase);
+	Game& game = dynamic_cast<Game&>(objects);
 
 	if (Battle* battle = first_->get_battle()) {
 		battle->cancel(game, *first_);
@@ -91,6 +92,7 @@ bool Battle::init(EditorGameBase& egbase) {
 		battle->cancel(game, *second_);
 	}
 	second_->set_battle(game, this);
+	*/
 	return true;
 }
 

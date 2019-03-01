@@ -154,7 +154,7 @@ Worker& WorkerDescr::create(EditorGameBase& egbase,
 	worker.set_owner(owner);
 	worker.set_location(location);
 	worker.set_position(egbase, coords);
-	worker.init(egbase);
+	worker.init(egbase.objects());
 	return worker;
 }
 

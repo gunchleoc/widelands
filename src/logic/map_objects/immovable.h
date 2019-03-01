@@ -139,7 +139,7 @@ public:
 	}
 	ImmovableProgram const* get_program(const std::string&) const;
 
-	Immovable& create(EditorGameBase&,
+	Immovable& create(ObjectManager& objects,
 	                  const Coords&,
 	                  const Widelands::BuildingDescr* former_building_descr) const;
 
@@ -224,7 +224,7 @@ public:
 		increment_program_pointer();
 	}
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 	void draw(uint32_t gametime,
@@ -377,7 +377,7 @@ struct PlayerImmovable : public BaseImmovable {
 	void set_owner(Player*) override;
 
 protected:
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 
 private:

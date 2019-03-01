@@ -84,7 +84,7 @@ struct Fleet : MapObject {
 
 	bool active() const;
 
-	bool init(EditorGameBase&) override;
+	bool init(ObjectManager& objects) override;
 	void cleanup(EditorGameBase&) override;
 	void update(EditorGameBase&);
 
