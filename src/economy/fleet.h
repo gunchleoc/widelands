@@ -90,7 +90,7 @@ struct Fleet : MapObject {
 
 	void add_ship(Ship* ship);
 	void remove_ship(EditorGameBase& egbase, Ship* ship);
-	void add_port(EditorGameBase& egbase, PortDock* port);
+	void add_port(PortDock* port);
 	void remove_port(EditorGameBase& egbase, PortDock* port);
 	bool has_ports() const;
 

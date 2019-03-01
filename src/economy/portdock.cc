@@ -161,7 +161,7 @@ bool PortDock::init() {
  */
 void PortDock::init_fleet() {
 	Fleet* fleet = new Fleet(get_owner());
-	// NOCOM fleet->add_port(egbase, this);
+	fleet->add_port(this);
 	fleet->init();
 	// Note: the Fleet calls our set_fleet automatically
 }

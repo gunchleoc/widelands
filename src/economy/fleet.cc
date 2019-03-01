@@ -526,7 +526,7 @@ void Fleet::connect_port(EditorGameBase& egbase, uint32_t idx) {
 	}
 }
 
-void Fleet::add_port(EditorGameBase& /* egbase */, PortDock* port) {
+void Fleet::add_port(PortDock* port) {
 	ports_.push_back(port);
 	port->set_fleet(this);
 	if (ports_.size() == 1) {
