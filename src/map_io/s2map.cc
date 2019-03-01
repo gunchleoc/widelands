@@ -618,7 +618,7 @@ void S2MapLoader::load_s2mf(Widelands::EditorGameBase& egbase) {
 			}
 
 			if (!bobname.empty()) {
-				Notifications::publish(Widelands::NoteObjectCreate(Widelands::MapObjectType::CRITTER, Widelands::Coords(x, y), bobname));
+				Notifications::publish(Widelands::NoteObjectCreate(Widelands::MapObjectType::CRITTER, Widelands::Coords(x, y), bobname, Widelands::MapObjectDescr::OwnerType::kWorld));
 			}
 		}
 	}
@@ -753,8 +753,11 @@ void S2MapLoader::load_s2mf(Widelands::EditorGameBase& egbase) {
 		if (idx == Widelands::INVALID_INDEX) {
 			throw wexception("Missing immovable type %s", new_immovable_name.c_str());
 		}
-		egbase.create_immovable(
-		   location, idx, Widelands::MapObjectDescr::OwnerType::kWorld, nullptr /* owner */);
+		Notifications::publish(Widelands::NoteObjectCreate(
+								   Widelands::MapObjectType::IMMOVABLE,
+								   location,
+								   idx,
+								   Widelands::MapObjectDescr::OwnerType::kWorld));
 	};
 
 	uint8_t c;

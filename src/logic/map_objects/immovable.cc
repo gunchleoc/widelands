@@ -873,10 +873,14 @@ void ImmovableProgram::ActTransform::execute(Game& game, Immovable& immovable) c
 		immovable.remove(game);  //  Now immovable is a dangling reference!
 
 		if (ship) {
-			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, c, type_name, player));
+			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, c, type_name, MapObjectDescr::OwnerType::kTribe, player));
 		} else {
-			game.create_immovable_with_name(
-			   c, type_name, owner_type, player, nullptr /* former_building_descr */);
+			Notifications::publish(NoteObjectCreate(
+									   MapObjectType::IMMOVABLE,
+									   c,
+									   type_name,
+									   owner_type,
+									   player));
 		}
 	} else
 		immovable.program_step(game);
@@ -930,8 +934,12 @@ void ImmovableProgram::ActGrow::execute(Game& game, Immovable& immovable) const 
 		MapObjectDescr::OwnerType owner_type = descr.owner_type();
 		Player* owner = immovable.get_owner();
 		immovable.remove(game);  //  Now immovable is a dangling reference!
-		game.create_immovable_with_name(
-		   f, type_name, owner_type, owner, nullptr /* former_building_descr */);
+		Notifications::publish(NoteObjectCreate(
+								   MapObjectType::IMMOVABLE,
+								   f,
+								   type_name,
+								   owner_type,
+								   owner));
 	} else {
 		immovable.program_step(game);
 	}
@@ -1032,8 +1040,11 @@ void ImmovableProgram::ActSeed::execute(Game& game, Immovable& immovable) const 
 		    (game.logic_rand() % TerrainAffinity::kPrecisionFactor) <
 		       probability_to_grow(
 		          descr.terrain_affinity(), new_location, map, game.world().terrains())) {
-			game.create_immovable_with_name(mr.location(), type_name, descr.owner_type(),
-			                                nullptr /* owner */, nullptr /* former_building_descr */);
+			Notifications::publish(NoteObjectCreate(
+									   MapObjectType::IMMOVABLE,
+									   mr.location(),
+									   type_name,
+									   descr.owner_type()));
 		}
 	}
 

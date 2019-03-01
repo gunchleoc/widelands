@@ -97,15 +97,16 @@ void MapGenerator::generate_bobs(std::unique_ptr<uint32_t[]> const* random_bobs,
 	// Set bob according to bob area
 
 	if (set_immovable && (num = bobCategory->num_immovables())) {
-		egbase_.create_immovable_with_name(
-		   fc, bobCategory->get_immovable(static_cast<size_t>(rng.rand() / (kMaxElevation / num))),
-		   MapObjectDescr::OwnerType::kWorld, nullptr /* owner */, nullptr /* former_building_descr */
-		);
+		Notifications::publish(Widelands::NoteObjectCreate(
+								   Widelands::MapObjectType::IMMOVABLE,
+								   fc,
+								   bobCategory->get_immovable(static_cast<size_t>(rng.rand() / (kMaxElevation / num))),
+								   Widelands::MapObjectDescr::OwnerType::kWorld));
 	}
 
 	if (set_moveable && (num = bobCategory->num_critters())) {
 		Notifications::publish(NoteObjectCreate(MapObjectType::CRITTER,
-		   fc, bobCategory->get_critter(static_cast<size_t>(rng.rand() / (kMaxElevation / num)))));
+		   fc, bobCategory->get_critter(static_cast<size_t>(rng.rand() / (kMaxElevation / num))), MapObjectDescr::OwnerType::kWorld));
 	}
 }
 

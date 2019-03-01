@@ -828,7 +828,7 @@ int LuaPlayerBase::place_ship(lua_State* L) {
 		try {
 			Player& player = get(L, egbase);
 			const ShipDescr* descr = egbase.tribes().get_ship_descr(player.tribe().ship());
-			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, field->coords(), descr->name(), &player));
+			Notifications::publish(NoteObjectCreate(MapObjectType::SHIP, field->coords(), descr->name(), MapObjectDescr::OwnerType::kTribe, &player));
 			Widelands::Bob* ship = map_field->get_first_bob();
 			assert(ship != nullptr);
 			assert(ship->descr().type() == Widelands::MapObjectType::SHIP);

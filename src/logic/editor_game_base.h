@@ -136,13 +136,6 @@ public:
 	                   PlayerNumber,
 	                   bool loading = false,
 	                   Building::FormerBuildings former_buildings = Building::FormerBuildings());
-	Immovable&
-	create_immovable(const Coords&, DescriptionIndex idx, MapObjectDescr::OwnerType, Player* owner);
-	Immovable& create_immovable_with_name(const Coords&,
-	                                      const std::string& name,
-	                                      MapObjectDescr::OwnerType,
-	                                      Player* owner,
-	                                      const BuildingDescr* former_building);
 
 	uint32_t get_gametime() const {
 		return gametime_;
@@ -208,7 +201,29 @@ private:
 	  * Gets the ship type 'name' from the world and creates one at 'coords'.
 	  * Throws GameDataError if the ship type is unknown.
 	  */
-	void create_ship(const Coords&, const std::string& name, Player* owner);
+	void create_ship(const Coords& coords, const std::string& name, Player* owner);
+
+
+	/**
+	 * Create either a tribe or a world immovable at the given coords, according to 'owner_type'.
+	 * Does not perform any placeability checks.
+	 * If this immovable was created by a building, 'former_building' can be set in order to display
+	 * information about it.
+	 */
+	void
+	create_immovable(const Coords& coords, DescriptionIndex idx, MapObjectDescr::OwnerType owner_type, Player* owner, const BuildingDescr* former_building = nullptr);
+
+	/**
+	 * Create either a tribe or a world immovable at the given coords, according to 'owner_type'.
+	 * Does not perform any placeability checks.
+	 * If this immovable was created by a building, 'former_building' can be set in order to display
+	 * information about it.
+	 */
+	void create_immovable(const Coords& coords,
+						  const std::string& name,
+						  MapObjectDescr::OwnerType owner_type,
+						  Player* owner,
+						  const BuildingDescr* former_building);
 
 	/// \param preferred_player
 	///  When conquer is false, this can be used to prefer a player over other
@@ -245,12 +260,6 @@ private:
 	// Changes the owner of 'fc' from the current player to the new player and
 	// sends notifications about this.
 	void change_field_owner(const FCoords& fc, PlayerNumber new_owner);
-
-	Immovable& do_create_immovable(const Coords& c,
-	                               DescriptionIndex const idx,
-	                               MapObjectDescr::OwnerType type,
-	                               Player* owner,
-	                               const BuildingDescr* former_building_descr);
 
 	uint32_t gametime_;
 	ObjectManager objects_;

@@ -38,9 +38,10 @@ int32_t EditorPlaceImmovableTool::handle_click_impl(const Widelands::World&,
                                                     EditorActionArgs* args,
                                                     Widelands::Map* map) {
 	const int32_t radius = args->sel_radius;
-	if (!get_nr_enabled())
+	if (!get_nr_enabled()) {
 		return radius;
-	Widelands::EditorGameBase& egbase = parent.egbase();
+	}
+
 	if (args->old_immovable_types.empty()) {
 		Widelands::MapRegion<Widelands::Area<Widelands::FCoords>> mr(
 		   *map, Widelands::Area<Widelands::FCoords>(map->get_fcoords(center.node), radius));
@@ -57,9 +58,13 @@ int32_t EditorPlaceImmovableTool::handle_click_impl(const Widelands::World&,
 		std::list<Widelands::DescriptionIndex>::iterator i = args->new_immovable_types.begin();
 		do {
 			if (!mr.location().field->get_immovable() &&
-			    (mr.location().field->nodecaps() & Widelands::MOVECAPS_WALK))
-				egbase.create_immovable(mr.location(), *i, Widelands::MapObjectDescr::OwnerType::kWorld,
-				                        nullptr /* owner */);
+				(mr.location().field->nodecaps() & Widelands::MOVECAPS_WALK)) {
+				Notifications::publish(Widelands::NoteObjectCreate(
+										   Widelands::MapObjectType::IMMOVABLE,
+										   mr.location(),
+										   *i,
+										   Widelands::MapObjectDescr::OwnerType::kWorld));
+			}
 			++i;
 		} while (mr.advance(*map));
 	}
@@ -84,11 +89,13 @@ int32_t EditorPlaceImmovableTool::handle_undo_impl(
 		if (upcast(Widelands::Immovable, immovable, mr.location().field->get_immovable())) {
 			immovable->remove(egbase);
 		}
-		if (!i->empty())
-			egbase.create_immovable_with_name(
-			   mr.location(), *i, Widelands::MapObjectDescr::OwnerType::kWorld, nullptr /* owner */,
-			   nullptr /* former_building_descr */);
-
+		if (!i->empty()) {
+			Notifications::publish(Widelands::NoteObjectCreate(
+									   Widelands::MapObjectType::IMMOVABLE,
+									   mr.location(),
+									   *i,
+									   Widelands::MapObjectDescr::OwnerType::kWorld));
+		}
 		++i;
 	} while (mr.advance(*map));
 	return radius + 2;

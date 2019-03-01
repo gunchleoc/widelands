@@ -91,36 +91,6 @@ enum class MapObjectType : uint8_t {
 // Returns a string representation for 'type'.
 std::string to_string(MapObjectType type);
 
-
-struct NoteObjectCreate {
-	CAN_BE_SENT_AS_NOTE(NoteId::ObjectCreate)
-
-	const MapObjectType type;
-	const Coords& coords;
-	Player* owner;
-	const DescriptionIndex index;
-	const std::string name;
-
-
-private:
-	explicit NoteObjectCreate(MapObjectType init_type, const Coords& init_coords, Player* init_owner, DescriptionIndex init_index, const std::string& init_name) :
-		type(init_type), coords(init_coords), owner(init_owner), index(init_index), name(init_name) {}
-
-public:
-	explicit NoteObjectCreate(MapObjectType init_type,
-							  const Coords& init_coords,
-							  const std::string& init_name,
-							  Player* init_owner = nullptr) :
-		NoteObjectCreate(init_type, init_coords, init_owner, INVALID_INDEX, init_name) {}
-
-	explicit NoteObjectCreate(MapObjectType init_type,
-							  const Coords& init_coords,
-							  DescriptionIndex init_index,
-							  Player* init_owner = nullptr) :
-		NoteObjectCreate(init_type, init_coords, init_owner, init_index, "") {}
-};
-
-
 /**
  * Base class for descriptions of worker, files and so on. This must just
  * link them together
@@ -211,6 +181,41 @@ private:
 	std::string icon_filename_;                  // Filename for the menu icon
 
 	DISALLOW_COPY_AND_ASSIGN(MapObjectDescr);
+};
+
+
+struct NoteObjectCreate {
+	CAN_BE_SENT_AS_NOTE(NoteId::ObjectCreate)
+
+	const MapObjectType type;
+	const Coords& coords;
+	MapObjectDescr::OwnerType owner_type;
+	Player* owner;
+	const BuildingDescr* former_building;
+	const DescriptionIndex index;
+	const std::string name;
+
+
+private:
+	explicit NoteObjectCreate(MapObjectType init_type, const Coords& init_coords, MapObjectDescr::OwnerType init_owner_type, Player* init_owner, const BuildingDescr* init_former_building, DescriptionIndex init_index, const std::string& init_name) :
+		type(init_type), coords(init_coords), owner_type(init_owner_type), owner(init_owner), former_building(init_former_building), index(init_index), name(init_name) {}
+
+public:
+	explicit NoteObjectCreate(MapObjectType init_type,
+							  const Coords& init_coords,
+							  const std::string& init_name,
+							  MapObjectDescr::OwnerType init_owner_type,
+							  Player* init_owner = nullptr,
+							  const BuildingDescr* init_former_building = nullptr) :
+		NoteObjectCreate(init_type, init_coords, init_owner_type, init_owner, init_former_building, INVALID_INDEX, init_name) {}
+
+	explicit NoteObjectCreate(MapObjectType init_type,
+							  const Coords& init_coords,
+							  DescriptionIndex init_index,
+							  MapObjectDescr::OwnerType init_owner_type,
+							  Player* init_owner = nullptr,
+							  const BuildingDescr* init_former_building = nullptr) :
+		NoteObjectCreate(init_type, init_coords, init_owner_type, init_owner, init_former_building, init_index, "") {}
 };
 
 /**

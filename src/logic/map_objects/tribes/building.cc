@@ -457,9 +457,13 @@ void Building::destroy(EditorGameBase& egbase) {
 	PlayerImmovable::destroy(egbase);
 	// We are deleted. Only use stack variables beyond this point
 	if (fire) {
-		egbase.create_immovable_with_name(pos, "destroyed_building",
-		                                  MapObjectDescr::OwnerType::kTribe, building_owner,
-		                                  building_descr);
+		Notifications::publish(NoteObjectCreate(
+								   MapObjectType::IMMOVABLE,
+								   pos,
+								   "destroyed_building",
+								   MapObjectDescr::OwnerType::kTribe,
+								   building_owner,
+								   building_descr));
 	}
 }
 

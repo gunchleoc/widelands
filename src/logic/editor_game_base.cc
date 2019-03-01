@@ -77,6 +77,15 @@ EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
 	case MapObjectType::CRITTER:
 		create_critter(note.coords, note.name);
 		break;
+	case MapObjectType::IMMOVABLE:
+		if (note.index != INVALID_INDEX) {
+			assert(note.name.empty());
+			create_immovable(note.coords, note.index, note.owner_type, note.owner);
+		} else {
+			assert(!note.name.empty());
+			create_immovable(note.coords, note.name, note.owner_type, note.owner, note.former_building);
+		}
+		break;
 	case MapObjectType::SHIP:
 		create_ship(note.coords, note.name, note.owner);
 		break;
@@ -400,79 +409,51 @@ void EditorGameBase::create_critter(const Coords& coords, const std::string& nam
 	create_bob(coords, *descr);
 }
 
-/*
-===============
-Create an immovable at the given location.
-If tribe is not zero, create a immovable of a player (not a PlayerImmovable
-but an immovable defined by the players tribe)
-Does not perform any placeability checks.
-If this immovable was created by a building, 'former_building' can be set in order to display
-information about it.
-===============
-*/
-Immovable& EditorGameBase::create_immovable(const Coords& c,
+void EditorGameBase::create_ship(const Coords& coords, const std::string& name, Player* owner) {
+	try {
+		const BobDescr* descr = dynamic_cast<const BobDescr*>(tribes().get_ship_descr(tribes().safe_ship_index(name)));
+		create_bob(coords, *descr, owner);
+	} catch (const GameDataError& e) {
+		throw GameDataError("create_ship(%s,%s) at (%d,%d): ship not found: %s", name.c_str(),
+							owner->get_name().c_str(), coords.x, coords.y, e.what());
+	}
+}
+
+void EditorGameBase::create_immovable(const Coords& c,
                                             DescriptionIndex const idx,
                                             MapObjectDescr::OwnerType type,
-                                            Player* owner) {
-	return do_create_immovable(c, idx, type, owner, nullptr);
-}
-
-Immovable& EditorGameBase::create_immovable_with_name(const Coords& c,
-                                                      const std::string& name,
-                                                      MapObjectDescr::OwnerType type,
-                                                      Player* owner,
-                                                      const BuildingDescr* former_building_descr) {
-	DescriptionIndex idx;
-	if (type == MapObjectDescr::OwnerType::kTribe) {
-		idx = tribes().immovable_index(name.c_str());
-		if (!tribes().immovable_exists(idx)) {
-			throw wexception(
-			   "EditorGameBase::create_immovable_with_name(%i, %i): %s is not defined for the tribes",
-			   c.x, c.y, name.c_str());
-		}
-	} else {
-		idx = world().get_immovable_index(name.c_str());
-		if (idx == INVALID_INDEX) {
-			throw wexception(
-			   "EditorGameBase::create_immovable_with_name(%i, %i): %s is not defined for the world",
-			   c.x, c.y, name.c_str());
-		}
-	}
-	return do_create_immovable(c, idx, type, owner, former_building_descr);
-}
-
-Immovable& EditorGameBase::do_create_immovable(const Coords& c,
-                                               DescriptionIndex const idx,
-                                               MapObjectDescr::OwnerType type,
-                                               Player* owner,
-                                               const BuildingDescr* former_building_descr) {
-	const ImmovableDescr& descr =
-	   *(type == MapObjectDescr::OwnerType::kTribe ? tribes().get_immovable_descr(idx) :
+                                            Player* owner, const BuildingDescr* former_building) {
+	const ImmovableDescr* descr =
+	   (type == MapObjectDescr::OwnerType::kTribe ? tribes().get_immovable_descr(idx) :
 	                                                 world().get_immovable_descr(idx));
-	assert(&descr);
-	inform_players_about_immovable(Map::get_index(c, map().get_width()), &descr);
-	Immovable& immovable = descr.create(*this, c, former_building_descr);
+	if (descr == nullptr) {
+		throw GameDataError(
+		   "EditorGameBase::create_immovable at (%d,%d): immovable %d not defined for the %s",
+		   c.x, c.y, static_cast<unsigned int>(idx), (type == MapObjectDescr::OwnerType::kTribe) ? "tribes" : "world");
+	}
+
+	inform_players_about_immovable(Map::get_index(c, map().get_width()), descr);
+	Immovable& immovable = descr->create(*this, c, former_building);
 	if (owner != nullptr) {
 		immovable.set_owner(owner);
 	}
-	return immovable;
 }
 
-/**
- * Instantly create a ship at the given x/y location.
- *
- * idx is the bob type.
- */
-
-void EditorGameBase::create_ship(const Coords& c, const std::string& name, Player* owner) {
+void EditorGameBase::create_immovable(const Coords& c,
+									  const std::string& name,
+									  MapObjectDescr::OwnerType type,
+									  Player* owner,
+									  const BuildingDescr* former_building_descr) {
+	const DescriptionIndex idx = (type == MapObjectDescr::OwnerType::kTribe) ?
+									 tribes().immovable_index(name.c_str()) :
+										   world().get_immovable_index(name.c_str());
 	try {
-		const BobDescr* descr = dynamic_cast<const BobDescr*>(tribes().get_ship_descr(tribes().safe_ship_index(name)));
-		create_bob(c, *descr, owner);
+		create_immovable(c, idx, type, owner, former_building_descr);
 	} catch (const GameDataError& e) {
-		throw GameDataError("create_ship(%s,%s) at (%d,%d): ship not found: %s", name.c_str(),
-							owner->get_name().c_str(), c.x, c.y, e.what());
+		throw GameDataError("EditorGameBase::create_immovable, name %s: %s", name.c_str(), e.what());
 	}
 }
+
 
 /*
 ================

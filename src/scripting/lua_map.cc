@@ -1366,33 +1366,39 @@ int LuaMap::place_immovable(lua_State* const L) {
 		from_where = luaL_checkstring(L, 4);
 
 	// Check if the map is still free here
-	if (BaseImmovable const* const imm = c->fcoords(L).field->get_immovable())
-		if (imm->get_size() >= BaseImmovable::SMALL)
-			report_error(L, "Node is no longer free!");
+	BaseImmovable* imm = c->fcoords(L).field->get_immovable();
+	if (imm && imm->get_size() >= BaseImmovable::SMALL) {
+		report_error(L, "Node is no longer free!");
+	}
 
-	EditorGameBase& egbase = get_egbase(L);
-
-	BaseImmovable* m = nullptr;
+	// Get the immovable index
+	MapObjectDescr::OwnerType owner_type = MapObjectDescr::OwnerType::kWorld;
+	DescriptionIndex imm_idx = INVALID_INDEX;
 	if (from_where == "world") {
-		DescriptionIndex const imm_idx = egbase.world().get_immovable_index(objname);
-		if (imm_idx == Widelands::INVALID_INDEX)
-			report_error(L, "Unknown world immovable <%s>", objname.c_str());
-
-		m = &egbase.create_immovable(
-		   c->coords(), imm_idx, MapObjectDescr::OwnerType::kWorld, nullptr /* owner */);
+		imm_idx = get_egbase(L).world().get_immovable_index(objname);
 	} else if (from_where == "tribes") {
-		DescriptionIndex const imm_idx = egbase.tribes().immovable_index(objname);
-		if (imm_idx == Widelands::INVALID_INDEX)
-			report_error(L, "Unknown tribes immovable <%s>", objname.c_str());
-
-		m = &egbase.create_immovable(
-		   c->coords(), imm_idx, MapObjectDescr::OwnerType::kTribe, nullptr /* owner */);
+		owner_type = MapObjectDescr::OwnerType::kTribe;
+		imm_idx = get_egbase(L).tribes().immovable_index(objname);
 	} else {
 		report_error(
 		   L, "There are no immovables for <%s>. Use \"world\" or \"tribes\"", from_where.c_str());
 	}
 
-	return LuaMaps::upcasted_map_object_to_lua(L, m);
+	if (imm_idx == Widelands::INVALID_INDEX) {
+		report_error(L, "Unknown %s immovable <%s>", from_where.c_str(), objname.c_str());
+	}
+
+	// Create and push the immovable
+	Notifications::publish(NoteObjectCreate(
+							   MapObjectType::IMMOVABLE,
+							   c->coords(),
+							   imm_idx,
+							   owner_type));
+
+	imm = c->fcoords(L).field->get_immovable();
+	assert(imm != nullptr);
+	assert(imm->descr().name() == objname);
+	return LuaMaps::upcasted_map_object_to_lua(L, imm);
 }
 
 /* RST

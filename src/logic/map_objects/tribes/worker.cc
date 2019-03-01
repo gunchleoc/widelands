@@ -874,12 +874,16 @@ bool Worker::run_plant(Game& game, State& state, const Action& action) {
 		}
 	}
 
-	Immovable& newimm = game.create_immovable(
-	   pos, state.ivar2, static_cast<Widelands::MapObjectDescr::OwnerType>(state.ivar3),
-	   get_owner());
+	Notifications::publish(NoteObjectCreate(
+							   MapObjectType::IMMOVABLE,
+							   pos,
+							   state.ivar2,
+							   static_cast<MapObjectDescr::OwnerType>(state.ivar3),
+							   get_owner()));
 
 	if (action.iparam1 == Action::plantUnlessObject) {
-		state.objvar1 = &newimm;
+		// Get the newly created immovable from the field
+		state.objvar1 = fpos.field->get_immovable();
 	}
 
 	++state.ivar1;
@@ -900,7 +904,7 @@ bool Worker::run_createbob(Game& game, State& state, const Action& action) {
 	const std::string& bob = action.sparamv[idx];
 
 	try {
-		Notifications::publish(NoteObjectCreate(MapObjectType::CRITTER, get_position(), bob));
+		Notifications::publish(NoteObjectCreate(MapObjectType::CRITTER, get_position(), bob, MapObjectDescr::OwnerType::kWorld));
 	} catch (const GameDataError& e) {
 		molog("  WARNING: Unknown bob %s\n", bob.c_str());
 		send_signal(game, "fail");
@@ -956,22 +960,25 @@ bool Worker::run_findresources(Game& game, State& state, const Action&) {
 	const World& world = game.world();
 
 	if (!(imm && imm->get_size() > BaseImmovable::NONE)) {
-
 		const ResourceDescription* const rdescr = world.get_resource(position.field->get_resources());
-		const TribeDescr& t = owner().tribe();
-		const Immovable& ri = game.create_immovable(
-		   position,
-		   t.get_resource_indicator(
-		      rdescr, (rdescr && rdescr->detectable()) ? position.field->get_resources_amount() : 0),
-		   MapObjectDescr::OwnerType::kTribe, get_owner());
+
+		Notifications::publish(NoteObjectCreate(
+								   MapObjectType::IMMOVABLE,
+								   position,
+								   owner().tribe().get_resource_indicator(
+									  rdescr, (rdescr && rdescr->detectable()) ? position.field->get_resources_amount() : 0),
+								   MapObjectDescr::OwnerType::kTribe,
+								   get_owner()));
 
 		// Geologist also sends a message notifying the player
 		if (rdescr && rdescr->detectable() && position.field->get_resources_amount()) {
 			const int width = g_gr->images().get(rdescr->representative_image())->width();
+			BaseImmovable* ri = position.field->get_immovable();
+			assert(ri != nullptr);
 			const std::string message =
 			   (boost::format("<div padding_r=10><p><img width=%d src=%s></p></div>"
 			                  "<div width=*><p><font size=%d>%s</font></p></div>") %
-			    width % ri.descr().representative_image_filename() % UI_FONT_SIZE_MESSAGE %
+			    width % ri->descr().representative_image_filename() % UI_FONT_SIZE_MESSAGE %
 			    _("A geologist found resources."))
 			      .str();
 
