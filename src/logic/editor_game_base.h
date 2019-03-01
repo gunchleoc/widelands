@@ -136,8 +136,6 @@ public:
 	                   PlayerNumber,
 	                   bool loading = false,
 	                   Building::FormerBuildings former_buildings = Building::FormerBuildings());
-	Bob& create_critter(const Coords&, DescriptionIndex bob_type_idx, Player* owner = nullptr);
-	Bob& create_critter(const Coords&, const std::string& name, Player* owner = nullptr);
 	Immovable&
 	create_immovable(const Coords&, DescriptionIndex idx, MapObjectDescr::OwnerType, Player* owner);
 	Immovable& create_immovable_with_name(const Coords&,
@@ -202,6 +200,9 @@ private:
 	/// Common function for create_critter and create_ship.
 	Bob& create_bob(Coords, const BobDescr&, Player* owner = nullptr);
 
+	/// Gets the critter type 'name' from the world and creates one at 'coords'
+	Bob& create_critter(const Coords& coords, const std::string& name);
+
 	/// \param preferred_player
 	///  When conquer is false, this can be used to prefer a player over other
 	///  players, when lost land is reassigned. This can for example be used to
@@ -254,6 +255,8 @@ private:
 	std::unique_ptr<Tribes> tribes_;
 	std::unique_ptr<InteractiveBase> ibase_;
 	Map map_;
+
+	std::unique_ptr<Notifications::Subscriber<NoteObjectCreate>> object_create_subscriber_;
 
 	/// Even after a map is fully loaded, some static data (images, scripts)
 	/// will still be read from a filesystem whenever a map/game is saved.

@@ -38,6 +38,8 @@
 #include "logic/map_objects/draw_text.h"
 #include "logic/map_objects/tribes/training_attribute.h"
 #include "logic/widelands.h"
+#include "notifications/note_ids.h"
+#include "notifications/notifications.h"
 #include "scripting/lua_table.h"
 #include "ui_basic/tabpanel.h"
 
@@ -88,6 +90,36 @@ enum class MapObjectType : uint8_t {
 
 // Returns a string representation for 'type'.
 std::string to_string(MapObjectType type);
+
+
+struct NoteObjectCreate {
+	CAN_BE_SENT_AS_NOTE(NoteId::ObjectCreate)
+
+	const MapObjectType type;
+	const Coords& coords;
+	const Player* owner;
+	const DescriptionIndex index;
+	const std::string name;
+
+
+private:
+	explicit NoteObjectCreate(MapObjectType init_type, const Coords& init_coords, Player* init_owner, DescriptionIndex init_index, const std::string& init_name) :
+		type(init_type), coords(init_coords), owner(init_owner), index(init_index), name(init_name) {}
+
+public:
+	explicit NoteObjectCreate(MapObjectType init_type,
+							  const Coords& init_coords,
+							  const std::string& init_name,
+							  Player* init_owner = nullptr) :
+		NoteObjectCreate(init_type, init_coords, init_owner, INVALID_INDEX, init_name) {}
+
+	explicit NoteObjectCreate(MapObjectType init_type,
+							  const Coords& init_coords,
+							  DescriptionIndex init_index,
+							  Player* init_owner = nullptr) :
+		NoteObjectCreate(init_type, init_coords, init_owner, init_index, "") {}
+};
+
 
 /**
  * Base class for descriptions of worker, files and so on. This must just

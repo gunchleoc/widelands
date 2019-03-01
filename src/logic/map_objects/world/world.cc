@@ -133,8 +133,8 @@ const TerrainDescription* World::terrain_descr(const std::string& name) const {
 	return i != INVALID_INDEX ? terrains_->get_mutable(i) : nullptr;
 }
 
-DescriptionIndex World::get_critter(char const* const l) const {
-	return critters_->get_index(l);
+DescriptionIndex World::get_critter(const std::string& name) const {
+	return critters_->get_index(name);
 }
 
 const DescriptionMaintainer<CritterDescr>& World::critters() const {

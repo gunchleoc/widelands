@@ -71,6 +71,16 @@ EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
      lua_(lua_interface),
      player_manager_(new PlayersManager(*this)),
      ibase_(nullptr),
+	 object_create_subscriber_(
+		 Notifications::subscribe<NoteObjectCreate>([this](const NoteObjectCreate& note) {
+	switch (note.type) {
+	case MapObjectType::CRITTER:
+		create_critter(note.coords, note.name);
+		break;
+	default:
+		NEVER_HERE();
+	}
+		})),
      tmp_fs_(nullptr) {
 	if (!lua_)  // TODO(SirVer): this is sooo ugly, I can't say
 		lua_.reset(new LuaEditorInterface(this));
@@ -383,19 +393,12 @@ Bob& EditorGameBase::create_bob(Coords c, const BobDescr& descr, Player* owner) 
  *
  */
 
-Bob& EditorGameBase::create_critter(const Coords& c,
-                                    DescriptionIndex const bob_type_idx,
-                                    Player* owner) {
-	const BobDescr* descr = dynamic_cast<const BobDescr*>(world().get_critter_descr(bob_type_idx));
-	return create_bob(c, *descr, owner);
-}
-
-Bob& EditorGameBase::create_critter(const Coords& c, const std::string& name, Player* owner) {
+Bob& EditorGameBase::create_critter(const Coords& coords, const std::string& name) {
 	const BobDescr* descr = dynamic_cast<const BobDescr*>(world().get_critter_descr(name));
-	if (descr == nullptr)
-		throw GameDataError("create_critter(%i,%i,%s,%s): critter not found", c.x, c.y, name.c_str(),
-		                    owner->get_name().c_str());
-	return create_bob(c, *descr, owner);
+	if (descr == nullptr) {
+		throw GameDataError("create_critter %s at (%d,%d): critter not known", name.c_str(), coords.x, coords.y);
+	}
+	return create_bob(coords, *descr);
 }
 
 /*

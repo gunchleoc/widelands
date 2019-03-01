@@ -50,7 +50,7 @@ void MapBobPacket::read_bob(FileRead& fr,
 	const std::string name = lookup_table.lookup_critter(read_name);
 	try {
 		const World& world = egbase.world();
-		DescriptionIndex const idx = world.get_critter(name.c_str());
+		DescriptionIndex const idx = world.get_critter(name);
 		if (idx == INVALID_INDEX)
 			throw GameDataError("world does not define bob type \"%s\"", name.c_str());
 

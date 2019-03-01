@@ -618,11 +618,7 @@ void S2MapLoader::load_s2mf(Widelands::EditorGameBase& egbase) {
 			}
 
 			if (!bobname.empty()) {
-				Widelands::DescriptionIndex const idx = world.get_critter(bobname.c_str());
-				if (idx == Widelands::INVALID_INDEX) {
-					throw wexception("Missing bob type %s", bobname.c_str());
-				}
-				egbase.create_critter(Widelands::Coords(x, y), idx);
+				Notifications::publish(Widelands::NoteObjectCreate(Widelands::MapObjectType::CRITTER, Widelands::Coords(x, y), bobname));
 			}
 		}
 	}

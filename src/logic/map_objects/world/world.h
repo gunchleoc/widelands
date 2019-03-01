@@ -52,7 +52,7 @@ public:
 	const TerrainDescription* terrain_descr(const std::string& name) const;
 
 	const DescriptionMaintainer<CritterDescr>& critters() const;
-	DescriptionIndex get_critter(char const* const l) const;
+	DescriptionIndex get_critter(const std::string& name) const;
 	CritterDescr const* get_critter_descr(DescriptionIndex index) const;
 	CritterDescr const* get_critter_descr(const std::string& name) const;
 

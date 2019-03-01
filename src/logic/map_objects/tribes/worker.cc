@@ -897,18 +897,17 @@ bool Worker::run_plant(Game& game, State& state, const Action& action) {
  */
 bool Worker::run_createbob(Game& game, State& state, const Action& action) {
 	int32_t const idx = game.logic_rand() % action.sparamv.size();
-
 	const std::string& bob = action.sparamv[idx];
-	const DescriptionIndex critter = game.world().get_critter(bob.c_str());
 
-	if (critter == INVALID_INDEX) {
+	try {
+		Notifications::publish(NoteObjectCreate(MapObjectType::CRITTER, get_position(), bob));
+	} catch (const GameDataError& e) {
 		molog("  WARNING: Unknown bob %s\n", bob.c_str());
 		send_signal(game, "fail");
 		pop_task(game);
 		return true;
 	}
 
-	game.create_critter(get_position(), critter);
 	++state.ivar1;
 	schedule_act(game, 10);
 	return true;
