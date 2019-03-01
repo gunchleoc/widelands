@@ -26,10 +26,25 @@
 #include "logic/map_objects/immovable.h"
 #include "logic/path.h"
 #include "logic/roadtype.h"
+#include "notifications/note_ids.h"
+#include "notifications/notifications.h"
 
 namespace Widelands {
 struct Carrier;
 class Request;
+
+
+struct NoteRoad {
+	CAN_BE_SENT_AS_NOTE(NoteId::Road)
+
+	const FCoords fcoords;
+	const RoadType direction;
+	const RoadType roadtype;
+
+	explicit NoteRoad(const FCoords init_fcoords, RoadType init_direction, RoadType init_roadtype) :
+		fcoords(init_fcoords), direction(init_direction), roadtype(init_roadtype) {
+	}
+};
 
 class RoadDescr : public MapObjectDescr {
 public:
@@ -139,7 +154,7 @@ protected:
 private:
 	void set_path(EditorGameBase&, const Path&);
 
-	void mark_map(EditorGameBase&);
+	void mark_map(const Map& map);
 	void unmark_map(EditorGameBase&);
 
 	void link_into_flags(EditorGameBase&);

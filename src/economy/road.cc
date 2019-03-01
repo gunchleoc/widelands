@@ -149,8 +149,7 @@ void Road::set_path(EditorGameBase& egbase, const Path& path) {
 /**
  * Add road markings to the map
  */
-void Road::mark_map(EditorGameBase& egbase) {
-	const Map& map = egbase.map();
+void Road::mark_map(const Map& map) {
 	FCoords curf = map.get_fcoords(path_.get_start());
 
 	const Path::StepVector::size_type nr_steps = path_.get_nsteps();
@@ -164,8 +163,9 @@ void Road::mark_map(EditorGameBase& egbase) {
 			const Direction dir = get_reverse_dir(path_[steps - 1]);
 			Direction const rdir = 2 * (dir - WALK_E);
 
-			if (rdir <= 4)
-				egbase.set_road(curf, rdir, type_);
+			if (rdir <= 4) {
+				Notifications::publish(NoteRoad(curf, rdir, type_));
+			}
 		}
 
 		// mark the road that leads away from this field
@@ -173,8 +173,9 @@ void Road::mark_map(EditorGameBase& egbase) {
 			const Direction dir = path_[steps];
 			Direction const rdir = 2 * (dir - WALK_E);
 
-			if (rdir <= 4)
-				egbase.set_road(curf, rdir, type_);
+			if (rdir <= 4) {
+				Notifications::publish(NoteRoad(curf, rdir, type_));
+			}
 
 			map.get_neighbour(curf, dir, &curf);
 		}
@@ -198,8 +199,9 @@ void Road::unmark_map(EditorGameBase& egbase) {
 			const Direction dir = get_reverse_dir(path_[steps - 1]);
 			Direction const rdir = 2 * (dir - WALK_E);
 
-			if (rdir <= 4)
-				egbase.set_road(curf, rdir, RoadType::kNone);
+			if (rdir <= 4) {
+				Notifications::publish(NoteRoad(curf, rdir, RoadType::kNone));
+			}
 		}
 
 		// mark the road that leads away from this field
@@ -207,8 +209,9 @@ void Road::unmark_map(EditorGameBase& egbase) {
 			const Direction dir = path_[steps];
 			Direction const rdir = 2 * (dir - WALK_E);
 
-			if (rdir <= 4)
-				egbase.set_road(curf, rdir, RoadType::kNone);
+			if (rdir <= 4) {
+				Notifications::publish(NoteRoad(curf, rdir, RoadType::kNone));
+			}
 
 			map.get_neighbour(curf, dir, &curf);
 		}
@@ -222,7 +225,8 @@ bool Road::init() {
 	PlayerImmovable::init();
 
 	if (2 <= path_.get_nsteps()) {
-		// NOCOM link_into_flags(objects);
+		// NOCOM working on this
+		//link_into_flags();
 	}
 	return true;
 }
@@ -251,7 +255,7 @@ void Road::link_into_flags(EditorGameBase& egbase) {
 	Economy::check_merge(*flags_[FlagStart], *flags_[FlagEnd]);
 
 	// Mark Fields
-	mark_map(egbase);
+	mark_map(egbase.map());
 
 	/*
 	 * Iterate over all Carrierslots
@@ -454,7 +458,7 @@ void Road::postsplit(Game& game, Flag& flag) {
 	flagidx_[FlagEnd] = dir;
 
 	// recreate road markings
-	mark_map(game);
+	mark_map(game.map());
 
 	// create the new road
 	Road& newroad = *new Road();
@@ -588,7 +592,7 @@ void Road::charge_wallet(Game& game) {
 				carrier_slots_[1].carrier = nullptr;
 				carrier_slots_[1].carrier_request = nullptr;
 				type_ = RoadType::kNormal;
-				mark_map(game);
+				mark_map(game.map());
 			}
 		}
 	}
@@ -615,7 +619,7 @@ void Road::pay_for_road(Game& game, uint8_t queue_length) {
 		type_ = RoadType::kBusy;
 		flags_[0]->propagate_promoted_road(this);
 		flags_[1]->propagate_promoted_road(this);
-		mark_map(game);
+		mark_map(game.map());
 		for (CarrierSlot& slot : carrier_slots_) {
 			if (!slot.carrier.get(game) && !slot.carrier_request && slot.carrier_type != 1) {
 				request_carrier(slot);

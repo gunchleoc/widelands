@@ -42,7 +42,8 @@ enum class NoteId : uint32_t {
 	Dropdown,
 	GameSettings,
 	ObjectCreate,
-	ObjectManager
+	ObjectManager,
+	Road
 };
 
 #endif  // end of include guard: WL_NOTIFICATIONS_NOTE_IDS_H

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "economy/road.h"
 #include "logic/map.h"
 #include "logic/map_objects/bob.h"
 #include "logic/map_objects/tribes/building.h"
@@ -117,7 +118,7 @@ public:
 	void load_graphics(UI::ProgressWindow& loader_ui);
 	virtual void cleanup_for_load();
 
-	void set_road(const FCoords&, uint8_t direction, uint8_t roadtype);
+	void set_road(const FCoords&, RoadType direction, RoadType roadtype);
 
 	// warping stuff. instantly creating map_objects
 	Building&
@@ -273,6 +274,7 @@ private:
 	Map map_;
 
 	std::unique_ptr<Notifications::Subscriber<NoteObjectCreate>> object_create_subscriber_;
+	std::unique_ptr<Notifications::Subscriber<NoteRoad>> object_road_subscriber_;
 
 	/// Even after a map is fully loaded, some static data (images, scripts)
 	/// will still be read from a filesystem whenever a map/game is saved.

@@ -93,6 +93,10 @@ EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
 		NEVER_HERE();
 	}
 		})),
+	 road_subscriber_(
+		 Notifications::subscribe<NoteRoad>([this](const NoteRoad& note) {
+	set_road(note.fcoords, note.direction, note.roadtype);
+		})),
      tmp_fs_(nullptr) {
 	if (!lua_)  // TODO(SirVer): this is sooo ugly, I can't say
 		lua_.reset(new LuaEditorInterface(this));
@@ -483,7 +487,7 @@ void EditorGameBase::cleanup_for_load() {
 	delete_tempfile();
 }
 
-void EditorGameBase::set_road(const FCoords& f, uint8_t const direction, uint8_t const roadtype) {
+void EditorGameBase::set_road(const FCoords& f, RoadType const direction, RoadType const roadtype) {
 	const Map& m = map();
 	const Field& first_field = m[0];
 	assert(0 <= f.x);
