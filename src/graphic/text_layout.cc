@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2018 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -50,9 +50,9 @@ void replace_entities(std::string* text) {
 }
 
 int text_height(int ptsize, UI::FontSet::Face face) {
-	return UI::g_fh->render(as_aligned(UI::g_fh->fontset()->representative_character(),
-	                                   UI::Align::kLeft, ptsize - UI::g_fh->fontset()->size_offset(),
-	                                   RGBColor(0, 0, 0), face))
+	return UI::g_fh
+	   ->render(as_aligned(UI::g_fh->fontset()->representative_character(), UI::Align::kLeft,
+	                       ptsize - UI::g_fh->fontset()->size_offset(), RGBColor(0, 0, 0), face))
 	   ->height();
 }
 
@@ -214,6 +214,7 @@ std::string as_heading(const std::string& txt, UI::PanelStyle style, bool is_fir
 	}
 	NEVER_HERE();
 }
+
 std::string as_content(const std::string& txt, UI::PanelStyle style) {
 	switch (style) {
 	case UI::PanelStyle::kFsMenu:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2018 by the Widelands Development Team
+ * Copyright (C) 2004-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -733,10 +733,10 @@ private:
 };
 
 struct CmdEnemyFlagAction : public PlayerCommand {
-	CmdEnemyFlagAction() : PlayerCommand(), serial(0), number(0) {
+	CmdEnemyFlagAction() : PlayerCommand(), serial(0) {
 	}  // For savegame loading
-	CmdEnemyFlagAction(uint32_t t, int32_t p, const Flag& f, uint32_t num)
-	   : PlayerCommand(t, p), serial(f.serial()), number(num) {
+	CmdEnemyFlagAction(uint32_t t, int32_t p, const Flag& f, const std::vector<Serial>& s)
+	   : PlayerCommand(t, p), serial(f.serial()), soldiers(s) {
 	}
 
 	// Write these commands to a file (for savegames)
@@ -754,7 +754,7 @@ struct CmdEnemyFlagAction : public PlayerCommand {
 
 private:
 	Serial serial;
-	uint8_t number;
+	std::vector<Serial> soldiers;
 };
 
 /// Abstract base for commands about a message.
@@ -868,6 +868,6 @@ struct CmdProposeTrade : PlayerCommand {
 private:
 	Trade trade_;
 };
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_PLAYERCOMMAND_H
