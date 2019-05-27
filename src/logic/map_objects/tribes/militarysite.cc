@@ -127,7 +127,8 @@ int MilitarySite::SoldierControl::incorporate_soldier(EditorGameBase& egbase, So
 	if (!military_site_->didconquer_) {
 		military_site_->conquer_area(egbase);
 		// Building is now occupied - idle animation should be played
-		military_site_->start_animation(egbase, military_site_->descr().get_animation("idle"));
+		military_site_->start_animation(
+		   egbase, military_site_->descr().get_animation("idle", military_site_));
 
 		if (upcast(Game, game, &egbase)) {
 			military_site_->send_message(
@@ -831,7 +832,7 @@ void MilitarySite::reinit_after_conqueration(Game& game) {
 	clear_requirements();
 	conquer_area(game);
 	update_soldier_request();
-	start_animation(game, descr().get_animation("idle"));
+	start_animation(game, descr().get_animation("idle", this));
 
 	// feature request 1247384 in launchpad bugs: Conquered buildings tend to
 	// be in a hostile area; typically players want heroes there.
@@ -884,10 +885,19 @@ void MilitarySite::clear_requirements() {
 }
 
 void MilitarySite::send_attacker(Soldier& soldier, Building& target) {
-	assert(is_present(soldier));
-
-	if (has_soldier_job(soldier))
+	if (!is_present(soldier)) {
+		// The soldier may not be present anymore due to having been kicked out. Most of the time
+		// the function calling us will notice this, but there are cornercase where it might not,
+		// e.g. when a soldier was ordered to leave but did not physically quit the building yet.
+		log("MilitarySite(%3dx%3d)::send_attacker: Not sending soldier %u because he left the "
+		    "building\n",
+		    get_position().x, get_position().y, soldier.serial());
 		return;
+	}
+
+	if (has_soldier_job(soldier)) {
+		return;
+	}
 
 	SoldierJob sj;
 	sj.soldier = &soldier;

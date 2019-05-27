@@ -86,6 +86,7 @@ EditBox::EditBox(Panel* const parent,
      m_(new EditBoxImpl),
      history_active_(false),
      history_position_(-1),
+	 password_(false),
      warning_(false) {
 	set_thinks(false);
 
@@ -385,7 +386,7 @@ void EditBox::draw(RenderTarget& dst) {
 	}
 
 	const int max_width = get_w() - 2 * kMarginX;
-	const int linewidth = m_->rendered_text->width();
+	const int linewidth = m_->rendered_text->width(); // NOCOM crash in password mode
 	const int lineheight = m_->text.empty() ? text_height(m_->fontsize) : m_->rendered_text->height();
 
 	Vector2i point(kMarginX, get_h() / 2);
@@ -464,8 +465,20 @@ void EditBox::check_caret() {
 
 void EditBox::update() {
 	m_->rendered_text =
-	   UI::g_fh->render(as_editorfont(richtext_escape(m_->text), m_->fontsize));
+	   UI::g_fh->render(as_editorfont(password_ ? text_to_asterisk() : richtext_escape(m_->text), m_->fontsize));
 	check_caret();
 	changed();
+}
+
+
+/**
+ * Return text as asterisks.
+ */
+std::string EditBox::text_to_asterisk() {
+	std::string asterisk;
+	for (int i = 0; i < int(m_->text.size()); i++) {
+		asterisk.append("*");
+	}
+	return asterisk;
 }
 }  // namespace UI
