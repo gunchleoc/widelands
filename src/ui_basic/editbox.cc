@@ -31,7 +31,7 @@
 #include "graphic/style_manager.h"
 #include "graphic/text/bidi.h"
 #include "graphic/text/font_set.h"
-#include "graphic/text_constants.h"
+#include "graphic/text/rt_errors.h"
 #include "graphic/text_layout.h"
 #include "ui_basic/mouse_constants.h"
 
@@ -40,22 +40,31 @@
 namespace {
 
 constexpr int kMarginX = 4;
+constexpr int kLineMargin = 1;
 
 }  // namespace
 
 namespace UI {
 
 struct EditBoxImpl {
-	/**
-	 * Font used for rendering text.
-	 */
-	/*@{*/
-	std::string fontname;
-	uint32_t fontsize;
-	/*@}*/
+	explicit EditBoxImpl(const UI::TextPanelStyleInfo& init_style)
+	   : background_style(&init_style.background()),
+	     font_style(&init_style.font()),
+	     margin(init_style.background().margin()),
+	     font_scale(1.0f) {
+	}
 
 	/// Background color and texture
 	const UI::PanelStyleInfo* background_style;
+
+	/// Font style
+	const UI::FontStyleInfo* font_style;
+
+	/// Margin around the test
+	int margin;
+
+	/// Scale for font size
+	float font_scale;
 
 	/// Maximum number of characters in the input
 	uint32_t max_length;
@@ -74,25 +83,19 @@ struct EditBoxImpl {
 	Align align;
 };
 
-EditBox::EditBox(Panel* const parent,
-                 int32_t x,
-                 int32_t y,
-                 uint32_t w,
-                 uint32_t h,
-                 int margin_y,
-                 UI::PanelStyle style,
-                 int font_size)
-   : Panel(parent, x, y, w, h > 0 ? h : text_height(font_size) + 2 * margin_y),
-     m_(new EditBoxImpl),
+EditBox::EditBox(Panel* const parent, int32_t x, int32_t y, uint32_t w, UI::PanelStyle style)
+   : Panel(parent,
+           x,
+           y,
+           w,
+           text_height(g_gr->styles().editbox_style(style).font()) +
+              2 * g_gr->styles().editbox_style(style).background().margin()),
+     m_(new EditBoxImpl(g_gr->styles().editbox_style(style))),
      history_active_(false),
      history_position_(-1),
 	 password_(false),
      warning_(false) {
 	set_thinks(false);
-
-	m_->background_style = g_gr->styles().editbox_style(style);
-	m_->fontname = UI::g_fh->fontset()->sans();
-	m_->fontsize = font_size;
 
 	// Set alignment to the UI language's principal writing direction
 	m_->align = UI::g_fh->fontset()->is_rtl() ? UI::Align::kRight : UI::Align::kLeft;
@@ -101,6 +104,7 @@ EditBox::EditBox(Panel* const parent,
 	// yes, use *signed* max as maximum length; just a small safe-guard.
 	set_max_length(std::numeric_limits<int32_t>::max());
 
+	set_thinks(false);
 	set_handle_mouse(true);
 	set_can_focus(true);
 	set_handle_textinput();
@@ -147,10 +151,9 @@ void EditBox::set_text(const std::string& t) {
  * If the current string is longer than the new maximum length,
  * its end is cut off to fit into the maximum length.
  */
-void EditBox::set_max_length(uint32_t const n) {
+void EditBox::set_max_length(int const n) {
 	m_->max_length =
-	   std::min(g_gr->max_texture_size_for_font_rendering() / text_height(), static_cast<int>(n));
-
+	   std::min(g_gr->max_texture_size_for_font_rendering() / text_height(*m_->font_style), n);
 	if (m_->text.size() > m_->max_length) {
 		m_->text.erase(m_->text.begin() + m_->max_length, m_->text.end());
 		if (m_->caret_index > m_->text.size()) {
@@ -158,6 +161,22 @@ void EditBox::set_max_length(uint32_t const n) {
 		}
 		update();
 	}
+}
+
+void EditBox::set_font_scale(float scale) {
+	m_->font_scale = scale;
+}
+
+void EditBox::set_font_style(const UI::FontStyleInfo& style) {
+	m_->font_style = &style;
+	const int new_height = text_height(style) + 2 * m_->margin;
+	set_size(get_w(), new_height);
+	set_desired_size(get_w(), new_height);
+}
+
+void EditBox::set_font_style_and_margin(const UI::FontStyleInfo& style, int margin) {
+	m_->margin = margin;
+	set_font_style(style);
 }
 
 /**
@@ -386,8 +405,13 @@ void EditBox::draw(RenderTarget& dst) {
 	}
 
 	const int max_width = get_w() - 2 * kMarginX;
+	FontStyleInfo scaled_style(*m_->font_style);
+	scaled_style.set_size(scaled_style.size() * m_->font_scale);
+	std::shared_ptr<const UI::RenderedText> rendered_text = UI::g_fh->render(
+	   as_editor_richtext_paragraph(password_ ? text_to_asterisk() : m_->text, scaled_style));
+
 	const int linewidth = m_->rendered_text->width(); // NOCOM crash in password mode
-	const int lineheight = m_->text.empty() ? text_height(m_->fontsize) : m_->rendered_text->height();
+	const int lineheight = m_->text.empty() ? text_height(scaled_style) : m_->rendered_text->height();
 
 	Vector2i point(kMarginX, get_h() / 2);
 	if (m_->align == UI::Align::kRight) {
@@ -465,7 +489,9 @@ void EditBox::check_caret() {
 
 void EditBox::update() {
 	m_->rendered_text =
-	   UI::g_fh->render(as_editorfont(password_ ? text_to_asterisk() : richtext_escape(m_->text), m_->fontsize));
+			// NOCOM font scaling?
+			// NOCOM we have 2 implementations of password strings now
+	   UI::g_fh->render(as_editor_richtext_paragraph(password_ ? text_to_asterisk() : richtext_escape(m_->text), *m_->font_style));
 	check_caret();
 	changed();
 }

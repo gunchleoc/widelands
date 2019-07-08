@@ -77,6 +77,7 @@ wl_library(graphic_text
     graphic_text_font_backend
     graphic_text_layout
     graphic_text_stream
+    io_fileread
     io_filesystem
     scripting_lua_interface
     scripting_lua_table

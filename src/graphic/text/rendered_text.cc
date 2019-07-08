@@ -24,7 +24,7 @@
 #include "base/macros.h"
 #include "graphic/graphic.h"
 #include "graphic/text/bidi.h"
-#include "graphic/text_layout.h"
+// NOCOM #include "graphic/text_layout.h"
 
 namespace UI {
 // RenderedRect

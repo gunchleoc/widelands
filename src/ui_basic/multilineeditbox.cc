@@ -38,10 +38,10 @@ namespace {
 static const uint32_t RICHTEXT_MARGIN = 2;
 
 /// Escape, convert newlines and apply editorfont
-std::string make_richtext(const std::string& text) {
+std::string make_richtext(const std::string& text, const UI::FontStyleInfo& font) {
 	std::string temp = richtext_escape(text);
 	boost::replace_all(temp, "\n", "<br>");
-	return as_editorfont(temp);
+	return as_editor_richtext_paragraph(temp, font);
 }
 } // namespace
 
@@ -56,8 +56,8 @@ struct MultilineEditbox::Data {
 	/// The pre-rendered text in the edit box
 	std::shared_ptr<const UI::RenderedText> rendered_text;
 
-	/// Background color and texture
-	const UI::PanelStyleInfo* background_style;
+	/// Background color and texture + font style
+	const UI::TextPanelStyleInfo& style;
 
 	/// Position of the cursor inside the text.
 	/// 0 indicates that the cursor is before the first character,
@@ -69,7 +69,7 @@ struct MultilineEditbox::Data {
 	/// Maximum length of the text string, in bytes
 	const uint32_t maxbytes;
 
-	Data(MultilineEditbox&, const UI::PanelStyleInfo* style);
+	Data(MultilineEditbox&, const TextPanelStyleInfo& style);
 	void update_rendered_text();
 
 	void scroll_cursor_into_view();
@@ -98,15 +98,15 @@ MultilineEditbox::MultilineEditbox(
 	set_handle_textinput();
 }
 
-MultilineEditbox::Data::Data(MultilineEditbox& o, const UI::PanelStyleInfo* style)
+MultilineEditbox::Data::Data(MultilineEditbox& o, const UI::TextPanelStyleInfo& init_style)
    : scrollbar(
         &o, o.get_w() - Scrollbar::kSize, 0, Scrollbar::kSize, o.get_h(), UI::PanelStyle::kWui),
-     background_style(style),
-     caret_index(0),
-     lineheight(text_height()),
+     style(init_style),
+	 caret_index(0),
+     lineheight(text_height(style.font())),
      maxbytes(std::min(g_gr->max_texture_size_for_font_rendering() *
                           g_gr->max_texture_size_for_font_rendering() /
-                          (lineheight * lineheight),
+                          (text_height(style.font()) * text_height(style.font())),
                        std::numeric_limits<int32_t>::max())),
      owner(o) {
 	scrollbar.set_pagesize(owner.get_h() - 2 * lineheight);
@@ -368,7 +368,7 @@ void MultilineEditbox::focus(bool topcaller) {
  * Redraw the Editbox
  */
 void MultilineEditbox::draw(RenderTarget& dst) {
-	draw_background(dst, *d_->background_style);
+	draw_background(dst, d_->style.background());
 
 	// Draw border.
 	if (get_w() >= 4 && get_h() >= 4) {
@@ -396,7 +396,6 @@ void MultilineEditbox::draw(RenderTarget& dst) {
 		//log("NOCOM ************************************\ntext to render: %s\n", d_->text.c_str());
 		// NOCOM Vector2i caret_position = d_->rendered_text->calculate_caret_position(d_->cursor_pos);
 		//log("NOCOM caret pos: %d, %d\n", d_->caret_position.x, d_->caret_position.y);
-
 		d_->rendered_text->handle_caret(d_->caret_index, Vector2i(0, 0 - d_->scrollbar.get_scrollpos()), &dst);
 	}
 }
@@ -447,7 +446,7 @@ void MultilineEditbox::Data::scroll_cursor_into_view() {
  * Re-wrap the string and update the scrollbar range accordingly.
  */
 void MultilineEditbox::Data::update_rendered_text() {
-	rendered_text = UI::g_fh->render(make_richtext(text), owner.get_w() - Scrollbar::kSize - 2 * RICHTEXT_MARGIN);
+	rendered_text = UI::g_fh->render(make_richtext(text, style.font()), owner.get_w() - Scrollbar::kSize - 2 * RICHTEXT_MARGIN);
 	scrollbar.set_steps(rendered_text->height() - owner.get_h());
 }
 
