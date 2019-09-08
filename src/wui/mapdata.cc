@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2016 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,41 +21,57 @@
 
 #include "io/filesystem/filesystem.h"
 
-MapData::MapData() : authors(""), nrplayers(0), width(0), height(0),
-		maptype(MapData::MapType::kNormal), displaytype(MapData::DisplayType::kMapnamesLocalized) {}
+MapData::MapData(const std::string& init_filename,
+                 const std::string& init_localized_name,
+                 const std::string& init_author,
+                 const MapData::MapType& init_maptype,
+                 const MapData::DisplayType& init_displaytype)
+   : filename(init_filename),
+     name(init_localized_name),
+     localized_name(init_localized_name),
+     authors(init_author),
+     nrplayers(0),
+     width(0),
+     height(0),
+     maptype(init_maptype),
+     displaytype(init_displaytype) {
+}
 
-		MapData::MapData(const Widelands::Map& map, const std::string& init_filename,
-			  const MapData::MapType& init_maptype,
-			  const MapData::DisplayType& init_displaytype) :
-		MapData() {
-		i18n::Textdomain td("maps");
-		filename = init_filename;
+MapData::MapData(const Widelands::Map& map,
+                 const std::string& init_filename,
+                 const MapData::MapType& init_maptype,
+                 const MapData::DisplayType& init_displaytype)
+   : MapData(init_filename,
+             _("No Name"),
+             map.get_author().empty() ? _("No Author") : map.get_author(),
+             init_maptype,
+             init_displaytype) {
+
+	i18n::Textdomain td("maps");
+	if (!map.get_name().empty()) {
 		name = map.get_name();
-		localized_name = name.empty() ? "" : _(name);
-		// Localizing this, because some author fields now have "edited by" text.
-		authors = MapAuthorData(_(map.get_author()));
-		description = map.get_description().empty() ? "" : _(map.get_description());
-		hint = map.get_hint().empty() ? "" : _(map.get_hint());
-		nrplayers = map.get_nrplayers();
-		width = map.get_width();
-		height = map.get_height();
-		suggested_teams = map.get_suggested_teams();
-		tags = map.get_tags();
-		maptype = init_maptype;
-		displaytype = init_displaytype;
-
-		if (maptype == MapData::MapType::kScenario) {
-			tags.insert("scenario");
-		}
+		localized_name = _(name);
 	}
+	description = map.get_description().empty() ? "" : _(map.get_description());
+	hint = map.get_hint().empty() ? "" : _(map.get_hint());
+	nrplayers = map.get_nrplayers();
+	width = map.get_width();
+	height = map.get_height();
+	suggested_teams = map.get_suggested_teams();
+	tags = map.get_tags();
 
-MapData::MapData(const std::string& init_filename, const std::string& init_localized_name) :
-		MapData() {
-		filename = init_filename;
-		name = init_localized_name;
-		localized_name = init_localized_name;
-		maptype = MapData::MapType::kDirectory;
+	if (maptype == MapData::MapType::kScenario) {
+		tags.insert("scenario");
 	}
+}
+
+MapData::MapData(const std::string& init_filename, const std::string& init_localized_name)
+   : MapData(init_filename,
+             init_localized_name,
+             _("No Author"),
+             MapData::MapType::kDirectory,
+             MapData::DisplayType::kMapnamesLocalized) {
+}
 
 bool MapData::compare_names(const MapData& other) {
 	// The parent directory gets special treatment.
@@ -130,11 +146,20 @@ std::string MapData::parent_name() {
 }
 
 // static
+MapData MapData::create_empty_dir(const std::string& current_dir) {
+	/** TRANSLATORS: This label is shown when a folder is empty */
+	return MapData(current_dir, (boost::format("<%s>") % _("empty")).str());
+}
+
+// static
 MapData MapData::create_directory(const std::string& directory) {
 	std::string localized_name;
 	if (boost::equals(directory, "maps/MP_Scenarios")) {
 		/** TRANSLATORS: Directory name for MP Scenarios in map selection */
 		localized_name = _("Multiplayer Scenarios");
+	} else if (boost::equals(directory, "maps/My_Maps")) {
+		/** TRANSLATORS: Directory name for user maps in map selection */
+		localized_name = _("My Maps");
 	} else {
 		localized_name = FileSystem::fs_filename(directory.c_str());
 	}

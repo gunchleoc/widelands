@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2011 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,36 +26,33 @@
 #include "ai/computer_player.h"
 #include "base/i18n.h"
 #include "base/wexception.h"
-#include "graphic/graphic.h"
-#include "graphic/text_constants.h"
 #include "logic/game_settings.h"
-#include "logic/map_objects/tribes/tribe_descr.h"
+#include "logic/map_objects/tribes/tribe_basic_info.h"
 #include "logic/player.h"
 #include "ui_basic/button.h"
 #include "ui_basic/checkbox.h"
 #include "ui_basic/textarea.h"
 
 struct PlayerDescriptionGroupImpl {
-	GameSettingsProvider * settings;
+	GameSettingsProvider* settings;
 	uint32_t plnum;
 
-	UI::Textarea     * plr_name;
-	UI::Checkbox     * btnEnablePlayer;
-	UI::Button * btnPlayerTeam;
-	UI::Button * btnPlayerType;
-	UI::Button * btnPlayerTribe;
-	UI::Button * btnPlayerInit;
+	UI::Textarea* plr_name;
+	UI::Checkbox* btnEnablePlayer;
+	UI::Button* btnPlayerTeam;
+	UI::Button* btnPlayerType;
+	UI::Button* btnPlayerTribe;
+	UI::Button* btnPlayerInit;
 };
 
-PlayerDescriptionGroup::PlayerDescriptionGroup
-	(UI::Panel            * const parent,
-	 int32_t const x, int32_t const y, int32_t const w, int32_t const h,
-	 GameSettingsProvider * const settings,
-	 uint32_t               const plnum)
-:
-UI::Panel(parent, x, y, w, h),
-d(new PlayerDescriptionGroupImpl)
-{
+PlayerDescriptionGroup::PlayerDescriptionGroup(UI::Panel* const parent,
+                                               int32_t const x,
+                                               int32_t const y,
+                                               int32_t const w,
+                                               int32_t const h,
+                                               GameSettingsProvider* const settings,
+                                               uint32_t const plnum)
+   : UI::Panel(parent, x, y, w, h), d(new PlayerDescriptionGroupImpl) {
 	d->settings = settings;
 	d->plnum = plnum;
 
@@ -65,59 +62,42 @@ d(new PlayerDescriptionGroupImpl)
 	int32_t xplayertribe = w * 80 / 125;
 	int32_t xplayerinit = w * 55 / 125;
 	d->plr_name = new UI::Textarea(this, xplrname, 0, xplayertype - xplrname, h);
-	d->btnEnablePlayer = new UI::Checkbox(this, Point(xplayertype - 23, 0), "");
-	d->btnEnablePlayer->changedto.connect
-		(boost::bind(&PlayerDescriptionGroup::enable_player, this, _1));
-	d->btnPlayerType = new UI::Button
-		(this, "player_type",
-		 xplayertype, 0, xplayertribe - xplayertype - 2, h / 2,
-		 g_gr->images().get("images/ui_basic/but1.png"),
-		 std::string(), std::string(),
-		 true, false);
-	d->btnPlayerType->sigclicked.connect
-		(boost::bind(&PlayerDescriptionGroup::toggle_playertype, boost::ref(*this)));
-	d->btnPlayerTeam = new UI::Button
-		(this, "player_team",
-		 xplayerteam, h / 2, xplayerinit - xplayerteam - 2, h / 2,
-		 g_gr->images().get("images/ui_basic/but1.png"),
-		 std::string(), std::string(),
-		 true, false);
-	d->btnPlayerTeam->sigclicked.connect
-		(boost::bind(&PlayerDescriptionGroup::toggle_playerteam, boost::ref(*this)));
-	d->btnPlayerTribe = new UI::Button
-		(this, "player_tribe",
-		 xplayertribe, 0, w - xplayertribe, h / 2,
-		 g_gr->images().get("images/ui_basic/but1.png"),
-		 std::string(), std::string(),
-		 true, false);
-	d->btnPlayerTribe->sigclicked.connect
-		(boost::bind(&PlayerDescriptionGroup::toggle_playertribe, boost::ref(*this)));
-	d->btnPlayerInit = new UI::Button
-		(this, "player_initialization",
-		 xplayerinit, h / 2, w - xplayerinit, h / 2,
-		 g_gr->images().get("images/ui_basic/but1.png"),
-		 std::string(), _("Initialization"),
-		 true, false);
-	d->btnPlayerInit->sigclicked.connect
-		(boost::bind(&PlayerDescriptionGroup::toggle_playerinit, boost::ref(*this)));
+	d->btnEnablePlayer = new UI::Checkbox(this, Vector2i(xplayertype - 23, 0), "");
+	d->btnEnablePlayer->changedto.connect(
+	   boost::bind(&PlayerDescriptionGroup::enable_player, this, _1));
+	d->btnPlayerType =
+	   new UI::Button(this, "player_type", xplayertype, 0, xplayertribe - xplayertype - 2, h / 2,
+	                  UI::ButtonStyle::kFsMenuSecondary, "");
+	d->btnPlayerType->sigclicked.connect(
+	   boost::bind(&PlayerDescriptionGroup::toggle_playertype, boost::ref(*this)));
+	d->btnPlayerTeam =
+	   new UI::Button(this, "player_team", xplayerteam, h / 2, xplayerinit - xplayerteam - 2, h / 2,
+	                  UI::ButtonStyle::kFsMenuSecondary, "");
+	d->btnPlayerTeam->sigclicked.connect(
+	   boost::bind(&PlayerDescriptionGroup::toggle_playerteam, boost::ref(*this)));
+	d->btnPlayerTribe = new UI::Button(this, "player_tribe", xplayertribe, 0, w - xplayertribe,
+	                                   h / 2, UI::ButtonStyle::kFsMenuSecondary, "");
+	d->btnPlayerTribe->sigclicked.connect(
+	   boost::bind(&PlayerDescriptionGroup::toggle_playertribe, boost::ref(*this)));
+	d->btnPlayerInit =
+	   new UI::Button(this, "player_initialization", xplayerinit, h / 2, w - xplayerinit, h / 2,
+	                  UI::ButtonStyle::kFsMenuSecondary, "", _("Initialization"));
+	d->btnPlayerInit->sigclicked.connect(
+	   boost::bind(&PlayerDescriptionGroup::toggle_playerinit, boost::ref(*this)));
 
-	refresh();
+	update();
 }
 
-
-PlayerDescriptionGroup::~PlayerDescriptionGroup()
-{
+PlayerDescriptionGroup::~PlayerDescriptionGroup() {
 	delete d;
 	d = nullptr;
 }
 
-
 /**
  * Update display and enabled buttons based on current settings.
  */
-void PlayerDescriptionGroup::refresh()
-{
-	const GameSettings & settings = d->settings->settings();
+void PlayerDescriptionGroup::update() {
+	const GameSettings& settings = d->settings->settings();
 
 	if (d->plnum >= settings.players.size()) {
 		set_visible(false);
@@ -126,43 +106,43 @@ void PlayerDescriptionGroup::refresh()
 
 	set_visible(true);
 
-	const PlayerSettings & player = settings.players[d->plnum];
+	const PlayerSettings& player = settings.players[d->plnum];
 	bool stateaccess = d->settings->can_change_player_state(d->plnum);
 	bool tribeaccess = d->settings->can_change_player_tribe(d->plnum);
-	bool const initaccess  = d->settings->can_change_player_init(d->plnum);
+	bool const initaccess = d->settings->can_change_player_init(d->plnum);
 	bool teamaccess = d->settings->can_change_player_team(d->plnum);
 
 	d->btnEnablePlayer->set_enabled(stateaccess);
 
-	if (player.state == PlayerSettings::stateClosed) {
+	if (player.state == PlayerSettings::State::kClosed) {
 		d->btnEnablePlayer->set_state(false);
-		d->btnPlayerTeam ->set_visible(false);
-		d->btnPlayerTeam ->set_enabled(false);
-		d->btnPlayerType ->set_visible(false);
-		d->btnPlayerType ->set_enabled(false);
+		d->btnPlayerTeam->set_visible(false);
+		d->btnPlayerTeam->set_enabled(false);
+		d->btnPlayerType->set_visible(false);
+		d->btnPlayerType->set_enabled(false);
 		d->btnPlayerTribe->set_visible(false);
 		d->btnPlayerTribe->set_enabled(false);
-		d->btnPlayerInit ->set_visible(false);
-		d->btnPlayerInit ->set_enabled(false);
+		d->btnPlayerInit->set_visible(false);
+		d->btnPlayerInit->set_enabled(false);
 		d->plr_name->set_text(std::string());
 	} else {
 		d->btnEnablePlayer->set_state(true);
 		d->btnPlayerType->set_visible(true);
 		d->btnPlayerType->set_enabled(stateaccess);
 
-		if (player.state == PlayerSettings::stateOpen) {
-			d->btnPlayerType ->set_title(_("Open"));
-			d->btnPlayerTeam ->set_visible(false);
-			d->btnPlayerTeam ->set_visible(false);
+		if (player.state == PlayerSettings::State::kOpen) {
+			d->btnPlayerType->set_title(_("Open"));
+			d->btnPlayerTeam->set_visible(false);
+			d->btnPlayerTeam->set_visible(false);
 			d->btnPlayerTribe->set_visible(false);
-			d->btnPlayerInit ->set_visible(false);
+			d->btnPlayerInit->set_visible(false);
 			d->btnPlayerTribe->set_enabled(false);
-			d->btnPlayerInit ->set_enabled(false);
+			d->btnPlayerInit->set_enabled(false);
 			d->plr_name->set_text(std::string());
 		} else {
 			std::string title;
 
-			if (player.state == PlayerSettings::stateComputer) {
+			if (player.state == PlayerSettings::State::kComputer) {
 				if (player.ai.empty())
 					title = _("Computer");
 				else {
@@ -170,16 +150,16 @@ void PlayerDescriptionGroup::refresh()
 						title += _("Random AI");
 					} else {
 						const ComputerPlayer::Implementation* impl =
-								ComputerPlayer::get_implementation(player.ai);
+						   ComputerPlayer::get_implementation(player.ai);
 						title = _(impl->descname);
 					}
 				}
-			} else { // PlayerSettings::stateHuman
+			} else {  // PlayerSettings::State::stateHuman
 				title = _("Human");
 			}
 			d->btnPlayerType->set_title(title);
 
-			TribeBasicInfo info = Widelands::Tribes::tribeinfo(player.tribe);
+			Widelands::TribeBasicInfo info = Widelands::get_tribeinfo(player.tribe);
 			if (!tribenames_[player.tribe].size()) {
 				// Tribe's localized name
 				tribenames_[player.tribe] = info.descname;
@@ -193,20 +173,17 @@ void PlayerDescriptionGroup::refresh()
 				d->btnPlayerTribe->set_tooltip(info.tooltip);
 			}
 
-			{
-				i18n::Textdomain td("tribes"); // for translated initialisation
-				for (const TribeBasicInfo& tribeinfo : settings.tribes) {
+			if (settings.scenario) {
+				d->btnPlayerInit->set_title(_("Scenario"));
+				d->btnPlayerInit->set_tooltip(_("Start type is set via the scenario"));
+			} else {
+				i18n::Textdomain td("tribes");  // for translated initialisation
+				for (const Widelands::TribeBasicInfo& tribeinfo : settings.tribes) {
 					if (tribeinfo.name == player.tribe) {
-						d->btnPlayerInit->set_title
-							(_
-								(tribeinfo.initializations.at
-									(player.initialization_index)
-								 .descname));
-						d->btnPlayerInit->set_tooltip
-							(_
-								(tribeinfo.initializations.at
-									(player.initialization_index)
-								 .tooltip));
+						d->btnPlayerInit->set_title(
+						   _(tribeinfo.initializations.at(player.initialization_index).descname));
+						d->btnPlayerInit->set_tooltip(
+						   _(tribeinfo.initializations.at(player.initialization_index).tooltip));
 						break;
 					}
 				}
@@ -219,54 +196,53 @@ void PlayerDescriptionGroup::refresh()
 				d->btnPlayerTeam->set_title("--");
 			}
 
-			d->btnPlayerTeam ->set_visible(true);
+			d->btnPlayerTeam->set_visible(true);
 			d->btnPlayerTribe->set_visible(true);
-			d->btnPlayerInit ->set_visible(true);
-			d->btnPlayerTeam ->set_enabled(teamaccess);
+			d->btnPlayerInit->set_visible(true);
+			d->btnPlayerTeam->set_enabled(teamaccess);
 			d->btnPlayerTribe->set_enabled(tribeaccess);
-			d->btnPlayerInit ->set_enabled(initaccess);
+			d->btnPlayerInit->set_enabled(initaccess);
 		}
 	}
 }
 
-
 /**
  * The checkbox to open/close a player position has been pressed.
  */
-void PlayerDescriptionGroup::enable_player(bool on)
-{
-	const GameSettings & settings = d->settings->settings();
+void PlayerDescriptionGroup::enable_player(bool on) {
+	const GameSettings& settings = d->settings->settings();
 
 	if (d->plnum >= settings.players.size())
 		return;
 
 	if (on) {
-		if (settings.players[d->plnum].state == PlayerSettings::stateClosed)
-			d->settings->next_player_state(d->plnum);
+		if (settings.players[d->plnum].state == PlayerSettings::State::kClosed) {
+			d->settings->set_player_state(d->plnum, PlayerSettings::State::kComputer);
+		}
 	} else {
-		if (settings.players[d->plnum].state != PlayerSettings::stateClosed)
-			d->settings->set_player_state(d->plnum, PlayerSettings::stateClosed);
+		if (settings.players[d->plnum].state != PlayerSettings::State::kClosed) {
+			d->settings->set_player_state(d->plnum, PlayerSettings::State::kClosed);
+		}
 	}
+	Notifications::publish(NoteGameSettings(NoteGameSettings::Action::kPlayer, d->plnum));
 }
 
-
-void PlayerDescriptionGroup::toggle_playertype()
-{
+void PlayerDescriptionGroup::toggle_playertype() {
 	d->settings->next_player_state(d->plnum);
+	update();
 }
 
 /**
  * Cycle through available tribes for the player.
  */
-void PlayerDescriptionGroup::toggle_playertribe()
-{
-	const GameSettings & settings = d->settings->settings();
+void PlayerDescriptionGroup::toggle_playertribe() {
+	const GameSettings& settings = d->settings->settings();
 
 	if (d->plnum >= settings.players.size())
 		return;
 
-	const PlayerSettings & player = settings.players.at(d->plnum);
-	const std::string & currenttribe = player.tribe;
+	const PlayerSettings& player = settings.players.at(d->plnum);
+	const std::string& currenttribe = player.tribe;
 	std::string nexttribe = settings.tribes.at(0).name;
 	bool random_tribe = false;
 	uint32_t num_tribes = settings.tribes.size();
@@ -286,6 +262,7 @@ void PlayerDescriptionGroup::toggle_playertribe()
 	}
 
 	d->settings->set_player_tribe(d->plnum, nexttribe, random_tribe);
+	update();
 }
 
 /**
@@ -295,9 +272,8 @@ void PlayerDescriptionGroup::toggle_playertribe()
  * number of teams is the number of players divided by two. Lonely players
  * can just have team number set to 0.
  */
-void PlayerDescriptionGroup::toggle_playerteam()
-{
-	const GameSettings & settings = d->settings->settings();
+void PlayerDescriptionGroup::toggle_playerteam() {
+	const GameSettings& settings = d->settings->settings();
 
 	if (d->plnum >= settings.players.size())
 		return;
@@ -312,26 +288,24 @@ void PlayerDescriptionGroup::toggle_playerteam()
 		newteam = currentteam + 1;
 
 	d->settings->set_player_team(d->plnum, newteam);
+	update();
 }
 
 /// Cycle through available initializations for the player's tribe.
-void PlayerDescriptionGroup::toggle_playerinit()
-{
-	const GameSettings & settings = d->settings->settings();
+void PlayerDescriptionGroup::toggle_playerinit() {
+	const GameSettings& settings = d->settings->settings();
 
 	if (d->plnum >= settings.players.size())
 		return;
 
-	const PlayerSettings & player = settings.players[d->plnum];
+	const PlayerSettings& player = settings.players[d->plnum];
 
-	for (const TribeBasicInfo& tribeinfo : settings.tribes) {
+	for (const Widelands::TribeBasicInfo& tribeinfo : settings.tribes) {
 		if (tribeinfo.name == player.tribe) {
-			return
-				d->settings->set_player_init
-					(d->plnum,
-					 (player.initialization_index + 1)
-					 %
-					 tribeinfo.initializations.size());
+			d->settings->set_player_init(
+			   d->plnum, (player.initialization_index + 1) % tribeinfo.initializations.size());
+			update();
+			return;
 		}
 	}
 	NEVER_HERE();

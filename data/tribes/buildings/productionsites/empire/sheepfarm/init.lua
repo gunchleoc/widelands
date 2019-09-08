@@ -31,7 +31,9 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      prohibited_till = 600
+      prohibited_till = 380,
+      very_weak_ai_limit = 1,
+      weak_ai_limit = 3
    },
 
    working_positions = {
@@ -39,8 +41,8 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      wheat = 7,
-      water = 7
+      { name = "water", amount = 7 },
+      { name = "wheat", amount = 7 }
    },
    outputs = {
       "wool"
@@ -51,10 +53,10 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start breeding sheep because ...
          descname = _"breeding sheep",
          actions = {
-            "sleep=25000",
             "return=skipped unless economy needs wool",
             "consume=water wheat",
-            "play_sound=sound/farm sheep 192",
+            "sleep=25000",
+            "playsound=sound/farm/sheep 192",
             "animate=working 30000",
             "produce=wool"
          }

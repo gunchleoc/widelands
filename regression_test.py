@@ -80,7 +80,6 @@ class WidelandsTestCase(unittest.TestCase):
 
         Returns the stdout filename."""
         stdout_filename = os.path.join(self.run_dir, "stdout_{:02d}.txt".format(which_time))
-        log_filename = os.path.join(self.run_dir, "log_{:02d}.txt".format(which_time))
         if (os.path.exists(stdout_filename)):
             os.unlink(stdout_filename)
 
@@ -90,10 +89,8 @@ class WidelandsTestCase(unittest.TestCase):
                     '--datadir={}'.format(datadir()),
                     '--datadir_for_testing={}'.format(datadir_for_testing()),
                     '--homedir={}'.format(self.run_dir),
-                    '--disable_fx=true',
-                    '--disable_music=true',
-                    '--language=en_US',
-                    '--logfile={}'.format(log_filename) ]
+                    '--nosound',
+                    '--language=en_US' ]
             args += [ "--{}={}".format(key, value) for key, value in iteritems(wlargs) ]
 
             widelands = subprocess.Popen(
@@ -105,12 +102,6 @@ class WidelandsTestCase(unittest.TestCase):
                 stdout_file.write(str(line))
                 stdout_file.flush()
             widelands.communicate()
-
-            with open(log_filename,"r") as f:
-                for line in f:
-                    stdout_file.write(line)
-                stdout_file.flush()
-
             self.widelands_returncode = widelands.returncode
         return stdout_filename
 
@@ -144,6 +135,9 @@ class WidelandsTestCase(unittest.TestCase):
             "Widelands exited abnormally. {}".format(common_msg)
         )
         self.assertTrue("All Tests passed" in stdout,
+            "Not all tests pass. {}.".format(common_msg)
+        )
+        self.assertFalse("lua_errors.cc" in stdout,
             "Not all tests pass. {}.".format(common_msg)
         )
         out("done.\n")
@@ -225,7 +219,7 @@ def main():
     args = parse_args()
 
     WidelandsTestCase.path_to_widelands_binary = args.binary
-    print("Using '{}' binary.".format(args.binary)) 
+    print("Using '{}' binary.".format(args.binary))
     WidelandsTestCase.do_use_random_directory = not args.nonrandom
     WidelandsTestCase.keep_output_around = args.keep_around
 

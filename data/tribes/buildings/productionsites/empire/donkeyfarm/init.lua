@@ -31,7 +31,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      recruitment = true
+      prohibited_till = 610,
    },
 
    working_positions = {
@@ -39,8 +39,8 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      wheat = 8,
-      water = 8
+      { name = "water", amount = 8 },
+      { name = "wheat", amount = 8 }
    },
    outputs = {
       "empire_donkey"
@@ -49,12 +49,12 @@ tribes:new_productionsite_type {
    programs = {
       work = {
          -- TRANSLATORS: Completed/Skipped/Did not start rearing donkeys because ...
-         descname = _"rearing donkeys",
+         descname = pgettext("empire_building", "rearing donkeys"),
          actions = {
-            "sleep=15000",
             "return=skipped unless economy needs empire_donkey",
             "consume=wheat water",
-            "play_sound=sound/farm donkey 192",
+            "sleep=15000",
+            "playsound=sound/farm/donkey 192",
             "animate=working 15000", -- Feeding cute little baby donkeys ;)
             "recruit=empire_donkey"
          }

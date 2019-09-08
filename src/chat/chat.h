@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2011 by the Widelands Development Team
+ * Copyright (C) 2008-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "logic/widelands.h"
 #include "notifications/note_ids.h"
 #include "notifications/notifications.h"
 
@@ -31,12 +32,15 @@
 struct ChatMessage {
 	CAN_BE_SENT_AS_NOTE(NoteId::ChatMessage)
 
+	explicit ChatMessage(const std::string& message) : msg(message) {
+	}
+
 	// The (real-)time at which the message was received.
-	time_t time;
+	time_t time = std::time(nullptr);
 
 	// The playercolor. Used to colorize the senders name; negative numbers
 	// indicate system messages for which richtext is allowed.
-	int16_t playern;
+	int16_t playern = Widelands::neutral();
 
 	// A string identifying the sender of the message.
 	// This string is empty for system-generated messages.
@@ -63,7 +67,7 @@ struct ChatProvider {
 
 	// Send the given chat message. The message may or may not
 	// appear in subsequent calls to \ref get_messages.
-	virtual void send(const std::string &) = 0;
+	virtual void send(const std::string&) = 0;
 
 	// \return a (chronological) list of received chat messages.
 	// This list need not be stable or monotonic. In other words,
@@ -74,10 +78,14 @@ struct ChatProvider {
 	// reimplemented e.g. in internet_gaming to silence the chat if in game.
 	// TODO(sirver): this does not belong here. The receiver of the
 	// notifications should deal with this.
-	virtual bool sound_off() {return false;}
+	virtual bool sound_off() {
+		return false;
+	}
 
 	// The specific chat provider subclass might not have been set, e.g. due to an exception.
-	virtual bool has_been_set() const {return false;}
+	virtual bool has_been_set() const {
+		return false;
+	}
 };
 
 #endif  // end of include guard:

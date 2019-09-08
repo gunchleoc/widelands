@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2010 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,58 +17,33 @@
  *
  */
 
+#include "wui/trainingsitewindow.h"
+
 #include "graphic/graphic.h"
-#include "logic/map_objects/tribes/trainingsite.h"
-#include "ui_basic/tabpanel.h"
-#include "wui/productionsitewindow.h"
 #include "wui/soldiercapacitycontrol.h"
 #include "wui/soldierlist.h"
 
-using Widelands::TrainingSite;
-
-static char const * pic_tab_military = "images/wui/buildings/menu_tab_military.png";
-
-/**
- * Status window for \ref TrainingSite
- */
-struct TrainingSiteWindow : public ProductionSiteWindow {
-	TrainingSiteWindow
-		(InteractiveGameBase & parent, TrainingSite &, UI::Window * & registry);
-
-	TrainingSite & trainingsite() {
-		return dynamic_cast<TrainingSite&>(building());
-	}
-
-protected:
-	void create_capsbuttons(UI::Box * buttons) override;
-};
+static char const* pic_tab_military = "images/wui/buildings/menu_tab_military.png";
 
 /**
  * Create the \ref TrainingSite specific soldier list tab.
  */
-TrainingSiteWindow::TrainingSiteWindow
-	(InteractiveGameBase & parent, TrainingSite & ts, UI::Window * & registry)
-:
-ProductionSiteWindow  (parent, ts, registry)
-{
-	get_tabs()->add
-		("soldiers", g_gr->images().get(pic_tab_military),
-		 create_soldier_list(*get_tabs(), parent, trainingsite()),
-		 _("Soldiers in training"));
+TrainingSiteWindow::TrainingSiteWindow(InteractiveGameBase& parent,
+                                       UI::UniqueWindow::Registry& reg,
+                                       Widelands::TrainingSite& ts,
+                                       bool avoid_fastclick,
+                                       bool workarea_preview_wanted)
+   : ProductionSiteWindow(parent, reg, ts, avoid_fastclick, workarea_preview_wanted),
+     training_site_(&ts) {
+	init(avoid_fastclick, workarea_preview_wanted);
 }
 
-void TrainingSiteWindow::create_capsbuttons(UI::Box * buttons)
-{
-	ProductionSiteWindow::create_capsbuttons(buttons);
-}
-
-/*
-===============
-Create the training site information window.
-===============
-*/
-void TrainingSite::create_options_window
-	(InteractiveGameBase & plr, UI::Window * & registry)
-{
-	new TrainingSiteWindow(plr, *this, registry);
+void TrainingSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wanted) {
+	Widelands::ProductionSite* training_site = training_site_.get(igbase()->egbase());
+	assert(training_site != nullptr);
+	ProductionSiteWindow::init(avoid_fastclick, workarea_preview_wanted);
+	get_tabs()->add("soldiers", g_gr->images().get(pic_tab_military),
+	                create_soldier_list(*get_tabs(), *igbase(), *training_site),
+	                _("Soldiers in training"));
+	think();
 }

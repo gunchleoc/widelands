@@ -1,28 +1,29 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2016 Widelands Development Team
+# Copyright (C) 2005-2019 Widelands Development Team
 # 
 # Translators:
 # GunChleoc, 2014
-# Igor Kotrasiński <ikk_pl@yahoo.co.uk>, 2015
+# Wesmania <ikk_pl@yahoo.co.uk>, 2015
+# Wesmania <ikk_pl@yahoo.co.uk>, 2016-2017
 # Jacek Wolszczak <shutdownrunner@o2.pl>, 2008
-# Tomasz Pudło <wptom@wp.pl>, 2016
-# Tomasz Pudło <wptom@wp.pl>, 2015
+# Jakub Magnowski <qoiutek@gmail.com>, 2018
+# tombox <wptom@wp.pl>, 2016,2018-2019
+# tombox <wptom@wp.pl>, 2015
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands\n"
-"Report-Msgid-Bugs-To: https://bugs.launchpad.net/widelands\n"
-"POT-Creation-Date: 2016-04-07 14:12+0000\n"
-"PO-Revision-Date: 2016-04-07 14:13+0000\n"
+"Report-Msgid-Bugs-To: https://wl.widelands.org/wiki/ReportingBugs/\n"
+"POT-Creation-Date: 2019-05-10 07:32+0000\n"
+"PO-Revision-Date: 2019-05-10 07:33+0000\n"
 "Last-Translator: GunChleoc\n"
 "Language-Team: Polish (http://www.transifex.com/widelands/widelands/language/pl/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: pl\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);\n"
 
 #: ../../data/campaigns/atl01.wmf/elemental:9
-#: ../../data/campaigns/campaigns.conf:95
 msgid "From Nemesis to Genesis"
 msgstr "Od zagłady do genezy"
 
@@ -33,7 +34,6 @@ msgid ""
 msgstr "Po wylądowaniu na tajemniczej wyspie koło Atlantydy, ocaleli Atlantydzi starają się stworzyć dla siebie nowy dom."
 
 #: ../../data/campaigns/bar01.wmf/elemental:8
-#: ../../data/campaigns/campaigns.conf:67
 msgid "A Place to Call Home"
 msgstr "Miejsce zwane domem"
 
@@ -44,7 +44,6 @@ msgid ""
 msgstr "W tym scenariuszu wprowadzone zostają zaawansowane budynki produkcyjne, w tym kopalnie."
 
 #: ../../data/campaigns/bar02.wmf/elemental:7
-#: ../../data/campaigns/campaigns.conf:72
 msgid "This Land is Our Land"
 msgstr "Ta ziemia jest nasza"
 
@@ -54,105 +53,21 @@ msgid ""
 "and will introduce fighting."
 msgstr "Ten samouczek wyjaśnia działanie budynków wojskowych i treningowych, a także wprowadza do walk."
 
-#: ../../data/campaigns/campaigns.conf:27
-msgid "The Second Empire"
-msgstr "Drugie Imperium"
-
-#: ../../data/campaigns/campaigns.conf:29
-msgid "Barbarians"
-msgstr "Barbarzyńcy"
-
-#: ../../data/campaigns/campaigns.conf:31
-msgid "Easy. Introduces the Barbarians"
-msgstr "Łatwy. Wprowadza barbarzyńców"
-
-#: ../../data/campaigns/campaigns.conf:32
-msgid ""
-"When Chat’Karuth died, he was an old man, father to three strong and "
-"ambitious sons, and warlord to an army that could match any enemy willing to"
-" rise against the ancient forests. Though at the end of his glorious reign, "
-"Chat’Karuth chose his eldest son, Thron, to succeed him as the tribe’s "
-"warlord – a decision that left his two brothers unsatisfied. The old warlord"
-" knew that. As his father instructed him, Thron left the capital of "
-"Al’thunran, the home of the Throne Among the Trees, and withdrew his forces "
-"to the high hills where he buried the corpse of his father. There he swore "
-"to the gods and his father’s spirit that he’d return to re-established "
-"order. While his brothers have raged blind war against Thron and the few "
-"forces he left to secure the borders of Al’thunran, the young warlord seeks "
-"to reunite his ambitious brothers and force the tribes to march once again "
-"under a common banner."
-msgstr "W dniu śmierci Chat'Karuth był już starym człowiekiem, ojcem trzech silnych i ambitnych synów i watażką dowodzącym armią gotową stawić czoła każdemu, kto wystąpiłby przeciwko pradawnym lasom. Pod koniec jego wspaniałych rządów Chat'Karuth wyznaczył swojego najstarszego syna, Throna, jako następcę - co nie zaspokoiło ambicji reszty rodzeństwa. Stary watażka o tym wiedział. Za radą ojca Thron opuścił stolicę, Al'thunran, dom Tronu Posród Drzew i wycofał swoje siły na wysokie wzgórza, gdzie pochował zwłoki swojego ojca. Tam przysiągł na bogów i ducha ojca, że powróci i przywróci porządek. Podczas gdy jego bracia walczą ślepo ze sobą, Thronem i siłami, które pozostawił, by strzegły granic Al'thunran, ten próbuje na nowo pojednać rodzeństwo i zmusić plemiona do ponownego marszu pod wspólnym sztandarem."
-
-#: ../../data/campaigns/campaigns.conf:35
-msgid "The Months of Exile"
-msgstr "Miesiące wygnania"
-
-#: ../../data/campaigns/campaigns.conf:37
-msgid "Empire"
-msgstr "Imperium"
-
-#: ../../data/campaigns/campaigns.conf:39
-msgid "Easy. Introduces the Empire"
-msgstr "Łatwy. Wprowadza Imperium"
-
-#: ../../data/campaigns/campaigns.conf:40
-msgid ""
-"Six months ago, Lutius – a young general of the Empire – was sent with 150 "
-"soldiers to the frontier beyond the northern forests where Barbarian tribes "
-"were crossing onto land held by the Empire. His task was to defend the "
-"Empire’s land. At first, everything was calm. He even talked to a few "
-"Barbarian children and thought about a peaceful life – side by side with "
-"this archaic folk. He began to feel safer and his army began to drop their "
-"attention off the potential enemy. That was their undoing. One night in "
-"March his unprepared army was attacked by 100 Barbarian footmen and was "
-"completely scattered. Only with his bare life he and a handful of his "
-"soldiers survived."
-msgstr "Sześć miesięcy temu Lucjusz - młody dowódca w służbie Imperium - posłany został ze 150 żołnierzami na granicę za północnymi lasami, gdzie barbarzyńskie plemiona wkraczały na tereny należące do Imperium. Za zadanie miał obronę granic. Z początku panował spokój. Lucjusz rozmawiał nawet z paroma barbarzyńskimi dziećmi i rozważał życie w pokoju z tym prymitywnym ludem. Poczuł się bezpiecznie, zaś jego wojsko mniej czujnie pilnowało potencjalnego wroga. Przyniosło im to zgubę, gdy pewnej marcowej nocy jego nieprzygotowana jednostka została zaatakowana i rozgromiona przez setkę barbarzyńskich piechurów. Z bitwy Lucjusz uniósł wyłącznie swoje życie i garstkę swoich ludzi."
-
-#: ../../data/campaigns/campaigns.conf:43
-msgid "The Run for the Fire"
-msgstr "Wyścig po ogień"
-
-#: ../../data/campaigns/campaigns.conf:45
-msgid "Atlanteans"
-msgstr "Atlantydzi"
-
-#: ../../data/campaigns/campaigns.conf:47
-msgid "Challenging. Introduces the Atlanteans"
-msgstr "Wyzwanie. Wprowadza Atlantydów"
-
-#: ../../data/campaigns/campaigns.conf:48
-msgid ""
-"When their God lost faith in the Atlanteans and drowned their island, one "
-"woman’s struggle for justice and a second chance for her people would become"
-" the stuff of legends. Leading the remaining Atlanteans into a new future in"
-" a new part of the World, Jundlina became the most powerful human of her "
-"time, but at a high cost: her humanity and soul."
-msgstr "Gdy bóg Atlantydów stracił w nich wiarę i zatopił ich wyspę, starania jednej kobiety o sprawiedliwość i drugą szansę dla jej ludu stały się przedmiotem legend. Jundlina, prowadząc ocalałych Atlantydów do przyszłości w nieznanym zakątku świata stała się najpotężniejszym człowiekiem jej czasów, lecz zapłaciła za to surową cenę - jej duszy i człowieczeństwa."
-
-#: ../../data/campaigns/campaigns.conf:78
-#: ../../data/campaigns/emp01.wmf/elemental:7
-msgid "The Strands of Malac’ Mor"
-msgstr "Brzegi Malac' Mor"
-
-#: ../../data/campaigns/campaigns.conf:83
-#: ../../data/campaigns/emp02.wmf/elemental:9
-msgid "An Outpost for Exile"
-msgstr "Strażnica dla wygnańca"
-
-#: ../../data/campaigns/campaigns.conf:88
-#: ../../data/campaigns/campaigns.conf:100
-#: ../../data/campaigns/dummy.wmf/elemental:7
+#: ../../data/campaigns/dummy.wmf/elemental:8
 msgid "Not yet implemented"
 msgstr "Jeszcze nie zaimplementowane"
 
-#: ../../data/campaigns/dummy.wmf/elemental:9
+#: ../../data/campaigns/dummy.wmf/elemental:10
 msgid "Nobody"
 msgstr "Nikt"
 
-#: ../../data/campaigns/dummy.wmf/elemental:10
+#: ../../data/campaigns/dummy.wmf/elemental:12
 msgid "Sorry, this map is not yet implemented."
 msgstr "Przepraszamy, mapa nie jest jeszcze zaimplementowana."
+
+#: ../../data/campaigns/emp01.wmf/elemental:7
+msgid "The Strands of Malac’ Mor"
+msgstr "Brzegi Malac' Mor"
 
 #: ../../data/campaigns/emp01.wmf/elemental:9
 msgid ""
@@ -163,6 +78,10 @@ msgid ""
 " an unknown desert strand and save his people. For now."
 msgstr "Po przegraniu ważnej bitwy przeciwko barbarzyńcom i utracie dużej części ziem Imperium, Lucjusz opuszcza Fremil, aby zacząć nowe życie. Ale przeznaczenie kieruje jego statek w ostry sztorm, który prawie go niszczy. Szczęśliwie udaje mu się osadzić statek na nieznanym pustynnym wybrzeżu i ocalić swoich ludzi. Na razie."
 
+#: ../../data/campaigns/emp02.wmf/elemental:9
+msgid "An Outpost for Exile"
+msgstr "Strażnica dla wygnańca"
+
 #: ../../data/campaigns/emp02.wmf/elemental:11
 msgid ""
 "Finally the ship was repaired, so Lutius and his people returned to the "
@@ -171,8 +90,53 @@ msgid ""
 "they set out to explore this new living space."
 msgstr "Wreszcie statek został naprawiony, więc Lucjusz i jego ludzie wyruszyli w poszukiwaniu dobrego miejsca na nowy początek. Kilka dni później wylądowali na zielonej, śródziemnomorskiej wyspie, wyglądającej niczym raj. Szczęśliwi ruszyli poznawać swój nowy dom."
 
+#: ../../data/campaigns/emp03.wmf/elemental:10
+msgid ""
+"On their way home to defend the Empire, the crew of Lutius was surprised by "
+"the will of the gods."
+msgstr "Na drodze do domu celem obrony Imperium załoga Lucjusza zaskoczona została przez wolę bogów."
+
+#: ../../data/campaigns/emp04.wmf/elemental:8
+msgid "Surprise, Surprise!"
+msgstr "Niespodzianka, niespodzianka!"
+
+#: ../../data/campaigns/emp04.wmf/elemental:10
+msgid ""
+"After returning home, Lutius and his crew are faced with an economy in "
+"shambles. Resolving the bottlenecks in the economy will be of utmost "
+"importance to reinstate the glory of the empire."
+msgstr "Po powrocie do domu Lutius i jego drużyna stają w obliczu ekonomii w rozsypce. Znalezienie rozwiązania dla wąskich gardeł w gospodarce będzie miało ogromne znaczenie dla przywrócenia chwały imperium."
+
+#: ../../data/campaigns/fri01.wmf/elemental:8
+msgid "The Great Stormflood"
+msgstr "Wielka Powódź"
+
+#: ../../data/campaigns/fri01.wmf/elemental:10
+msgid ""
+"In 1362, the quiet, peaceful life of the inhabitants of the Northern Frisian"
+" Islands was disrupted by one of the greatest storm floods in human memory: "
+"Saint Marcellus’ Flood. Is it really nothing more than yet another storm, or"
+" a sign from the Gods that the Frisian community on the island of Langeness "
+"is not wanted here?"
+msgstr "W 1362r. ciche, spokojne życie mieszkańców Wysp Północnofryzyjskich zostało przerwane przez jedną z największych powodzi w historii: Powódź Świętego Marcellusa. Czy to naprawdę nic innego jak kolejna burza, czy znak od bogów, że wspólnota fryzyjską na wyspie Langeness nie jest mile widziana?"
+
+#: ../../data/campaigns/fri01.wmf/elemental:11
+msgid ""
+"This scenario is set in a historical context, but most of the story line is "
+"fiction."
+msgstr "Ten scenariusz jest osadzony w kontekście historycznym, ale większość fabuły to fikcja."
+
+#: ../../data/campaigns/fri02.wmf/elemental:8
+msgid "An Icy Welcome"
+msgstr "Lodowate powitanie"
+
+#: ../../data/campaigns/fri02.wmf/elemental:10
+msgid ""
+"Reebaud and his tribe have arrived in the North. But their arrival between "
+"the frozen steppes and the snow-covered mountains is less than welcome…"
+msgstr "Reebaud i jego plemię przybyli na Północ. Ale ich przybycie między zamarzniętymi stepami a pokrytymi śniegiem górami jest nie do przyjęcia…"
+
 #: ../../data/campaigns/tutorial01_basic_control.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:15
 msgid "Basic Control"
 msgstr "Podstawy sterowania"
 
@@ -183,7 +147,6 @@ msgid ""
 msgstr "W tym samouczku nauczysz się podstaw nawigacji w Widelands oraz budowy budynków i dróg."
 
 #: ../../data/campaigns/tutorial02_warfare.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:19
 msgid "Warfare"
 msgstr "Wojskowość"
 
@@ -194,7 +157,6 @@ msgid ""
 msgstr "W tym scenariuszu poznasz sekrety prowadzenia wojny: tworzenia żołnierzy, trenowania ich i prowadzenia ich do boju."
 
 #: ../../data/campaigns/tutorial03_seafaring.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:23
 msgid "Seafaring"
 msgstr "Żeglarstwo"
 
@@ -205,7 +167,6 @@ msgid ""
 msgstr "W tym samouczku poznasz żeglarstwo, to jest budowę i wykorzystanie statków i portów."
 
 #: ../../data/campaigns/tutorial04_economy.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:27
 msgid "Economy"
 msgstr "Ekonomia"
 
@@ -217,7 +178,7 @@ msgstr "W tym samouczku poznasz możliwości regulowania ekonomii oferowane prze
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:8
 msgid "Archipelago Sea"
-msgstr ""
+msgstr "Morze Archipelagów"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:10
 msgid ""
@@ -228,14 +189,14 @@ msgid ""
 "latitude; farming thrives, berries are abundant, and fish plentiful. The "
 "small human population of this place never knew famine. You warlording "
 "bastards just couldn’t leave this little paradise in peace, could you?"
-msgstr ""
+msgstr "Szwecję i  Finlandię rozdziela morze archipelagów. To przepiękne miejsce to ani stały ląd, ani morze, lecz obie te rzeczy naraz. W promieniu paruset ledwie kilometrów znaleźć można ponad 50,000 wysp i wysepek, większość nie większych niż parę hektarów. Jak na tę szerokość klimat jest łagodny, zdatny do uprawy roli, owoców, bogaty w ryby. Do domów nielicznych tubylców nigdy nie zawitał głód. Musieliście położyć na tym skrawku raju swoje rozbójnicze łapska, czyż nie?"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:11
 msgid ""
 "Large plots are rare on those small islands. Prioritize construction of "
 "large buildings on them. Sometimes you will need big military buildings to "
 "expand all the way to the next island. The AI will perform poorly."
-msgstr ""
+msgstr "Trudno na tych wysepkach o dobre miejsce na większy budynek - nie marnuj ich na mniejsze. Czasem potrzebny ci będzie większy budynek wojskowy, aby zająć teren na sąsiedniej wyspie. SI sobie tu nie poradzi."
 
 #: ../../data/maps/Atoll.wmf/elemental:8
 msgid "Atoll"
@@ -274,7 +235,7 @@ msgstr "Wyspa komet"
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:9
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:9
 msgid "Nasenbaer – edited by king_of_nowhere"
-msgstr ""
+msgstr "Nasenbaer - edytowany przez king_of_nowhere"
 
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:10
 msgid ""
@@ -291,7 +252,7 @@ msgid ""
 "player has plenty of good land, but must move far from his starting position"
 " to find ores. Blue player takes the middle ground – he has some fertile "
 "land and is not too far away from the resources."
-msgstr ""
+msgstr "Czerwony gracz jest blisko rud, lecz ma bardzo mało urodzajnej ziemi. Żółty gracz ma jej po dostatkiem, lecz najbliższe złoża są bardzo daleko od jego pozycji startowej. Niebieski gracz jest w sytuacji pośredniej - trochę terenu, dość blisko surowce."
 
 #: ../../data/maps/Crater.wmf/elemental:8
 msgid "Crater"
@@ -303,11 +264,11 @@ msgid ""
 " crater. Two tribes are now fighting for the rich resources."
 msgstr "Długo po tym, jak meteoryt spadł na skupisko gór, życie zaczyna się pojawiać w kraterze. Teraz dwa plemiona walczą o bogate źródła zasobów."
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:8
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:8
 msgid "Crossing the Horizon"
 msgstr "W stronę horyzontu"
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:10
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:10
 msgid "Man your ship and sail to the horizon."
 msgstr "Wejdź na pokład swojego statku i odpłyń w stronę horyzontu."
 
@@ -324,7 +285,7 @@ msgstr "Cztery plemiona pasują się ze swoimi najbliższymi sąsiadami o pierws
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:8
 msgid "Dolomites"
-msgstr ""
+msgstr "Dolomity"
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:10
 msgid ""
@@ -333,7 +294,7 @@ msgid ""
 "reasonable reconstruction of the area delimited by Cortina d’Ampezzo in the "
 "north-east and Canazei in the south-west. If you have to be pitted in a duel"
 " to the death against your enemies, it may as well be in a beautiful place."
-msgstr ""
+msgstr "Łańcuch Dolomitów to klejnot Alp, wpisany na listę światowego dziedzictwa UNESCO z uwagi na ich nieskażoną urodę. Ta mapa jest możliwie wierną rekonstrukcją obszaru od Cortina d'Ampezzo na północnym wschodzie do Canazei na południowym zachodzie. Jeśli już musisz walczyć do śmierci z wrogiem, możesz równie dobrze wybrać na to przepiękne miejsce."
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:11
 msgid ""
@@ -341,7 +302,7 @@ msgid ""
 "vertical. Use the little building space that you have wisely. A fortress at "
 "the mouth of a narrow mountain pass can be a formidable obstacle to an enemy"
 " army. Use the terrain to your advantage."
-msgstr ""
+msgstr "W tych górach znajdziesz sporo równego terenu - na twoje nieszczęście większość jest pionowa. Z reszty korzystaj z dużą rozwagą. Forteca u wyjścia z wąskiej przełęczy może być poważną przeszkodą dla wrogiej armii. Wykorzystuj teren na swoją korzyść."
 
 #: ../../data/maps/Elven_Forests.wmf/elemental:8
 msgid "Elven Forests"
@@ -361,14 +322,14 @@ msgstr "Drużyny"
 msgid ""
 "Ships are your best fellows. Starting positions are similar, so the map "
 "should be fair."
-msgstr ""
+msgstr "Statki są tu twoimi najlepszymi przyjaciółmi. Pozycje startowe są podobne, więc mapa powinna być sprawiedliwa."
 
 #: ../../data/maps/Fellowships_v2.wmf/elemental:11
 msgid ""
 "This is a somewhat technical map, and it is best suited for two or three "
 "human players. Coal is hard to find – consider making some. There is gold "
 "near the starting point – do you see it?"
-msgstr ""
+msgstr "Mapa jest dość techniczna i najbardziej nadaje się na dwóch lub trzech graczy. Trudno tu o węgiel, rozważ własnoręczną produkcję. W pobliżu pozycji startowej jest trochę złota - widzisz je może?"
 
 #: ../../data/maps/Finnish_Lakes.wmf/elemental:8
 msgid "Finnish Lakes"
@@ -384,7 +345,7 @@ msgstr "Piękna, fińska kraina jezior, rzek, starożytnych lasów i gór. Od ci
 msgid ""
 "Yellow player has a much easier starting position than the other two; this "
 "map is suited for 1v2."
-msgstr ""
+msgstr "Żółty gracz ma tu o wiele lepszą pozycję; mapa nadaje się dobrze do gry dwóch na jednego."
 
 #: ../../data/maps/Firegames.wmf/elemental:8
 msgid "Firegames"
@@ -416,23 +377,23 @@ msgstr "Cztery góry"
 msgid ""
 "Each tribe is surrounded by four mighty mountains. Who will first conquer "
 "them and claim the resources for his own tribe?"
-msgstr ""
+msgstr "Każde z plemion otaczają cztery potężne góry, Kto pierwszy je podbije i zagarnie ich skarby dla swojego plemienia?"
 
 #: ../../data/maps/Four_Mountains.wmf/elemental:11
 msgid ""
 "I: Water can be found along the river. II: Snowmen mark additional water "
 "sources. III: Each mountain contains only one resource."
-msgstr ""
+msgstr "I: Wodę znajdziesz wzdłuż rzeki. II: Bałwany wskazują dodatkowe źródła wody. III: W każdej górze znajdziesz tylko jeden typ surowca."
 
 #: ../../data/maps/Full_Moon_v2.wmf/elemental:8
 msgid "Full Moon"
-msgstr ""
+msgstr "Pełnia Księżyca"
 
 #: ../../data/maps/Full_Moon_v2.wmf/elemental:10
 msgid ""
 "Whether it is the latest solstice, or lunar illness, something moves these "
 "tribes towards their final ordeal."
-msgstr ""
+msgstr "Może to ostatnie przesilenie, może wpływ miesiąca - coś pcha te plemiona ku ich ostatecznej próbie."
 
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:8
 msgid "Glacier Lake"
@@ -445,7 +406,7 @@ msgid ""
 "tribe, but a few months ago another tribe came over the mountains and "
 "settled down. And you are sure that there is only enough space for one "
 "tribe."
-msgstr ""
+msgstr "Od bardzo dawna twe plemię żyło na tym pięknym, samotnym jeziorze lodowcowym. Nikt ci nie przeszkadzał, a zasoby naturalne wystarczały dla całego plemienia, lecz parę miesięcy temu inny szczep przybył zza gór i osiedlił się w pobliżu. Jesteś przekonany, że miejsca starczy tu tylko na jedno plemię."
 
 #: ../../data/maps/Golden_Peninsula.wmf/elemental:8
 msgid "Golden Peninsula"
@@ -499,7 +460,7 @@ msgid ""
 "An old legend tells that these seven kingdoms, that have flourished for ages"
 " in prosperity, will someday collapse into a devastating war. Has your "
 "latest betrayal been one too many and will the prophecy come true?"
-msgstr ""
+msgstr "Legenda głosi, że siedem królestw, od dawien dawna kwitnących w dostatku, pewnego dnia pogrąży się w wyniszczającej wojnie. Czy twoja ostatnia zdrada stała się kroplą, która przepełni czarę przepowiedni?"
 
 #: ../../data/maps/Lake_of_Tranquility.wmf/elemental:8
 msgid "Lake of Tranquility"
@@ -518,31 +479,34 @@ msgstr "Ostatni bastion"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:9
 msgid "Another Barbarian – edited by king_of_nowhere"
-msgstr ""
+msgstr "Another Barbarian - edytowany przez king_of_nowhere"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:10
 msgid ""
 "The whimsical Gods didn’t answer our prayers. Instead, the increasing "
-"sunlight heated up the Earth thousandfold and melted glaciers and people "
+"sunlight heated up the Earth a thousandfold and melted glaciers and people "
 "were plunged into the deep. But now – high in the majestic mountains, on the"
 " last scrap of land – two surviving tribes are sheltering. Even though the "
 "Gods showed mercy and the climate thus turned cooler again, the water is "
 "still rising and rising. Onto the last secure place – the highest mountain "
 "range where the amount of gold and the space to live merely suffice for one "
 "tribe – only two opposite paths lead. But remember, be careful… this last "
-"living space is also a hard and small place to live. Don’t forget to take "
-"care of your timber supplies, you’ll need them."
-msgstr "Kapryśni Bogowie nie odpowiedzieli na nasze modlitwy. Zamiast tego tysiące razy gorętsze niż zwykle słońce roztopiło lodowce i ludzkość utonęła w głębinach. Ale teraz - wysoko w majestatycznych górach, na ostatnim skrawku lądu ukrywają się dwa ostałe przy życiu plemiona. Choć bogowie okazali litość i klimat znów się ochłodził, wody cały czas przybywa i przybywa. Ku ostatniemu bezpiecznemu miejscu - szczycie góry z wystarczającą ilością miejsca i złota dla przeżycia jednego plemiona - prowadzą dwie przeciwległe ścieżki. Ale pamiętaj - bądź ostrożny... to ostatnie miejsce jest też małe i niełatwo tam przeżyć.Nie zapomnij zadbać o zasoby drewna, będziesz go potrzebował."
+"living space is also a hard and small place to live."
+msgstr "Kapryśni Bogowie nie odpowiedzieli na nasze modlitwy. Zamiast tego tysiące razy gorętsze niż zwykle słońce roztopiło lodowce i ludzkość utonęła w głębinach. Ale teraz - wysoko w majestatycznych górach, na ostatnim skrawku lądu ukrywają się dwa ostałe przy życiu plemiona. Choć bogowie okazali litość i klimat znów się ochłodził, wody cały czas przybywa i przybywa. Ku ostatniemu bezpiecznemu miejscu - szczycie góry z wystarczającą ilością miejsca i złota dla przeżycia jednego plemiona - prowadzą dwie przeciwległe ścieżki. Ale pamiętaj - bądź ostrożny... to ostatnie miejsce jest też małe i niełatwo tam przeżyć."
+
+#: ../../data/maps/Last_Bastion_v2.wmf/elemental:11
+msgid "Don’t forget to take care of your timber supplies, you’ll need them."
+msgstr "Nie zapomnij zadbać o zasoby drewna, będziesz go potrzebował."
 
 #: ../../data/maps/Last_Survivors.wmf/elemental:8
 msgid "Last Survivors"
-msgstr ""
+msgstr "Ostatni Ocaleni"
 
 #: ../../data/maps/Last_Survivors.wmf/elemental:10
 msgid ""
 "Four tribes fighting for dominance in a stark area. Resources are scattered "
 "all over the map."
-msgstr ""
+msgstr "Cztery plemiona walczą o władzę w tej ponurej krainie. Zasoby rozrzucone są po całej mapie."
 
 #: ../../data/maps/MP_Scenarios/Island_Hopping.wmf/elemental:7
 msgid "Island Hopping"
@@ -584,11 +548,15 @@ msgstr "Spotkanie"
 #: ../../data/maps/Rendez-Vous.wmf/elemental:10
 msgid ""
 "Only a small hill in the centre of the map connects these four competing "
-"tribes. Lead your army right away to this hill and build a giant stronghold "
-"as a sign of your superiority! Hint: In the centre is only space for one "
-"stronghold. Water can be found everywhere, so there is no need to send out "
-"geologists."
-msgstr "Jedynym połączeniem między czterema konkurującymi plemionami jest niewielkie wzgórze w centrum wyspy. Zajmij je natychmiast swoimi wojskami i zbuduj na nim potężną warownię jako symbol twojej dominacji! Wskazówka: na wzgórzu jest miejsce tylko na jedną warownię. Woda jest wszędzie, więc nie przejmuj się badaniem terenu geologami."
+"tribes. Lead your army to this hill right away and build a giant stronghold "
+"as a sign of your superiority!"
+msgstr "Jedynym połączeniem między czterema konkurującymi plemionami jest niewielkie wzgórze w centrum wyspy. Zajmij je natychmiast swoimi wojskami i zbuduj na nim potężną warownię jako symbol twojej dominacji!"
+
+#: ../../data/maps/Rendez-Vous.wmf/elemental:11
+msgid ""
+"There is space for only one stronghold in the centre. Water can be found "
+"everywhere, so there is no need to send out geologists."
+msgstr "Na wzgórzu jest miejsce tylko na jedną warownię. Woda jest wszędzie, więc nie przejmuj się badaniem terenu geologami."
 
 #: ../../data/maps/River_Explorers.wmf/elemental:8
 msgid "River Explorers"
@@ -677,7 +645,7 @@ msgid ""
 "constructors. Nobody knows why they (have) disappeared. Nobody knows why. "
 "People say that now nothing is blocking the road to wealth. But many will "
 "die pulled apart by wolves, engulfed by swamp… encircled by hostile tribes."
-msgstr "Niektórzy mówią, że nieprzeniknione krainy północy wystraszyły nawet najbardziej śmiałych osadników i najodważniejszych z wojowników. Wielkie i stare lasy, pełne wielkich i drapieżnych zwierząt, przecinane przez mokradła i góry, skryte są całunem tajemnicy. Ci, którym udało się wrócić, opowiadali o ogromnych budynkach zdobnych w rzeźby i złoto z majestatycznych pasm górskich, głęboko w dziczy. Dziesiątki lat później pozostały tylko ruiny jako wspomnienie tych starych dobrych czasów, przykryte mchem i drzewami. Ich kształty mało co mówią o rzemiośle starożytnych budowniczych. Nikt nie wie, co się z nimi (wtedy) stało. Nikt nie wie, dlaczego. Ludzie mówią, że nic nie blokuje drogi do ich bogactwa. Ale wielu zginie rozerwanych przez wilki, pochłoniętych przez bagna... otoczonych przez nieprzyjazne plemiona."
+msgstr "Niektórzy mówią, że nieprzeniknione krainy północy wystraszyły nawet najbardziej śmiałych osadników i najodważniejszych z wojowników. Wielkie i stare lasy, pełne wielkich i drapieżnych zwierząt, przecinane przez mokradła i góry, skryte są całunem tajemnicy. Ci, którym udało się wrócić, opowiadali o ogromnych budynkach zdobnych w rzeźby i złoto z majestatycznych pasm górskich, głęboko w dziczy. Dziesiątki lat później pozostały tylko ruiny jako wspomnienie tych starych dobrych czasów, przykryte mchem i drzewami. Ich kształty mało co mówią o rzemiośle starożytnych budowniczych. Nikt nie wie, co się z nimi stało. Nikt nie wie, dlaczego. Ludzie mówią, że nic nie blokuje drogi do ich bogactwa. Ale wielu zginie rozerwanych przez wilki, pochłoniętych przez bagna... otoczonych przez nieprzyjazne plemiona."
 
 #: ../../data/maps/The_Green_Plateau.wmf/elemental:8
 msgid "The Green Plateau"
@@ -715,7 +683,7 @@ msgstr "Kto ma władzę nad rzeką, ten ma żywność i transport. Tym razem osi
 msgid ""
 "Use the river wisely. Your opponents will do the same. You will find the "
 "main ore resources deep in the desert."
-msgstr ""
+msgstr "Mądrze wykorzystaj rzekę - twoi przeciwnicy nie zawahają się przed tym samym. Główne złoża rud znajdziesz głęboko na pustyni."
 
 #: ../../data/maps/The_Oasis_Triangle.wmf/elemental:8
 msgid "The Oasis Triangle"
@@ -759,11 +727,11 @@ msgstr "Trzej wojownicy"
 msgid ""
 "Mighty mountains divide this land into three fertile valleys. But a path "
 "connects the valleys and thus a fight seems inescapable!"
-msgstr ""
+msgstr "Potężne góry rozdzielają ten ląd na trzy urodzajne doliny. Ale doliny łączy ścieżka i wygląda na to, że wojna jest nieunikniona!"
 
 #: ../../data/maps/Three_Warriors.wmf/elemental:11
 msgid "Water can be found around the lakes."
-msgstr ""
+msgstr "Wodę znajdziesz wokół jezior."
 
 #: ../../data/maps/Together_We're_Strong.wmf/elemental:8
 msgid "Together We’re Strong"
@@ -805,13 +773,13 @@ msgid ""
 "desperately searching for more resources to support their endlessly ongoing "
 "wars, would end up in this forgotten place at the same time and for the same"
 " well-known reason."
-msgstr ""
+msgstr "Gdy wiatr urósł w siłę i uformował pierwsze wydmy na tych opuszczonych lagunach, nikt nie przypuszczał, że dwa wiecznie toczące ze sobą walki plemiona desperacko poszukujące środków, by przeważyć szalę spotkają się właśnie na tych zapomnianych skrawkach lądu, właśnie teraz, szukając tego samego."
 
 #: ../../data/maps/Twin_Lagoons_v2.wmf/elemental:11
 msgid ""
 "Defend your transport lines, or use ships to bypass the opponent. Then "
 "remove all enemy activity."
-msgstr ""
+msgstr "Broń swoich linii transportowych lub dokonaj desantu za liniami wroga. Dokonawszy tego, nie pozostaw po nim śladu."
 
 #: ../../data/maps/Twinkling_Waves.wmf/elemental:8
 msgid "Twinkling Waves"
@@ -845,13 +813,13 @@ msgstr "Seria erupcji wulkanicznych sprowadziła zimę w środku lata. Z dnia na
 
 #: ../../data/maps/Wideworld.wmf/elemental:8
 msgid "Wide World"
-msgstr ""
+msgstr "Szeroki Świat"
 
 #: ../../data/maps/Wideworld.wmf/elemental:10
 msgid ""
 "The world is not enough! If you want to win, you have to send some ships. "
 "But remember: your opponents are very close to you."
-msgstr ""
+msgstr "Jeden świat to za mało! Jeśli chcesz wygrać, przyjdzie ci budować statki. Pamiętaj jednak: twoi przeciwnicy zaczynają tuż obok ciebie."
 
 #: ../../data/maps/Wisent_Valley.wmf/elemental:8
 msgid "Wisent Valley"
@@ -872,4 +840,4 @@ msgid ""
 " 4 players’ map, with a black AI to add a complication to the expansion of "
 "the other players, or you can play as a challenge with the black player "
 "against the other 4 (VERY difficult)."
-msgstr ""
+msgstr "Czarny gracz jest zaczyna otoczony w środku i nie ma zasobów, można więc grać na tej mapie na kilka sposobów: w 4 osoby bez środkowego gracza, z czarną SI, aby utrudnić graczom zagarnianie terytorium lub z graczem środkowym przeciwko całej reszcie (BARDZO trudne)."

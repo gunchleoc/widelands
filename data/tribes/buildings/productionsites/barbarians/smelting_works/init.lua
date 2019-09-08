@@ -14,7 +14,7 @@ tribes:new_productionsite_type {
       blackwood = 1,
       granite = 1,
       grout = 1,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       log = 1,
@@ -34,7 +34,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      prohibited_till = 400,
+      prohibited_till = 700,
+      basic_amount = 1,
       very_weak_ai_limit = 1,
       weak_ai_limit = 2
    },
@@ -44,9 +45,9 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      iron_ore = 8,
-      gold_ore = 8,
-      coal = 8
+      { name = "coal", amount = 8 },
+      { name = "iron_ore", amount = 8 },
+      { name = "gold_ore", amount = 8 }
    },
    outputs = {
       "iron",
@@ -61,7 +62,7 @@ tribes:new_productionsite_type {
             "call=smelt_iron",
             "call=smelt_gold",
             "call=smelt_iron",
-            "return=skipped"
+            "return=no_stats"
          }
       },
       smelt_iron = {
@@ -69,9 +70,11 @@ tribes:new_productionsite_type {
          descname = _"smelting iron",
          actions = {
             "return=skipped unless economy needs iron",
-            "sleep=32000",
             "consume=coal iron_ore",
+            "sleep=32000",
+            "playsound=sound/metal/furnace 192",
             "animate=working 35000",
+            "playsound=sound/metal/ironping 80",
             "produce=iron"
          }
       },
@@ -80,9 +83,11 @@ tribes:new_productionsite_type {
          descname = _"smelting gold",
          actions = {
             "return=skipped unless economy needs gold",
-            "sleep=32000",
             "consume=coal gold_ore",
+            "sleep=32000",
+            "playsound=sound/metal/furnace 192",
             "animate=working 35000",
+            "playsound=sound/metal/goldping 80",
             "produce=gold"
          }
       },

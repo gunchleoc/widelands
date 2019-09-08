@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2016 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,13 +20,15 @@
 #ifndef WL_UI_FSMENU_LAUNCH_SPG_H
 #define WL_UI_FSMENU_LAUNCH_SPG_H
 
+#include <memory>
 #include <string>
 
-#include "logic/constants.h"
+#include "graphic/playercolor.h"
+#include "logic/game_settings.h"
+#include "logic/map.h"
 #include "ui_basic/button.h"
-#include "ui_basic/multilinetextarea.h"
 #include "ui_basic/textarea.h"
-#include "ui_fsmenu/base.h"
+#include "ui_fsmenu/launch_game.h"
 
 struct ChatProvider;
 class GameController;
@@ -44,51 +46,38 @@ class LuaInterface;
  *                               change the map.
  *
  */
-class FullscreenMenuLaunchSPG : public FullscreenMenuBase {
+class FullscreenMenuLaunchSPG : public FullscreenMenuLaunchGame {
 public:
-	FullscreenMenuLaunchSPG
-		(GameSettingsProvider *, GameController * = nullptr, bool autolaunch = false);
-	~FullscreenMenuLaunchSPG();
+	FullscreenMenuLaunchSPG(GameSettingsProvider*, GameController* = nullptr);
+	~FullscreenMenuLaunchSPG() override;
 
 	void start() override;
-	void think() override;
-
-	void refresh();
 
 protected:
 	void clicked_ok() override;
 	void clicked_back() override;
 
 private:
-	LuaInterface * lua_;
+	void layout() override;
+	void update(bool map_was_changed);
 
-	void select_map();
-	void win_condition_clicked();
-	void win_condition_update();
-	void win_condition_load();
-	void set_scenario_values();
+	bool select_map();
+	void win_condition_selected() override;
+	void set_player_names_and_tribes();
 	void switch_to_position(uint8_t);
 	void safe_place_for_host(uint8_t);
 
-	uint32_t    butw_;
-	uint32_t    buth_;
-
-	UI::Button       select_map_, wincondition_, back_, ok_;
-	UI::Button     * pos_[MAX_PLAYERS];
-	UI::Textarea              title_, mapname_;
-	UI::Textarea              name_, type_, team_, tribe_, init_, wincondition_type_;
-	GameSettingsProvider    * settings_;
-	GameController          * ctrl_; // optional
-	PlayerDescriptionGroup  * players_[MAX_PLAYERS];
-	std::string               filename_;
-	std::string               filename_proof_; // local var. to check UI state
-	std::string               player_save_name_[MAX_PLAYERS];
-	std::string               player_save_tribe_[MAX_PLAYERS];
-	int8_t                    nr_players_;
-	bool                      is_scenario_;
-	std::vector<std::string>  win_condition_scripts_;
-	uint8_t                   cur_wincondition_;
+	UI::Button select_map_;
+	UI::Button* pos_[kMaxPlayers];
+	UI::Textarea mapname_;
+	UI::Textarea name_, type_, team_, tribe_, init_, wincondition_type_;
+	PlayerDescriptionGroup* players_[kMaxPlayers];
+	std::string filename_;
+	std::string filename_proof_;  // local var. to check UI state
+	std::string player_save_name_[kMaxPlayers];
+	std::string player_save_tribe_[kMaxPlayers];
+	bool is_scenario_;
+	std::unique_ptr<Notifications::Subscriber<NoteGameSettings>> subscriber_;
 };
-
 
 #endif  // end of include guard: WL_UI_FSMENU_LAUNCH_SPG_H

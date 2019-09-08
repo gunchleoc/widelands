@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2015 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
 
 namespace Widelands {
 
-namespace  {
+namespace {
 
 // Parse a terrain type from the giving string.
 TerrainDescription::Is terrain_type_from_string(const std::string& type) {
@@ -46,11 +46,11 @@ TerrainDescription::Is terrain_type_from_string(const std::string& type) {
 	}
 	if (type == "water") {
 		return static_cast<TerrainDescription::Is>(TerrainDescription::Is::kWater |
-																	TerrainDescription::Is::kUnwalkable);
+		                                           TerrainDescription::Is::kUnwalkable);
 	}
 	if (type == "unreachable") {
 		return static_cast<TerrainDescription::Is>(TerrainDescription::Is::kUnreachable |
-																	TerrainDescription::Is::kUnwalkable);
+		                                           TerrainDescription::Is::kUnwalkable);
 	}
 	if (type == "mineable") {
 		return TerrainDescription::Is::kMineable;
@@ -62,7 +62,6 @@ TerrainDescription::Is terrain_type_from_string(const std::string& type) {
 }
 
 }  // namespace
-
 
 TerrainDescription::Type::Type(TerrainDescription::Is init_is) : is(init_is) {
 	switch (is) {
@@ -102,30 +101,39 @@ TerrainDescription::Type::Type(TerrainDescription::Is init_is) : is(init_is) {
 TerrainDescription::TerrainDescription(const LuaTable& table, const Widelands::World& world)
    : name_(table.get_string("name")),
      descname_(table.get_string("descname")),
-	  is_(terrain_type_from_string(table.get_string("is"))),
+     is_(terrain_type_from_string(table.get_string("is"))),
      default_resource_index_(world.get_resource(table.get_string("default_resource").c_str())),
      default_resource_amount_(table.get_int("default_resource_amount")),
      dither_layer_(table.get_int("dither_layer")),
-     temperature_(table.get_double("temperature")),
-     fertility_(table.get_double("fertility")),
-     humidity_(table.get_double("humidity")) {
+     temperature_(table.get_int("temperature")),
+     fertility_(table.get_int("fertility")),
+     humidity_(table.get_int("humidity")) {
 
 	if (table.has_key("tooltips")) {
 		custom_tooltips_ = table.get_table("tooltips")->array_entries<std::string>();
 	}
 
-	if (!(0 < fertility_ && fertility_ < 1.)) {
-		throw GameDataError("%s: fertility is not in (0, 1).", name_.c_str());
+	if (table.has_key("enhancement")) {
+		enhancement_ = table.get_string("enhancement");
+		if (enhancement_ == name_) {
+			throw GameDataError("%s: a terrain cannot be enhanced to itself", name_.c_str());
+		}
+		// Other invalid terrains will be detected in World::postload
+	} else {
+		enhancement_ = "";
 	}
-	if (!(0 < humidity_ && humidity_ < 1.)) {
-		throw GameDataError("%s: humidity is not in (0, 1).", name_.c_str());
+
+	if (!(0 < fertility_ && fertility_ < 1000)) {
+		throw GameDataError("%s: fertility is not in (0, 1000).", name_.c_str());
+	}
+	if (!(0 < humidity_ && humidity_ < 1000)) {
+		throw GameDataError("%s: humidity is not in (0, 1000).", name_.c_str());
 	}
 	if (temperature_ < 0) {
 		throw GameDataError("%s: temperature is not possible.", name_.c_str());
 	}
 
-	 texture_paths_ =
-	   table.get_table("textures")->array_entries<std::string>();
+	texture_paths_ = table.get_table("textures")->array_entries<std::string>();
 	frame_length_ = FRAME_LENGTH;
 	if (texture_paths_.empty()) {
 		throw GameDataError("Terrain %s has no images.", name_.c_str());
@@ -176,7 +184,6 @@ const std::vector<std::string>& TerrainDescription::texture_paths() const {
 TerrainDescription::Is TerrainDescription::get_is() const {
 	return is_;
 }
-
 
 const std::vector<TerrainDescription::Type> TerrainDescription::get_types() const {
 	std::vector<TerrainDescription::Type> terrain_types;
@@ -247,16 +254,20 @@ int TerrainDescription::dither_layer() const {
 	return dither_layer_;
 }
 
-double TerrainDescription::temperature() const {
+int TerrainDescription::temperature() const {
 	return temperature_;
 }
 
-double TerrainDescription::humidity() const {
+int TerrainDescription::humidity() const {
 	return humidity_;
 }
 
-double TerrainDescription::fertility() const {
+int TerrainDescription::fertility() const {
 	return fertility_;
+}
+
+const std::string& TerrainDescription::enhancement() const {
+	return enhancement_;
 }
 
 void TerrainDescription::set_minimap_color(const RGBColor& color) {

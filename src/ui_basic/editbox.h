@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2016 by the Widelands Development Team
+ * Copyright (C) 2003-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@
 #include <boost/signals2.hpp>
 
 #include "graphic/align.h"
+#include "graphic/style_manager.h"
 #include "ui_basic/button.h"
-#include "graphic/graphic.h"
 
 #define CHAT_HISTORY_SIZE 5
 
@@ -39,43 +39,64 @@ struct EditBoxImpl;
  *
  * When return is pressed, the editbox is unfocused, the keyboard
  * released and a callback function is called.
+ * If h == 0, height will be dynamic according to font set.
+ * If h > 0, margin_y has no effect.
+ *
+ * Text conventions: Sentence case for labels associated with the editbox
  */
 struct EditBox : public Panel {
-	EditBox
-		(Panel *,
-		 int32_t x, int32_t y, uint32_t w,
-		 const Image* background = g_gr->images().get("images/ui_basic/but2.png"),
-		 int font_size = UI_FONT_SIZE_SMALL);
-	virtual ~EditBox();
+	EditBox(Panel*, int32_t x, int32_t y, uint32_t w, UI::PanelStyle style);
+	~EditBox() override;
 
-	boost::signals2::signal<void ()> changed;
-	boost::signals2::signal<void ()> ok;
-	boost::signals2::signal<void ()> cancel;
+	boost::signals2::signal<void()> changed;
+	boost::signals2::signal<void()> ok;
+	boost::signals2::signal<void()> cancel;
 
-	const std::string & text() const;
-	void set_text(const std::string &);
-	uint32_t max_length() const;
-	void set_max_length(uint32_t);
+	const std::string& text() const;
+	void set_text(const std::string&);
+	void set_max_length(int);
+	void set_font_scale(float scale);
+	void set_font_style(const UI::FontStyleInfo& style);
+	void set_font_style_and_margin(const UI::FontStyleInfo& style, int margin);
 
-	void activate_history(bool activate) {history_active_ = activate;}
+	void activate_history(bool activate) {
+		history_active_ = activate;
+	}
 
 	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y) override;
-	bool handle_mouserelease(uint8_t btn, int32_t x, int32_t y) override;
 	bool handle_key(bool down, SDL_Keysym) override;
 	bool handle_textinput(const std::string& text) override;
 
-	void draw(RenderTarget &) override;
+	void draw(RenderTarget&) override;
+
+	void set_password(bool pass) {
+		password_ = pass;
+	}
+
+	void set_warning(bool warn) {
+		warning_ = warn;
+	}
+
+	bool has_warning() {
+		return warning_;
+	}
+
+	bool is_password() {
+		return password_;
+	}
 
 private:
 	std::unique_ptr<EditBoxImpl> m_;
 
 	void check_caret();
+	std::string text_to_asterisk();
 
-	bool        history_active_;
-	int16_t     history_position_;
+	bool history_active_;
+	int16_t history_position_;
 	std::string history_[CHAT_HISTORY_SIZE];
+	bool password_;
+	bool warning_;
 };
-
-}
+}  // namespace UI
 
 #endif  // end of include guard: WL_UI_BASIC_EDITBOX_H

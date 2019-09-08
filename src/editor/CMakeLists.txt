@@ -9,8 +9,8 @@ wl_library(editor
     tools/decrease_height_tool.h
     tools/decrease_resources_tool.cc
     tools/decrease_resources_tool.h
-    tools/delete_bob_tool.cc
-    tools/delete_bob_tool.h
+    tools/delete_critter_tool.cc
+    tools/delete_critter_tool.h
     tools/delete_immovable_tool.cc
     tools/delete_immovable_tool.h
     tools/draw_tool.cc
@@ -23,15 +23,15 @@ wl_library(editor
     tools/increase_resources_tool.h
     tools/info_tool.cc
     tools/info_tool.h
-    tools/make_infrastructure_tool.cc
-    tools/make_infrastructure_tool.h
     tools/multi_select.h
     tools/noise_height_tool.cc
     tools/noise_height_tool.h
-    tools/place_bob_tool.cc
-    tools/place_bob_tool.h
+    tools/place_critter_tool.cc
+    tools/place_critter_tool.h
     tools/place_immovable_tool.cc
     tools/place_immovable_tool.h
+    tools/resize_tool.cc
+    tools/resize_tool.h
     tools/set_height_tool.cc
     tools/set_height_tool.h
     tools/set_origin_tool.cc
@@ -49,8 +49,6 @@ wl_library(editor
     ui_menus/categorized_item_selection_menu.h
     ui_menus/help.cc
     ui_menus/help.h
-    ui_menus/main_menu.cc
-    ui_menus/main_menu.h
     ui_menus/main_menu_load_map.cc
     ui_menus/main_menu_load_map.h
     ui_menus/main_menu_load_or_save_map.cc
@@ -65,22 +63,24 @@ wl_library(editor
     ui_menus/main_menu_save_map.h
     ui_menus/main_menu_save_map_make_directory.cc
     ui_menus/main_menu_save_map_make_directory.h
+    ui_menus/map_size_box.cc
+    ui_menus/map_size_box.h
     ui_menus/player_menu.cc
     ui_menus/player_menu.h
     ui_menus/tool_change_height_options_menu.cc
     ui_menus/tool_change_height_options_menu.h
     ui_menus/tool_change_resources_options_menu.cc
     ui_menus/tool_change_resources_options_menu.h
-    ui_menus/tool_menu.cc
-    ui_menus/tool_menu.h
     ui_menus/tool_noise_height_options_menu.cc
     ui_menus/tool_noise_height_options_menu.h
     ui_menus/tool_options_menu.cc
     ui_menus/tool_options_menu.h
-    ui_menus/tool_place_bob_options_menu.cc
-    ui_menus/tool_place_bob_options_menu.h
+    ui_menus/tool_place_critter_options_menu.cc
+    ui_menus/tool_place_critter_options_menu.h
     ui_menus/tool_place_immovable_options_menu.cc
     ui_menus/tool_place_immovable_options_menu.h
+    ui_menus/tool_resize_options_menu.cc
+    ui_menus/tool_resize_options_menu.h
     ui_menus/tool_set_terrain_options_menu.cc
     ui_menus/tool_set_terrain_options_menu.h
     ui_menus/toolsize_menu.cc
@@ -89,12 +89,23 @@ wl_library(editor
   DEPENDS
     base_exceptions
     base_i18n
+    base_log
     base_macros
     base_scoped_timer
     graphic
+    graphic_fonthandler
+    graphic_playercolor
     graphic_surface
+    graphic_text_layout
     io_filesystem
     logic
+    logic_constants
+    logic_filesystem_constants
+    logic_generic_save_handler
+    logic_map
+    logic_map_objects
+    logic_map_objects_description_maintainer
+    logic_tribe_basic_info
     logic_widelands_geometry
     map_io
     map_io_map_loader
@@ -104,9 +115,8 @@ wl_library(editor
     scripting_lua_interface
     scripting_lua_table
     ui_basic
-    widelands_ball_of_mud
+    widelands_options
     wui
-    wui_common
-    wui_field_overlay_manager
+    wui_common_mapdetails
     wui_mapview_pixelfunctions
 )

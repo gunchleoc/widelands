@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2003, 2009, 2016 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,30 +30,30 @@
 
 #ifndef PRINTF_FORMAT
 #ifdef __GNUC__
-#define PRINTF_FORMAT(b, c) __attribute__ ((__format__ (__printf__, b, c)))
+#define PRINTF_FORMAT(b, c) __attribute__((__format__(__printf__, b, c)))
 #else
 #define PRINTF_FORMAT(b, c)
 #endif
 #endif
 
-/** class wexception
+/** Stupid, simple exception class.
  *
- * Stupid, simple exception class. It has the nice bonus that you can give it
- * sprintf()-style format strings
+ * It has the nice bonus that you can give it sprintf()-style format strings.
  */
-struct WException : public std::exception {
-	explicit WException
-		(char const * const file, uint32_t const line, char const * const fmt, ...)
-	 PRINTF_FORMAT(4, 5);
+class WException : public std::exception {
+public:
+	explicit WException(char const* const file, uint32_t const line, char const* const fmt, ...)
+	   PRINTF_FORMAT(4, 5);
 
 	/**
-    * The target of the returned pointer remains valid during the lifetime of
+	 * The target of the returned pointer remains valid during the lifetime of
 	 * the WException object.
 	 */
-	const char * what() const noexcept override;
+	const char* what() const noexcept override;
 
 protected:
-	WException() {}
+	WException() {
+	}
 	std::string what_;
 };
 

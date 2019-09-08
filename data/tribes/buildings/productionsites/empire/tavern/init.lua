@@ -33,8 +33,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      forced_after = 900,
-      prohibited_till = 300
+      basic_amount = 1,
+      prohibited_till = 570
    },
 
    working_positions = {
@@ -42,9 +42,9 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      fish = 5,
-      empire_bread = 5,
-      meat = 5
+      { name = "fish", amount = 5 },
+      { name = "meat", amount = 5 },
+      { name = "empire_bread", amount = 5 }
    },
    outputs = {
       "ration"
@@ -55,10 +55,13 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start preparing a ration because ...
          descname = _"preparing a ration",
          actions = {
-            "sleep=14000",
+            -- time total: 33
             "return=skipped unless economy needs ration",
             "consume=empire_bread,fish,meat",
-            "animate=working 19000",
+            "sleep=5000",
+            "playsound=sound/empire/taverns/ration 100",
+            "animate=working 18000",
+            "sleep=10000",
             "produce=ration"
          }
       },

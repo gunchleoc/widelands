@@ -1,11 +1,12 @@
 include "tribes/scripting/help/format_help.lua"
 
-
 -- RST
 -- ware_help.lua
 -- ---------------
-
--- Functions used in the ingame ware help windows for formatting the text and pictures.
+--
+-- This script returns a formatted entry for the ingame ware help.
+-- Pass the internal tribe name and ware name to the coroutine to select the
+-- ware type.
 
 
 --  =======================================================
@@ -13,7 +14,7 @@ include "tribes/scripting/help/format_help.lua"
 --  =======================================================
 
 -- RST
--- .. function ware_help_general_string(tribe, ware_description)
+-- .. function:: ware_help_general_string(tribe, ware_description)
 --
 --    Displays general info texts about the ware
 --
@@ -26,16 +27,17 @@ function ware_help_general_string(tribe, ware_description)
    if (purpose_text ~= "") then
       purpose_text = purpose_text .. " "
    end
-   purpose_text = ware_helptext() .. ware_helptext(tribe.name)
+   -- TRANSLATORS: Put 2 sentences one after the other. Languages using Chinese script probably want to lose the blank space here.
+   purpose_text = pgettext("sentence_separator", "%s %s"):bformat(ware_helptext(), ware_helptext(tribe.name))
 
    -- TODO(GunChleoc): Split into purpose and note
-   local result = rt(h2(_"Purpose")) ..
-      rt("image=" .. ware_description.icon_name, p(purpose_text))
+   local result = h2(_"Purpose") ..
+      li_image(ware_description.icon_name, purpose_text)
    return result
 end
 
 -- RST
--- .. function ware_help_producers_string(tribe, ware_description)
+-- .. function:: ware_help_producers_string(tribe, ware_description)
 --
 --    Displays the buildings that produce this ware with information about
 --    wares consumed in their production programs
@@ -46,62 +48,77 @@ end
 --
 function ware_help_producers_string(tribe, ware_description)
    local result = ""
-   for i, building in ipairs(ware_description.producers) do
+   for i, building in ipairs(ware_description:producers(tribe.name)) do
       if (tribe:has_building(building.name)) then
          -- TRANSLATORS: Ware Encyclopedia: A building producing a ware
-         result = result .. rt(h2(_"Producer"))
+         result = result .. h2(_"Producer")
          result = result .. dependencies({building, ware_description}, building.descname)
-
-         -- Find out which programs in the building produce this ware
          local producing_programs = {}
-         for j, program_name in ipairs(building.production_programs) do
-            for ware, amount in pairs(building:produced_wares(program_name)) do
-               if (ware_description.name == ware) then
-                  table.insert(producing_programs, program_name)
+         if (building.is_mine) then
+            -- Find out which programs in the building produce this ware for the mines we skip the real production and take a dummy "encyclopedia" program
+            -- TODO(GunChleoc): Reimplement production programs as a proper tree, so that we can get rid of this hack and of the special case for mines.
+            for j, program_name in ipairs(building.production_programs) do
+               for ware, amount in pairs(building:produced_wares(program_name)) do
+                  local consumes = building:consumed_wares_workers(program_name)
+                  if (ware_description.name == ware and #consumes > 0) then
+                     table.insert(producing_programs, program_name)
+                  end
+               end
+            end
+         else
+            -- Find out which programs in the building produce this ware
+            for j, program_name in ipairs(building.production_programs) do
+               for ware, amount in pairs(building:produced_wares(program_name)) do
+                  if (ware_description.name == ware) then
+                     table.insert(producing_programs, program_name)
+                  end
                end
             end
          end
 
-         -- Now collect all wares produced by the filtered programs
-         local produced_wares_strings = {}
-         local produced_wares_counters = {}
-         for j, program_name in ipairs(producing_programs) do
-            local produced_wares_amount = {}
-            produced_wares_counters[program_name] = 0
-            for ware, amount in pairs(building:produced_wares(program_name)) do
-               if (produced_wares_amount[ware] == nil) then
-                  produced_wares_amount[ware] = 0
+            -- Now collect all wares produced by the filtered programs
+            local produced_wares_strings = {}
+            local produced_wares_counters = {}
+            for j, program_name in ipairs(producing_programs) do
+               local produced_wares_amount = {}
+               produced_wares_counters[program_name] = 0
+               for ware, amount in pairs(building:produced_wares(program_name)) do
+                  if (produced_wares_amount[ware] == nil) then
+                     produced_wares_amount[ware] = 0
+                  end
+                  produced_wares_amount[ware] = produced_wares_amount[ware] + amount
+                  produced_wares_counters[program_name] = produced_wares_counters[program_name] + amount
                end
-               produced_wares_amount[ware] = produced_wares_amount[ware] + amount
-               produced_wares_counters[program_name] = produced_wares_counters[program_name] + amount
+               local produced_wares_string = ""
+               for ware, amount in pairs(produced_wares_amount) do
+               local ware_descr = wl.Game():get_ware_description(ware)
+                  produced_wares_string = produced_wares_string
+                     .. help_ware_amount_line(ware_descr, amount)
+               end
+               produced_wares_strings[program_name] = produced_wares_string
             end
-            local produced_wares_string = ""
-            for ware, amount in pairs(produced_wares_amount) do
-            local ware_descr = wl.Game():get_ware_description(ware)
-               produced_wares_string = produced_wares_string
-                  .. help_ware_amount_line(ware_descr, amount)
-            end
-            produced_wares_strings[program_name] = produced_wares_string
-         end
 
-         -- Now collect the consumed wares for each filtered program and print the program info
-         for j, program_name in ipairs(producing_programs) do
-            result = result .. help_consumed_wares(building, program_name)
-            if (produced_wares_counters[program_name] > 0) then
-               result = result
-                  -- TRANSLATORS: Ware Encyclopedia: Wares produced by a productionsite
-                  .. rt(h3(ngettext("Ware produced:", "Wares produced:", produced_wares_counters[program_name])))
-                  .. produced_wares_strings[program_name]
+            -- Now collect the consumed wares for each filtered program and print the program info
+            for j, program_name in ipairs(producing_programs) do
+               result = result .. help_consumed_wares_workers(tribe, building, program_name)
+               if (produced_wares_counters[program_name] > 0) then
+                  if (produced_wares_counters[program_name] == 1) then
+                     -- TRANSLATORS: Ware Encyclopedia: 1 ware produced by a productionsite
+                     result = result .. h3(_"Ware produced:")
+                  else
+                     -- TRANSLATORS: Ware Encyclopedia: More than 1 ware produced by a productionsite
+                     result = result .. h3(_"Wares produced:")
+                  end
+                  result = result .. produced_wares_strings[program_name]
+               end
             end
          end
-
       end
-   end
    return result
 end
 
 -- RST
--- .. function ware_help_consumers_string(tribe, ware_description)
+-- .. function:: ware_help_consumers_string(tribe, ware_description)
 --
 --    Displays the buildings that consume this ware and about
 --    workers that use this ware as a tool
@@ -117,7 +134,7 @@ function ware_help_consumers_string(tribe, ware_description)
    local consumers_string = ""
    local consumers_amount = 0
 
-   for i, building in ipairs(ware_description.consumers) do
+   for i, building in ipairs(ware_description:consumers(tribe.name)) do
       if (tribe:has_building(building.name)) then
          consumers_string = consumers_string .. dependencies({ware_description, building}, building.descname)
          consumers_amount = consumers_amount + 1
@@ -150,8 +167,13 @@ function ware_help_consumers_string(tribe, ware_description)
 
    -- Now show consumers (buildings + workers)
    if (consumers_amount > 0) then
-      -- TRANSLATORS: Ware Encyclopedia: A list of buildings and / or workers that consume a ware
-      result = result .. rt(h2(ngettext("Consumer", "Consumers", consumers_amount)))
+      if (consumers_amount == 1) then
+         -- TRANSLATORS: Ware Encyclopedia: Heading for 1 building and / or worker that consumes a ware
+         result = result .. h2(_"Consumer")
+      else
+         -- TRANSLATORS: Ware Encyclopedia: A list of buildings and / or workers that consume a ware
+         result = result .. h2(_"Consumers")
+      end
       if (consumers ~= "") then
          result = result .. consumers_string
       end

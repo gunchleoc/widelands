@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002, 2006-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,20 +26,19 @@
 
 #include "base/macros.h"
 #include "graphic/animation.h"
-#include "logic/map_objects/tribes/building.h"
-#include "logic/description_maintainer.h"
-#include "logic/editor_game_base.h"
+#include "graphic/toolbar_imageset.h"
 #include "logic/map_objects/immovable.h"
+#include "logic/map_objects/tribes/building.h"
 #include "logic/map_objects/tribes/road_textures.h"
 #include "logic/map_objects/tribes/ship.h"
 #include "logic/map_objects/tribes/tribe_basic_info.h"
 #include "logic/map_objects/tribes/tribes.h"
 #include "logic/map_objects/tribes/ware_descr.h"
 #include "logic/map_objects/tribes/worker.h"
+#include "logic/widelands.h"
 
 namespace Widelands {
 
-class EditorGameBase;
 class ResourceDescription;
 class WareDescr;
 class Warehouse;
@@ -47,6 +46,18 @@ class WorkerDescr;
 class World;
 class BuildingDescr;
 struct Event;
+
+/*
+ * Resource indicators:
+ * A ResourceIndicatorSet maps the resource name to a ResourceIndicatorList.
+ * A ResourceIndicatorList maps resource amounts to the DescriptionIndex of an immovable this player
+ * uses.
+ * Special case: The ResourceIndicatorList mapped to "" contains resis that will be used in
+ * locations
+ * without resources. If it has several entries, result is arbitrary.
+ */
+using ResourceIndicatorList = std::map<uint32_t, DescriptionIndex>;
+using ResourceIndicatorSet = std::map<std::string, ResourceIndicatorList>;
 
 /*
 Tribes
@@ -58,18 +69,21 @@ Two players can choose the same tribe.
 */
 class TribeDescr {
 public:
-	TribeDescr(const LuaTable& table, const TribeBasicInfo& info, const Tribes& init_tribes);
+	TribeDescr(const LuaTable& table,
+	           const Widelands::TribeBasicInfo& info,
+	           const Tribes& init_tribes);
 
 	const std::string& name() const;
 	const std::string& descname() const;
 
-	size_t get_nrbuildings() const;
 	size_t get_nrwares() const;
 	size_t get_nrworkers() const;
 
 	const std::vector<DescriptionIndex>& buildings() const;
 	const std::set<DescriptionIndex>& wares() const;
 	const std::set<DescriptionIndex>& workers() const;
+	const std::set<DescriptionIndex>& immovables() const;
+	const ResourceIndicatorSet& resource_indicators() const;
 
 	bool has_building(const DescriptionIndex& index) const;
 	bool has_ware(const DescriptionIndex& index) const;
@@ -79,22 +93,22 @@ public:
 	// A ware is a construction material if it appears in a building's buildcost or enhancement cost
 	bool is_construction_material(const DescriptionIndex& ware_index) const;
 
-	DescriptionIndex building_index(const std::string & buildingname) const;
-	DescriptionIndex immovable_index(const std::string & immovablename) const;
-	DescriptionIndex ware_index(const std::string & warename) const;
-	DescriptionIndex worker_index(const std::string & workername) const;
+	DescriptionIndex building_index(const std::string& buildingname) const;
+	DescriptionIndex immovable_index(const std::string& immovablename) const;
+	DescriptionIndex ware_index(const std::string& warename) const;
+	DescriptionIndex worker_index(const std::string& workername) const;
 
 	/// Return the given building or die trying
 	DescriptionIndex safe_building_index(const std::string& buildingname) const;
 	/// Return the given ware or die trying
-	DescriptionIndex safe_ware_index(const std::string & warename) const;
+	DescriptionIndex safe_ware_index(const std::string& warename) const;
 	/// Return the given worker or die trying
-	DescriptionIndex safe_worker_index(const std::string & workername) const;
+	DescriptionIndex safe_worker_index(const std::string& workername) const;
 
-	BuildingDescr const * get_building_descr(const DescriptionIndex& index) const;
-	ImmovableDescr const * get_immovable_descr(const DescriptionIndex& index) const;
-	WareDescr const * get_ware_descr(const DescriptionIndex& index) const;
-	WorkerDescr const * get_worker_descr(const DescriptionIndex& index) const;
+	BuildingDescr const* get_building_descr(const DescriptionIndex& index) const;
+	ImmovableDescr const* get_immovable_descr(const DescriptionIndex& index) const;
+	WareDescr const* get_ware_descr(const DescriptionIndex& index) const;
+	WorkerDescr const* get_worker_descr(const DescriptionIndex& index) const;
 
 	DescriptionIndex builder() const;
 	DescriptionIndex carrier() const;
@@ -102,8 +116,13 @@ public:
 	DescriptionIndex geologist() const;
 	DescriptionIndex soldier() const;
 	DescriptionIndex ship() const;
-	DescriptionIndex headquarters() const;
 	DescriptionIndex port() const;
+	DescriptionIndex ironore() const;
+	DescriptionIndex rawlog() const;
+	DescriptionIndex refinedlog() const;
+	DescriptionIndex granite() const;
+
+	const std::vector<DescriptionIndex>& trainingsites() const;
 	const std::vector<DescriptionIndex>& worker_types_without_cost() const;
 
 	uint32_t frontier_animation() const;
@@ -121,35 +140,39 @@ public:
 	// The road textures used for drawing roads.
 	const RoadTextures& road_textures() const;
 
-	DescriptionIndex get_resource_indicator
-		(const ResourceDescription * const res, const ResourceAmount amount) const;
+	DescriptionIndex get_resource_indicator(const ResourceDescription* const res,
+	                                        const ResourceAmount amount) const;
 
 	// Returns the initalization at 'index' (which must not be out of bounds).
-	const TribeBasicInfo::Initialization& initialization(const uint8_t index) const {
+	const Widelands::TribeBasicInfo::Initialization& initialization(const uint8_t index) const {
 		return initializations_.at(index);
 	}
 
 	using WaresOrder = std::vector<std::vector<Widelands::DescriptionIndex>>;
-	using WaresOrderCoords = std::vector<std::pair<uint32_t, uint32_t>>;
-	const WaresOrder & wares_order() const {return wares_order_;}
-	const WaresOrderCoords & wares_order_coords() const {
-		return wares_order_coords_;
+	const WaresOrder& wares_order() const {
+		return wares_order_;
 	}
 
-	const WaresOrder & workers_order() const {return workers_order_;}
-	const WaresOrderCoords & workers_order_coords() const {
-		return workers_order_coords_;
+	const WaresOrder& workers_order() const {
+		return workers_order_;
 	}
 
-	void resize_ware_orders(size_t maxLength);
+	const std::vector<std::string>& get_ship_names() const {
+		return ship_names_;
+	}
 
-	const std::vector<std::string>& get_ship_names() const {return ship_names_;}
+	void add_building(const std::string& buildingname);
+
+	// The custom toolbar imageset if any. Can be nullptr.
+	ToolbarImageset* toolbar_image_set() const;
 
 private:
 	// Helper function for adding a special worker type (carriers etc.)
 	DescriptionIndex add_special_worker(const std::string& workername);
 	// Helper function for adding a special building type (port etc.)
 	DescriptionIndex add_special_building(const std::string& buildingname);
+	// Helper function to identify special wares across tribes (iron ore etc.)
+	DescriptionIndex add_special_ware(const std::string& warename);
 
 	const std::string name_;
 	const std::string descname_;
@@ -161,34 +184,39 @@ private:
 	std::vector<std::string> busy_road_paths_;
 	RoadTextures road_textures_;
 
-	std::vector<DescriptionIndex>  buildings_;
-	std::set<DescriptionIndex>         immovables_;  // The player immovables
-	std::vector<std::string>           ship_names_;
-	std::set<DescriptionIndex>         workers_;
-	std::set<DescriptionIndex>         wares_;
+	std::vector<DescriptionIndex> buildings_;
+	std::set<DescriptionIndex> immovables_;  // The player immovables
+	std::vector<std::string> ship_names_;
+	std::set<DescriptionIndex> workers_;
+	std::set<DescriptionIndex> wares_;
+	ResourceIndicatorSet resource_indicators_;
 	// The wares that are used by construction sites
-	std::set<DescriptionIndex>         construction_materials_;
-	// Special units
-	DescriptionIndex                   builder_;  // The builder for this tribe
-	DescriptionIndex                   carrier_;  // The basic carrier for this tribe
-	DescriptionIndex                   carrier2_; // Additional carrier for busy roads
-	DescriptionIndex                   geologist_; // This tribe's geologist worker
-	DescriptionIndex                   soldier_;  // The soldier that this tribe uses
-	DescriptionIndex                   ship_;     // The ship that this tribe uses
-	DescriptionIndex               headquarters_; // The tribe's default headquarters, needed by the editor
-	DescriptionIndex               port_;     // The port that this tribe uses
-	std::vector<DescriptionIndex>      worker_types_without_cost_;
+	std::set<DescriptionIndex> construction_materials_;
+	// Special units. Some of them are used by the engine, some are only used by the AI.
+	DescriptionIndex builder_;     // The builder for this tribe
+	DescriptionIndex carrier_;     // The basic carrier for this tribe
+	DescriptionIndex carrier2_;    // Additional carrier for busy roads
+	DescriptionIndex geologist_;   // This tribe's geologist worker
+	DescriptionIndex soldier_;     // The soldier that this tribe uses
+	DescriptionIndex ship_;        // The ship that this tribe uses
+	DescriptionIndex port_;        // The port that this tribe uses
+	DescriptionIndex ironore_;     // Iron ore
+	DescriptionIndex rawlog_;      // Simple log
+	DescriptionIndex refinedlog_;  // Refined log, e.g. wood or blackwood
+	DescriptionIndex granite_;     // Granite
+	std::vector<DescriptionIndex> worker_types_without_cost_;
+	std::vector<DescriptionIndex> trainingsites_;
 	// Order and positioning of wares in the warehouse display
-	WaresOrder                  wares_order_;
-	WaresOrderCoords            wares_order_coords_;
-	WaresOrder                  workers_order_;
-	WaresOrderCoords            workers_order_coords_;
+	WaresOrder wares_order_;
+	WaresOrder workers_order_;
 
-	std::vector<TribeBasicInfo::Initialization> initializations_;
+	// An optional custom imageset for the in-game menu toolbar
+	std::unique_ptr<ToolbarImageset> toolbar_image_set_;
+
+	std::vector<Widelands::TribeBasicInfo::Initialization> initializations_;
 
 	DISALLOW_COPY_AND_ASSIGN(TribeDescr);
 };
-
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_TRIBES_TRIBE_DESCR_H

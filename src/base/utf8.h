@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 by the Widelands Development Team
+ * Copyright (C) 2011-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,33 +29,8 @@ struct Utf8 {
 	 * a multi-byte UTF8 character. This function returns false for
 	 * the first byte of a multi-byte UTF8 character.
 	 */
-	static bool is_utf8_extended(char ch)
-	{
+	static bool is_utf8_extended(char ch) {
 		return (ch & 0xc0) == 0x80;
-	}
-
-	/**
-	 * Convert a unicode character into a multi-byte utf8 string.
-	 */
-	static std::string unicode_to_utf8(uint16_t unicode)
-	{
-		unsigned char buf[4];
-
-		if (unicode < 0x80) {
-			buf[0] = unicode;
-			buf[1] = 0;
-		} else if (unicode < 0x800) {
-			buf[0] = ((unicode & 0x7c0) >> 6) | 0xc0;
-			buf[1] = (unicode & 0x3f) | 0x80;
-			buf[2] = 0;
-		} else {
-			buf[0] = ((unicode & 0xf000) >> 12) | 0xe0;
-			buf[1] = ((unicode & 0xfc0) >> 6) | 0x80;
-			buf[2] = (unicode & 0x3f) | 0x80;
-			buf[3] = 0;
-		}
-
-		return reinterpret_cast<char *>(buf);
 	}
 
 	/**
@@ -63,8 +38,7 @@ struct Utf8 {
 	 * \p pos will point to the beginning of the next unicode character.
 	 * Return 0 on decoding errors.
 	 */
-	static uint16_t utf8_to_unicode(const std::string & in, std::string::size_type & pos)
-	{
+	static uint16_t utf8_to_unicode(const std::string& in, std::string::size_type& pos) {
 		assert(pos < in.size());
 		if (in[pos] & 0xc0) {
 			if (is_utf8_extended(in[pos])) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2008, 2010 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,27 +27,39 @@
 #include "ui_basic/window.h"
 
 struct LoginBox : public UI::Window {
-	LoginBox(UI::Panel &);
+	explicit LoginBox(UI::Panel&);
 
-	std::string get_nickname() {return eb_nickname->text();}
-	std::string get_password() {return eb_password->text();}
-	bool registered()          {return cb_register->get_state();}
-	bool set_automaticlog()    {return cb_auto_log->get_state();}
+	void think() override;
+
+	std::string get_nickname() {
+		return eb_nickname->text();
+	}
+	std::string get_password() {
+		return eb_password->text();
+	}
+	bool registered() {
+		return cb_register->get_state();
+	}
 
 	/// Handle keypresses
 	bool handle_key(bool down, SDL_Keysym code) override;
 
 private:
+	void change_playername();
 	void clicked_back();
 	void clicked_ok();
+	void clicked_register();
+	void verify_input();
+	bool check_password();
 
-	UI::EditBox  * eb_nickname;
-	UI::EditBox  * eb_password;
-	UI::Checkbox * cb_register;
-	UI::Checkbox * cb_auto_log;
-	UI::Textarea * ta_nickname;
-	UI::Textarea * ta_password;
-	UI::MultilineTextarea * pwd_warning;
+	UI::Button* loginbtn;
+	UI::Button* cancelbtn;
+	UI::EditBox* eb_nickname;
+	UI::EditBox* eb_password;
+	UI::Checkbox* cb_register;
+	UI::Textarea* ta_nickname;
+	UI::Textarea* ta_password;
+	UI::MultilineTextarea* register_account;
 };
 
 #endif  // end of include guard: WL_WUI_LOGIN_BOX_H

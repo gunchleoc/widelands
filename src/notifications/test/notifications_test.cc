@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2015 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,29 +23,39 @@
 #define BOOST_TEST_MODULE Notifications
 #include <boost/test/unit_test.hpp>
 
+#include "base/log.h"
+#include "base/macros.h"
 #include "notifications/notifications.h"
+
+// Triggered by BOOST_AUTO_TEST_CASE
+CLANG_DIAG_OFF("-Wdisabled-macro-expansion")
+CLANG_DIAG_OFF("-Wused-but-marked-unused")
 
 struct SimpleNote {
 	CAN_BE_SENT_AS_NOTE(100)
 
-	SimpleNote(const std::string& init_text) : text(init_text) {}
+	explicit SimpleNote(const std::string& init_text) : text(init_text) {
+	}
 
 	std::string text;
 };
 
 BOOST_AUTO_TEST_SUITE(NotificationsTestSuite)
 
-
 BOOST_AUTO_TEST_CASE(SimpleTest) {
+#ifdef _WIN32
+	set_logging_dir();
+#endif
+
 	std::vector<SimpleNote> received1;
 	auto subscriber1 = Notifications::subscribe<SimpleNote>(
-	   [&received1](const SimpleNote& got) {received1.push_back(got);});
+	   [&received1](const SimpleNote& got) { received1.push_back(got); });
 
 	Notifications::publish(SimpleNote("Hello"));
 
 	std::vector<SimpleNote> received2;
 	auto subscriber2 = Notifications::subscribe<SimpleNote>(
-	   [&received2](const SimpleNote& got) {received2.push_back(got);});
+	   [&received2](const SimpleNote& got) { received2.push_back(got); });
 
 	Notifications::publish(SimpleNote("World"));
 

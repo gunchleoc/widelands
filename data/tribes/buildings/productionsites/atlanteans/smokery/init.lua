@@ -32,8 +32,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      forced_after = 800,
-      prohibited_till = 180,
+      basic_amount = 1,
+      prohibited_till = 580,
       very_weak_ai_limit = 1,
       weak_ai_limit = 2
    },
@@ -43,9 +43,9 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      fish = 4,
-      meat = 4,
-      log = 8
+      { name = "fish", amount = 4 },
+      { name = "meat", amount = 4 },
+      { name = "log", amount = 8 }
    },
    outputs = {
       "smoked_meat",
@@ -60,18 +60,18 @@ tribes:new_productionsite_type {
             "call=smoke_fish",
             "call=smoke_meat",
             "call=smoke_fish",
-            "return=skipped"
+            "return=no_stats"
          }
       },
       smoke_meat = {
          -- TRANSLATORS: Completed/Skipped/Did not start smoking meat because ...
          descname = _"smoking meat",
          actions = {
-            "return=skipped when site has fish and economy needs smoked_fish and not economy needs smoked_meat",
+            -- time total: 60
             "return=skipped unless economy needs smoked_meat",
-            "sleep=30000",
             "consume=meat:2 log",
             "animate=working 30000",
+            "sleep=30000",
             "produce=smoked_meat:2"
          }
       },
@@ -79,11 +79,11 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start smoking fish because ...
          descname = _"smoking fish",
          actions = {
-            "return=skipped when site has meat and economy needs smoked_meat and not economy needs smoked_fish",
+            -- time total: 60
             "return=skipped unless economy needs smoked_fish",
-            "sleep=30000",
             "consume=fish:2 log",
             "animate=working 30000",
+            "sleep=30000",
             "produce=smoked_fish:2"
          }
       },

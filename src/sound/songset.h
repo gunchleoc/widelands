@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2016 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,37 +28,34 @@
 
 #include "io/fileread.h"
 
-
 /** A collection of several pieces of music meant for the same situation.
  *
  * A Songset encapsulates a number of interchangeable pieces of (background)
  * music, e.g. all songs that might be played while the main menu is being
- * shown. It is possible to access those songs one after another or in
- * random order. The fact that a Songset really contains several different
- * songs is hidden from the outside.
+ * shown.
  * A songset does not contain the audio data itself, to not use huge amounts of
  * memory. Instead, each song is loaded on request and the data is free()d
  * afterwards
  */
 struct Songset {
-	Songset();
+	explicit Songset(const std::string& dir, const std::string& basename);
 	~Songset();
 
-	void add_song(const std::string & filename);
-	Mix_Music * get_song();
-	bool empty() {return songs_.empty();}
+	Mix_Music* get_song(uint32_t random);
 
-protected:
+private:
+	void add_song(const std::string& filename);
+
 	/// The filenames of all configured songs
-	std::vector < std::string > songs_;
+	std::vector<std::string> songs_;
 
-	/** Pointer to the song that is currently playing (actually the one that
-	 * was last started); needed for linear playback
+	/** Index of the song that is currently playing
+	 * (actually the one that was last started)
 	 */
-	std::vector < std::string >::iterator current_song_;
+	uint32_t current_song_;
 
 	/// The current song
-	Mix_Music * m_;
+	Mix_Music* m_;
 
 	/** File reader object to fetch songs from disk when they start playing.
 	 * Do not create this for each load, it's a major hassle to code.
@@ -72,7 +69,7 @@ protected:
 	 * \sa fr_
 	 * \sa get_song()
 	 */
-	SDL_RWops * rwops_;
+	SDL_RWops* rwops_;
 };
 
 #endif  // end of include guard: WL_SOUND_SONGSET_H

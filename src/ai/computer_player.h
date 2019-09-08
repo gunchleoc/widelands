@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004, 2006-2011 by the Widelands Development Team
+ * Copyright (C) 2004-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,8 +23,14 @@
 #include <string>
 #include <vector>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "base/macros.h"
 #include "logic/widelands.h"
+
+// We need to use a string prefix in the game setup screens to identify the AIs, so we make sure
+// that the AI names don't contain the separator that's used to parse the strings there.
+#define AI_NAME_SEPARATOR "|"
 
 namespace Widelands {
 class Game;
@@ -37,13 +43,17 @@ class Game;
  * \ref Implementation interface.
  */
 struct ComputerPlayer {
-	ComputerPlayer(Widelands::Game &, const Widelands::PlayerNumber);
+	ComputerPlayer(Widelands::Game&, const Widelands::PlayerNumber);
 	virtual ~ComputerPlayer();
 
-	virtual void think () = 0;
+	virtual void think() = 0;
 
-	Widelands::Game & game() const {return game_;}
-	Widelands::PlayerNumber player_number() {return player_number_;}
+	Widelands::Game& game() const {
+		return game_;
+	}
+	Widelands::PlayerNumber player_number() {
+		return player_number_;
+	}
 
 	/**
 	 * Interface to a concrete implementation, used to instantiate AIs.
@@ -51,27 +61,41 @@ struct ComputerPlayer {
 	 * \see get_implementations()
 	 */
 	struct Implementation {
+		enum class Type { kEmpty, kDefault };
+
 		std::string name;
 		std::string descname;
 		std::string icon_filename;
-		virtual ~Implementation() {}
-		virtual ComputerPlayer * instantiate
-			(Widelands::Game &, Widelands::PlayerNumber) const = 0;
+		Type type;
+		explicit Implementation(std::string init_name,
+		                        std::string init_descname,
+		                        std::string init_icon_filename,
+		                        Type init_type)
+		   : name(init_name),
+		     descname(init_descname),
+		     icon_filename(init_icon_filename),
+		     type(init_type) {
+			assert(!boost::contains(name, AI_NAME_SEPARATOR));
+		}
+
+		virtual ~Implementation() {
+		}
+		virtual ComputerPlayer* instantiate(Widelands::Game&, Widelands::PlayerNumber) const = 0;
 	};
-	using ImplementationVector = std::vector<ComputerPlayer::Implementation const *>;
+	using ImplementationVector = std::vector<ComputerPlayer::Implementation const*>;
 
 	/**
 	 * Get a list of available AI implementations.
 	 */
-	static const ImplementationVector & get_implementations();
+	static const ImplementationVector& get_implementations();
 
 	/**
 	 * Get the best matching implementation for this name.
 	 */
-	static const Implementation * get_implementation(const std::string & name);
+	static const Implementation* get_implementation(const std::string& name);
 
 private:
-	Widelands::Game & game_;
+	Widelands::Game& game_;
 	Widelands::PlayerNumber const player_number_;
 
 	DISALLOW_COPY_AND_ASSIGN(ComputerPlayer);

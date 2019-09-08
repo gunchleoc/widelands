@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2011 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -45,7 +45,7 @@ enum NodeCaps {
 	BUILDCAPS_PORT = 16,
 
 	/** can we build any building on this field?*/
-	BUILDCAPS_BUILDINGMASK = BUILDCAPS_SIZEMASK|BUILDCAPS_MINE|BUILDCAPS_PORT,
+	BUILDCAPS_BUILDINGMASK = BUILDCAPS_SIZEMASK | BUILDCAPS_MINE | BUILDCAPS_PORT,
 
 	/// Can MapObjects walk or swim here? Also used for
 	/// MapObjectDescr::movecaps. If MOVECAPS_WALK, any walking being can walk
@@ -59,7 +59,6 @@ enum NodeCaps {
 	/// This clause stops ducks from "swimwalking" along the coast.
 	MOVECAPS_SWIM = 64,
 };
-
 }
 
 #endif  // end of include guard: WL_LOGIC_NODECAPS_H

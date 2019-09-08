@@ -57,8 +57,10 @@ std::string shader_to_string(GLenum type) {
 }  // namespace
 
 const char* gl_error_to_string(const GLenum err) {
-	CLANG_DIAG_OFF("-Wswitch-enum");
-#define LOG(a) case a: return #a
+	CLANG_DIAG_OFF("-Wswitch-enum")
+#define LOG(a)                                                                                     \
+	case a:                                                                                         \
+		return #a
 	switch (err) {
 		LOG(GL_INVALID_ENUM);
 		LOG(GL_INVALID_OPERATION);
@@ -72,14 +74,14 @@ const char* gl_error_to_string(const GLenum err) {
 		break;
 	}
 #undef LOG
-	CLANG_DIAG_ON("-Wswitch-enum");
+	CLANG_DIAG_ON("-Wswitch-enum")
 	return "unknown";
 }
 
 // Thin wrapper around a Shader object to ensure proper cleanup.
 class Shader {
 public:
-	Shader(GLenum type);
+	explicit Shader(GLenum type);
 	~Shader();
 
 	GLuint object() const {
@@ -119,7 +121,11 @@ void Shader::compile(const char* source) {
 		glGetShaderiv(shader_object_, GL_INFO_LOG_LENGTH, &infoLen);
 		if (infoLen > 1) {
 			std::unique_ptr<char[]> infoLog(new char[infoLen]);
+			CLANG_DIAG_OFF("-Wunknown-pragmas")
+			CLANG_DIAG_OFF("-Wzero-as-null-pointer-constant")
 			glGetShaderInfoLog(shader_object_, infoLen, NULL, infoLog.get());
+			CLANG_DIAG_ON("-Wzero-as-null-pointer-constant")
+			CLANG_DIAG_ON("-Wunknown-pragmas")
 			throw wexception(
 			   "Error compiling %s shader:\n%s", shader_to_string(type_).c_str(), infoLog.get());
 		}
@@ -161,7 +167,11 @@ void Program::build(const std::string& program_name) {
 
 		if (infoLen > 1) {
 			std::unique_ptr<char[]> infoLog(new char[infoLen]);
+			CLANG_DIAG_OFF("-Wunknown-pragmas")
+			CLANG_DIAG_OFF("-Wzero-as-null-pointer-constant")
 			glGetProgramInfoLog(program_object_, infoLen, NULL, infoLog.get());
+			CLANG_DIAG_ON("-Wzero-as-null-pointer-constant")
+			CLANG_DIAG_ON("-Wunknown-pragmas")
 			throw wexception("Error linking:\n%s", infoLog.get());
 		}
 	}
@@ -172,7 +182,7 @@ State::State()
 }
 
 void State::bind(const GLenum target, const GLuint texture) {
-	if (texture == 0)  {
+	if (texture == 0) {
 		return;
 	}
 	do_bind(target, texture);
@@ -204,8 +214,7 @@ void State::unbind_texture_if_bound(const GLuint texture) {
 	}
 }
 
-void State::delete_texture(const GLuint texture)
-{
+void State::delete_texture(const GLuint texture) {
 	unbind_texture_if_bound(texture);
 	glDeleteTextures(1, &texture);
 
@@ -218,6 +227,11 @@ void State::bind_framebuffer(const GLuint framebuffer, const GLuint texture) {
 	if (current_framebuffer_ == framebuffer && current_framebuffer_texture_ == texture) {
 		return;
 	}
+
+	// Some graphic drivers inaccurately do not flush their pipeline when
+	// switching the framebuffer - and happily do draw calls into the wrong
+	// framebuffers. I AM LOOKING AT YOU, INTEL!!!
+	glFlush();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	if (framebuffer != 0) {
@@ -248,7 +262,6 @@ State& State::instance() {
 	static State binder;
 	return binder;
 }
-
 
 void vertex_attrib_pointer(int vertex_index, int num_items, int stride, int offset) {
 	glVertexAttribPointer(

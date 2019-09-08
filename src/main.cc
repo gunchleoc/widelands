@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2008-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,60 +24,54 @@
 #include <SDL_main.h>
 #include <unistd.h>
 
-#include "base/log.h"
 #include "base/wexception.h"
 #include "build_info.h"
 #include "config.h"
 #include "wlapplication.h"
 #include "wlapplication_messages.h"
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::flush;
-
 /**
  * Cross-platform entry point for SDL applications.
  */
-int main(int argc, char * argv[])
-{
-	log("This is Widelands Version %s (%s)\n", build_id().c_str(), build_type().c_str());
+int main(int argc, char* argv[]) {
+	std::cout << "This is Widelands Version " << build_id() << " (" << build_type() << ")"
+	          << std::endl;
 
-	WLApplication * g_app = nullptr;
+	WLApplication* g_app = nullptr;
 	try {
-		g_app = WLApplication::get(argc, const_cast<char const * *>(argv));
+		g_app = WLApplication::get(argc, const_cast<char const**>(argv));
 		// TODO(unknown): handle exceptions from the constructor
 		g_app->run();
 
 		delete g_app;
 
 		return 0;
-	} catch (const ParameterError & e) {
+	} catch (const ParameterError& e) {
 		//  handle wrong commandline parameters
-		cerr<<endl<<e.what()<<endl<<endl;
+		std::cerr << std::endl << e.what() << std::endl << std::endl;
 		show_usage(build_id(), build_type());
 		delete g_app;
 
 		return 0;
 	}
 #ifdef NDEBUG
-	catch (const WException & e) {
-		cerr
-			<< "\nCaught exception (of type '" << typeid(e).name()
-			<< "') in outermost handler!\nThe exception said: " << e.what()
-			<< "\n\nThis should not happen. Please file a bug report on version "
-			<< build_id() << '(' << build_type() << ')' << ".\n"
-			<< "and remember to specify your operating system.\n\n" << flush;
+	catch (const WException& e) {
+		std::cerr << "\nCaught exception (of type '" << typeid(e).name()
+		          << "') in outermost handler!\nThe exception said: " << e.what()
+		          << "\n\nThis should not happen. Please file a bug report on version " << build_id()
+		          << '(' << build_type() << ')' << ".\n"
+		          << "and remember to specify your operating system.\n\n"
+		          << std::flush;
 		delete g_app;
 
 		return 1;
-	} catch (const std::exception & e) {
-		cerr
-			<< "\nCaught exception (of type '" << typeid(e).name()
-			<< "') in outermost handler!\nThe exception said: " << e.what()
-			<< "\n\nThis should not happen. Please file a bug report on version "
-			<< build_id() << '(' << build_type() << ')' <<".\n"
-			<< "and remember to specify your operating system.\n\n" << flush;
+	} catch (const std::exception& e) {
+		std::cerr << "\nCaught exception (of type '" << typeid(e).name()
+		          << "') in outermost handler!\nThe exception said: " << e.what()
+		          << "\n\nThis should not happen. Please file a bug report on version " << build_id()
+		          << '(' << build_type() << ')' << ".\n"
+		          << "and remember to specify your operating system.\n\n"
+		          << std::flush;
 		delete g_app;
 
 		return 1;

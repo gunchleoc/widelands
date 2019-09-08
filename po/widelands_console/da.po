@@ -1,14 +1,14 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2016 Widelands Development Team
+# Copyright (C) 2005-2019 Widelands Development Team
 # 
 # Translators:
-# Joe Hansen <joedalton2@yahoo.dk>, 2016
+# Joe Hansen <joedalton2@yahoo.dk>, 2016-2019
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands\n"
-"Report-Msgid-Bugs-To: https://bugs.launchpad.net/widelands\n"
-"POT-Creation-Date: 2016-03-11 07:02+0000\n"
-"PO-Revision-Date: 2016-03-11 07:03+0000\n"
+"Report-Msgid-Bugs-To: https://wl.widelands.org/wiki/ReportingBugs/\n"
+"POT-Creation-Date: 2019-05-10 07:32+0000\n"
+"PO-Revision-Date: 2019-05-10 07:33+0000\n"
 "Last-Translator: GunChleoc\n"
 "Language-Team: Danish (http://www.transifex.com/widelands/widelands/language/da/)\n"
 "MIME-Version: 1.0\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #. * TRANSLATORS: %s = version information
-#: ../../src/wlapplication_messages.cc:40
+#: ../../src/wlapplication_messages.cc:38
 #, c-format
 msgid "This is Widelands Build %s"
 msgstr "Dette er Widelands bygning %s"
@@ -31,198 +31,231 @@ msgstr "Brug: widelands <option0>=<value0> ... <optionN>=<valueN>"
 msgid "Options:"
 msgstr "Tilvalg:"
 
-#: ../../src/wlapplication_messages.cc:46
+#: ../../src/wlapplication_messages.cc:45
 msgid " --<config-entry-name>=value overwrites any config file setting"
 msgstr " --<config-entry-name>=værdi overskriver eventuelle instillinger i konfigurationsfilen"
 
-#: ../../src/wlapplication_messages.cc:47
-msgid ""
-" --logfile=FILENAME   Log output to file FILENAME instead of \n"
-"                      terminal output"
-msgstr ""
+#: ../../src/wlapplication_messages.cc:46
+msgid "                      Note: New value will be written to config file"
+msgstr "                      Bemærk: Ny værdi vil blive skrevet til konfigurationsfil"
 
-#: ../../src/wlapplication_messages.cc:49
+#: ../../src/wlapplication_messages.cc:48
 msgid ""
 " --datadir=DIRNAME    Use specified directory for the widelands\n"
 "                      data files"
-msgstr ""
+msgstr " --datadir=MAPPENAVN    Brug angivet mappe for widelands' datafiler"
 
 #: ../../src/wlapplication_messages.cc:51
 msgid ""
 " --homedir=DIRNAME    Use specified directory for widelands config\n"
 "                      files, savegames and replays"
-msgstr ""
+msgstr " --homedir=MAPPENAVN    Brug angivet mappe for widelands' konfigurationsfiler,\n                      gemte spil og genafspilninger"
 
-#: ../../src/wlapplication_messages.cc:54
+#: ../../src/wlapplication_messages.cc:55
 msgid "                      Default is ~/.widelands"
-msgstr ""
+msgstr "                      Standard er ~/.widelands"
 
 #. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
 #. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
-#. widelands textdomain
-#: ../../src/wlapplication_messages.cc:59
+#. widelands
+#. textdomain
+#: ../../src/wlapplication_messages.cc:61
 msgid ""
 " --coredump=[true|false]\n"
 "                      Generates a core dump on segfaults instead of\n"
 "                      using the SDL"
-msgstr ""
+msgstr " --coredump=[true|false]\n                      Opretter et kernedump på segfaults i stedet for at bruge SDL'en"
 
-#: ../../src/wlapplication_messages.cc:62
+#: ../../src/wlapplication_messages.cc:65
 msgid ""
 " --language=[de_DE|sv_SE|...]\n"
 "                      The locale to use."
-msgstr ""
+msgstr " --language=[da_DA|sv_SE|...]\n                      Sproget."
 
 #. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
 #. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
-#. widelands textdomain.
+#. widelands
+#. textdomain.
 #. * TRANSLATORS: A syncstream is a synchronization stream. Syncstreams are
-#. used in multiplayer
+#. used in
+#. multiplayer
 #. * TRANSLATORS: games to make sure that there is no mismatch between the
 #. players.
-#: ../../src/wlapplication_messages.cc:68
+#: ../../src/wlapplication_messages.cc:74
 msgid ""
 " --write_syncstreams=[true|false]\n"
 "                      Create syncstream dump files to help debug network games."
-msgstr ""
+msgstr " --write_syncstreams=[true|false]\n                      Opret syncstream-dumpfiler til at hjælpe med fejlsøgningen af netværksspil."
 
-#: ../../src/wlapplication_messages.cc:70
+#: ../../src/wlapplication_messages.cc:77
 msgid " --autosave=[...]     Automatically save each n minutes"
-msgstr ""
+msgstr " --autosave=[...]     Gem automatisk hvert n. minut"
 
-#: ../../src/wlapplication_messages.cc:71
+#: ../../src/wlapplication_messages.cc:78
 msgid ""
 " --rolling_autosave=[...]\n"
 "                      Use this many files for rolling autosaves"
-msgstr ""
+msgstr " --rolling_autosave=[...]\n                      Brug dette antal filer for rullende automatisk gem"
 
-#: ../../src/wlapplication_messages.cc:74
-msgid "Sound options:"
-msgstr ""
+#: ../../src/wlapplication_messages.cc:81
+msgid ""
+" --metaserver=[...]\n"
+"                      Connect to a different metaserver for internet gaming."
+msgstr " --metaserver=[...]\n                      Forbind til en anden metaserver for internetspil."
 
-#: ../../src/wlapplication_messages.cc:75
+#: ../../src/wlapplication_messages.cc:84
+msgid ""
+" --metaserverport=[...]\n"
+"                      Port number of the metaserver for internet gaming."
+msgstr " --metaserverport=[...]\n                      Portnummer for metaserveren til internetspil."
+
+#: ../../src/wlapplication_messages.cc:88
 msgid " --nosound            Starts the game with sound disabled."
-msgstr ""
+msgstr " --nosound            Starter spille med lyd deaktiveret."
 
-#: ../../src/wlapplication_messages.cc:76
-msgid " --disable_fx         Disable sound effects."
-msgstr ""
-
-#: ../../src/wlapplication_messages.cc:77
-msgid " --disable_music      Disable music."
-msgstr ""
-
-#: ../../src/wlapplication_messages.cc:78
+#: ../../src/wlapplication_messages.cc:90
 msgid " --nozip              Do not save files as binary zip archives."
-msgstr ""
+msgstr " --nozip              Gem ikke filer som binære zip-arkiver."
 
-#: ../../src/wlapplication_messages.cc:79
+#: ../../src/wlapplication_messages.cc:92
 msgid ""
 " --editor             Directly starts the Widelands editor.\n"
 "                      You can add a =FILENAME to directly load\n"
 "                      the map FILENAME in editor."
-msgstr ""
+msgstr " --editor             Starter Widelands' redigeringsprogram direkte.\n                      Du kan tilføje et =FILNAVN til direkte at indlæse\n                      kortet FILNAVN i redigeringsprogrammet."
 
-#: ../../src/wlapplication_messages.cc:82
+#: ../../src/wlapplication_messages.cc:96
+msgid ""
+" --ai_training        Enables AI training mode. See\n"
+"                      https://wl.widelands.org/wiki/Ai%20Training/\n"
+"                      for a full description of the AI training logic."
+msgstr " --ai_training        Aktiverer AI-træningstilstande. Se\n                      https://wl.widelands.org/wiki/Ai%20Training/\n                      for en fuld beskrivelse af AI-træningslogikken."
+
+#: ../../src/wlapplication_messages.cc:100
+msgid ""
+" --auto_speed         In multiplayer games only, this will keep\n"
+"                      adjusting the game speed automatically,\n"
+"                      depending on FPS. Useful in conjunction with\n"
+"                      --ai_training."
+msgstr " --auto_speed         I spil for flere vil denne indstilling justere\n                      spilhastigheden automatisk afhængig af \n                      FPS. Nyttig sammen med\n                      --ai_training."
+
+#: ../../src/wlapplication_messages.cc:105
 msgid ""
 " --scenario=FILENAME  Directly starts the map FILENAME as scenario\n"
 "                      map."
-msgstr ""
+msgstr " --scenario=FILNAVN  Starter direkte kortet FILNAVN som scenariokort."
 
-#: ../../src/wlapplication_messages.cc:84
+#: ../../src/wlapplication_messages.cc:108
 msgid " --loadgame=FILENAME  Directly loads the savegame FILENAME."
-msgstr ""
+msgstr " --loadgame=FILNAVN  Indlæser direkte det gemte spil FILNAVN."
 
-#: ../../src/wlapplication_messages.cc:85
+#: ../../src/wlapplication_messages.cc:109
 msgid ""
 " --script=FILENAME    Run the given Lua script after initialization.\n"
 "                      Only valid with --scenario, --loadgame, or --editor."
-msgstr ""
+msgstr " --script=FILNAVN   Kør det angivne Lua-skript efter initialisering.\n                      Kun gyldigt med --scenario, --loadgame eller --editor."
 
 #. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
 #. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
-#. widelands textdomain
-#: ../../src/wlapplication_messages.cc:89
+#. widelands
+#. textdomain
+#: ../../src/wlapplication_messages.cc:115
 msgid ""
 " --auto_roadbuild_mode=[true|false]\n"
 "                      Whether to enter roadbuilding mode\n"
 "                      automatically after placing a flag that is\n"
 "                      not connected to a road."
-msgstr ""
+msgstr " --auto_roadbuild_mode=[true|false]\n                      Skal vejbygningstilstand startes direkte efter\n                      placering af et flag som ikke er forbundet til en\n                       vej."
 
-#: ../../src/wlapplication_messages.cc:93
+#: ../../src/wlapplication_messages.cc:121
 msgid "Graphic options:"
-msgstr ""
+msgstr "Grafikindstillinger:"
 
 #. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
 #. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
-#. widelands textdomain
-#: ../../src/wlapplication_messages.cc:96
+#. widelands
+#. textdomain
+#: ../../src/wlapplication_messages.cc:126
 msgid ""
 " --fullscreen=[true|false]\n"
 "                      Whether to use the whole display for the\n"
 "                      game screen."
-msgstr ""
+msgstr " --fullscreen=[true|false]\n                      Skal hele skærmen bruges til spilskærm."
 
-#: ../../src/wlapplication_messages.cc:99
+#: ../../src/wlapplication_messages.cc:130
 msgid " --xres=[...]         Width of the window in pixel."
-msgstr ""
+msgstr " --xres=[...]         Bredde på vinduet i billedpunkter."
 
-#: ../../src/wlapplication_messages.cc:100
+#: ../../src/wlapplication_messages.cc:131
 msgid " --yres=[...]         Height of the window in pixel."
-msgstr ""
+msgstr " --yres=[...]         Højde på vindet i billedpunkter."
 
-#: ../../src/wlapplication_messages.cc:104
+#: ../../src/wlapplication_messages.cc:132
+msgid " --maxfps=[5 ...]     Maximal optical framerate of the game."
+msgstr " --maxfps=[5 ...]     Maksimal optisk billedhastighed for spillet."
+
+#. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
+#. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
+#. widelands
+#. textdomain
+#: ../../src/wlapplication_messages.cc:137
 msgid "Options for the internal window manager:"
-msgstr ""
+msgstr "Indstillinger for den interne vindueshåndtering:"
 
-#: ../../src/wlapplication_messages.cc:105
+#: ../../src/wlapplication_messages.cc:138
+msgid ""
+" --animate_map_panning=[yes|no]\n"
+"                      Should automatic map movements be animated."
+msgstr " --animate_map_panning=[yes|no]\n                      Skal automatiske kortbevægelser animeres."
+
+#: ../../src/wlapplication_messages.cc:141
 msgid ""
 " --border_snap_distance=[0 ...]\n"
 "                      Move a window to the edge of the screen\n"
 "                      when the edge of the window comes within\n"
 "                      this distance from the edge of the screen."
-msgstr ""
+msgstr " --border_snap_distance=[0 ...]\n                      Flyt et vindue til kanten af skærmen\n                      når kanten for vinduet kommer indenfor denne \n                      afstand fra kanten af skærmen."
 
 #. * TRANSLATORS: You may translate true/false, also as on/off or yes/no, but
 #. * TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the
-#. widelands textdomain
-#: ../../src/wlapplication_messages.cc:111
+#. widelands
+#. textdomain
+#: ../../src/wlapplication_messages.cc:149
 msgid ""
 " --dock_windows_to_edges=[true|false]\n"
 "                      Eliminate a window's border towards the\n"
 "                      edge of the screen when the edge of the\n"
 "                      window is next to the edge of the screen."
-msgstr ""
+msgstr " --dock_windows_to_edges=[true|false]\n                      Eliminerer et vindues grænse mod kanten\n                      af skærmen når kanten af vinduet er ved siden\n                      af kanten af skærmen."
 
-#: ../../src/wlapplication_messages.cc:115
+#: ../../src/wlapplication_messages.cc:154
 msgid ""
 " --panel_snap_distance=[0 ...]\n"
 "                      Move a window to the edge of the panel when\n"
 "                      the edge of the window comes within this\n"
 "                      distance from the edge of the panel."
-msgstr ""
+msgstr " --panel_snap_distance=[0 ...]\n                      Flyt et vindue til kanten af panelet når\n                      kanten af vinduet har denne afstand fra\n                      kanten af panelet."
 
-#: ../../src/wlapplication_messages.cc:119
+#: ../../src/wlapplication_messages.cc:159
 msgid ""
 " --snap_windows_only_when_overlapping=[yes|no]\n"
 "                      Only move a window to the edge of a panel\n"
 "                      if the window is overlapping with the\n"
 "                      panel."
-msgstr ""
+msgstr " --snap_windows_only_when_overlapping=[yes|no]\n                      Flyt kun et vindue til kanten af et panel hvis\n                      vinduet overlapper med panelet."
 
-#: ../../src/wlapplication_messages.cc:124
+#: ../../src/wlapplication_messages.cc:165
 msgid " --verbose            Enable verbose debug messages"
-msgstr ""
+msgstr " --verbose            Aktiver uddybende fejlsøgningsbeskeder"
 
-#: ../../src/wlapplication_messages.cc:126
+#: ../../src/wlapplication_messages.cc:166
 msgid " --help               Show this help"
-msgstr ""
+msgstr " --help               Vis denne hjælpetekst"
 
-#: ../../src/wlapplication_messages.cc:128
+#: ../../src/wlapplication_messages.cc:167
 msgid ""
 "Bug reports? Suggestions? Check out the project website:\n"
-"        https://launchpad.net/widelands\n"
+"        https://wl.widelands.org/\n"
 "\n"
 "Hope you enjoy this game!"
-msgstr ""
+msgstr "Fejlrapporter? Forslag? Se projektets hjemmeside:\n        https://wl.widelands.org/\n\nHåber du nød dette spil!"

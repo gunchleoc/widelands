@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2008, 2010, 2012-2013 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,17 +33,22 @@
 
 namespace Widelands {
 
-enum class QueueCommandTypes {
+// The command types are used by the QueueCmdFactory, for network serialization
+// and for savegame compatibility.
+// DO NOT change the order
+// TODO(GunChleoc): Whenever we break savegame compatibility, clean this up and change data type to
+// uint16_t.
+enum class QueueCommandTypes : uint8_t {
 
 	/* ID zero is reserved and must never be used */
 	kNone = 0,
 
 	/* PLAYER COMMANDS BELOW */
 	kBuild,
-	kFlag,
+	kBuildFlag,
 	kBuildRoad,
 	kFlagAction,
-	kStopBuilding,
+	kStartStopBuilding,
 	kEnhanceBuilding,
 	kBulldoze,
 
@@ -56,11 +61,11 @@ enum class QueueCommandTypes {
 	kSetWareTargetQuantity,
 	kResetWareTargetQuantity,
 	kSetWorkerTargetQuantity,
-	kResetWorkerTargetQuantity, // 16
+	kResetWorkerTargetQuantity,  // 16
 
 	// 17 was a command related to old events. removed
 
-	kSetWareMaxFill = 18,
+	kSetInputMaxFill = 18,
 
 	kMessageSetStatusRead = 21,
 	kMessageSetStatusArchived,
@@ -70,32 +75,36 @@ enum class QueueCommandTypes {
 
 	kEvictWorker,
 
-	kMilitarysiteSetSoldierPreference, // 26
+	kMilitarysiteSetSoldierPreference,
+	kProposeTrade,  // 27
 
-	kSinkShip = 121,
+	kShipSink = 121,
 	kShipCancelExpedition,
-	kPortStartExpedition,
+	kStartOrCancelExpedition,
 	kShipConstructPort,
-	kShipScout,
-	kShipExplore,
+	kShipScoutDirection,
+	kShipExploreIsland,
+
+	// The commands below are never serialized, but we still keep the IDs stable for savegame
+	// compatibility.
 
 	kDestroyMapObject,
-	kAct, // 128
+	kAct,  // 128
 	// 129 was a command related to old events. removed
 	kIncorporate = 130,
 	kLuaScript,
 	kLuaCoroutine,
-	kCalculateStatistics, // 133
+	kCalculateStatistics,  // 133
 	kCallEconomyBalance = 200,
 
-	kDeleteMessage, // 201
+	kDeleteMessage,  // 201
 
 	kNetCheckSync = 250,
 	kReplaySyncWrite,
 	kReplaySyncRead,
-	kReplayEnd // 253
+	kReplayEnd  // 253
 };
 
-} // namespace Widelands
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_QUEUE_CMD_IDS_H

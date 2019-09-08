@@ -1,15 +1,16 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2016 Widelands Development Team
+# Copyright (C) 2005-2019 Widelands Development Team
 # 
 # Translators:
-# Joe Hansen <joedalton2@yahoo.dk>, 2009,2015-2016
+# GunChleoc, 2016
+# Joe Hansen <joedalton2@yahoo.dk>, 2009,2015-2019
 # Ole Laursen <ole.laursen@gmail.com>, 2016
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands\n"
-"Report-Msgid-Bugs-To: https://bugs.launchpad.net/widelands\n"
-"POT-Creation-Date: 2016-04-07 14:12+0000\n"
-"PO-Revision-Date: 2016-04-07 14:13+0000\n"
+"Report-Msgid-Bugs-To: https://wl.widelands.org/wiki/ReportingBugs/\n"
+"POT-Creation-Date: 2019-05-10 07:32+0000\n"
+"PO-Revision-Date: 2019-05-10 07:33+0000\n"
 "Last-Translator: GunChleoc\n"
 "Language-Team: Danish (http://www.transifex.com/widelands/widelands/language/da/)\n"
 "MIME-Version: 1.0\n"
@@ -19,7 +20,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: ../../data/campaigns/atl01.wmf/elemental:9
-#: ../../data/campaigns/campaigns.conf:95
 msgid "From Nemesis to Genesis"
 msgstr "Fra nemesis til genesis"
 
@@ -30,7 +30,6 @@ msgid ""
 msgstr "Efter landgang på en mystisk ø tæt på Atlantis kæmper de tilbageværende atlantere for at skabe sig et nyt hjem."
 
 #: ../../data/campaigns/bar01.wmf/elemental:8
-#: ../../data/campaigns/campaigns.conf:67
 msgid "A Place to Call Home"
 msgstr "Et sted vi kan kalde hjem"
 
@@ -41,7 +40,6 @@ msgid ""
 msgstr "I dette scenarie vil bygninger med højere produktion, inklusive minedrift, blive introduceret."
 
 #: ../../data/campaigns/bar02.wmf/elemental:7
-#: ../../data/campaigns/campaigns.conf:72
 msgid "This Land is Our Land"
 msgstr "Dette land er vores land"
 
@@ -51,105 +49,21 @@ msgid ""
 "and will introduce fighting."
 msgstr "Denne øvelse forklarer håndteringen af militære anlæg og træningsanlæg og vil give en kort introduktion til kamp."
 
-#: ../../data/campaigns/campaigns.conf:27
-msgid "The Second Empire"
-msgstr "Det andet emperium"
-
-#: ../../data/campaigns/campaigns.conf:29
-msgid "Barbarians"
-msgstr "Barbarerne"
-
-#: ../../data/campaigns/campaigns.conf:31
-msgid "Easy. Introduces the Barbarians"
-msgstr "Nem. Introducerer barbarerne"
-
-#: ../../data/campaigns/campaigns.conf:32
-msgid ""
-"When Chat’Karuth died, he was an old man, father to three strong and "
-"ambitious sons, and warlord to an army that could match any enemy willing to"
-" rise against the ancient forests. Though at the end of his glorious reign, "
-"Chat’Karuth chose his eldest son, Thron, to succeed him as the tribe’s "
-"warlord – a decision that left his two brothers unsatisfied. The old warlord"
-" knew that. As his father instructed him, Thron left the capital of "
-"Al’thunran, the home of the Throne Among the Trees, and withdrew his forces "
-"to the high hills where he buried the corpse of his father. There he swore "
-"to the gods and his father’s spirit that he’d return to re-established "
-"order. While his brothers have raged blind war against Thron and the few "
-"forces he left to secure the borders of Al’thunran, the young warlord seeks "
-"to reunite his ambitious brothers and force the tribes to march once again "
-"under a common banner."
-msgstr "Da Chat'Karuth døde var han en gammel mand, far til tre stærke og ambitiøse sønner, og krigsherre for en hær som kunne matche enhver fjende villig til at gå imod de gamle skove. I slutningen af sit glorværdige styre valgte Chat'Karuth sin ældste søn, Thron, som sin efterfølger som stammens krigsherre - en beslutning som efterlod hans to brødre utilfredse. Den gamle krigsherre viste dette. Som sin far instruerede ham i forlod Thron hovedstaden Al'thunran, hjem for Tronen blandt træerne, og trak sine tropper tilbage til de høje bakker, hvor han begravede sin fars lig. Der svor han til guderne og sin fars ånd, at han ville vende tilbage og genetablere orden. Mens hans brødre har ført blind krig mod Thron og de få styrker han efterlod for at sikre Al'thunrans grænser, førsøger den unge krigsherre at genforene sine ambitiøse brødre og tvinge stammerne til igen at marchere under en fælles banner."
-
-#: ../../data/campaigns/campaigns.conf:35
-msgid "The Months of Exile"
-msgstr "Månederne i eksil"
-
-#: ../../data/campaigns/campaigns.conf:37
-msgid "Empire"
-msgstr "Imperiet"
-
-#: ../../data/campaigns/campaigns.conf:39
-msgid "Easy. Introduces the Empire"
-msgstr "Nem. Introducerer imperiet"
-
-#: ../../data/campaigns/campaigns.conf:40
-msgid ""
-"Six months ago, Lutius – a young general of the Empire – was sent with 150 "
-"soldiers to the frontier beyond the northern forests where Barbarian tribes "
-"were crossing onto land held by the Empire. His task was to defend the "
-"Empire’s land. At first, everything was calm. He even talked to a few "
-"Barbarian children and thought about a peaceful life – side by side with "
-"this archaic folk. He began to feel safer and his army began to drop their "
-"attention off the potential enemy. That was their undoing. One night in "
-"March his unprepared army was attacked by 100 Barbarian footmen and was "
-"completely scattered. Only with his bare life he and a handful of his "
-"soldiers survived."
-msgstr "For seks måneder siden, Lutius, en ung general fra imperiet - blev sendt af sted med 150 soldater til fronten bag de nordlige skove hvor barbarstammer krydsede ind i land ejet af imperiet. Hans opgave var at forsvare imperiets land. Først var alt roligt. Han talte endda med nogle få barbarbørn og tænke på et fredeligt liv - side om side med dette arkaisk folk. Han begyndte at føle sig sikker og hans hær begyndte at tabe opmærksomheden på den potentielle fjende. Det blev deres undergang. En nat i marts blev hans uforberedte hær angrebet af 100 fodfolk og blev fuldstændig spredt. Kun med livet i behold og en håndfuld mænd blandt soldaterne overlevede."
-
-#: ../../data/campaigns/campaigns.conf:43
-msgid "The Run for the Fire"
-msgstr "Jagten på ild"
-
-#: ../../data/campaigns/campaigns.conf:45
-msgid "Atlanteans"
-msgstr "Atlanterne"
-
-#: ../../data/campaigns/campaigns.conf:47
-msgid "Challenging. Introduces the Atlanteans"
-msgstr "Udfordrende. Introducerer atlanterne"
-
-#: ../../data/campaigns/campaigns.conf:48
-msgid ""
-"When their God lost faith in the Atlanteans and drowned their island, one "
-"woman’s struggle for justice and a second chance for her people would become"
-" the stuff of legends. Leading the remaining Atlanteans into a new future in"
-" a new part of the World, Jundlina became the most powerful human of her "
-"time, but at a high cost: her humanity and soul."
-msgstr "Da deres gud mistede troen på atlanterne og lod deres ø forsvinde i havet, blev en kvindes kamp for retfærdighed og en ekstra chance for hendes folk en legende. Som anfører for de resterende atlantere førte hun dem til en ny fremtid i en ny del af verden, Jundlina blev det mægtigste menneske i hendes tid, men til en høj pris: hendes menneskelighed og sjæl. "
-
-#: ../../data/campaigns/campaigns.conf:78
-#: ../../data/campaigns/emp01.wmf/elemental:7
-msgid "The Strands of Malac’ Mor"
-msgstr "Malac' Mors bredder"
-
-#: ../../data/campaigns/campaigns.conf:83
-#: ../../data/campaigns/emp02.wmf/elemental:9
-msgid "An Outpost for Exile"
-msgstr "En forpost for eksil"
-
-#: ../../data/campaigns/campaigns.conf:88
-#: ../../data/campaigns/campaigns.conf:100
-#: ../../data/campaigns/dummy.wmf/elemental:7
+#: ../../data/campaigns/dummy.wmf/elemental:8
 msgid "Not yet implemented"
 msgstr "Endnu ikke implementeret"
 
-#: ../../data/campaigns/dummy.wmf/elemental:9
+#: ../../data/campaigns/dummy.wmf/elemental:10
 msgid "Nobody"
 msgstr "Ingen"
 
-#: ../../data/campaigns/dummy.wmf/elemental:10
+#: ../../data/campaigns/dummy.wmf/elemental:12
 msgid "Sorry, this map is not yet implemented."
 msgstr "Beklager, dette kort er endnu ikke implementeret."
+
+#: ../../data/campaigns/emp01.wmf/elemental:7
+msgid "The Strands of Malac’ Mor"
+msgstr "Malac' Mors bredder"
 
 #: ../../data/campaigns/emp01.wmf/elemental:9
 msgid ""
@@ -160,6 +74,10 @@ msgid ""
 " an unknown desert strand and save his people. For now."
 msgstr "Efter at have tabt et vigtigt slag mod barbarerne, som førte til tabet af størstedelen af imperiets territorium, forlader Lutius Fremil for at starte et nyt liv. Men hans skæbne fører skibet ind i en stor storm, som næsten ødelægger skibet. Kun ved en masse held får han landsat sit beskadigede skib på en ukendt ørkenstrand og redder sit folk. For nu."
 
+#: ../../data/campaigns/emp02.wmf/elemental:9
+msgid "An Outpost for Exile"
+msgstr "En forpost for eksil"
+
 #: ../../data/campaigns/emp02.wmf/elemental:11
 msgid ""
 "Finally the ship was repaired, so Lutius and his people returned to the "
@@ -168,8 +86,53 @@ msgid ""
 "they set out to explore this new living space."
 msgstr "Endelig blev skibet repareret, så Lutius og hans folk kunne genoptage missionen med at finde et godt sted til en ny begyndelse. Kun nogle få dage senere gør de landgang på en grøn, solskinsø, der ligner et paradis. Fuld af jubel begynder de at udforske deres nye levested."
 
+#: ../../data/campaigns/emp03.wmf/elemental:10
+msgid ""
+"On their way home to defend the Empire, the crew of Lutius was surprised by "
+"the will of the gods."
+msgstr "På deres vej hjem for at forsvære Imperiet, blev Lutiusbesætningen overrasket af gudernes vilje."
+
+#: ../../data/campaigns/emp04.wmf/elemental:8
+msgid "Surprise, Surprise!"
+msgstr "Overraskelse!"
+
+#: ../../data/campaigns/emp04.wmf/elemental:10
+msgid ""
+"After returning home, Lutius and his crew are faced with an economy in "
+"shambles. Resolving the bottlenecks in the economy will be of utmost "
+"importance to reinstate the glory of the empire."
+msgstr "Efter at være kommet retur står Lutius og hans mandskab over for en økonomi i ruiner. Løsning af flaskehalsene i økonomien vil være af yderste vigtighed for en tilbagevenden til imperiets storhed."
+
+#: ../../data/campaigns/fri01.wmf/elemental:8
+msgid "The Great Stormflood"
+msgstr "Den store oversvømmelse"
+
+#: ../../data/campaigns/fri01.wmf/elemental:10
+msgid ""
+"In 1362, the quiet, peaceful life of the inhabitants of the Northern Frisian"
+" Islands was disrupted by one of the greatest storm floods in human memory: "
+"Saint Marcellus’ Flood. Is it really nothing more than yet another storm, or"
+" a sign from the Gods that the Frisian community on the island of Langeness "
+"is not wanted here?"
+msgstr "I 1362, blev det stille og fredelige liv for indbyggerne i De Nordlige Frisiske Øer afbrudt af en af de største oversvømmelser i menneskets erindring: Sankt Marcellus' oversvømmelse. Er det ikke andet end endnu en storm, eller et tegn fra guderne om at det frisiske samfund på Langeness-øerne ikke er velkomne."
+
+#: ../../data/campaigns/fri01.wmf/elemental:11
+msgid ""
+"This scenario is set in a historical context, but most of the story line is "
+"fiction."
+msgstr "Dette scenarie befinder sig i en historisk kontekst, men det meste af historielinjen er fiktion."
+
+#: ../../data/campaigns/fri02.wmf/elemental:8
+msgid "An Icy Welcome"
+msgstr "En isvelkomst"
+
+#: ../../data/campaigns/fri02.wmf/elemental:10
+msgid ""
+"Reebaud and his tribe have arrived in the North. But their arrival between "
+"the frozen steppes and the snow-covered mountains is less than welcome…"
+msgstr "Reebaud og hans stamme er ankommet i Norden. Men deres ankomst mellem de frosne stepper og de sneklædte bjerge er mindre end velkommen ..."
+
 #: ../../data/campaigns/tutorial01_basic_control.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:15
 msgid "Basic Control"
 msgstr "Basiskontrol"
 
@@ -180,7 +143,6 @@ msgid ""
 msgstr "I denne introduktion vil du lære hvordan du navigerer i Widelands og hvordan du bygger bygninger og veje."
 
 #: ../../data/campaigns/tutorial02_warfare.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:19
 msgid "Warfare"
 msgstr "Krig"
 
@@ -191,7 +153,6 @@ msgid ""
 msgstr "I denne introduktion vil du lære hemmelighederne ved krig: Hvordan du skaber soldater, hvordan du træner dem og fører dem i kamp."
 
 #: ../../data/campaigns/tutorial03_seafaring.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:23
 msgid "Seafaring"
 msgstr "Søfart"
 
@@ -202,7 +163,6 @@ msgid ""
 msgstr "I denne introduktion vil du lære om søvæsen, som indbefatter håndtering af skibe og havne."
 
 #: ../../data/campaigns/tutorial04_economy.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:27
 msgid "Economy"
 msgstr "Økonomi"
 
@@ -214,7 +174,7 @@ msgstr "I denne introduktion vil du lære hvilke indstillinger Widelands tilbyde
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:8
 msgid "Archipelago Sea"
-msgstr ""
+msgstr "Skærgårdshavet"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:10
 msgid ""
@@ -225,14 +185,14 @@ msgid ""
 "latitude; farming thrives, berries are abundant, and fish plentiful. The "
 "small human population of this place never knew famine. You warlording "
 "bastards just couldn’t leave this little paradise in peace, could you?"
-msgstr ""
+msgstr "Mellem Sverige og Finland ligger Skærgårdshavet. Dette utroligt smukke område er hverken land eller hav, men begge dele. Indenfor nogle få hundrede kilometer er der ikke mindre end 50.000 øer og halvøer, de fleste ikke mere end nogle hektar. Klimaet er ret mildt og dets breddegrad; landbrug trives, bær er utallige, og der er masser af fisk. Den lille befolkning har aldrig kendt til sult. Dine krigsliderlige bande kunne bare ikke lade dette lille paradis være i fred?"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:11
 msgid ""
 "Large plots are rare on those small islands. Prioritize construction of "
 "large buildings on them. Sometimes you will need big military buildings to "
 "expand all the way to the next island. The AI will perform poorly."
-msgstr ""
+msgstr "Store bygninger er sjældne på disse små øer. Prioriter konstruktion af store bygninger på dem. Nogle gange skal du bruge store militære bygninger for at udvide hele vejen til den næste ø. Den kunstige intelligens vil fungere dårligt."
 
 #: ../../data/maps/Atoll.wmf/elemental:8
 msgid "Atoll"
@@ -271,7 +231,7 @@ msgstr "Kometøen"
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:9
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:9
 msgid "Nasenbaer – edited by king_of_nowhere"
-msgstr ""
+msgstr "Nasenbaer - redigeret af konge_af_intet"
 
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:10
 msgid ""
@@ -288,7 +248,7 @@ msgid ""
 "player has plenty of good land, but must move far from his starting position"
 " to find ores. Blue player takes the middle ground – he has some fertile "
 "land and is not too far away from the resources."
-msgstr ""
+msgstr "Rød spiller er tæt på malmkilderne, men har et lille frugtbart område. Gul spiller har masser af godt landbrugslnad, men skal bevæge sig langt fra sin startposition for at finde malmkilder. Blå spiller har en blanding - blå spiller har lidt frugtbart jord og er ikke for langt fra ressourcerne."
 
 #: ../../data/maps/Crater.wmf/elemental:8
 msgid "Crater"
@@ -300,13 +260,13 @@ msgid ""
 " crater. Two tribes are now fighting for the rich resources."
 msgstr "Lang tid efter at en meteor styrtede ned i et par bjerge, blomstrer livet nu i krateret. To stammer bekæmper nu hinanden for at få fat på disse ressourcer."
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:8
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:8
 msgid "Crossing the Horizon"
 msgstr "Krydser horisonten"
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:10
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:10
 msgid "Man your ship and sail to the horizon."
-msgstr "Bemand dit skib og sejl ud mod horisonten"
+msgstr "Bemand dit skib og sejl ud mod horisonten."
 
 #: ../../data/maps/Desert_Tournament.wmf/elemental:8
 msgid "Desert Tournament"
@@ -321,7 +281,7 @@ msgstr "Fire stammer kæmper mod deres nærmeste nabo om at være den første so
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:8
 msgid "Dolomites"
-msgstr ""
+msgstr "Dolomitterne"
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:10
 msgid ""
@@ -330,7 +290,7 @@ msgid ""
 "reasonable reconstruction of the area delimited by Cortina d’Ampezzo in the "
 "north-east and Canazei in the south-west. If you have to be pitted in a duel"
 " to the death against your enemies, it may as well be in a beautiful place."
-msgstr ""
+msgstr "Juvelen i Alperne, bjergkæden Dolomitterne er blevet erklæret opført på UNESCOs verdensarvsliste for sin skønhed. Dette kort er en så nøjagtig som det kan lade sig gøre rekonstruktion af området afgrænset af Cortina d'Ampezzo i nordøst og Canazei i sydvest. Hvis du bliver udfordret i en duel til døden mod dine fjender, så kan det ligeså godt være på et smukt sted."
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:11
 msgid ""
@@ -338,7 +298,7 @@ msgid ""
 "vertical. Use the little building space that you have wisely. A fortress at "
 "the mouth of a narrow mountain pass can be a formidable obstacle to an enemy"
 " army. Use the terrain to your advantage."
-msgstr ""
+msgstr "Der er en masse flad jord på bjergene. Desværre er det meste lodret. Brug den smule byggeplads du har med omhu. En fæstning i spidsen af et smalt bjergpas kan være en stor forhindring for en fjendtlig hær. Brug terrænet til din fordel."
 
 #: ../../data/maps/Elven_Forests.wmf/elemental:8
 msgid "Elven Forests"
@@ -358,14 +318,14 @@ msgstr "Fællesskaber"
 msgid ""
 "Ships are your best fellows. Starting positions are similar, so the map "
 "should be fair."
-msgstr ""
+msgstr "Skibe er dine bedste følgesvende. Startpositioner er de samme, så kortet bør være fair."
 
 #: ../../data/maps/Fellowships_v2.wmf/elemental:11
 msgid ""
 "This is a somewhat technical map, and it is best suited for two or three "
 "human players. Coal is hard to find – consider making some. There is gold "
 "near the starting point – do you see it?"
-msgstr ""
+msgstr "Det er et noget teknisk kort, og er bedst egnet for to eller tre spillere uden kunstig intelligens. Kul er svært at finde - overvej at lave noget. Der er guld nær startpunktet - kan du se det?"
 
 #: ../../data/maps/Finnish_Lakes.wmf/elemental:8
 msgid "Finnish Lakes"
@@ -381,7 +341,7 @@ msgstr "Dette er det smukke finske landskab med søer, floder, gamle skove og bj
 msgid ""
 "Yellow player has a much easier starting position than the other two; this "
 "map is suited for 1v2."
-msgstr ""
+msgstr "Gul spiller har en meget nemmere startposition end de andre to; dette kort er velegnet for 1 mod 2."
 
 #: ../../data/maps/Firegames.wmf/elemental:8
 msgid "Firegames"
@@ -403,7 +363,7 @@ msgstr "Fire borge"
 msgid ""
 "Well protected in their mighty fortresses, four power-hungry warlords are "
 "completing their schemes to dominate these lands…"
-msgstr "Velbeskyttet i deres mægtige fæstninger, færdiggør fire magthungrende krigsherrer deres planer om at dominere disse lande ..."
+msgstr "Velbeskyttet i deres mægtige fæstninger, færdiggør fire magthungrende krigsherrer deres planer om at dominere disse lande …"
 
 #: ../../data/maps/Four_Mountains.wmf/elemental:8
 msgid "Four Mountains"
@@ -413,23 +373,23 @@ msgstr "Fire bjerge"
 msgid ""
 "Each tribe is surrounded by four mighty mountains. Who will first conquer "
 "them and claim the resources for his own tribe?"
-msgstr ""
+msgstr "Hver stamme er omringet af fire mægtige bjerge. Hvem vil første erobre dem og deres ressourcer for deres egen stamme?"
 
 #: ../../data/maps/Four_Mountains.wmf/elemental:11
 msgid ""
 "I: Water can be found along the river. II: Snowmen mark additional water "
 "sources. III: Each mountain contains only one resource."
-msgstr ""
+msgstr "I: Vand kan findes langs floden. II: Snemænd markerer yderligere vandressourcer. III: Hvert bjerg indeholder kun en ressource."
 
 #: ../../data/maps/Full_Moon_v2.wmf/elemental:8
 msgid "Full Moon"
-msgstr ""
+msgstr "Fuldmåne"
 
 #: ../../data/maps/Full_Moon_v2.wmf/elemental:10
 msgid ""
 "Whether it is the latest solstice, or lunar illness, something moves these "
 "tribes towards their final ordeal."
-msgstr ""
+msgstr "Uanset om det er den nyeste solhverv, eller månesyge, så bevæger noget disse stammer mod deres endelige prøvelser."
 
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:8
 msgid "Glacier Lake"
@@ -442,7 +402,7 @@ msgid ""
 "tribe, but a few months ago another tribe came over the mountains and "
 "settled down. And you are sure that there is only enough space for one "
 "tribe."
-msgstr ""
+msgstr "I lang tid boede din stamme på denne smukke og ensomme gletschersø. Ingen forstyrrede jer og ressourcerne var nok for hele stammen, men for et par måneder siden kom en anden stamme over bjergene og slog sig ned. Og du er sikker på, at der kun er plads til en stamme."
 
 #: ../../data/maps/Golden_Peninsula.wmf/elemental:8
 msgid "Golden Peninsula"
@@ -496,7 +456,7 @@ msgid ""
 "An old legend tells that these seven kingdoms, that have flourished for ages"
 " in prosperity, will someday collapse into a devastating war. Has your "
 "latest betrayal been one too many and will the prophecy come true?"
-msgstr ""
+msgstr "En gammel legende fortæller at disse syv kongedømmer, som har blomstret i mange år, en dag vil falde sammen i en ødelæggende krig. har dit sidste forræderi været et for meget, og vil profetien blive opfyldt?"
 
 #: ../../data/maps/Lake_of_Tranquility.wmf/elemental:8
 msgid "Lake of Tranquility"
@@ -515,31 +475,34 @@ msgstr "Sidste bastion"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:9
 msgid "Another Barbarian – edited by king_of_nowhere"
-msgstr ""
+msgstr "Endnu en barbar - redigeret af konge_af_intet"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:10
 msgid ""
 "The whimsical Gods didn’t answer our prayers. Instead, the increasing "
-"sunlight heated up the Earth thousandfold and melted glaciers and people "
+"sunlight heated up the Earth a thousandfold and melted glaciers and people "
 "were plunged into the deep. But now – high in the majestic mountains, on the"
 " last scrap of land – two surviving tribes are sheltering. Even though the "
 "Gods showed mercy and the climate thus turned cooler again, the water is "
 "still rising and rising. Onto the last secure place – the highest mountain "
 "range where the amount of gold and the space to live merely suffice for one "
 "tribe – only two opposite paths lead. But remember, be careful… this last "
-"living space is also a hard and small place to live. Don’t forget to take "
-"care of your timber supplies, you’ll need them."
-msgstr "De lunefulde guder besvarede ikke vores bønner. I stedet varmede det stigende sollys jorden op tusindfold og smeltede gletsjere og folk faldt i dybet. Men nu - højt oppe i de majestætiske bjerge, på den sidste klump jord - har to overlevende stammer søgt ly. Selvom guderne viste barmhjertighed og klimaet derfor blev køligere igen, stiger vandet stadig. Inde på det sidste sikkert sted - den højeste bjergkæde, hvor mængden af guld og plads til at leve alene er tilstrækkelig for en stamme - fører kun to modstående veje. Men husk, vær forsigtig ... dette sidste levested er også et hårdt og lille sted at bo. Glem ikke at tage dig af dine tømmerforsyninger, du får brug for dem."
+"living space is also a hard and small place to live."
+msgstr "De lunefulde guder besvarede ikke vores bønner. I stedet varmede det stigende sollys jorden op tusindfold og smeltede gletsjere og folk faldt i dybet. Men nu - højt oppe i de majestætiske bjerge, på den sidste klump jord - har to overlevende stammer søgt ly. Selvom guderne viste barmhjertighed og klimaet derfor blev køligere igen, stiger vandet stadig. Inde på det sidste sikkert sted - den højeste bjergkæde, hvor mængden af guld og plads til at leve alene er tilstrækkelig for en stamme - fører kun to modstående veje. Men husk, vær forsigtig ... dette sidste levested er også et hårdt og lille sted at bo."
+
+#: ../../data/maps/Last_Bastion_v2.wmf/elemental:11
+msgid "Don’t forget to take care of your timber supplies, you’ll need them."
+msgstr "Husk at sørge for leverancen af træ, du får brug for træet."
 
 #: ../../data/maps/Last_Survivors.wmf/elemental:8
 msgid "Last Survivors"
-msgstr ""
+msgstr "De sidste overlevende"
 
 #: ../../data/maps/Last_Survivors.wmf/elemental:10
 msgid ""
 "Four tribes fighting for dominance in a stark area. Resources are scattered "
 "all over the map."
-msgstr ""
+msgstr "Fire stammer kæmper om dominans i et øde område. Ressourcerne er spredt ud over hele kortet."
 
 #: ../../data/maps/MP_Scenarios/Island_Hopping.wmf/elemental:7
 msgid "Island Hopping"
@@ -551,7 +514,7 @@ msgid ""
 " where two or more groups try to reach the center island as fast as "
 "possible, to be the first erecting a castle on the top of the central "
 "mountain."
-msgstr "En speciel turnering i atlanterkulturen er det såkaldte \"ø-hop\", hvor to eller flere grupper forsøger at nå den midterste ø så hurtigt som muligt, for at være den første som rejser en borg øverst på bjerget i midten."
+msgstr "En speciel turnering i atlanterkulturen er det såkaldte »ø-hop«, hvor to eller flere grupper forsøger at nå den midterste ø så hurtigt som muligt, for at være den første som rejser en borg øverst på bjerget i midten."
 
 #: ../../data/maps/MP_Scenarios/Smugglers.wmf/elemental:9
 msgid "Smugglers"
@@ -581,11 +544,15 @@ msgstr "Det aftalte møde"
 #: ../../data/maps/Rendez-Vous.wmf/elemental:10
 msgid ""
 "Only a small hill in the centre of the map connects these four competing "
-"tribes. Lead your army right away to this hill and build a giant stronghold "
-"as a sign of your superiority! Hint: In the centre is only space for one "
-"stronghold. Water can be found everywhere, so there is no need to send out "
-"geologists."
-msgstr "Kun en lille bakke i centrum af kortet forbinder disse fire konkurrerende stammer. Før din hær lige mod bakken og byg en gigantisk fæstning som et tegn på dit overherredømme! Fif: I centrum er der kun plads til en fæstning. Vand kan findes overalt, så der er ingen grund til at sende geologer ud."
+"tribes. Lead your army to this hill right away and build a giant stronghold "
+"as a sign of your superiority!"
+msgstr "Kun en lille bakke i centrum af kortet forbinder disse fire konkurrerende stammer. Før din hær lige mod bakken og byg en gigantisk fæstning som et tegn på dit overherredømme!"
+
+#: ../../data/maps/Rendez-Vous.wmf/elemental:11
+msgid ""
+"There is space for only one stronghold in the centre. Water can be found "
+"everywhere, so there is no need to send out geologists."
+msgstr "Der er kun plads til en fæstning i centrum. Vand kan findes overalt, så der er ikke behov for at udsende geologer."
 
 #: ../../data/maps/River_Explorers.wmf/elemental:8
 msgid "River Explorers"
@@ -712,7 +679,7 @@ msgstr "Floden har altid sørget for mad og kommunikation. Denne gang vil otte i
 msgid ""
 "Use the river wisely. Your opponents will do the same. You will find the "
 "main ore resources deep in the desert."
-msgstr ""
+msgstr "Brug floden med omhu. Dine modstandere vil gøre det samme. Du kan finde hovedressourcen for malm dybt i ørkenen."
 
 #: ../../data/maps/The_Oasis_Triangle.wmf/elemental:8
 msgid "The Oasis Triangle"
@@ -746,7 +713,7 @@ msgid ""
 "and went to war. The only survivor will sacrifice his enemies’ treasures on "
 "the ancient altar, build there a splendid castle and gain the goodwill and "
 "respect of the Gods."
-msgstr "En anden tø satte i. Tre stammer havde søgt ly for en hård vinter blandt majestætiske bjerge. På tidspunktet for solhverv lyttede de til oraklet og gik i krig. Den eneste overlevende vil ofre sine fjenders skatte på den gamle alter, bygge der et pragtfuld slot og vinde goodwill og respekt fra guderne."
+msgstr "En anden tø satte i. Tre stammer havde søgt ly for en hård vinter blandt majestætiske bjerge. På tidspunktet for solhverv lyttede de til oraklet og gik i krig. Den eneste overlevende vil ofre sine fjenders skatte på den gamle alter, bygge der en pragtfuld borg og vinde goodwill og respekt fra guderne."
 
 #: ../../data/maps/Three_Warriors.wmf/elemental:8
 msgid "Three Warriors"
@@ -756,11 +723,11 @@ msgstr "Tre krigere"
 msgid ""
 "Mighty mountains divide this land into three fertile valleys. But a path "
 "connects the valleys and thus a fight seems inescapable!"
-msgstr ""
+msgstr "Mægtige bjerge dele dette land i tre frugtbare dale. Men en sti forbinder dalene og derfor virker kamp undgåeligt!"
 
 #: ../../data/maps/Three_Warriors.wmf/elemental:11
 msgid "Water can be found around the lakes."
-msgstr ""
+msgstr "Vand kan findes omkring søerne."
 
 #: ../../data/maps/Together_We're_Strong.wmf/elemental:8
 msgid "Together We’re Strong"
@@ -802,13 +769,13 @@ msgid ""
 "desperately searching for more resources to support their endlessly ongoing "
 "wars, would end up in this forgotten place at the same time and for the same"
 " well-known reason."
-msgstr ""
+msgstr "Når vinden svulmede op, og de første klitter blev dannet på disse forladte tvillingelaguner, kunne ingen have forventet, at to stammer, der desperat søger efter flere ressourcer til at støtte deres uendelige igangværende krige ville ende i dette glemte sted på samme tid, og af samme velkendte grund."
 
 #: ../../data/maps/Twin_Lagoons_v2.wmf/elemental:11
 msgid ""
 "Defend your transport lines, or use ships to bypass the opponent. Then "
 "remove all enemy activity."
-msgstr ""
+msgstr "Forsvar dine transportlinjer eller brug skibene til at omgå modstanderen. Fjern derefter al fjendtlig aktivitet."
 
 #: ../../data/maps/Twinkling_Waves.wmf/elemental:8
 msgid "Twinkling Waves"
@@ -842,13 +809,13 @@ msgstr "I midten af sommeren, fremtrak en række vulkanudbrud vinterens fremkoms
 
 #: ../../data/maps/Wideworld.wmf/elemental:8
 msgid "Wide World"
-msgstr ""
+msgstr "Stor verden"
 
 #: ../../data/maps/Wideworld.wmf/elemental:10
 msgid ""
 "The world is not enough! If you want to win, you have to send some ships. "
 "But remember: your opponents are very close to you."
-msgstr ""
+msgstr "Verdenen er ikke nok! Hvis du ønsker at vinde, så skal du bruge nogle skibe. Men husk: dine modstandere er meget tæt på dig."
 
 #: ../../data/maps/Wisent_Valley.wmf/elemental:8
 msgid "Wisent Valley"
@@ -869,4 +836,4 @@ msgid ""
 " 4 players’ map, with a black AI to add a complication to the expansion of "
 "the other players, or you can play as a challenge with the black player "
 "against the other 4 (VERY difficult)."
-msgstr ""
+msgstr "Den sorte spiller er omringet i centrum uden nogen ressourcer, så der er tre forskellige måder at bruge dette kort: uden den sorte spiller for et normalt 4 spiller-kort, med en sort kunstig intelligens for at tilføje komplikation til ekspansionen for de andre spillere, eller du kan spille som en udfordring med den sorte spiller mod de andre 4 (MEGET svært)."

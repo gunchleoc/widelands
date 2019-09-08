@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2009, 2013 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,13 +26,13 @@
 
 #include "base/time_string.h"
 #include "build_info.h"
-#include "graphic/graphic.h"
+#include "graphic/image_io.h"
 #include "graphic/minimap_renderer.h"
+#include "io/profile.h"
 #include "logic/game.h"
 #include "logic/game_data_error.h"
 #include "logic/map.h"
 #include "logic/playersmanager.h"
-#include "profile/profile.h"
 #include "scripting/lua_interface.h"
 #include "scripting/lua_table.h"
 #include "wui/interactive_player.h"
@@ -40,24 +40,23 @@
 #include "wui/mapviewpixelfunctions.h"
 #include "wui/minimap.h"
 
-
 namespace Widelands {
 
 constexpr uint16_t kCurrentPacketVersion = 6;
 constexpr const char* kMinimapFilename = "minimap.png";
 
+// Win condition localization can come from the 'widelands' or 'win_conditions' textdomain.
 std::string GamePreloadPacket::get_localized_win_condition() const {
+	const std::string result = _(win_condition_);
 	i18n::Textdomain td("win_conditions");
-	return _(win_condition_);
+	return _(result);
 }
 
-void GamePreloadPacket::read
-	(FileSystem & fs, Game &, MapObjectLoader * const)
-{
+void GamePreloadPacket::read(FileSystem& fs, Game&, MapObjectLoader* const) {
 	try {
 		Profile prof;
 		prof.read("preload", nullptr, fs);
-		Section & s = prof.get_safe_section("global");
+		Section& s = prof.get_safe_section("global");
 		int32_t const packet_version = s.get_int("packet_version");
 
 		if (packet_version == kCurrentPacketVersion) {
@@ -77,27 +76,23 @@ void GamePreloadPacket::read
 		} else {
 			throw UnhandledVersionError("GamePreloadPacket", packet_version, kCurrentPacketVersion);
 		}
-	} catch (const WException & e) {
+	} catch (const WException& e) {
 		throw GameDataError("preload: %s", e.what());
 	}
 }
 
-
-void GamePreloadPacket::write
-	(FileSystem & fs, Game & game, MapObjectSaver * const)
-{
-
+void GamePreloadPacket::write(FileSystem& fs, Game& game, MapObjectSaver* const) {
 	Profile prof;
-	Section & s = prof.create_section("global");
+	Section& s = prof.create_section("global");
 
-	InteractivePlayer const * const ipl = game.get_ipl();
+	InteractivePlayer* const ipl = game.get_ipl();
 
-	s.set_int   ("packet_version", kCurrentPacketVersion);
+	s.set_int("packet_version", kCurrentPacketVersion);
 
 	//  save some kind of header.
-	s.set_int   ("gametime",       game.get_gametime());
-	const Map & map = game.map();
-	s.set_string("mapname",        map.get_name());  // Name of map
+	s.set_int("gametime", game.get_gametime());
+	const Map& map = game.map();
+	s.set_string("mapname", map.get_name());  // Name of map
 
 	if (ipl) {
 		// player that saved the game.
@@ -124,16 +119,21 @@ void GamePreloadPacket::write
 	if (!game.is_loaded()) {
 		return;
 	}
-	if (ipl != nullptr) {
-		const MiniMapLayer flags = MiniMapLayer::Owner | MiniMapLayer::Building | MiniMapLayer::Terrain;
-		const Point& vp = ipl->get_viewpoint();
-		std::unique_ptr< ::StreamWrite> sw(fs.open_stream_write(kMinimapFilename));
-		if (sw.get() != nullptr) {
-			write_minimap_image(game, &ipl->player(), vp, flags, sw.get());
-			sw->flush();
+
+	std::unique_ptr<::StreamWrite> sw(fs.open_stream_write(kMinimapFilename));
+	if (sw != nullptr) {
+		const MiniMapLayer layers =
+		   MiniMapLayer::Owner | MiniMapLayer::Building | MiniMapLayer::Terrain;
+		std::unique_ptr<Texture> texture;
+		if (ipl != nullptr) {  // Player
+			texture = draw_minimap(game, &ipl->player(), ipl->map_view()->view_area().rect(),
+			                       MiniMapType::kStaticViewWindow, layers);
+		} else {  // Observer
+			texture = draw_minimap(game, nullptr, Rectf(), MiniMapType::kStaticMap, layers);
 		}
+		assert(texture != nullptr);
+		save_to_png(texture.get(), sw.get(), ColorType::RGBA);
+		sw->flush();
 	}
-
 }
-
-}
+}  // namespace Widelands

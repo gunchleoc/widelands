@@ -13,7 +13,7 @@ tribes:new_productionsite_type {
    enhancement_cost = {
       log = 2,
       grout = 2,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle_on_enhanced = {
       log = 1,
@@ -42,10 +42,10 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      fish = 4,
-      barbarians_bread = 4,
-      meat = 4,
-      beer = 4
+      { name = "fish", amount = 4 },
+      { name = "meat", amount = 4 },
+      { name = "barbarians_bread", amount = 4 },
+      { name = "beer", amount = 4 }
    },
    outputs = {
       "ration",
@@ -59,17 +59,19 @@ tribes:new_productionsite_type {
          actions = {
             "call=produce_ration",
             "call=produce_snack",
-            "return=skipped"
+            "return=no_stats"
          }
       },
       produce_ration = {
          -- TRANSLATORS: Completed/Skipped/Did not start preparing a ration because ...
          descname = _"preparing a ration",
          actions = {
+            -- time total: 33
             "return=skipped unless economy needs ration",
-            "sleep=14000",
             "consume=barbarians_bread,fish,meat",
-            "animate=working 19000",
+            "playsound=sound/barbarians/taverns/inn 100",
+            "animate=working 23000",
+            "sleep=10000",
             "produce=ration"
          }
       },
@@ -77,10 +79,12 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start preparing a snack because ...
          descname = _"preparing a snack",
          actions = {
+            -- time total: 37
             "return=skipped unless economy needs snack",
-            "sleep=15000",
             "consume=barbarians_bread fish,meat beer",
-            "animate=working 20000",
+            "playsound=sound/barbarians/taverns/inn 100",
+            "animate=working 27000",
+            "sleep=10000",
             "produce=snack"
          }
       },

@@ -34,7 +34,7 @@ hq:set_wares{
    scythe = 6,
    shovel = 4,
    snack = 3,
-   thatch_reed = 24,
+   reed = 24,
 }
 hq:set_workers{
    barbarians_blacksmith = 2,
@@ -46,7 +46,7 @@ hq:set_workers{
    barbarians_gardener = 1,
    barbarians_geologist = 4,
    barbarians_lime_burner = 1,
-   barbarians_lumberjack = 3,
+   barbarians_lumberjack = 6,
    barbarians_miner = 4,
    barbarians_ranger = 2,
    barbarians_stonemason = 2

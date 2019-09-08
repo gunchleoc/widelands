@@ -26,13 +26,13 @@ tribes:new_militarysite_type {
    aihints = {
       expansion = true,
       mountain_conqueror = true,
-      prohibited_till = 600
+      prohibited_till = 400
    },
 
    animations = {
       idle = {
          pictures = path.list_files(dirname .. "idle_??.png"),
-         hotspot = { 55, 60 },
+         hotspot = { 46, 58 },
       }
    },
 

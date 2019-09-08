@@ -32,9 +32,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      mines_water = true,
-      prohibited_till = 800,
-      forced_after = 800
+      collects_ware_from_map = "water",
+      basic_amount = 1
    },
 
    working_positions = {
@@ -43,6 +42,10 @@ tribes:new_productionsite_type {
 
    outputs = {
       "water"
+   },
+
+   indicate_workarea_overlaps = {
+      barbarians_well = false,
    },
 
    programs = {
@@ -62,7 +65,7 @@ tribes:new_productionsite_type {
       -- Translators: Short for "Out of ..." for a resource
       title = _"No Water",
       heading = _"Out of Water",
-      message = pgettext("barbarians_building", "The carrier working at this well can’t find any water in his work area."),
+      message = pgettext("barbarians_building", "The carrier working at this well can’t find any water in his well."),
       productivity_threshold = 33
    },
 }

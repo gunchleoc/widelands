@@ -32,8 +32,12 @@
 --    :arg create_carriers: If this is :const:`true` carriers are created for
 --       the roads. Otherwise no carriers will be created.
 --    :type create_carriers: :class:`boolean`
+
 function connected_road(p, start, cmd, g_create_carriers)
-   create_carriers = g_create_carriers or true
+   create_carriers = true
+   if g_create_carriers ~= nil then
+      create_carriers = g_create_carriers
+   end
 
    if cmd:sub(-1) ~= "|" then
       cmd = cmd .. "|"
@@ -65,7 +69,7 @@ end
 --       prefilled_buildings(wl.Game().players[1],
 --          {"sentry", 57, 9}, -- Sentry completely full with soldiers
 --          {"sentry", 57, 9, soldier={[{0,0,0,0}]=1}}, -- Sentry with one soldier
---          {"bakery", 55, 20, wares = {wheat=6, water=6}}, -- bakery with wares and workers
+--          {"bakery", 55, 20, inputs = {wheat=6, water=6}}, -- bakery with wares and workers
 --          {"well", 52, 30}, -- a well with workers
 --       )
 --
@@ -77,9 +81,13 @@ end
 --
 --       wares
 --          A table of (name,count) as expected by
---          :meth:`wl.map.ProductionSite.set_wares`. This is valid for
---          :class:`wl.map.ProductionSite` and :class:`wl.map.Warehouse` and
---          ignored otherwise.
+--          :meth:`wl.map.Warehouse.set_wares`. This is valid for
+--          :class:`wl.map.Warehouse` and must not be used otherwise.
+--       inputs
+--          A table of (name,count) as expected by
+--          :meth:`wl.map.ProductionSite.set_inputs`. Inputs are wares or workers
+--          which are consumed by the building. This is valid for
+--          :class:`wl.map.ProductionSite` and must not be used otherwise.
 --       soldiers
 --          A table of (soldier_descr,count) as expected by
 --          :meth:`wl.map.HasSoldiers.set_soldiers`.  If this is nil, the site
@@ -89,7 +97,11 @@ end
 --          :meth:`wl.map.Warehouse.set_workers`.  Note that ProductionSites
 --          are filled with workers by default.
 --    :type b1_descr: :class:`array`
+--
+--    :returns: A table of created buildings
+
 function prefilled_buildings(p, ...)
+   local b_table = {}
    for idx,bdescr in ipairs({...}) do
       local b = p:place_building(bdescr[1], wl.Game().map:get_field(bdescr[2],bdescr[3]), false, true)
       -- Fill with workers
@@ -107,7 +119,11 @@ function prefilled_buildings(p, ...)
       end
       -- Fill with wares if this is requested
       if bdescr.wares then b:set_wares(bdescr.wares) end
+      if bdescr.inputs then b:set_inputs(bdescr.inputs) end
+
+      table.insert(b_table, b)
    end
+   return b_table
 end
 
 -- RST
@@ -124,38 +140,34 @@ end
 --    :type building: :class:`string`
 --    :arg region: The fields which are tested for suitability.
 --    :type region: :class:`array`
---    :arg opts:  a table with prefill information (wares, soldiers, workers,
---       see :func:`prefilled_buildings`) and the following options:
---
---       req_suitability
---          The reguired suitability for this building. Default value is 1.
+--    :arg opts:  A table with prefill information (wares, soldiers, workers,
+--       see :func:`prefilled_buildings`)
 --    :type opts: :class:`table`
 --
---    :returns: the building created
-function place_building_in_region(
-   plr, building, fields, gargs
-)
+--    :returns: The building created
+
+function place_building_in_region(plr, building, fields, gargs)
+   set_textdomain("widelands")
    local idx
    local f
    local args = gargs or {}
-   local req_suitability = args.req_suitability or 1
 
    while #fields > 0 do
       local idx = math.random(#fields)
       local f = fields[idx]
 
-      if plr:get_suitability(building, f) >= req_suitability then
+      if plr:get_suitability(building, f) then
          args[1] = building
          args[2] = f.x
          args[3] = f.y
-         return prefilled_buildings(plr, args)
+         return prefilled_buildings(plr, args)[1]
       end
       table.remove(fields, idx)
    end
    plr:send_message(
       -- TRANSLATORS: Short for "Not enough space"
       _"No Space",
-      rt(p(_([[Some of your starting buildings didn’t have enough room and weren’t built. You are at a disadvantage with this; consider restarting this map with a fair starting condition.]]))),
+      p(_([[Some of your starting buildings didn’t have enough room and weren’t built. You are at a disadvantage with this; consider restarting this map with a fair starting condition.]])),
       {popup=true, heading=_"Not enough space"}
    )
 end
@@ -164,12 +176,13 @@ end
 -- RST
 -- .. function:: is_building(immovable)
 --
---    Checks whether an immpvable is a finished building, i.e. not
+--    Checks whether an immovable is a finished building, i.e. not
 --    a construction site.
 --
 --    :arg immovable: The immovable to test
 --
 --    :returns: true if the immovable is a building
+
 function is_building(immovable)
    return immovable.descr.type_name == "productionsite" or
       immovable.descr.type_name == "warehouse" or

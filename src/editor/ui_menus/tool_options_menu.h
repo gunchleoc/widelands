@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2007-2008 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,11 +24,12 @@
 #include "ui_basic/unique_window.h"
 
 struct EditorToolOptionsMenu : public UI::UniqueWindow {
-	EditorToolOptionsMenu
-		(EditorInteractive         & parent,
-		 UI::UniqueWindow::Registry &,
-		 const uint32_t width, const uint32_t height,
-		 char const                 * title);
+	EditorToolOptionsMenu(EditorInteractive& parent,
+	                      UI::UniqueWindow::Registry&,
+	                      const uint32_t width,
+	                      const uint32_t height,
+	                      const std::string& title,
+	                      EditorTool& tool);
 
 	/**
 	 * Selects the correct tool from the parent.
@@ -36,14 +37,25 @@ struct EditorToolOptionsMenu : public UI::UniqueWindow {
 	 */
 	void select_correct_tool();
 
-	uint32_t  spacing() const {return 5;}
-	uint32_t hspacing() const {return spacing();}
-	uint32_t vspacing() const {return spacing();}
-	uint32_t hmargin () const {return spacing();}
-	uint32_t vmargin () const {return spacing();}
+	uint32_t spacing() const {
+		return 5;
+	}
+	uint32_t hspacing() const {
+		return spacing();
+	}
+	uint32_t vspacing() const {
+		return spacing();
+	}
+	uint32_t hmargin() const {
+		return spacing();
+	}
+	uint32_t vmargin() const {
+		return spacing();
+	}
 
 private:
-	EditorTool * current_pointer_;
+	EditorInteractive& parent_;
+	EditorTool& current_tool_;
 };
 
 #endif  // end of include guard: WL_EDITOR_UI_MENUS_TOOL_OPTIONS_MENU_H

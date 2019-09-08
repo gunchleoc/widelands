@@ -1,17 +1,21 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2016 Widelands Development Team
+# Copyright (C) 2005-2019 Widelands Development Team
 # 
 # Translators:
 # Aleksandr Gladkov <djanticisco@gmail.com>, 2016
 # Alexander Bikmeyev <bikmeyev@freemail.ru>, 2007
+# Alexander Bikmeyev <bikmeyev@gmail.com>, 2016
+# CupIvan <mail@cupivan.ru>, 2019
 # Yuriy Sokolov <lention@mail.ru>, 2015
+# Олег Шевченко <olegrock@gmail.com>, 2017
+# Олег Шевченко <olegrock@gmail.com>, 2017-2018
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands\n"
-"Report-Msgid-Bugs-To: https://bugs.launchpad.net/widelands\n"
-"POT-Creation-Date: 2016-04-07 14:12+0000\n"
-"PO-Revision-Date: 2016-04-07 20:37+0000\n"
-"Last-Translator: Aleksandr Gladkov <djanticisco@gmail.com>\n"
+"Report-Msgid-Bugs-To: https://wl.widelands.org/wiki/ReportingBugs/\n"
+"POT-Creation-Date: 2019-05-30 18:50+0000\n"
+"PO-Revision-Date: 2019-06-13 05:43+0000\n"
+"Last-Translator: CupIvan <mail@cupivan.ru>\n"
 "Language-Team: Russian (http://www.transifex.com/widelands/widelands/language/ru/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,7 +24,6 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
 
 #: ../../data/campaigns/atl01.wmf/elemental:9
-#: ../../data/campaigns/campaigns.conf:95
 msgid "From Nemesis to Genesis"
 msgstr "От конца к началу"
 
@@ -31,7 +34,6 @@ msgid ""
 msgstr "После высадки на расположенном неподалеку от Атлантиды таинственном острове, уцелевшие атланты пытаются построить для себя новый дом."
 
 #: ../../data/campaigns/bar01.wmf/elemental:8
-#: ../../data/campaigns/campaigns.conf:67
 msgid "A Place to Call Home"
 msgstr "Назовем это место домом"
 
@@ -42,7 +44,6 @@ msgid ""
 msgstr "В этом сценарии, вы познакомитесь с важными производственными зданиями, включая шахты."
 
 #: ../../data/campaigns/bar02.wmf/elemental:7
-#: ../../data/campaigns/campaigns.conf:72
 msgid "This Land is Our Land"
 msgstr "Эта земля - наша"
 
@@ -52,105 +53,21 @@ msgid ""
 "and will introduce fighting."
 msgstr "Этот обучающий курс объясняет как создать войска, построить тренировочные центры, и, знакомит вас с основами боя."
 
-#: ../../data/campaigns/campaigns.conf:27
-msgid "The Second Empire"
-msgstr "Вторая империя"
-
-#: ../../data/campaigns/campaigns.conf:29
-msgid "Barbarians"
-msgstr "Варвары"
-
-#: ../../data/campaigns/campaigns.conf:31
-msgid "Easy. Introduces the Barbarians"
-msgstr "Легко. Знакомство с Варварами"
-
-#: ../../data/campaigns/campaigns.conf:32
-msgid ""
-"When Chat’Karuth died, he was an old man, father to three strong and "
-"ambitious sons, and warlord to an army that could match any enemy willing to"
-" rise against the ancient forests. Though at the end of his glorious reign, "
-"Chat’Karuth chose his eldest son, Thron, to succeed him as the tribe’s "
-"warlord – a decision that left his two brothers unsatisfied. The old warlord"
-" knew that. As his father instructed him, Thron left the capital of "
-"Al’thunran, the home of the Throne Among the Trees, and withdrew his forces "
-"to the high hills where he buried the corpse of his father. There he swore "
-"to the gods and his father’s spirit that he’d return to re-established "
-"order. While his brothers have raged blind war against Thron and the few "
-"forces he left to secure the borders of Al’thunran, the young warlord seeks "
-"to reunite his ambitious brothers and force the tribes to march once again "
-"under a common banner."
-msgstr "Чат'Карут скончался стариком, отцом трех сильных и амбициозных сыновей, и предводителем армии, способной противостоять любому врагу, решившемуся нарушить покой древних лесов. Хотя в конце своего славного царствования, Чат'Карут избрал своего старшего сына, Трона, в качестве наследника и военачальника, это решение оставило его братьев неудовлетворенными. Старый военачальник знал это. Следуя воле своего отца Трон покинул столицу — Аль'Тунран, дом Трона среди Древ, и привел свои войска к высоким холмам, где и похоронил тело своего отца. Там он поклялся богам и духу своего отца, вернуться и восстановить порядок. Не смотря на то, что его братья развязали нелепую войну против Трона и поставленных им  для охраны Аль'Тунрана малочисленных подразделений, молодой военачальник стремится воссоединить своих амбициозных братьев и принудить племена вновь встать под общее знамя."
-
-#: ../../data/campaigns/campaigns.conf:35
-msgid "The Months of Exile"
-msgstr "Месяцы изгнания"
-
-#: ../../data/campaigns/campaigns.conf:37
-msgid "Empire"
-msgstr "Империя"
-
-#: ../../data/campaigns/campaigns.conf:39
-msgid "Easy. Introduces the Empire"
-msgstr "Легко. Знакомство с Империей"
-
-#: ../../data/campaigns/campaigns.conf:40
-msgid ""
-"Six months ago, Lutius – a young general of the Empire – was sent with 150 "
-"soldiers to the frontier beyond the northern forests where Barbarian tribes "
-"were crossing onto land held by the Empire. His task was to defend the "
-"Empire’s land. At first, everything was calm. He even talked to a few "
-"Barbarian children and thought about a peaceful life – side by side with "
-"this archaic folk. He began to feel safer and his army began to drop their "
-"attention off the potential enemy. That was their undoing. One night in "
-"March his unprepared army was attacked by 100 Barbarian footmen and was "
-"completely scattered. Only with his bare life he and a handful of his "
-"soldiers survived."
-msgstr "Шесть месяцев назад, Люциус — молодой имперский генерал — был послан с 150 солдатами на границу за северными лесами, где варварские племена кочевали по землям подконтрольным империи. Его задачей было защитить землю Империи. Сперва все было спокойно. Он даже общался с детьми варваров и думал о мирной жизни бок о бок с этим примитивным народом. Он почувствовал себя в безопасности, а его солдаты ослабили наблюдение за потенциальным противником. Это было фатальной ошибкой. В одну из мартовских ночей его армия была атакована сотней варварских воинов и полностью рассеяна. Люциусу и горстке солдат едва удалось сохранить свои жизни."
-
-#: ../../data/campaigns/campaigns.conf:43
-msgid "The Run for the Fire"
-msgstr "Бег огня"
-
-#: ../../data/campaigns/campaigns.conf:45
-msgid "Atlanteans"
-msgstr "Атланты"
-
-#: ../../data/campaigns/campaigns.conf:47
-msgid "Challenging. Introduces the Atlanteans"
-msgstr "Испытание. Знакомство с атлантами."
-
-#: ../../data/campaigns/campaigns.conf:48
-msgid ""
-"When their God lost faith in the Atlanteans and drowned their island, one "
-"woman’s struggle for justice and a second chance for her people would become"
-" the stuff of legends. Leading the remaining Atlanteans into a new future in"
-" a new part of the World, Jundlina became the most powerful human of her "
-"time, but at a high cost: her humanity and soul."
-msgstr "Когда Бог атлантов разочаровался в своем народе и потопил их остров, началась ставшая легендой борьба одной женщины за справедливость и второй шанс для своего народа. Джандлина стала самым могущественным человеком своей эпохи: она повела уцелевших атлантов к новому будущему в новом мире, но расплатится за это ей пришлось своей человечностью и душой."
-
-#: ../../data/campaigns/campaigns.conf:78
-#: ../../data/campaigns/emp01.wmf/elemental:7
-msgid "The Strands of Malac’ Mor"
-msgstr "Берега Малак' Мора"
-
-#: ../../data/campaigns/campaigns.conf:83
-#: ../../data/campaigns/emp02.wmf/elemental:9
-msgid "An Outpost for Exile"
-msgstr "Аванпост изгнанников"
-
-#: ../../data/campaigns/campaigns.conf:88
-#: ../../data/campaigns/campaigns.conf:100
-#: ../../data/campaigns/dummy.wmf/elemental:7
+#: ../../data/campaigns/dummy.wmf/elemental:8
 msgid "Not yet implemented"
 msgstr "Еще не внедрена"
 
-#: ../../data/campaigns/dummy.wmf/elemental:9
+#: ../../data/campaigns/dummy.wmf/elemental:10
 msgid "Nobody"
 msgstr "Никого"
 
-#: ../../data/campaigns/dummy.wmf/elemental:10
+#: ../../data/campaigns/dummy.wmf/elemental:12
 msgid "Sorry, this map is not yet implemented."
 msgstr "Извините, эта карта ещё не внедрена."
+
+#: ../../data/campaigns/emp01.wmf/elemental:7
+msgid "The Strands of Malac’ Mor"
+msgstr "Берега Малак' Мора"
 
 #: ../../data/campaigns/emp01.wmf/elemental:9
 msgid ""
@@ -161,6 +78,10 @@ msgid ""
 " an unknown desert strand and save his people. For now."
 msgstr "Потерпев поражение в важной битве с варварами, которое привело к потере значительной части территории Империи, Люциус покидает Фремил, чтобы начать новую жизнь. Но, по прихоти судьбы, его корабль попадает в сильный шторм, едва избежав гибели. Лишь благодаря невероятному везению ему удается довести свой поврежденный корабль до неизвестного пустынного берега. Люциус, и его люди почувствовали себя в безопасности. По-крайней мере, пока."
 
+#: ../../data/campaigns/emp02.wmf/elemental:9
+msgid "An Outpost for Exile"
+msgstr "Аванпост изгнанников"
+
 #: ../../data/campaigns/emp02.wmf/elemental:11
 msgid ""
 "Finally the ship was repaired, so Lutius and his people returned to the "
@@ -169,8 +90,53 @@ msgid ""
 "they set out to explore this new living space."
 msgstr "Наконец корабль был отремонтирован, и Люциус со своими людьми продолжил путешествие в поисках места, где можно было бы обосноваться и начать новую жизнь. Только несколько дней спустя, они пристали к зеленому средиземноморскому острову, похожему на рай. В приподнятом настроении они отправились исследовать свое новое место жительства."
 
+#: ../../data/campaigns/emp03.wmf/elemental:10
+msgid ""
+"On their way home to defend the Empire, the crew of Lutius was surprised by "
+"the will of the gods."
+msgstr "На пути домой, чтобы защитить империю, команда Люциуса была удивлена воле богов."
+
+#: ../../data/campaigns/emp04.wmf/elemental:8
+msgid "Surprise, Surprise!"
+msgstr "Сюрприз, сюрприз!"
+
+#: ../../data/campaigns/emp04.wmf/elemental:10
+msgid ""
+"After returning home, Lutius and his crew are faced with an economy in "
+"shambles. Resolving the bottlenecks in the economy will be of utmost "
+"importance to reinstate the glory of the empire."
+msgstr "После возвращения домой, Люциус и его команда столкнулись с разрушенной экономикой. Урегулирование проблем в экономике будет иметь первостепенное значение для восстановления былой славы империи."
+
+#: ../../data/campaigns/fri01.wmf/elemental:8
+msgid "The Great Stormflood"
+msgstr "Великое наводнение"
+
+#: ../../data/campaigns/fri01.wmf/elemental:10
+msgid ""
+"In 1362, the quiet, peaceful life of the inhabitants of the Northern Frisian"
+" Islands was disrupted by one of the greatest storm floods in human memory: "
+"Saint Marcellus’ Flood. Is it really nothing more than yet another storm, or"
+" a sign from the Gods that the Frisian community on the island of Langeness "
+"is not wanted here?"
+msgstr "В 1362 году тихая мирная жизнь обитателей Северных Фризских островов была разрушена одним из величайших штормовых наводнений в человеческой памяти: наводнением Сен-Марцелла. Что это? Ещё один шторм, или знак богов, что фризская община на острове Лангенес не нужна?"
+
+#: ../../data/campaigns/fri01.wmf/elemental:11
+msgid ""
+"This scenario is set in a historical context, but most of the story line is "
+"fiction."
+msgstr "Этот сценарий построен на исторических фактах, но большая часть сюжетной линии - вымысел."
+
+#: ../../data/campaigns/fri02.wmf/elemental:8
+msgid "An Icy Welcome"
+msgstr "Ледяной привет"
+
+#: ../../data/campaigns/fri02.wmf/elemental:10
+msgid ""
+"Reebaud and his tribe have arrived in the North. But their arrival between "
+"the frozen steppes and the snow-covered mountains is less than welcome…"
+msgstr "Ребауд и его племя прибыли на Север. Но их прибывание между замерзшими степями и заснеженными горами не приветствуется ..."
+
 #: ../../data/campaigns/tutorial01_basic_control.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:15
 msgid "Basic Control"
 msgstr "Основы управления"
 
@@ -181,7 +147,6 @@ msgid ""
 msgstr "В этом обучающем курсе, вы узнаете, как ориентироваться в Widelands и как строить здания и дороги."
 
 #: ../../data/campaigns/tutorial02_warfare.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:19
 msgid "Warfare"
 msgstr "Война"
 
@@ -192,7 +157,6 @@ msgid ""
 msgstr "В этом обучающем курсе, вы узнаете секреты ведения войны: как набрать солдат, как тренировать их и как руководить ими в бою."
 
 #: ../../data/campaigns/tutorial03_seafaring.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:23
 msgid "Seafaring"
 msgstr "Мореплавание"
 
@@ -203,7 +167,6 @@ msgid ""
 msgstr "В этом обучающем курсе вы научитесь мореплаванию и узнаете как обращаться с кораблями и гаванями."
 
 #: ../../data/campaigns/tutorial04_economy.wmf/elemental:8
-#: ../../data/campaigns/tutorials.conf:27
 msgid "Economy"
 msgstr "Экономика"
 
@@ -215,7 +178,7 @@ msgstr "В этом обучающем курсе вы узнаете, каки�
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:8
 msgid "Archipelago Sea"
-msgstr ""
+msgstr "Архипелаговое море"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:10
 msgid ""
@@ -226,14 +189,14 @@ msgid ""
 "latitude; farming thrives, berries are abundant, and fish plentiful. The "
 "small human population of this place never knew famine. You warlording "
 "bastards just couldn’t leave this little paradise in peace, could you?"
-msgstr ""
+msgstr "Между Швецией и Финляндией расположено Архипелаговое море. Это место невероятно красиво - это не земля и не море, это и то и другое. На протяжении нескольких сотен километров расположено не менее 50000 островов и островков, большинство из которых не больше нескольких акров. Климат довольно умеренный для этой широты; сельское хозяйство процветает, ягоды в изобилии и много рыбы. Малочисленное население этого места никогда не знало голода. Вы, сволочи-полководцы, не могли оставить этот маленький рай в покое, не так ли?"
 
 #: ../../data/maps/Archipelago_Sea.wmf/elemental:11
 msgid ""
 "Large plots are rare on those small islands. Prioritize construction of "
 "large buildings on them. Sometimes you will need big military buildings to "
 "expand all the way to the next island. The AI will perform poorly."
-msgstr ""
+msgstr "Большие строительные площадки редки на этих маленьких островах. Строительство больших зданий на них - ваш приоритет. Иногда вам потребуются большие военные строения, чтобы расширить территорию до следующего острова. ИИ будет работать плохо."
 
 #: ../../data/maps/Atoll.wmf/elemental:8
 msgid "Atoll"
@@ -272,7 +235,7 @@ msgstr "Остров кометы"
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:9
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:9
 msgid "Nasenbaer – edited by king_of_nowhere"
-msgstr ""
+msgstr "Nasenbaer – под редакцией king_of_nowhere"
 
 #: ../../data/maps/Comet_Island_v2.wmf/elemental:10
 msgid ""
@@ -289,7 +252,7 @@ msgid ""
 "player has plenty of good land, but must move far from his starting position"
 " to find ores. Blue player takes the middle ground – he has some fertile "
 "land and is not too far away from the resources."
-msgstr ""
+msgstr "Красный игрок близок к рудам, но имеет немного плодородных земель. У желтого игрока есть много хороших земель, но он должен уходить далеко от своей стартовой позиции, чтобы найти руды. Синий игрок занимает среднюю землю – у него есть плодородная земля и не так далеко от ресурсов."
 
 #: ../../data/maps/Crater.wmf/elemental:8
 msgid "Crater"
@@ -301,11 +264,11 @@ msgid ""
 " crater. Two tribes are now fighting for the rich resources."
 msgstr "Спустя много лет после падения метеорита в горы, в кратере расцвела жизнь. И теперь два племени сражаются за богатые ресурсы."
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:8
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:8
 msgid "Crossing the Horizon"
 msgstr "Пересекая горизонт"
 
-#: ../../data/maps/Crossing_the_Horizon.wmf/elemental:10
+#: ../../data/maps/Crossing_the_Horizon_v2.wmf/elemental:10
 msgid "Man your ship and sail to the horizon."
 msgstr "Снарядите корабль и плывите к горизонту."
 
@@ -331,7 +294,7 @@ msgid ""
 "reasonable reconstruction of the area delimited by Cortina d’Ampezzo in the "
 "north-east and Canazei in the south-west. If you have to be pitted in a duel"
 " to the death against your enemies, it may as well be in a beautiful place."
-msgstr ""
+msgstr "Жемчужина Альп - доломитовый горный хребет - был объявлен памятником мирового наследия за его девственную красоту. Эта карта представляет собой первозданно воссозданную реконструкцию приграничной области Италии от Кортина д'Ампеццо на северо-востоке и Канацеи на юго-западе. Если вам предстоит помериться силами в поединке на смерть против своих врагов, это лучше сделать в этом прекрасном месте."
 
 #: ../../data/maps/Dolomites_v2.wmf/elemental:11
 msgid ""
@@ -339,7 +302,7 @@ msgid ""
 "vertical. Use the little building space that you have wisely. A fortress at "
 "the mouth of a narrow mountain pass can be a formidable obstacle to an enemy"
 " army. Use the terrain to your advantage."
-msgstr ""
+msgstr "В горах много плоских поверхностей. Однако, в основном, они являются отвесными. Мудро размещайте здания в малых местах строительства. Размещение крепости у выхода из ущелья может стать непреодолимым препятствием для врага. Используйте особенности местности себе на пользу."
 
 #: ../../data/maps/Elven_Forests.wmf/elemental:8
 msgid "Elven Forests"
@@ -359,14 +322,14 @@ msgstr "Братства"
 msgid ""
 "Ships are your best fellows. Starting positions are similar, so the map "
 "should be fair."
-msgstr ""
+msgstr "Корабли ваши лучшие друзья. Стартовые позиции схожи, поэтому карта должна быть честной для всех."
 
 #: ../../data/maps/Fellowships_v2.wmf/elemental:11
 msgid ""
 "This is a somewhat technical map, and it is best suited for two or three "
 "human players. Coal is hard to find – consider making some. There is gold "
 "near the starting point – do you see it?"
-msgstr ""
+msgstr "Это, отчасти, техническая карта и лучше всего подходит для 2 или 3 человек. Уголь найти трудно - рассмотрите вопрос его создания. Зато, золото рядом со стартовой точкой - видите?"
 
 #: ../../data/maps/Finnish_Lakes.wmf/elemental:8
 msgid "Finnish Lakes"
@@ -382,7 +345,7 @@ msgstr "Это прекрасный финский край; край озер, 
 msgid ""
 "Yellow player has a much easier starting position than the other two; this "
 "map is suited for 1v2."
-msgstr ""
+msgstr "Стартовая позиция желтого игрока намного лучше, чем у двух других игроков. Эта карта предназначена для игры 1 против 2."
 
 #: ../../data/maps/Firegames.wmf/elemental:8
 msgid "Firegames"
@@ -404,7 +367,7 @@ msgstr "Четыре замка"
 msgid ""
 "Well protected in their mighty fortresses, four power-hungry warlords are "
 "completing their schemes to dominate these lands…"
-msgstr ""
+msgstr "Хорошо защищенные в своих могучих крепостях, четыре властолюбивых военачальника заканчивают приготовления к захвату этих земель..."
 
 #: ../../data/maps/Four_Mountains.wmf/elemental:8
 msgid "Four Mountains"
@@ -414,13 +377,13 @@ msgstr "Четыре горы"
 msgid ""
 "Each tribe is surrounded by four mighty mountains. Who will first conquer "
 "them and claim the resources for his own tribe?"
-msgstr ""
+msgstr "Каждое племя окружено четырьмя могучими горами. Кто первым захватит их и объявит ресурсы собственностью своего племени?"
 
 #: ../../data/maps/Four_Mountains.wmf/elemental:11
 msgid ""
 "I: Water can be found along the river. II: Snowmen mark additional water "
 "sources. III: Each mountain contains only one resource."
-msgstr ""
+msgstr "I: Воду можно найти вдоль реки. II: Дополнительные источники воды отмечены снеговиками. III: Каждая гора содержит только один ресурс."
 
 #: ../../data/maps/Full_Moon_v2.wmf/elemental:8
 msgid "Full Moon"
@@ -430,7 +393,7 @@ msgstr "Полнолуние"
 msgid ""
 "Whether it is the latest solstice, or lunar illness, something moves these "
 "tribes towards their final ordeal."
-msgstr ""
+msgstr "То ли это последний день солнцестояния, то ли полнолуние, что-то движет эти племена к их последнему испытанию."
 
 #: ../../data/maps/Glacier_Lake_v2.wmf/elemental:8
 msgid "Glacier Lake"
@@ -443,7 +406,7 @@ msgid ""
 "tribe, but a few months ago another tribe came over the mountains and "
 "settled down. And you are sure that there is only enough space for one "
 "tribe."
-msgstr ""
+msgstr "Ваше племя долгое время пребывало на этом прекрасном и одиноком ледниковом озере. Никто не беспокоил вас, и ресурсов были предостаточно для всего вашего племени, но несколько месяцев назад еще одно племя спустилось с гор и поселилось у подножья. А вы уверены, что места хватит только для одного племени."
 
 #: ../../data/maps/Golden_Peninsula.wmf/elemental:8
 msgid "Golden Peninsula"
@@ -451,7 +414,7 @@ msgstr "Золотой полуостров"
 
 #: ../../data/maps/Golden_Peninsula.wmf/elemental:10
 msgid "Two empires race for the treasures of a legendary peninsula…"
-msgstr ""
+msgstr "Две империи в погоне за сокровищами легендарного полуострова..."
 
 #: ../../data/maps/Ice_wars.wmf/elemental:8
 msgid "Ice wars"
@@ -497,7 +460,7 @@ msgid ""
 "An old legend tells that these seven kingdoms, that have flourished for ages"
 " in prosperity, will someday collapse into a devastating war. Has your "
 "latest betrayal been one too many and will the prophecy come true?"
-msgstr ""
+msgstr "Старая легенда гласит, что семь процветавших в течение веков в достатке королевств, когда-нибудь погрязнут в разрушительной войне. Не превысила ли последняя измена чашу терпения, не сбывается ли пророчество?"
 
 #: ../../data/maps/Lake_of_Tranquility.wmf/elemental:8
 msgid "Lake of Tranquility"
@@ -508,7 +471,7 @@ msgid ""
 "This lake, deep in the most ancient forests, has long been known for its "
 "beauty and idyllic peace. However, its sanctity has been disturbed now, as "
 "two hostile tribes have arrived at its shores…"
-msgstr ""
+msgstr "Это озеро, в глубине самых древних лесов, издавна славится своей красотой и безмятежностью. Тем не менее, теперь, когда две враждебных племени объявились на его берегах, святость озера была нарушена..."
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:8
 msgid "Last Bastion"
@@ -516,21 +479,24 @@ msgstr "Последняя крепость"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:9
 msgid "Another Barbarian – edited by king_of_nowhere"
-msgstr ""
+msgstr "Другой варвар - под редакцией king_of_nowhere"
 
 #: ../../data/maps/Last_Bastion_v2.wmf/elemental:10
 msgid ""
 "The whimsical Gods didn’t answer our prayers. Instead, the increasing "
-"sunlight heated up the Earth thousandfold and melted glaciers and people "
+"sunlight heated up the Earth a thousandfold and melted glaciers and people "
 "were plunged into the deep. But now – high in the majestic mountains, on the"
 " last scrap of land – two surviving tribes are sheltering. Even though the "
 "Gods showed mercy and the climate thus turned cooler again, the water is "
 "still rising and rising. Onto the last secure place – the highest mountain "
 "range where the amount of gold and the space to live merely suffice for one "
 "tribe – only two opposite paths lead. But remember, be careful… this last "
-"living space is also a hard and small place to live. Don’t forget to take "
-"care of your timber supplies, you’ll need them."
-msgstr ""
+"living space is also a hard and small place to live."
+msgstr "Капризные Боги не отвечают на наши молитвы. Вместо этого, солнечные лучи сильно нагрели Землю и вызвали таяние ледников; людей поглотила бездна. Но двум оставшимся в живых племенам удалось укрыться на последнем клочке земли, высоко в величественных горах. И хотя Боги смилостивились, и климат вновь стал прохладнее, вода продолжала прибывать и пребывать. К последнему безопасному месту – самому высокому горному массиву, где золота и пространства хватит только для одного племени – ведут два противоположных пути. Но помните, будьте осторожны ... это последнее жизненное пространство, оно невелико и выживать здесь трудно."
+
+#: ../../data/maps/Last_Bastion_v2.wmf/elemental:11
+msgid "Don’t forget to take care of your timber supplies, you’ll need them."
+msgstr "Не забудьте позаботиться о запасах древесины, она понадобится им."
 
 #: ../../data/maps/Last_Survivors.wmf/elemental:8
 msgid "Last Survivors"
@@ -540,7 +506,7 @@ msgstr "Последние выжившие"
 msgid ""
 "Four tribes fighting for dominance in a stark area. Resources are scattered "
 "all over the map."
-msgstr ""
+msgstr "Четыре племени дерутся за доминирование в суровом районе. Ресурсы разбросаны по всей карте."
 
 #: ../../data/maps/MP_Scenarios/Island_Hopping.wmf/elemental:7
 msgid "Island Hopping"
@@ -582,11 +548,15 @@ msgstr "Место встречи изменить нельзя"
 #: ../../data/maps/Rendez-Vous.wmf/elemental:10
 msgid ""
 "Only a small hill in the centre of the map connects these four competing "
-"tribes. Lead your army right away to this hill and build a giant stronghold "
-"as a sign of your superiority! Hint: In the centre is only space for one "
-"stronghold. Water can be found everywhere, so there is no need to send out "
-"geologists."
-msgstr "Только небольшой холм в центре карты соединяет 4 враждующих племени. Веди туда свои армии и построй там мощную крепость в знак своего превосходства! Подсказка: места в центре хватит только на одну крепость. Вода есть по всей карте, так что высылать геологов на ее поиски не надо."
+"tribes. Lead your army to this hill right away and build a giant stronghold "
+"as a sign of your superiority!"
+msgstr "Только небольшой холм в центре карты соединяет эти четыре конкурирующие племени. Немедленно направьте свою армию на этот холм и постройте гигантскую крепость как символ Вашего превосходства!"
+
+#: ../../data/maps/Rendez-Vous.wmf/elemental:11
+msgid ""
+"There is space for only one stronghold in the centre. Water can be found "
+"everywhere, so there is no need to send out geologists."
+msgstr "В центре есть место только для одного укрепления. Вода может быть найдена повсюду, поэтому нет необходимости направлять геологов."
 
 #: ../../data/maps/River_Explorers.wmf/elemental:8
 msgid "River Explorers"
@@ -675,7 +645,7 @@ msgid ""
 "constructors. Nobody knows why they (have) disappeared. Nobody knows why. "
 "People say that now nothing is blocking the road to wealth. But many will "
 "die pulled apart by wolves, engulfed by swamp… encircled by hostile tribes."
-msgstr ""
+msgstr "Говорят, что непроходимые земли крайнего севера пугают даже самых отважных поселенцев и храбрейших воинов. Обширные старые леса, полные крупной и хищной дичи, пересекают болота и таинственные холмы. Те, кто отважился добраться туда, рассказывали об огромных зданиях, украшенных резьбой и золотом из горных приисков где-то в глуши. Спустя многие годы лишь остатки руин, на которых уже проросли кустарник и деревья, напоминали об этих старых добрых временах. Очертания руин дают лишь слабое представление о мастерстве древних строителей. Никто не знает, почему (и как) они исчезли. Говорят, что теперь ничто не преграждает путь к богатству. Но многие умерли разорванные волками, другие утопли в болоте... в окружении враждебных племен."
 
 #: ../../data/maps/The_Green_Plateau.wmf/elemental:8
 msgid "The Green Plateau"
@@ -713,7 +683,7 @@ msgstr "Река всегда была источником пищи и тран
 msgid ""
 "Use the river wisely. Your opponents will do the same. You will find the "
 "main ore resources deep in the desert."
-msgstr ""
+msgstr "Используйте реку с умом. Ваши оппоненты поступят так же. Вы найдете основные рудные ресурсы в глубине пустыни."
 
 #: ../../data/maps/The_Oasis_Triangle.wmf/elemental:8
 msgid "The Oasis Triangle"
@@ -757,11 +727,11 @@ msgstr "Три воина"
 msgid ""
 "Mighty mountains divide this land into three fertile valleys. But a path "
 "connects the valleys and thus a fight seems inescapable!"
-msgstr ""
+msgstr "Могучие горы делят этот край на три изобильных долины. Но есть путь, соединяющий долины, а значит война неизбежна!"
 
 #: ../../data/maps/Three_Warriors.wmf/elemental:11
 msgid "Water can be found around the lakes."
-msgstr ""
+msgstr "Воду можно найти вокруг озёр."
 
 #: ../../data/maps/Together_We're_Strong.wmf/elemental:8
 msgid "Together We’re Strong"
@@ -778,7 +748,7 @@ msgid ""
 "exclusive trade alliance, forcing the other two to do the same. Suddenly, it"
 " seems only a matter of time before the first fights between the harbors "
 "will shatter the peaceful life that has lasted for so long…"
-msgstr ""
+msgstr "Четыре могучих гавани островов Кроу веками торговали своими товарами друг с другом. Все они нуждаются в ресурсах, которые не могут добыть на своей территории и обменивают свои ресурсы на те, в которых нуждаются. Таким образом, обитателей островов Кроу и их четыре гавани связывала дружественная и взаимовыгодная торговля. Однако недавно, две гавани объединились, и сформировали особый торговый союз, вынуждая двух других сделать то же самое. Похоже, начало войны между портами — это вопрос ближайшего времени, и мирная жизнь, которая длилась так долго, развеется как дым..."
 
 #: ../../data/maps/Trident_of_Fire.wmf/elemental:8
 msgid "Trident of Fire"
@@ -803,13 +773,13 @@ msgid ""
 "desperately searching for more resources to support their endlessly ongoing "
 "wars, would end up in this forgotten place at the same time and for the same"
 " well-known reason."
-msgstr ""
+msgstr "Когда поднялся ветер, и на этих покинутых близнецах-лагунах были созданы первые дюны, никто не ожидал, что два племен, которые отчаянно ищут больше ресурсов для поддержки своих бесконечных войн, встретятся в этом забытом месте одновременно и по одной и той же хорошо известной причине."
 
 #: ../../data/maps/Twin_Lagoons_v2.wmf/elemental:11
 msgid ""
 "Defend your transport lines, or use ships to bypass the opponent. Then "
 "remove all enemy activity."
-msgstr ""
+msgstr "Защитите ваши транспортные магистрали или используйте корабли, чтобы обойти соперника. Затем устраните всю вражескую активность."
 
 #: ../../data/maps/Twinkling_Waves.wmf/elemental:8
 msgid "Twinkling Waves"
@@ -831,7 +801,7 @@ msgstr "Многопользовательская карта для сраже�
 
 #: ../../data/maps/Volcanic_Winter.wmf/elemental:8
 msgid "Volcanic Winter"
-msgstr "Вулканическая зима."
+msgstr "Вулканическая зима"
 
 #: ../../data/maps/Volcanic_Winter.wmf/elemental:10
 msgid ""
@@ -843,13 +813,13 @@ msgstr "В середине лета, серия извержений вулка
 
 #: ../../data/maps/Wideworld.wmf/elemental:8
 msgid "Wide World"
-msgstr ""
+msgstr "Обширный мир"
 
 #: ../../data/maps/Wideworld.wmf/elemental:10
 msgid ""
 "The world is not enough! If you want to win, you have to send some ships. "
 "But remember: your opponents are very close to you."
-msgstr ""
+msgstr "Земли не хватает! Если вы хотите выиграть, вам придется отправить несколько кораблей. Но помните: ваши противники находятся очень близко к вам."
 
 #: ../../data/maps/Wisent_Valley.wmf/elemental:8
 msgid "Wisent Valley"
@@ -870,4 +840,4 @@ msgid ""
 " 4 players’ map, with a black AI to add a complication to the expansion of "
 "the other players, or you can play as a challenge with the black player "
 "against the other 4 (VERY difficult)."
-msgstr ""
+msgstr "Черный игрок находится в центре, где нет ресурсов, поэтому есть три различных способа использования этой карты: без черного игрока - это нормальная карта для 4 игроков, карта с черным ИИ - для усложнения развития других игроков, или вы можете играть за черного игрока, бросив вызов другим 4 игрокам (чрезвычайно сложно)."

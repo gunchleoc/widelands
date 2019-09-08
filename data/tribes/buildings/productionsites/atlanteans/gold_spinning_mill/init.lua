@@ -31,7 +31,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      prohibited_till = 600
+      prohibited_till = 1210
    },
 
    working_positions = {
@@ -39,7 +39,7 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      gold = 5
+      { name = "gold", amount = 5 }
    },
    outputs = {
       "gold_thread"
@@ -50,9 +50,10 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start spinning gold because ...
          descname = _"spinning gold",
          actions = {
-            "sleep=15000",
             "return=skipped unless economy needs gold_thread",
             "consume=gold",
+            "sleep=15000",
+            "playsound=sound/atlanteans/goldspin 192",
             "animate=working 25000",
             "produce=gold_thread"
          }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006, 2008-2015 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,23 +23,30 @@
 #include <string>
 
 #include "editor/editorinteractive.h"
+#include "logic/filesystem_constants.h"
 #include "ui_basic/button.h"
 #include "ui_basic/checkbox.h"
-#include "ui_basic/window.h"
+#include "ui_basic/textarea.h"
+#include "ui_basic/unique_window.h"
 #include "wui/mapdetails.h"
 #include "wui/maptable.h"
 
 /**
  * Choose a filename and save your brand new created map
-*/
-struct MainMenuLoadOrSaveMap : public UI::Window {
+ */
+struct MainMenuLoadOrSaveMap : public UI::UniqueWindow {
 	MainMenuLoadOrSaveMap(EditorInteractive& parent,
+	                      UI::UniqueWindow::Registry& registry,
+	                      int no_of_bottom_rows,
 	                      const std::string& name,
-	                      const std::string& title);
+	                      const std::string& title,
+	                      const std::string& basedir = kMapsDir);
 
 protected:
 	virtual void clicked_ok() = 0;
 	void toggle_mapnames();
+	// Sets the current dir and updates labels.
+	virtual void set_current_directory(const std::string& filename) = 0;
 	void fill_table();
 
 	bool compare_players(uint32_t, uint32_t);
@@ -57,6 +64,7 @@ protected:
 	std::vector<MapData> maps_data_;
 	MapDetails map_details_;
 
+	UI::Textarea directory_info_;
 	UI::Button ok_, cancel_;
 
 	const std::string basedir_;

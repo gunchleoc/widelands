@@ -26,14 +26,13 @@ namespace Widelands {
 class Building;
 class Player;
 struct PlayerImmovable;
-}
+}  // namespace Widelands
 class InteractiveBase;
 class InteractivePlayer;
 
 // fieldaction.cc
-void show_field_action
-	(InteractiveBase           * parent,
-	 Widelands::Player          * player,
-	 UI::UniqueWindow::Registry * registry);
+void show_field_action(InteractiveBase* parent,
+                       Widelands::Player* player,
+                       UI::UniqueWindow::Registry* registry);
 
 #endif  // end of include guard: WL_WUI_FIELDACTION_H

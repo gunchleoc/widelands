@@ -32,8 +32,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      forced_after = 600,
-      prohibited_till = 450,
+      prohibited_till = 400,
+      basic_amount = 1,
       very_weak_ai_limit = 1,
       weak_ai_limit = 2
    },
@@ -43,8 +43,8 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      spider_silk = 8,
-      gold_thread = 4
+      { name = "spider_silk", amount = 8 },
+      { name = "gold_thread", amount = 4 }
    },
    outputs = {
       "spidercloth",
@@ -60,16 +60,18 @@ tribes:new_productionsite_type {
             "call=produce_spidercloth",
             "call=produce_tabard",
             "call=produce_tabard_golden",
-            "return=skipped"
+            "return=no_stats"
          }
       },
       produce_spidercloth = {
          -- TRANSLATORS: Completed/Skipped/Did not start weaving spidercloth because ...
          descname = _"weaving spidercloth",
          actions = {
+            -- time total: 40 + 3.6
             "return=skipped unless economy needs spidercloth",
-            "sleep=20000",
             "consume=spider_silk",
+            "sleep=20000",
+            "playsound=sound/mill/weaving 120",
             "animate=working 20000",
             "produce=spidercloth"
          }
@@ -78,9 +80,11 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start tailoring a tabard because ...
          descname = _"tailoring a tabard",
          actions = {
+            -- time total: 40 + 3.6
             "return=skipped unless economy needs tabard",
-            "sleep=20000",
             "consume=spider_silk",
+            "sleep=20000",
+            "playsound=sound/mill/weaving 120",
             "animate=working 20000",
             "produce=tabard"
          }
@@ -89,9 +93,11 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start tailoring a golden tabard because ...
          descname = _"tailoring a golden tabard",
          actions = {
+            -- time total: 40 + 3.6
             "return=skipped unless economy needs tabard_golden",
-            "sleep=20000",
             "consume=spider_silk gold_thread",
+            "sleep=20000",
+            "playsound=sound/mill/weaving 120",
             "animate=working 20000",
             "produce=tabard_golden"
          }

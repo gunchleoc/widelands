@@ -13,7 +13,7 @@ tribes:new_productionsite_type {
       log = 2,
       blackwood = 2,
       granite = 2,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       log = 1,
@@ -37,7 +37,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      prohibited_till = 800
+      prohibited_till = 500
    },
 
    working_positions = {
@@ -45,8 +45,8 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      wheat = 6,
-      water = 6
+      { name = "water", amount = 6 },
+      { name = "wheat", amount = 6 }
    },
    outputs = {
       "barbarians_bread"
@@ -55,11 +55,11 @@ tribes:new_productionsite_type {
    programs = {
       work = {
          -- TRANSLATORS: Completed/Skipped/Did not start baking bread because ...
-         descname = _"baking bread",
+         descname = pgettext("barbarians_building", "baking pitta bread"),
          actions = {
-            "sleep=20000",
             "return=skipped unless economy needs barbarians_bread",
             "consume=water:3 wheat:3",
+            "sleep=20000",
             "animate=working 20000",
             "produce=barbarians_bread",
             "animate=working 20000",

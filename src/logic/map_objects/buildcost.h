@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 by the Widelands Development Team
+ * Copyright (C) 2010-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,11 +23,10 @@
 #include <map>
 #include <memory>
 
+#include "io/fileread.h"
+#include "io/filewrite.h"
 #include "logic/widelands.h"
 #include "scripting/lua_table.h"
-
-class FileRead;
-class FileWrite;
 
 namespace Widelands {
 
@@ -39,12 +38,12 @@ struct Buildcost : std::map<DescriptionIndex, uint8_t> {
 	Buildcost();
 	Buildcost(std::unique_ptr<LuaTable> table, const Tribes& tribes);
 
-	uint32_t total() const;
+	Quantity total() const;
 
-	void save(FileWrite & fw, const TribeDescr & tribe) const;
-	void load(FileRead & fw, const TribeDescr & tribe);
+	void save(FileWrite& fw, const TribeDescr& tribe) const;
+	void load(FileRead& fw, const TribeDescr& tribe);
 };
 
-} // namespace Widelands
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_BUILDCOST_H

@@ -12,8 +12,8 @@ animations = {
       fps = 10
    }
 }
-add_worker_animations(animations, "walk", dirname, "walk", {9, 22}, 10)
-add_worker_animations(animations, "walkload", dirname, "walkload", {9, 22}, 10)
+add_directional_animation(animations, "walk", dirname, "walk", {9, 22}, 10)
+add_directional_animation(animations, "walkload", dirname, "walkload", {9, 22}, 10)
 
 
 tribes:new_worker_type {
@@ -31,15 +31,15 @@ tribes:new_worker_type {
    },
 
    programs = {
-      chop = {
-         "findobject attrib:tree radius:10",
-         "walk object",
-         "play_sound sound/woodcutting fast_woodcutting 250",
-         "animation hacking 10000",
-         "play_sound sound/spoken timber 156",
-         "object fall",
-         "animation idle 2000",
-         "createware log",
+      harvest = {
+         "findobject=attrib:tree radius:10",
+         "walk=object",
+         "playsound=sound/woodcutting/fast_woodcutting 250",
+         "animate=hacking 20000",
+         "playsound=sound/woodcutting/tree_falling 130",
+         "callobject=fall",
+         "animate=idle 2000",
+         "createware=log",
          "return"
       }
    },

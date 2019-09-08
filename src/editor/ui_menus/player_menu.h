@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2009 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,56 +20,59 @@
 #ifndef WL_EDITOR_UI_MENUS_PLAYER_MENU_H
 #define WL_EDITOR_UI_MENUS_PLAYER_MENU_H
 
-#include <cstring>
-#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "logic/constants.h"
-#include "logic/widelands.h"
+#include "editor/ui_menus/tool_options_menu.h"
+#include "ui_basic/box.h"
 #include "ui_basic/button.h"
+#include "ui_basic/dropdown.h"
+#include "ui_basic/editbox.h"
 #include "ui_basic/unique_window.h"
 
-
 class EditorInteractive;
-namespace UI {
-struct Textarea;
-struct EditBox;
-struct Button;
-}
 
-class EditorPlayerMenu : public UI::UniqueWindow {
+class EditorPlayerMenu : public EditorToolOptionsMenu {
 public:
-	EditorPlayerMenu
-		(EditorInteractive &, UI::UniqueWindow::Registry &);
-	virtual ~EditorPlayerMenu() {}
+	EditorPlayerMenu(EditorInteractive&,
+	                 EditorSetStartingPosTool& tool,
+	                 UI::UniqueWindow::Registry&);
+	~EditorPlayerMenu() override {
+	}
 
 private:
-	EditorInteractive & eia();
-	UI::UniqueWindow::Registry allow_buildings_menu_;
-	UI::Textarea* nr_of_players_ta_;
-	UI::EditBox* plr_names_[MAX_PLAYERS];
-	UI::Button add_player_, remove_last_player_;
-	UI::Button
-		* plr_make_infrastructure_buts_[MAX_PLAYERS],
-		* plr_set_pos_buts_            [MAX_PLAYERS],
-		* plr_set_tribes_buts_         [MAX_PLAYERS];
+	// Container with UI elements to set a player slot's properties
+	struct PlayerEditRow {
+		explicit PlayerEditRow(UI::Box* init_box,
+		                       UI::EditBox* init_name,
+		                       UI::Button* init_position,
+		                       UI::Dropdown<std::string>* init_tribe)
+		   : box(init_box), name(init_name), position(init_position), tribe(init_tribe) {
+		}
+		UI::Box* box;
+		UI::EditBox* name;
+		UI::Button* position;
+		UI::Dropdown<std::string>* tribe;
+	};
 
-	std::vector<std::string> tribenames_;
+	EditorInteractive& eia();
 
-	/// List of the tribes currently selected for all players
-	std::string selected_tribes_[MAX_PLAYERS];
+	/// Update player name on map for the given row's player
+	void name_changed(size_t row);
+	/// Update number of player slots available on the map
+	void no_of_players_clicked();
+	/// Select tribe for the given row's player
+	void player_tribe_clicked(size_t row);
+	/// Select starting position for the given row's player
+	void set_starting_pos_clicked(size_t row);
 
-	int32_t posy_;
+	/// Resize window according to number of rows
+	void layout() override;
 
-	void name_changed(int32_t);
-	void clicked_add_player         ();
-	void clicked_remove_last_player ();
-	void player_tribe_clicked       (uint8_t);
-	void set_starting_pos_clicked   (uint8_t);
-	void update();
-	void think() override;
-	void make_infrastructure_clicked(uint8_t);
+	UI::Box box_;
+	UI::Dropdown<uintptr_t> no_of_players_;
+	std::vector<std::unique_ptr<PlayerEditRow>> rows_;
 };
 
 #endif  // end of include guard: WL_EDITOR_UI_MENUS_PLAYER_MENU_H

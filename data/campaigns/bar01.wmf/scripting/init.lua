@@ -8,6 +8,7 @@ include "scripting/coroutine.lua"
 include "scripting/objective_utils.lua"
 include "scripting/infrastructure.lua"
 include "scripting/messages.lua"
+include "scripting/field_animations.lua"
 
 -- ==========
 -- Constants
@@ -20,7 +21,6 @@ al_thunran = map:get_field(5,46)
 grave = map:get_field(24,28)
 
 include "map:scripting/texts.lua"
-include "map:scripting/helper_functions.lua"
 
 include "map:scripting/starting_conditions.lua"
 

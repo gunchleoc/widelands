@@ -36,7 +36,7 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      ration = 2
+      { name = "ration", amount = 2 }
    },
 
    programs = {
@@ -44,9 +44,9 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start scouting because ...
          descname = _"scouting",
          actions = {
-            "sleep=30000",
             "consume=ration",
-            "worker=scout"
+            "sleep=30000",
+            "callworker=scout"
          }
       },
    },

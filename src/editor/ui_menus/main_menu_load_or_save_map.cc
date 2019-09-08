@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2015 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,16 +25,19 @@
 #include "base/i18n.h"
 #include "base/wexception.h"
 #include "editor/editorinteractive.h"
-#include "graphic/font_handler1.h"
-#include "graphic/graphic.h"
+#include "graphic/font_handler.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "map_io/widelands_map_loader.h"
 
 MainMenuLoadOrSaveMap::MainMenuLoadOrSaveMap(EditorInteractive& parent,
+                                             Registry& registry,
+                                             int no_of_bottom_rows,
                                              const std::string& name,
-                                             const std::string& title)
-   : UI::Window(&parent, name, 0, 0, parent.get_inner_w() - 40, parent.get_inner_h() - 40, title),
+                                             const std::string& title,
+                                             const std::string& basedir)
+   : UI::UniqueWindow(
+        &parent, name, &registry, parent.get_inner_w() - 40, parent.get_inner_h() - 40, title),
 
      // Values for alignment and size
      padding_(4),
@@ -42,58 +45,60 @@ MainMenuLoadOrSaveMap::MainMenuLoadOrSaveMap(EditorInteractive& parent,
      tablex_(padding_),
      tabley_(buth_ + 2 * padding_),
      tablew_(get_inner_w() * 7 / 12),
-     tableh_(get_inner_h() - tabley_ - 3 * buth_ - 2 * padding_),
+     tableh_(get_inner_h() - tabley_ - (no_of_bottom_rows + 1) * buth_ -
+             no_of_bottom_rows * padding_),
      right_column_x_(tablew_ + 2 * padding_),
      butw_((get_inner_w() - right_column_x_ - 2 * padding_) / 2),
 
-	  table_(this, tablex_, tabley_, tablew_, tableh_, false),
-	  map_details_(
-		  this, right_column_x_, tabley_, get_inner_w() - right_column_x_ - padding_, tableh_),
+     table_(this, tablex_, tabley_, tablew_, tableh_, UI::PanelStyle::kWui),
+     map_details_(this,
+                  right_column_x_,
+                  tabley_,
+                  get_inner_w() - right_column_x_ - padding_,
+                  tableh_,
+                  UI::PanelStyle::kWui),
+     directory_info_(this, padding_, get_inner_h() - 2 * buth_ - 4 * padding_, 0, 0),
      ok_(this,
          "ok",
-			UI::g_fh1->fontset()->is_rtl() ? get_inner_w() / 2 - butw_ - padding_ : get_inner_w() / 2 + padding_,
+         UI::g_fh->fontset()->is_rtl() ? get_inner_w() / 2 - butw_ - padding_ :
+                                         get_inner_w() / 2 + padding_,
          get_inner_h() - padding_ - buth_,
          butw_,
          buth_,
-			g_gr->images().get("images/ui_basic/but5.png"),
+         UI::ButtonStyle::kWuiPrimary,
          _("OK")),
      cancel_(this,
              "cancel",
-				 UI::g_fh1->fontset()->is_rtl() ?
-					 get_inner_w() / 2 + padding_ :
-					 get_inner_w() / 2 - butw_ - padding_,
+             UI::g_fh->fontset()->is_rtl() ? get_inner_w() / 2 + padding_ :
+                                             get_inner_w() / 2 - butw_ - padding_,
              get_inner_h() - padding_ - buth_,
              butw_,
              buth_,
-				 g_gr->images().get("images/ui_basic/but1.png"),
+             UI::ButtonStyle::kWuiSecondary,
              _("Cancel")),
-     basedir_("maps"),
+     basedir_(basedir),
      has_translated_mapname_(false),
      showing_mapames_(false) {
+	g_fs->ensure_directory_exists(basedir_);
 	curdir_ = basedir_;
 
 	UI::Box* vbox = new UI::Box(this, tablex_, padding_, UI::Box::Horizontal, padding_, get_w());
-	show_mapnames_ = new UI::Button(vbox,
-	                                "show_mapnames",
-	                                0,
-	                                0,
-	                                butw_,
-	                                buth_,
-											  g_gr->images().get("images/ui_basic/but1.png"),
-	                                _("Show Map Names"));
-	vbox->add(show_mapnames_, UI::Align::kLeft, true);
+	show_mapnames_ = new UI::Button(vbox, "show_mapnames", 0, 0, 2 * butw_, buth_,
+	                                UI::ButtonStyle::kWuiSecondary, _("Show Map Names"));
+	vbox->add(show_mapnames_, UI::Box::Resizing::kFullSize);
 
-	/** TRANSLATORS: Checkbox title. If this checkbox is enabled, map names aren't translated. */
-	cb_dont_localize_mapnames_ = new UI::Checkbox(vbox, Point(0, 0), _("Show original map names"));
+	cb_dont_localize_mapnames_ =
+	   /** TRANSLATORS: Checkbox title. If this checkbox is enabled, map names aren't translated. */
+	   new UI::Checkbox(vbox, Vector2i::zero(), _("Show original map names"));
 	cb_dont_localize_mapnames_->set_state(false);
 	vbox->add_space(2 * padding_);
-	vbox->add(cb_dont_localize_mapnames_, UI::Align::kLeft, true);
+	vbox->add(cb_dont_localize_mapnames_, UI::Box::Resizing::kFullSize);
 	vbox->set_size(get_inner_w(), buth_);
 
 	table_.set_column_compare(0, boost::bind(&MainMenuLoadOrSaveMap::compare_players, this, _1, _2));
-	table_.set_column_compare(1, boost::bind(&MainMenuLoadOrSaveMap::compare_mapnames, this, _1, _2));
+	table_.set_column_compare(
+	   1, boost::bind(&MainMenuLoadOrSaveMap::compare_mapnames, this, _1, _2));
 	table_.set_column_compare(2, boost::bind(&MainMenuLoadOrSaveMap::compare_size, this, _1, _2));
-
 
 	table_.focus();
 	fill_table();
@@ -110,24 +115,17 @@ MainMenuLoadOrSaveMap::MainMenuLoadOrSaveMap(EditorInteractive& parent,
 	move_to_top();
 }
 
-
-bool MainMenuLoadOrSaveMap::compare_players(uint32_t rowa, uint32_t rowb)
-{
+bool MainMenuLoadOrSaveMap::compare_players(uint32_t rowa, uint32_t rowb) {
 	return maps_data_[table_[rowa]].compare_players(maps_data_[table_[rowb]]);
 }
 
-
-bool MainMenuLoadOrSaveMap::compare_mapnames(uint32_t rowa, uint32_t rowb)
-{
+bool MainMenuLoadOrSaveMap::compare_mapnames(uint32_t rowa, uint32_t rowb) {
 	return maps_data_[table_[rowa]].compare_names(maps_data_[table_[rowb]]);
 }
 
-
-bool MainMenuLoadOrSaveMap::compare_size(uint32_t rowa, uint32_t rowb)
-{
+bool MainMenuLoadOrSaveMap::compare_size(uint32_t rowa, uint32_t rowb) {
 	return maps_data_[table_[rowa]].compare_size(maps_data_[table_[rowb]]);
 }
-
 
 void MainMenuLoadOrSaveMap::toggle_mapnames() {
 	if (showing_mapames_) {
@@ -154,6 +152,8 @@ void MainMenuLoadOrSaveMap::fill_table() {
 	// about the absolute filesystem top!) we manually add ".."
 	if (curdir_ != basedir_) {
 		maps_data_.push_back(MapData::create_parent_dir(curdir_));
+	} else if (files.empty()) {
+		maps_data_.push_back(MapData::create_empty_dir(curdir_));
 	}
 
 	MapData::DisplayType display_type;
@@ -181,7 +181,7 @@ void MainMenuLoadOrSaveMap::fill_table() {
 				MapData::MapType maptype;
 
 				if (map.scenario_types() & Widelands::Map::MP_SCENARIO ||
-					 map.scenario_types() & Widelands::Map::SP_SCENARIO) {
+				    map.scenario_types() & Widelands::Map::SP_SCENARIO) {
 					maptype = MapData::MapType::kScenario;
 				} else if (dynamic_cast<Widelands::WidelandsMapLoader*>(ml.get())) {
 					maptype = MapData::MapType::kNormal;
@@ -192,7 +192,7 @@ void MainMenuLoadOrSaveMap::fill_table() {
 				MapData mapdata(map, mapfilename, maptype, display_type);
 
 				has_translated_mapname_ =
-					has_translated_mapname_ || (mapdata.name != mapdata.localized_name);
+				   has_translated_mapname_ || (mapdata.name != mapdata.localized_name);
 
 				maps_data_.push_back(mapdata);
 

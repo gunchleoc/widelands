@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2012 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -83,16 +83,16 @@ public:
 
 	~Tag();
 
-	const std::string & name() const;
-	const AttrMap & attrs() const;
-	const ChildList & children() const;
+	const std::string& name() const;
+	const AttrMap& attrs() const;
+	const ChildList& children() const;
 	void parse(TextStream& ts, TagConstraints& tcs, const TagSet&);
 
 private:
-	void parse_opening_tag(TextStream & ts, TagConstraints & tcs);
-	void parse_closing_tag(TextStream & ts);
-	void parse_attribute(TextStream & ts, std::unordered_set<std::string> &);
-	void parse_content(TextStream & ts, TagConstraints & tc, const TagSet &);
+	void parse_opening_tag(TextStream& ts, TagConstraints& tcs);
+	void parse_closing_tag(TextStream& ts);
+	void parse_attribute(TextStream& ts, std::unordered_set<std::string>&);
+	void parse_content(TextStream& ts, TagConstraints& tc, const TagSet&);
 
 	std::string name_;
 	AttrMap attribute_map_;
@@ -102,9 +102,9 @@ private:
 struct Child {
 	Child() : tag(nullptr), text() {
 	}
-	Child(Tag* t) : tag(t) {
+	explicit Child(Tag* t) : tag(t) {
 	}
-	Child(std::string t) : tag(nullptr), text(t) {
+	explicit Child(const std::string& t) : tag(nullptr), text(t) {
 	}
 	~Child() {
 		if (tag)
@@ -125,6 +125,6 @@ private:
 	TagConstraints tag_constraints_;
 	std::unique_ptr<TextStream> text_stream_;
 };
-}
+}  // namespace RT
 
 #endif  // end of include guard: WL_GRAPHIC_TEXT_RT_PARSE_H

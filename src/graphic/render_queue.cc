@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2014 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,8 +28,10 @@
 #include "graphic/gl/dither_program.h"
 #include "graphic/gl/draw_line_program.h"
 #include "graphic/gl/fill_rect_program.h"
+#include "graphic/gl/grid_program.h"
 #include "graphic/gl/road_program.h"
 #include "graphic/gl/terrain_program.h"
+#include "graphic/gl/workarea_program.h"
 
 namespace {
 
@@ -47,7 +49,8 @@ inline float to_opengl_z(const int z) {
 //   - we batch up by program to have maximal batching.
 //   - and we want to render frontmost objects first, so that we do not render
 //     any pixel more than once.
-static_assert(RenderQueue::Program::kHighestProgramId <= 8, "Need to change sorting keys.");  // 4 bits.
+static_assert(RenderQueue::Program::kHighestProgramId <= 8,
+              "Need to change sorting keys.");  // 4 bits.
 
 uint64_t
 make_key_opaque(const uint64_t program_id, const uint64_t z_value, const uint64_t extra_value) {
@@ -119,14 +122,14 @@ std::vector<T> batch_up(const RenderQueue::Program program_id,
 // creation. Disables GL_SCISSOR_TEST at desctruction again.
 class ScopedScissor {
 public:
-	ScopedScissor(const FloatRect& rect);
+	explicit ScopedScissor(const Rectf& rect);
 	~ScopedScissor();
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(ScopedScissor);
 };
 
-ScopedScissor::ScopedScissor(const FloatRect& rect) {
+ScopedScissor::ScopedScissor(const Rectf& rect) {
 	glScissor(rect.x, rect.y, rect.w, rect.h);
 	glEnable(GL_SCISSOR_TEST);
 }
@@ -141,6 +144,8 @@ RenderQueue::RenderQueue()
    : next_z_(1),
      terrain_program_(new TerrainProgram()),
      dither_program_(new DitherProgram()),
+     workarea_program_(new WorkareaProgram()),
+     grid_program_(new GridProgram()),
      road_program_(new RoadProgram()) {
 }
 
@@ -155,20 +160,22 @@ void RenderQueue::enqueue(const Item& given_item) {
 	uint32_t extra_value = 0;
 
 	switch (given_item.program_id) {
-		case Program::kBlit:
-		   extra_value = given_item.blit_arguments.texture.texture_id;
-			break;
+	case Program::kBlit:
+		extra_value = given_item.blit_arguments.texture.texture_id;
+		break;
 
-		case Program::kLine:
-		case Program::kRect:
-		case Program::kTerrainBase:
-		case Program::kTerrainDither:
-		case Program::kTerrainRoad:
-			/* all fallthroughs intended */
-			break;
+	case Program::kLine:
+	case Program::kRect:
+	case Program::kTerrainBase:
+	case Program::kTerrainDither:
+	case Program::kTerrainWorkarea:
+	case Program::kTerrainGrid:
+	case Program::kTerrainRoad:
+		/* all fallthroughs intended */
+		break;
 
-		default:
-		   throw wexception("Unknown given_item.program_id: %d", given_item.program_id);
+	default:
+		throw wexception("Unknown given_item.program_id: %d", given_item.program_id);
 	}
 
 	if (given_item.blend_mode == BlendMode::Copy) {
@@ -186,9 +193,13 @@ void RenderQueue::enqueue(const Item& given_item) {
 }
 
 void RenderQueue::draw(const int screen_width, const int screen_height) {
-	if (next_z_ >= kMaximumZValue) {
-		throw wexception("Too many drawn layers. Ran out of z-values.");
-	}
+	// TODO(sirver): If next_z >= kMaximumZValue here, we ran out of z-layers to
+	// correctly order the drawing of our objects (see
+	// https://bugs.launchpad.net/widelands/+bug/1658593). This is non-critical,
+	// but will look strange. We used to crash here in this case, but since it
+	// can happen on large zoom and huge screen resolution (> 3440 x 1400), we
+	// do not crash anymore. The linked bug contains a discussion how to fix the
+	// issue properly, but it was too much work to address at the time.
 
 	Gl::State::instance().bind_framebuffer(0, 0);
 	glViewport(0, 0, screen_width, screen_height);
@@ -218,8 +229,7 @@ void RenderQueue::draw_items(const std::vector<Item>& items) {
 		const Item& item = items[i];
 		switch (item.program_id) {
 		case Program::kBlit:
-			BlitProgram::instance().draw(
-			   batch_up<BlitProgram::Arguments>(Program::kBlit, items, &i));
+			BlitProgram::instance().draw(batch_up<BlitProgram::Arguments>(Program::kBlit, items, &i));
 			break;
 
 		case Program::kLine:
@@ -234,19 +244,34 @@ void RenderQueue::draw_items(const std::vector<Item>& items) {
 
 		case Program::kTerrainBase: {
 			ScopedScissor scoped_scissor(item.terrain_arguments.destination_rect);
-			terrain_program_->draw(item.terrain_arguments.gametime,
-			                       *item.terrain_arguments.terrains,
-			                       *item.terrain_arguments.fields_to_draw,
-			                       item.z_value);
+			terrain_program_->draw(item.terrain_arguments.gametime, *item.terrain_arguments.terrains,
+			                       *item.terrain_arguments.fields_to_draw, item.z_value);
 			++i;
 		} break;
 
 		case Program::kTerrainDither: {
 			ScopedScissor scoped_scissor(item.terrain_arguments.destination_rect);
-			dither_program_->draw(item.terrain_arguments.gametime,
-			                      *item.terrain_arguments.terrains,
+			dither_program_->draw(item.terrain_arguments.gametime, *item.terrain_arguments.terrains,
 			                      *item.terrain_arguments.fields_to_draw,
 			                      item.z_value + kOpenGlZDelta);
+			++i;
+		} break;
+
+		case Program::kTerrainWorkarea: {
+			ScopedScissor scoped_scissor(item.terrain_arguments.destination_rect);
+			workarea_program_->draw(
+			   item.terrain_arguments.terrains->get(0).get_texture(0).blit_data().texture_id,
+			   item.terrain_arguments.workareas, *item.terrain_arguments.fields_to_draw, item.z_value,
+			   Vector2f(item.terrain_arguments.renderbuffer_width,
+			            item.terrain_arguments.renderbuffer_height));
+			++i;
+		} break;
+
+		case Program::kTerrainGrid: {
+			ScopedScissor scoped_scissor(item.terrain_arguments.destination_rect);
+			grid_program_->draw(
+			   item.terrain_arguments.terrains->get(0).get_texture(0).blit_data().texture_id,
+			   *item.terrain_arguments.fields_to_draw, item.z_value);
 			++i;
 		} break;
 
@@ -254,7 +279,7 @@ void RenderQueue::draw_items(const std::vector<Item>& items) {
 			ScopedScissor scoped_scissor(item.terrain_arguments.destination_rect);
 			road_program_->draw(item.terrain_arguments.renderbuffer_width,
 			                    item.terrain_arguments.renderbuffer_height,
-			                    *item.terrain_arguments.fields_to_draw,
+			                    *item.terrain_arguments.fields_to_draw, item.terrain_arguments.scale,
 			                    item.z_value + 2 * kOpenGlZDelta);
 			++i;
 		} break;

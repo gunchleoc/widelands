@@ -6,6 +6,8 @@ wl_library(ai
     ai_hints.h
     computer_player.cc
     computer_player.h
+    defaultai_seafaring.cc
+    defaultai_warfare.cc
     defaultai.cc
     defaultai.h
   DEPENDS
@@ -16,5 +18,10 @@ wl_library(ai
     base_time_string
     economy
     logic
+    logic_constants
+    logic_commands
+    logic_map
+    logic_map_objects
     scripting_lua_table
 )
+add_subdirectory(test)

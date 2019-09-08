@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 by the Widelands Development Team
+ * Copyright (C) 2011-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@ struct Ship;
 class FleetDescr : public MapObjectDescr {
 public:
 	FleetDescr(char const* const init_name, char const* const init_descname)
-		: MapObjectDescr(MapObjectType::FLEET, init_name, init_descname) {
+	   : MapObjectDescr(MapObjectType::FLEET, init_name, init_descname, "") {
 	}
 	~FleetDescr() override {
 	}
@@ -45,6 +45,9 @@ public:
 private:
 	DISALLOW_COPY_AND_ASSIGN(FleetDescr);
 };
+
+constexpr int32_t kFleetInterval = 5000;
+constexpr uint32_t kRouteNotCalculated = std::numeric_limits<uint32_t>::max();
 
 /**
  * Manage all ships and ports of a player that are connected
@@ -69,59 +72,57 @@ struct Fleet : MapObject {
 		int32_t cost;
 		boost::shared_ptr<Path> path;
 
-		PortPath() : cost(-1) {}
+		PortPath() : cost(-1) {
+		}
 	};
 
 	const FleetDescr& descr() const;
 
-	Fleet(Player & player);
+	explicit Fleet(Player* player);
 
-	Player * get_owner() const {return &owner_;}
-	Player & owner() const {return owner_;}
-
-	PortDock * get_dock(Flag & flag) const;
-	PortDock * get_dock(EditorGameBase &, Coords) const;
-	PortDock * get_arbitrary_dock() const;
-	void set_economy(Economy * e);
+	PortDock* get_dock(Flag& flag) const;
+	PortDock* get_dock(EditorGameBase&, Coords) const;
+	PortDock* get_arbitrary_dock() const;
+	void set_economy(Economy* e);
 
 	bool active() const;
 
-	void init(EditorGameBase &) override;
-	void cleanup(EditorGameBase &) override;
-	void update(EditorGameBase &);
+	bool init(EditorGameBase&) override;
+	void cleanup(EditorGameBase&) override;
+	void update(EditorGameBase&);
 
-	void add_ship(Ship * ship);
-	void remove_ship(EditorGameBase & egbase, Ship * ship);
-	void add_port(EditorGameBase & egbase, PortDock * port);
-	void remove_port(EditorGameBase & egbase, PortDock * port);
+	void add_ship(Ship* ship);
+	void remove_ship(EditorGameBase& egbase, Ship* ship);
+	void add_port(EditorGameBase& egbase, PortDock* port);
+	void remove_port(EditorGameBase& egbase, PortDock* port);
+	bool has_ports() const;
 
-	void log_general_info(const EditorGameBase &) override;
+	void log_general_info(const EditorGameBase&) const override;
 
-	bool get_path(PortDock & start, PortDock & end, Path & path);
-	void add_neighbours(PortDock & pd, std::vector<RoutingNodeNeighbour> & neighbours);
+	bool get_path(const PortDock& start, const PortDock& end, Path& path);
+	void add_neighbours(PortDock& pd, std::vector<RoutingNodeNeighbour>& neighbours);
 
-	uint32_t count_ships();
-	uint32_t count_ships_heading_here(EditorGameBase & egbase, PortDock * port);
-	uint32_t count_ports();
-	bool get_act_pending();
+	uint32_t count_ships() const;
+	uint32_t count_ships_heading_here(EditorGameBase& egbase, PortDock* port) const;
+	uint32_t count_ports() const;
+	bool get_act_pending() const;
 
 protected:
-	void act(Game &, uint32_t data) override;
+	void act(Game&, uint32_t data) override;
 
 private:
-	void find_other_fleet(EditorGameBase & egbase);
-	void merge(EditorGameBase & egbase, Fleet * other);
+	bool find_other_fleet(EditorGameBase& egbase);
+	bool merge(EditorGameBase& egbase, Fleet* other);
 	void check_merge_economy();
-	void connect_port(EditorGameBase & egbase, uint32_t idx);
+	void connect_port(EditorGameBase& egbase, uint32_t idx);
 
-	PortPath & portpath(uint32_t i, uint32_t j);
-	const PortPath & portpath(uint32_t i, uint32_t j) const;
-	PortPath & portpath_bidir(uint32_t i, uint32_t j, bool & reverse);
-	const PortPath & portpath_bidir(uint32_t i, uint32_t j, bool & reverse) const;
+	PortPath& portpath(uint32_t i, uint32_t j);
+	const PortPath& portpath(uint32_t i, uint32_t j) const;
+	PortPath& portpath_bidir(uint32_t i, uint32_t j, bool& reverse);
+	const PortPath& portpath_bidir(uint32_t i, uint32_t j, bool& reverse) const;
 
-	Player & owner_;
-	std::vector<Ship *> ships_;
-	std::vector<PortDock *> ports_;
+	std::vector<Ship*> ships_;
+	std::vector<PortDock*> ports_;
 
 	bool act_pending_;
 
@@ -138,7 +139,7 @@ protected:
 	struct Loader : MapObject::Loader {
 		Loader();
 
-		void load(FileRead &);
+		void load(FileRead&);
 		void load_pointers() override;
 		void load_finish() override;
 
@@ -148,13 +149,16 @@ protected:
 	};
 
 public:
-	bool has_new_save_support() override {return true;}
-	void save(EditorGameBase &, MapObjectSaver &, FileWrite &) override;
+	bool has_new_save_support() override {
+		return true;
+	}
+	void save(EditorGameBase&, MapObjectSaver&, FileWrite&) override;
 
-	static MapObject::Loader * load
-		(EditorGameBase &, MapObjectLoader &, FileRead &);
+	static MapObject::Loader* load(EditorGameBase&, MapObjectLoader&, FileRead&);
+	bool is_path_favourable(const PortDock& start, const PortDock& middle, const PortDock& finish);
+	PortDock* find_next_dest(Game&, const Ship&, const PortDock& from_port);
 };
 
-} // namespace Widelands
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_ECONOMY_FLEET_H

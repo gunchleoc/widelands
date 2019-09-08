@@ -14,7 +14,7 @@ tribes:new_productionsite_type {
       log = 3,
       blackwood = 2,
       granite = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       log = 1,
@@ -38,7 +38,8 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      forced_after = 900
+      basic_amount = 1,
+      prohibited_till = 520
    },
 
    working_positions = {
@@ -46,9 +47,9 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      fish = 4,
-      barbarians_bread = 4,
-      meat = 4
+      { name = "fish", amount = 4 },
+      { name = "meat", amount = 4 },
+      { name = "barbarians_bread", amount = 4 }
    },
    outputs = {
       "ration"
@@ -59,10 +60,12 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start preparing a ration because ...
          descname = _"preparing a ration",
          actions = {
-            "sleep=14000",
+             -- time total: 33
             "return=skipped unless economy needs ration",
             "consume=barbarians_bread,fish,meat",
-            "animate=working 19000",
+            "playsound=sound/barbarians/taverns/tavern 100",
+            "animate=working 23000",
+            "sleep=10000",
             "produce=ration"
          },
       },

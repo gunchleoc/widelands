@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2009, 2013 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,8 +28,7 @@
 #include "base/i18n.h"
 #include "base/macros.h"
 #include "editor/editorinteractive.h"
-#include "graphic/font_handler1.h"
-#include "graphic/graphic.h"
+#include "graphic/font_handler.h"
 #include "graphic/image.h"
 #include "graphic/texture.h"
 #include "logic/editor_game_base.h"
@@ -37,104 +36,84 @@
 #include "logic/map_objects/world/terrain_description.h"
 #include "logic/map_objects/world/world.h"
 #include "ui_basic/progresswindow.h"
+#include "wlapplication_options.h"
 
 inline EditorInteractive& MainMenuNewMap::eia() {
 	return dynamic_cast<EditorInteractive&>(*get_parent());
 }
 
-MainMenuNewMap::MainMenuNewMap(EditorInteractive & parent)
-	:
-	UI::Window(&parent, "new_map_menu", 0, 0, 360, 150, _("New Map")),
-	margin_(4),
-	box_width_(get_inner_w() -  2 * margin_),
-	box_(this, margin_, margin_, UI::Box::Vertical, 0, 0, margin_),
-	width_(&box_, 0, 0, box_width_, box_width_ / 3,
-			 0, 0, 0,
-			 _("Width:"), UI::SpinBox::Units::kNone, g_gr->images().get("images/ui_basic/but1.png"),
-			 UI::SpinBox::Type::kValueList),
-	height_(&box_, 0, 0, box_width_, box_width_ / 3,
-			  0, 0, 0,
-			  _("Height:"), UI::SpinBox::Units::kNone, g_gr->images().get("images/ui_basic/but1.png"),
-			  UI::SpinBox::Type::kValueList),
-	list_(&box_, 0, 0, box_width_, 330),
-	// Buttons
-	button_box_(&box_, 0, 0, UI::Box::Horizontal, 0, 0, margin_),
-	ok_button_(&button_box_, "create_map", 0, 0, box_width_ / 2 - margin_, 0,
-		 g_gr->images().get("images/ui_basic/but5.png"),
-		 _("Create Map")),
-	cancel_button_(&button_box_, "generate_map", 0, 0, box_width_ / 2 - margin_, 0,
-		 g_gr->images().get("images/ui_basic/but1.png"),
-		 _("Cancel"))
-{
-	width_.set_value_list(Widelands::kMapDimensions);
-	height_.set_value_list(Widelands::kMapDimensions);
+MainMenuNewMap::MainMenuNewMap(EditorInteractive& parent, Registry& registry)
+   : UI::UniqueWindow(&parent, "new_map_menu", &registry, 360, 150, _("New Map")),
+     margin_(4),
+     box_width_(get_inner_w() - 2 * margin_),
+     box_(this, margin_, margin_, UI::Box::Vertical, 0, 0, margin_),
+     map_size_box_(box_,
+                   "new_map_menu",
+                   4,
+                   parent.egbase().map().get_width(),
+                   parent.egbase().map().get_height()),
+     list_(&box_, 0, 0, box_width_, 330, UI::PanelStyle::kWui),
+     // Buttons
+     button_box_(&box_, 0, 0, UI::Box::Horizontal, 0, 0, margin_),
+     ok_button_(&button_box_,
+                "create_map",
+                0,
+                0,
+                box_width_ / 2 - margin_,
+                0,
+                UI::ButtonStyle::kWuiPrimary,
+                _("Create Map")),
+     cancel_button_(&button_box_,
+                    "generate_map",
+                    0,
+                    0,
+                    box_width_ / 2 - margin_,
+                    0,
+                    UI::ButtonStyle::kWuiSecondary,
+                    _("Cancel")) {
 
-	{
-		size_t width_index, height_index;
-		Widelands::Extent const map_extent = parent.egbase().map().extent();
-		for (width_index = 0;
-			  width_index < Widelands::kMapDimensions.size() &&
-			  Widelands::kMapDimensions[width_index] < map_extent.w;
-			  ++width_index) {}
-		width_.set_value(width_index);
-
-		for (height_index = 0;
-			  height_index < Widelands::kMapDimensions.size() &&
-			  Widelands::kMapDimensions[height_index] < map_extent.h;
-			  ++height_index) {}
-		height_.set_value(height_index);
-	}
-
-	box_.add(&width_, UI::Align::kLeft);
-	box_.add(&height_, UI::Align::kLeft);
+	box_.set_size(100, 20);  // Prevent assert failures
+	box_.add(&map_size_box_, UI::Box::Resizing::kExpandBoth);
 	box_.add_space(margin_);
 	UI::Textarea* terrain_label = new UI::Textarea(&box_, _("Terrain:"));
-	box_.add(terrain_label, UI::Align::kLeft);
-	box_.add(&list_, UI::Align::kLeft);
+	box_.add(terrain_label);
+	box_.add(&list_);
 	box_.add_space(2 * margin_);
 
 	cancel_button_.sigclicked.connect(boost::bind(&MainMenuNewMap::clicked_cancel, this));
 	ok_button_.sigclicked.connect(boost::bind(&MainMenuNewMap::clicked_create_map, this));
-	if (UI::g_fh1->fontset()->is_rtl()) {
-		button_box_.add(&ok_button_, UI::Align::kLeft);
-		button_box_.add(&cancel_button_, UI::Align::kLeft);
+	if (UI::g_fh->fontset()->is_rtl()) {
+		button_box_.add(&ok_button_);
+		button_box_.add(&cancel_button_);
 	} else {
-		button_box_.add(&cancel_button_, UI::Align::kLeft);
-		button_box_.add(&ok_button_, UI::Align::kLeft);
+		button_box_.add(&cancel_button_);
+		button_box_.add(&ok_button_);
 	}
-	box_.add(&button_box_, UI::Align::kLeft);
+	box_.add(&button_box_);
 
-	box_.set_size(box_width_,
-					  width_.get_h() + height_.get_h() + terrain_label->get_h() + list_.get_h()
-					  + button_box_.get_h() + 9 * margin_);
-	set_size(get_w(), box_.get_h() + 2 * margin_ + get_h() - get_inner_h());
+	set_center_panel(&box_);
 	fill_list();
 	center_to_parent();
 }
 
-
 void MainMenuNewMap::clicked_create_map() {
 	EditorInteractive& parent = eia();
-	Widelands::EditorGameBase & egbase = parent.egbase();
-	Widelands::Map              & map    = egbase.map();
+	Widelands::EditorGameBase& egbase = parent.egbase();
+	Widelands::Map* map = egbase.mutable_map();
 	UI::ProgressWindow loader_ui;
 
 	loader_ui.step(_("Creating empty map…"));
 
-	egbase.cleanup_for_load();
+	parent.cleanup_for_load();
 
-	map.create_empty_map(
-				egbase.world(),
-				width_.get_value() > 0 ? width_.get_value() : Widelands::kMapDimensions[0],
-				height_.get_value() > 0 ? height_.get_value() : Widelands::kMapDimensions[0],
-				list_.get_selected(),
-				_("No Name"),
-				g_options.pull_section("global").get_string("realname", pgettext("map_name", "Unknown")));
+	map->create_empty_map(egbase, map_size_box_.selected_width(), map_size_box_.selected_height(),
+	                      list_.get_selected(), _("No Name"),
+	                      get_config_string("realname", pgettext("author_name", "Unknown")));
 
-	egbase.postload     ();
+	egbase.postload();
 	egbase.load_graphics(loader_ui);
 
-	map.recalc_whole_map(egbase.world());
+	map->recalc_whole_map(egbase);
 	parent.map_changed(EditorInteractive::MapWas::kReplaced);
 	die();
 }
@@ -148,7 +127,8 @@ void MainMenuNewMap::clicked_cancel() {
  */
 void MainMenuNewMap::fill_list() {
 	list_.clear();
-	const DescriptionMaintainer<Widelands::TerrainDescription>& terrains = eia().egbase().world().terrains();
+	const Widelands::DescriptionMaintainer<Widelands::TerrainDescription>& terrains =
+	   eia().egbase().world().terrains();
 
 	for (Widelands::DescriptionIndex index = 0; index < terrains.size(); ++index) {
 		const Widelands::TerrainDescription& terrain = terrains.get(index);

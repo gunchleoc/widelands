@@ -49,10 +49,16 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      snack = 6
+      { name = "snack", amount = 6 }
    },
    outputs = {
       "gold_ore"
+   },
+
+   indicate_workarea_overlaps = {
+      barbarians_goldmine = false,
+      barbarians_goldmine_deep = false,
+      barbarians_goldmine_deeper = false,
    },
 
    programs = {
@@ -60,15 +66,30 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start mining gold because ...
          descname = _"mining gold",
          actions = {
-            "sleep=42000",
             "return=skipped unless economy needs gold_ore",
             "consume=snack",
-            "animate=working 18000",
+            "sleep=40000",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "return=no_stats"
+         }
+      },
+      mine_produce = {
+         descname = _"mining gold",
+         actions = {
+            "animate=working 9500",
             "mine=gold 2 66 5 17",
-            "produce=gold_ore:2",
-            "animate=working 18000",
-            "mine=gold 2 66 5 17",
-            "produce=gold_ore:2"
+            "produce=gold_ore",
+         }
+      },
+      encyclopedia = {
+         -- just a dummy program to fix encyclopedia
+         descname = "encyclopedia",
+         actions = {
+            "consume=snack",
+            "produce=gold_ore:4",
          }
       },
    },

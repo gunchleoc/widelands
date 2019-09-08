@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2009, 2011 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -45,12 +45,17 @@ class DismantleSite;
 
 class DismantleSiteDescr : public BuildingDescr {
 public:
-	DismantleSiteDescr(const std::string& init_descname, const LuaTable& t, const EditorGameBase& egbase);
-	~DismantleSiteDescr() override {}
+	DismantleSiteDescr(const std::string& init_descname, const LuaTable& t, const Tribes& tribes);
+	~DismantleSiteDescr() override {
+	}
 
 	Building& create_object() const override;
 
+	FxId creation_fx() const;
+
 private:
+	const FxId creation_fx_;
+
 	DISALLOW_COPY_AND_ASSIGN(DismantleSiteDescr);
 };
 
@@ -62,28 +67,37 @@ class DismantleSite : public PartiallyFinishedBuilding {
 	MO_DESCR(DismantleSiteDescr)
 
 public:
-	DismantleSite(const DismantleSiteDescr & descr);
-	DismantleSite
-		(const DismantleSiteDescr & descr, EditorGameBase &,
-		 Coords const, Player &, bool, Building::FormerBuildings & former_buildings);
+	explicit DismantleSite(const DismantleSiteDescr& descr);
+	explicit DismantleSite(const DismantleSiteDescr& descr,
+	                       EditorGameBase&,
+	                       const Coords&,
+	                       Player*,
+	                       bool,
+	                       FormerBuildings& former_buildings);
 
 	bool burn_on_destroy() override;
-	void init   (EditorGameBase &) override;
+	bool init(EditorGameBase&) override;
 
-	bool get_building_work(Game &, Worker &, bool success) override;
+	bool get_building_work(Game&, Worker&, bool success) override;
 
 	static const Buildcost count_returned_wares(Building* building);
 
 protected:
 	void update_statistics_string(std::string*) override;
 
-	uint32_t build_step_time() const override {return DISMANTLESITE_STEP_TIME;}
+	void cleanup(EditorGameBase&) override;
 
-	void create_options_window(InteractiveGameBase&, UI::Window*& registry) override;
+	uint32_t build_step_time() const override {
+		return DISMANTLESITE_STEP_TIME;
+	}
 
-	void draw(const EditorGameBase &, RenderTarget &, const FCoords&, const Point&) override;
+	void draw(uint32_t gametime,
+	          TextToDraw draw_text,
+	          const Vector2f& point_on_dst,
+	          const Widelands::Coords& coords,
+	          float scale,
+	          RenderTarget* dst) override;
 };
-
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_TRIBES_DISMANTLESITE_H

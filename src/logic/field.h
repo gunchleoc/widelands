@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2011 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
 #include <cassert>
 #include <limits>
 
-#include "logic/constants.h"
+#include "graphic/playercolor.h"
 #include "logic/nodecaps.h"
 #include "logic/roadtype.h"
 #include "logic/widelands.h"
@@ -61,13 +61,13 @@ struct Field {
 	friend struct BaseImmovable;
 
 	enum BuildhelpIndex {
-		Buildhelp_Flag   = 0,
-		Buildhelp_Small  = 1,
+		Buildhelp_Flag = 0,
+		Buildhelp_Small = 1,
 		Buildhelp_Medium = 2,
-		Buildhelp_Big    = 3,
-		Buildhelp_Mine   = 4,
-		Buildhelp_Port   = 5,
-		Buildhelp_None   = 6
+		Buildhelp_Big = 3,
+		Buildhelp_Mine = 4,
+		Buildhelp_Port = 5,
+		Buildhelp_None = 6
 	};
 
 	using Height = uint8_t;
@@ -77,55 +77,88 @@ struct Field {
 		DescriptionIndex d, r;
 	};
 	static_assert(sizeof(Terrains) == 2, "assert(sizeof(Terrains) == 2) failed.");
-	struct Resources        {DescriptionIndex  d : 4, r : 4;};
+	struct Resources {
+		DescriptionIndex d : 4, r : 4;
+	};
 	static_assert(sizeof(Resources) == 1, "assert(sizeof(Resources) == 1) failed.");
-	struct ResourceAmounts {ResourceAmount d : 4, r : 4;};
+	struct ResourceAmounts {
+		ResourceAmount d : 4, r : 4;
+	};
 	static_assert(sizeof(ResourceAmounts) == 1, "assert(sizeof(ResourceAmounts) == 1) failed.");
 
-	Height get_height() const {return height;}
-	NodeCaps nodecaps() const {return static_cast<NodeCaps>(caps);}
-	uint16_t get_caps()     const {return caps;}
+	Height get_height() const {
+		return height;
+	}
+	NodeCaps nodecaps() const {
+		return static_cast<NodeCaps>(caps);
+	}
+	NodeCaps maxcaps() const {
+		return static_cast<NodeCaps>(max_caps);
+	}
+	uint16_t get_caps() const {
+		return caps;
+	}
 
-	Terrains      get_terrains() const {return terrains;}
+	Terrains get_terrains() const {
+		return terrains;
+	}
 	// The terrain on the downward triangle
-	DescriptionIndex terrain_d   () const {return terrains.d;}
+	DescriptionIndex terrain_d() const {
+		return terrains.d;
+	}
 	// The terrain on the triangle to the right
-	DescriptionIndex terrain_r   () const {return terrains.r;}
-	void          set_terrains(const Terrains & i) {terrains = i;}
-	void set_terrain
-		(const TCoords<FCoords>::TriangleIndex& t, DescriptionIndex const i)
+	DescriptionIndex terrain_r() const {
+		return terrains.r;
+	}
+	void set_terrains(const Terrains& i) {
+		terrains = i;
+	}
+	void set_terrain(const TriangleIndex& t, DescriptionIndex const i)
 
 	{
-		if (t == TCoords<FCoords>::D) set_terrain_d(i);
-		else set_terrain_r(i);
+		if (t == TriangleIndex::D)
+			set_terrain_d(i);
+		else
+			set_terrain_r(i);
 	}
-	void set_terrain_d(DescriptionIndex const i) {terrains.d = i;}
-	void set_terrain_r(DescriptionIndex const i) {terrains.r = i;}
+	void set_terrain_d(DescriptionIndex const i) {
+		terrains.d = i;
+	}
+	void set_terrain_r(DescriptionIndex const i) {
+		terrains.r = i;
+	}
 
-	Bob * get_first_bob() const {return bobs;}
-	const BaseImmovable * get_immovable() const {return immovable;}
-	BaseImmovable * get_immovable() {return immovable;}
+	Bob* get_first_bob() const {
+		return bobs;
+	}
+	const BaseImmovable* get_immovable() const {
+		return immovable;
+	}
+	BaseImmovable* get_immovable() {
+		return immovable;
+	}
 
-	void set_brightness
-		(int32_t l, int32_t r, int32_t tl, int32_t tr, int32_t bl, int32_t br);
-	int8_t get_brightness() const {return brightness;}
+	void set_brightness(int32_t l, int32_t r, int32_t tl, int32_t tr, int32_t bl, int32_t br);
+	int8_t get_brightness() const {
+		return brightness;
+	}
 
 	/**
 	 * Does not change the border bit of this or neighbouring fields. That must
 	 * be done separately.
 	 */
 	void set_owned_by(const PlayerNumber n) {
-		assert(n <= MAX_PLAYERS);
-		owner_info_and_selections =
-			n | (owner_info_and_selections & ~Player_Number_Bitmask);
+		assert(n <= kMaxPlayers);
+		owner_info_and_selections = n | (owner_info_and_selections & ~Player_Number_Bitmask);
 	}
 
 	PlayerNumber get_owned_by() const {
-		assert
-			((owner_info_and_selections & Player_Number_Bitmask) <= MAX_PLAYERS);
+		assert((owner_info_and_selections & Player_Number_Bitmask) <= kMaxPlayers);
 		return owner_info_and_selections & Player_Number_Bitmask;
 	}
-	bool is_border() const {return owner_info_and_selections & Border_Bitmask;}
+	bool is_border() const {
+		return owner_info_and_selections & Border_Bitmask;
+	}
 
 	///
 	/// Returns true when the node is owned by player_number and is not a border
@@ -136,16 +169,17 @@ struct Field {
 	/// behaviour is undefined.
 	bool is_interior(const PlayerNumber player_number) const {
 		assert(0 < player_number);
-		assert    (player_number <= Player_Number_Bitmask);
+		assert(player_number <= Player_Number_Bitmask);
 		return player_number == (owner_info_and_selections & Owner_Info_Bitmask);
 	}
 
 	void set_border(const bool b) {
-		owner_info_and_selections =
-			(owner_info_and_selections & ~Border_Bitmask) | (b << Border_Bit);
+		owner_info_and_selections = (owner_info_and_selections & ~Border_Bitmask) | (b << Border_Bit);
 	}
 
-	int32_t get_roads() const {return roads;}
+	int32_t get_roads() const {
+		return roads;
+	}
 	int32_t get_road(int32_t const dir) const {
 		return (roads >> dir) & RoadType::kMask;
 	}
@@ -156,19 +190,23 @@ struct Field {
 
 	// Resources can be set through Map::set_resources()
 	// TODO(unknown): This should return DescriptionIndex
-	DescriptionIndex get_resources() const {return resources;}
-	ResourceAmount get_resources_amount() const {return res_amount;}
+	DescriptionIndex get_resources() const {
+		return resources;
+	}
+	ResourceAmount get_resources_amount() const {
+		return res_amount;
+	}
 	// TODO(unknown): This should return uint8_t
-	ResourceAmount get_initial_res_amount() const {return initial_res_amount;}
+	ResourceAmount get_initial_res_amount() const {
+		return initial_res_amount;
+	}
 
 	/// \note you must reset this field's + neighbor's brightness when you
 	/// change the height. Map::change_height does this. This function is not
 	/// private, because the loader will use them directly But realize, most of
 	/// the times you will need Map::set_field_height().
 	void set_height(Height const h) {
-		height =
-			static_cast<int8_t>(h) < 0 ? 0 :
-			MAX_FIELD_HEIGHT       < h ? MAX_FIELD_HEIGHT : h;
+		height = static_cast<int8_t>(h) < 0 ? 0 : MAX_FIELD_HEIGHT < h ? MAX_FIELD_HEIGHT : h;
 	}
 
 private:
@@ -189,42 +227,41 @@ private:
 	 * The low bits are the player number of the owner.
 	 */
 	using OwnerInfoAndSelectionsType = PlayerNumber;
-	static const uint8_t Border_Bit =
-		std::numeric_limits<OwnerInfoAndSelectionsType>::digits - 1;
+	static const uint8_t Border_Bit = std::numeric_limits<OwnerInfoAndSelectionsType>::digits - 1;
 	static const OwnerInfoAndSelectionsType Border_Bitmask = 1 << Border_Bit;
-	static const OwnerInfoAndSelectionsType Player_Number_Bitmask =
-		Border_Bitmask - 1;
+	static const OwnerInfoAndSelectionsType Player_Number_Bitmask = Border_Bitmask - 1;
 	static const OwnerInfoAndSelectionsType Owner_Info_Bitmask =
-		Player_Number_Bitmask + Border_Bitmask;
-	static_assert(MAX_PLAYERS <= Player_Number_Bitmask, "Bitmask is too big.");
+	   Player_Number_Bitmask + Border_Bitmask;
+	static_assert(kMaxPlayers <= Player_Number_Bitmask, "Bitmask is too big.");
 
-	// Data Members
+	// Data Members. Initialize everything to make cppcheck happy.
 	/** linked list, \sa Bob::linknext_ */
-	Bob           * bobs;
-	BaseImmovable * immovable;
+	Bob* bobs = nullptr;
+	BaseImmovable* immovable = nullptr;
 
-	uint8_t caps                    : 7;
-	uint8_t roads                   : 6;
+	uint8_t caps = 0U;
+	uint8_t max_caps = 0U;
+	uint8_t roads = 0U;
 
-	Height height;
-	int8_t brightness;
+	Height height = 0U;
+	int8_t brightness = 0;
 
-	OwnerInfoAndSelectionsType owner_info_and_selections;
+	OwnerInfoAndSelectionsType owner_info_and_selections = Widelands::neutral();
 
-	DescriptionIndex resources; ///< Resource type on this field, if any
-	ResourceAmount initial_res_amount; ///< Initial amount of resources
-	ResourceAmount res_amount; ///< Current amount of resources
+	DescriptionIndex resources = INVALID_INDEX;  ///< Resource type on this field, if any
+	ResourceAmount initial_res_amount = 0U;      ///< Initial amount of resources
+	ResourceAmount res_amount = 0U;              ///< Current amount of resources
 
-	Terrains terrains;
+	Terrains terrains = Terrains{INVALID_INDEX, INVALID_INDEX};
 };
 #pragma pack(pop)
 
 // Check that Field is tightly packed.
 #ifndef WIN32
-static_assert(sizeof(Field) == sizeof(void *) * 2 + 10, "Field is not tightly packed.");
+static_assert(sizeof(Field) == sizeof(void*) * 2 + 11, "Field is not tightly packed.");
 #else
-static_assert(sizeof(Field) <= sizeof(void *) * 2 + 11, "Field is not tightly packed.");
+static_assert(sizeof(Field) <= sizeof(void*) * 2 + 12, "Field is not tightly packed.");
 #endif
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_FIELD_H

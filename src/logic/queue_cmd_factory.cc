@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2008-2010, 2015 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,19 +30,17 @@
 
 namespace Widelands {
 
-GameLogicCommand & QueueCmdFactory::create_correct_queue_command
-	(QueueCommandTypes const id)
-{
+GameLogicCommand& QueueCmdFactory::create_correct_queue_command(QueueCommandTypes const id) {
 	switch (id) {
 	case QueueCommandTypes::kBuild:
 		return *new CmdBuild();
-	case QueueCommandTypes::kFlag:
+	case QueueCommandTypes::kBuildFlag:
 		return *new CmdBuildFlag();
 	case QueueCommandTypes::kBuildRoad:
 		return *new CmdBuildRoad();
 	case QueueCommandTypes::kFlagAction:
 		return *new CmdFlagAction();
-	case QueueCommandTypes::kStopBuilding:
+	case QueueCommandTypes::kStartStopBuilding:
 		return *new CmdStartStopBuilding();
 	case QueueCommandTypes::kEnhanceBuilding:
 		return *new CmdEnhanceBuilding();
@@ -66,8 +64,8 @@ GameLogicCommand & QueueCmdFactory::create_correct_queue_command
 		return *new CmdSetWorkerTargetQuantity();
 	case QueueCommandTypes::kResetWorkerTargetQuantity:
 		return *new CmdResetWorkerTargetQuantity();
-	case QueueCommandTypes::kSetWareMaxFill:
-		return *new CmdSetWareMaxFill();
+	case QueueCommandTypes::kSetInputMaxFill:
+		return *new CmdSetInputMaxFill();
 	case QueueCommandTypes::kMessageSetStatusRead:
 		return *new CmdMessageSetStatusRead();
 	case QueueCommandTypes::kMessageSetStatusArchived:
@@ -80,17 +78,19 @@ GameLogicCommand & QueueCmdFactory::create_correct_queue_command
 		return *new CmdEvictWorker();
 	case QueueCommandTypes::kMilitarysiteSetSoldierPreference:
 		return *new CmdMilitarySiteSetSoldierPreference();
-	case QueueCommandTypes::kSinkShip:
+	case QueueCommandTypes::kProposeTrade:
+		return *new CmdProposeTrade();
+	case QueueCommandTypes::kShipSink:
 		return *new CmdShipSink();
 	case QueueCommandTypes::kShipCancelExpedition:
 		return *new CmdShipCancelExpedition();
-	case QueueCommandTypes::kPortStartExpedition:
+	case QueueCommandTypes::kStartOrCancelExpedition:
 		return *new CmdStartOrCancelExpedition();
 	case QueueCommandTypes::kShipConstructPort:
 		return *new CmdShipConstructPort();
-	case QueueCommandTypes::kShipScout:
+	case QueueCommandTypes::kShipScoutDirection:
 		return *new CmdShipScoutDirection();
-	case QueueCommandTypes::kShipExplore:
+	case QueueCommandTypes::kShipExploreIsland:
 		return *new CmdShipExploreIsland();
 	case QueueCommandTypes::kDestroyMapObject:
 		return *new CmdDestroyMapObject();
@@ -102,19 +102,18 @@ GameLogicCommand & QueueCmdFactory::create_correct_queue_command
 		return *new CmdLuaScript();
 	case QueueCommandTypes::kLuaCoroutine:
 		return *new CmdLuaCoroutine();
-	case QueueCommandTypes::kCalculateStatistics :
+	case QueueCommandTypes::kCalculateStatistics:
 		return *new CmdCalculateStatistics();
 	case QueueCommandTypes::kCallEconomyBalance:
 		return *new CmdCallEconomyBalance();
-	case QueueCommandTypes::kDeleteMessage: // Not a logic command
+	case QueueCommandTypes::kDeleteMessage:  // Not a logic command
 	case QueueCommandTypes::kNetCheckSync:
 	case QueueCommandTypes::kReplaySyncWrite:
 	case QueueCommandTypes::kReplaySyncRead:
 	case QueueCommandTypes::kReplayEnd:
 	case QueueCommandTypes::kNone:
-		throw wexception("Unknown Queue_Cmd_Id in file: %u", id);
+		throw wexception("Unknown Queue_Cmd_Id in file: %u", static_cast<unsigned int>(id));
 	}
 	NEVER_HERE();
 }
-
-}
+}  // namespace Widelands

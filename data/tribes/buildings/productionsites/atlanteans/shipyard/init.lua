@@ -45,7 +45,7 @@ tribes:new_productionsite_type {
    aihints = {
       needs_water = true,
       shipyard = true,
-      prohibited_till = 1500
+      prohibited_till = 1050
    },
 
    working_positions = {
@@ -53,9 +53,13 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      planks = 10,
-      log = 2,
-      spidercloth = 4
+      { name = "log", amount = 2 },
+      { name = "planks", amount = 10 },
+      { name = "spidercloth", amount = 4 }
+   },
+
+   indicate_workarea_overlaps = {
+      atlanteans_shipyard = false,
    },
 
    programs = {
@@ -63,19 +67,24 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
          descname = _"working",
          actions = {
-            "sleep=20000",
-            "call=ship",
-            "return=skipped"
+            "call=ship on failure fail",
+            "call=ship_preparation",
+            "return=no_stats"
          }
       },
       ship = {
          -- TRANSLATORS: Completed/Skipped/Did not start constructing a ship because ...
          descname = _"constructing a ship",
          actions = {
-            "check_map=seafaring",
+            "checkmap=seafaring",
             "construct=atlanteans_shipconstruction buildship 6",
+            "sleep=20000",
+         }
+      },
+      ship_preparation = {
+         descname = _"working",
+         actions = {
             "animate=working 35000",
-            "return=completed"
          }
       },
    },

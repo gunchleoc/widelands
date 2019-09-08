@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2016 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 #include "economy/flag.h"
 #include "game_io/game_loader.h"
 #include "logic/cmd_queue.h"
-#include "logic/constants.h"
 #include "logic/map_objects/immovable.h"
 #include "logic/map_objects/tribes/building.h"
 #include "logic/map_objects/tribes/constructionsite.h"
@@ -40,18 +39,16 @@
 #include "logic/map_objects/tribes/tribe_descr.h"
 #include "logic/message_queue.h"
 #include "logic/player.h"
-#include "profile/profile.h"
 #include "ui_basic/unique_window.h"
 #include "wui/building_statistics_menu.h"
 #include "wui/debugconsole.h"
 #include "wui/fieldaction.h"
 #include "wui/game_chat_menu.h"
-#include "wui/game_main_menu.h"
 #include "wui/game_main_menu_save_game.h"
 #include "wui/game_message_menu.h"
 #include "wui/game_objectives_menu.h"
-#include "wui/game_options_menu.h"
 #include "wui/general_statistics_menu.h"
+#include "wui/seafaring_statistics_menu.h"
 #include "wui/stock_menu.h"
 #include "wui/tribal_encyclopedia.h"
 #include "wui/ware_statistics_menu.h"
@@ -59,139 +56,275 @@
 using Widelands::Building;
 using Widelands::Map;
 
-InteractivePlayer::InteractivePlayer
-	(Widelands::Game        &       g,
-	 Section                &       global_s,
-	 Widelands::PlayerNumber const plyn,
-	 bool                     const multiplayer)
-	:
-	InteractiveGameBase (g, global_s, NONE, multiplayer, multiplayer),
-	auto_roadbuild_mode_(global_s.get_bool("auto_roadbuild_mode", true)),
-	flag_to_connect_(Widelands::Coords::null()),
+namespace {
 
-// Chat is different, as chat_provider_ needs to be checked when toggling
-// Minimap is different as it warps and stuff
-
-#define INIT_BTN_this(picture, name, tooltip)                       \
- TOOLBAR_BUTTON_COMMON_PARAMETERS(name),                                      \
- g_gr->images().get("images/" picture ".png"),                      \
- tooltip                                                                      \
-
-
-#define INIT_BTN(picture, name, tooltip)                            \
- TOOLBAR_BUTTON_COMMON_PARAMETERS(name),                                      \
- g_gr->images().get("images/" picture ".png"),                      \
- tooltip                                                                      \
-
-
-toggle_chat_
-	(INIT_BTN_this
-	 ("wui/menus/menu_chat", "chat", _("Chat"))),
-toggle_options_menu_
-	(INIT_BTN
-	 ("wui/menus/menu_options_menu", "options_menu", _("Main Menu"))),
-toggle_statistics_menu_
-	(INIT_BTN
-	 ("wui/menus/menu_toggle_menu", "statistics_menu", _("Statistics"))),
-toggle_objectives_
-	(INIT_BTN
-	 ("wui/menus/menu_objectives", "objectives", _("Objectives"))),
-toggle_minimap_
-	(INIT_BTN_this
-	 ("wui/menus/menu_toggle_minimap", "minimap", _("Minimap"))),
-toggle_message_menu_
-	(INIT_BTN
-	 ("wui/menus/menu_toggle_oldmessage_menu", "messages", _("Messages"))),
-toggle_help_
-	(INIT_BTN
-	 ("ui_basic/menu_help", "help", _("Tribal Encyclopedia")))
-
-{
-	toggle_chat_.sigclicked.connect
-		(boost::bind(&InteractivePlayer::toggle_chat, this));
-	toggle_options_menu_.sigclicked.connect
-		(boost::bind(&UI::UniqueWindow::Registry::toggle, boost::ref(options_)));
-	toggle_statistics_menu_.sigclicked.connect
-		(boost::bind(&UI::UniqueWindow::Registry::toggle, boost::ref(statisticsmenu_)));
-	toggle_objectives_.sigclicked.connect
-		(boost::bind(&UI::UniqueWindow::Registry::toggle, boost::ref(objectives_)));
-	toggle_minimap_.sigclicked.connect
-		(boost::bind(&InteractivePlayer::toggle_minimap, this));
-	toggle_message_menu_.sigclicked.connect
-		(boost::bind(&UI::UniqueWindow::Registry::toggle, boost::ref(message_menu_)));
-	toggle_help_.sigclicked.connect
-		(boost::bind(&UI::UniqueWindow::Registry::toggle, boost::ref(encyclopedia_)));
-
-	// TODO(unknown): instead of making unneeded buttons invisible after generation,
-	// they should not at all be generated. -> implement more dynamic toolbar UI
-	toolbar_.add(&toggle_options_menu_,    UI::Align::kLeft);
-	toolbar_.add(&toggle_statistics_menu_, UI::Align::kLeft);
-	toolbar_.add(&toggle_minimap_,         UI::Align::kLeft);
-	toolbar_.add(&toggle_buildhelp_,       UI::Align::kLeft);
-	if (multiplayer) {
-		toolbar_.add(&toggle_chat_,            UI::Align::kLeft);
-		toggle_chat_.set_visible(false);
-		toggle_chat_.set_enabled(false);
+// Returns the brightness value in [0, 1.] for 'fcoords' at 'gametime' for
+// 'pf'. See 'field_brightness' in fields_to_draw.cc for scale of values.
+float adjusted_field_brightness(const Widelands::FCoords& fcoords,
+                                const uint32_t gametime,
+                                const Widelands::Player::Field& pf) {
+	if (pf.vision == 0) {
+		return 0.;
 	}
 
-	toolbar_.add(&toggle_objectives_,      UI::Align::kLeft);
-	toolbar_.add(&toggle_message_menu_,    UI::Align::kLeft);
-	toolbar_.add(&toggle_help_,            UI::Align::kLeft);
+	uint32_t brightness = 144 + fcoords.field->get_brightness();
+	brightness = std::min<uint32_t>(255, (brightness * 255) / 160);
+
+	if (pf.vision == 1) {
+		static const uint32_t kDecayTimeInMs = 20000;
+		const Widelands::Duration time_ago = gametime - pf.time_node_last_unseen;
+		if (time_ago < kDecayTimeInMs) {
+			brightness = (brightness * (2 * kDecayTimeInMs - time_ago)) / (2 * kDecayTimeInMs);
+		} else {
+			brightness = brightness / 2;
+		}
+	}
+	return brightness / 255.;
+}
+
+// Remove statistics from the text to draw if the player does not match the map object's owner
+TextToDraw filter_text_to_draw(TextToDraw text_to_draw,
+                               const Widelands::MapObject* object,
+                               const Widelands::Player& player) {
+	TextToDraw result = text_to_draw;
+	const Widelands::Player* owner = object->get_owner();
+	if (owner != nullptr && !player.see_all() && player.is_hostile(*owner)) {
+		result = removeFromTextToDraw(result, TextToDraw::kStatistics);
+	}
+	return result;
+}
+
+void draw_immovable_for_visible_field(const Widelands::EditorGameBase& egbase,
+                                      const FieldsToDraw::Field& field,
+                                      const float scale,
+                                      const TextToDraw text_to_draw,
+                                      const Widelands::Player& player,
+                                      RenderTarget* dst) {
+	Widelands::BaseImmovable* const imm = field.fcoords.field->get_immovable();
+	if (imm != nullptr && imm->get_positions(egbase).front() == field.fcoords) {
+		imm->draw(egbase.get_gametime(), filter_text_to_draw(text_to_draw, imm, player),
+		          field.rendertarget_pixel, field.fcoords, scale, dst);
+	}
+}
+
+void draw_bobs_for_visible_field(const Widelands::EditorGameBase& egbase,
+                                 const FieldsToDraw::Field& field,
+                                 const float scale,
+                                 const TextToDraw text_to_draw,
+                                 const Widelands::Player& player,
+                                 RenderTarget* dst) {
+	for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
+	     bob = bob->get_next_bob()) {
+		bob->draw(egbase, filter_text_to_draw(text_to_draw, bob, player), field.rendertarget_pixel,
+		          field.fcoords, scale, dst);
+	}
+}
+
+void draw_immovable_for_formerly_visible_field(const FieldsToDraw::Field& field,
+                                               const Widelands::Player::Field& player_field,
+                                               const float scale,
+                                               RenderTarget* dst) {
+	if (player_field.map_object_descr == nullptr) {
+		return;
+	}
+
+	if (player_field.constructionsite.becomes) {
+		assert(field.owner != nullptr);
+		player_field.constructionsite.draw(
+		   field.rendertarget_pixel, field.fcoords, scale, field.owner->get_playercolor(), dst);
+
+	} else if (upcast(const Widelands::BuildingDescr, building, player_field.map_object_descr)) {
+		assert(field.owner != nullptr);
+		// this is a building therefore we either draw unoccupied or idle animation
+		dst->blit_animation(field.rendertarget_pixel, field.fcoords, scale,
+		                    building->get_unoccupied_animation(), 0, &field.owner->get_playercolor());
+	} else if (player_field.map_object_descr->type() == Widelands::MapObjectType::FLAG) {
+		assert(field.owner != nullptr);
+		dst->blit_animation(field.rendertarget_pixel, field.fcoords, scale,
+		                    field.owner->tribe().flag_animation(), 0,
+		                    &field.owner->get_playercolor());
+	} else if (const uint32_t pic = player_field.map_object_descr->main_animation()) {
+		dst->blit_animation(field.rendertarget_pixel, field.fcoords, scale, pic, 0,
+		                    (field.owner == nullptr) ? nullptr : &field.owner->get_playercolor());
+	}
+}
+
+}  // namespace
+
+InteractivePlayer::InteractivePlayer(Widelands::Game& g,
+                                     Section& global_s,
+                                     Widelands::PlayerNumber const plyn,
+                                     bool const multiplayer)
+   : InteractiveGameBase(g, global_s, NONE, multiplayer),
+     auto_roadbuild_mode_(global_s.get_bool("auto_roadbuild_mode", true)),
+     flag_to_connect_(Widelands::Coords::null()),
+     statisticsmenu_(toolbar(),
+                     "dropdown_menu_statistics",
+                     0,
+                     0,
+                     34U,
+                     10,
+                     34U,
+                     /** TRANSLATORS: Title for the statistics menu button in the game */
+                     _("Statistics"),
+                     UI::DropdownType::kPictorialMenu,
+                     UI::PanelStyle::kWui,
+                     UI::ButtonStyle::kWuiPrimary),
+     grid_marker_pic_(g_gr->images().get("images/wui/overlays/grid_marker.png")) {
+	add_main_menu();
+
+	set_display_flag(InteractiveBase::dfShowWorkareaOverlap, true);  // enable by default
+
+	toolbar()->add_space(15);
+
+	add_mapview_menu(MiniMapType::kStaticViewWindow);
+	add_showhide_menu();
+	add_gamespeed_menu();
+
+	toolbar()->add_space(15);
+	if (multiplayer) {
+		toggle_chat_ = add_toolbar_button("wui/menus/chat", "chat", _("Chat"), &chat_, true);
+		chat_.open_window = [this] {
+			if (chat_provider_) {
+				GameChatMenu::create_chat_console(this, chat_, *chat_provider_);
+			}
+		};
+		toolbar()->add_space(15);
+	}
+
+	add_statistics_menu();
+
+	add_toolbar_button("wui/menus/objectives", "objectives", _("Objectives"), &objectives_, true);
+	objectives_.open_window = [this] { new GameObjectivesMenu(this, objectives_); };
+
+	toggle_message_menu_ =
+	   add_toolbar_button("wui/menus/message_old", "messages", _("Messages"), &message_menu_, true);
+	message_menu_.open_window = [this] { new GameMessageMenu(*this, message_menu_); };
+
+	toolbar()->add_space(15);
+
+	add_toolbar_button("ui_basic/menu_help", "help", _("Help"), &encyclopedia_, true);
+	encyclopedia_.open_window = [this] {
+		new TribalEncyclopedia(*this, encyclopedia_, &game().lua());
+	};
 
 	set_player_number(plyn);
-	fieldclicked.connect(boost::bind(&InteractivePlayer::node_action, this));
+	map_view()->field_clicked.connect([this](const Widelands::NodeAndTriangle<>& node_and_triangle) {
+		node_action(node_and_triangle);
+	});
 
-	adjust_toolbar_position();
+	finalize_toolbar();
 
-#define INIT_BTN_HOOKS(registry, btn)                                        \
- registry.on_create = std::bind(&UI::Button::set_perm_pressed, &btn, true);  \
- registry.on_delete = std::bind(&UI::Button::set_perm_pressed, &btn, false); \
- if (registry.window) btn.set_perm_pressed(true);                            \
-
-	INIT_BTN_HOOKS(chat_, toggle_chat_)
-	INIT_BTN_HOOKS(options_, toggle_options_menu_)
-	INIT_BTN_HOOKS(statisticsmenu_, toggle_statistics_menu_)
-	INIT_BTN_HOOKS(minimap_registry(), toggle_minimap_)
-	INIT_BTN_HOOKS(objectives_, toggle_objectives_)
-	INIT_BTN_HOOKS(message_menu_, toggle_message_menu_)
-	INIT_BTN_HOOKS(encyclopedia_, toggle_help_)
-
-	encyclopedia_.open_window = [this] {new TribalEncyclopedia(*this, encyclopedia_, &game().lua());};
-	options_.open_window = [this] {new GameOptionsMenu(*this, options_, main_windows_);};
-	statisticsmenu_.open_window = [this] {
-		new GameMainMenu(*this, statisticsmenu_, main_windows_);
-	};
-	objectives_.open_window = [this] {new GameObjectivesMenu(this, objectives_);};
-	message_menu_.open_window = [this] {new GameMessageMenu(*this, message_menu_);};
-	main_windows_.stock.open_window = [this] {new StockMenu(*this, main_windows_.stock);};
-
-#ifndef NDEBUG //  only in debug builds
-	addCommand
-		("switchplayer",
-		 boost::bind(&InteractivePlayer::cmdSwitchPlayer, this, _1));
+#ifndef NDEBUG  //  only in debug builds
+	addCommand("switchplayer", boost::bind(&InteractivePlayer::cmdSwitchPlayer, this, _1));
 #endif
+
+	map_options_subscriber_ = Notifications::subscribe<NoteMapOptions>(
+	   [this](const NoteMapOptions&) { rebuild_statistics_menu(); });
 }
 
-InteractivePlayer::~InteractivePlayer() {
-#define DEINIT_BTN_HOOKS(registry, btn)                                                            \
-	registry.on_create = 0;                                                                         \
-	registry.on_delete = 0;
+void InteractivePlayer::add_statistics_menu() {
+	statisticsmenu_.set_image(g_gr->images().get("images/wui/menus/statistics.png"));
+	toolbar()->add(&statisticsmenu_);
 
-	DEINIT_BTN_HOOKS(chat_, toggle_chat_)
-	DEINIT_BTN_HOOKS(options_, toggle_options_menu_)
-	DEINIT_BTN_HOOKS(statisticsmenu_, toggle_statistics_menu_)
-	DEINIT_BTN_HOOKS(minimap_registry(), toggle_minimap_)
-	DEINIT_BTN_HOOKS(objectives_, toggle_objectives_)
-	DEINIT_BTN_HOOKS(message_menu_, toggle_message_menu_)
-	DEINIT_BTN_HOOKS(encyclopedia_, toggle_help_)
+	menu_windows_.stats_seafaring.open_window = [this] {
+		new SeafaringStatisticsMenu(*this, menu_windows_.stats_seafaring);
+	};
+
+	menu_windows_.stats_stock.open_window = [this] {
+		new StockMenu(*this, menu_windows_.stats_stock);
+	};
+
+	menu_windows_.stats_buildings.open_window = [this] {
+		new BuildingStatisticsMenu(*this, menu_windows_.stats_buildings);
+	};
+
+	menu_windows_.stats_wares.open_window = [this] {
+		new WareStatisticsMenu(*this, menu_windows_.stats_wares);
+	};
+
+	menu_windows_.stats_general.open_window = [this] {
+		new GeneralStatisticsMenu(*this, menu_windows_.stats_general);
+	};
+
+	// NoteMapOptions takes care of the rebuilding
+
+	statisticsmenu_.selected.connect(
+	   [this] { statistics_menu_selected(statisticsmenu_.get_selected()); });
 }
 
-void InteractivePlayer::think()
-{
+void InteractivePlayer::rebuild_statistics_menu() {
+	statisticsmenu_.clear();
+
+	if (egbase().map().allows_seafaring()) {
+		/** TRANSLATORS: An entry in the game's statistics menu */
+		statisticsmenu_.add(_("Seafaring"), StatisticsMenuEntry::kSeafaring,
+		                    g_gr->images().get("images/wui/menus/statistics_seafaring.png"), false,
+		                    "", "e");
+	}
+
+	/** TRANSLATORS: An entry in the game's statistics menu */
+	statisticsmenu_.add(_("Stock"), StatisticsMenuEntry::kStock,
+	                    g_gr->images().get("images/wui/menus/statistics_stock.png"), false, "", "i");
+
+	/** TRANSLATORS: An entry in the game's statistics menu */
+	statisticsmenu_.add(_("Buildings"), StatisticsMenuEntry::kBuildings,
+	                    g_gr->images().get("images/wui/menus/statistics_buildings.png"), false, "",
+	                    "b");
+
+	/** TRANSLATORS: An entry in the game's statistics menu */
+	statisticsmenu_.add(_("Wares"), StatisticsMenuEntry::kWare,
+	                    g_gr->images().get("images/wui/menus/statistics_wares.png"));
+
+	/** TRANSLATORS: An entry in the game's statistics menu */
+	statisticsmenu_.add(_("General"), StatisticsMenuEntry::kGeneral,
+	                    g_gr->images().get("images/wui/menus/statistics_general.png"));
+}
+
+void InteractivePlayer::statistics_menu_selected(StatisticsMenuEntry entry) {
+	switch (entry) {
+	case StatisticsMenuEntry::kGeneral: {
+		menu_windows_.stats_general.toggle();
+	} break;
+	case StatisticsMenuEntry::kWare: {
+		menu_windows_.stats_wares.toggle();
+	} break;
+	case StatisticsMenuEntry::kBuildings: {
+		menu_windows_.stats_buildings.toggle();
+	} break;
+	case StatisticsMenuEntry::kStock: {
+		menu_windows_.stats_stock.toggle();
+	} break;
+	case StatisticsMenuEntry::kSeafaring: {
+		if (egbase().map().allows_seafaring()) {
+			menu_windows_.stats_seafaring.toggle();
+		}
+	} break;
+	}
+	statisticsmenu_.toggle();
+}
+
+void InteractivePlayer::rebuild_showhide_menu() {
+	InteractiveGameBase::rebuild_showhide_menu();
+
+	showhidemenu_.add(
+	   get_display_flag(dfShowWorkareaOverlap) ?
+	      /** TRANSLATORS: An entry in the game's show/hide menu to toggle whether workarea overlaps
+	       * are highlighted */
+	      _("Hide Workarea Overlaps") :
+	      /** TRANSLATORS: An entry in the game's show/hide menu to toggle whether workarea overlaps
+	       * are highlighted */
+	      _("Show Workarea Overlaps"),
+	   ShowHideEntry::kWorkareaOverlap,
+	   g_gr->images().get("images/wui/menus/show_workarea_overlap.png"), false,
+	   _("Toggle whether overlapping workareas are indicated when placing a constructionsite"), "w");
+}
+
+void InteractivePlayer::think() {
 	InteractiveBase::think();
 
 	if (flag_to_connect_) {
-		Widelands::Field & field = egbase().map()[flag_to_connect_];
+		Widelands::Field& field = egbase().map()[flag_to_connect_];
 		if (upcast(Widelands::Flag const, flag, field.get_immovable())) {
 			if (!flag->has_road() && !is_building_road())
 				if (auto_roadbuild_mode_) {
@@ -201,87 +334,161 @@ void InteractivePlayer::think()
 					//  we are already in roadbuilding mode from the call below.
 					//  That is not allowed. Therefore we must delete the
 					//  fieldaction window before entering roadbuilding mode here.
-					delete fieldaction_.window;
-					fieldaction_.window = nullptr;
-					warp_mouse_to_node(flag_to_connect_);
-					set_sel_pos
-						(Widelands::NodeAndTriangle<>
-						 	(flag_to_connect_,
-						 	 Widelands::TCoords<>
-						 	 	(flag_to_connect_, Widelands::TCoords<>::D)));
+					fieldaction_.destroy();
+					map_view()->mouse_to_field(flag_to_connect_, MapView::Transition::Jump);
+					set_sel_pos(Widelands::NodeAndTriangle<>{
+					   flag_to_connect_,
+					   Widelands::TCoords<>(flag_to_connect_, Widelands::TriangleIndex::D)});
 					start_build_road(flag_to_connect_, field.get_owned_by());
 				}
 			flag_to_connect_ = Widelands::Coords::null();
 		}
 	}
 	if (is_multiplayer()) {
-		toggle_chat_.set_visible(chatenabled_);
-		toggle_chat_.set_enabled(chatenabled_);
+		toggle_chat_->set_visible(chat_provider_);
+		toggle_chat_->set_enabled(chat_provider_);
 	}
 	{
-		char const * msg_icon = "images/wui/menus/menu_toggle_oldmessage_menu.png";
+		char const* msg_icon = "images/wui/menus/message_old.png";
 		std::string msg_tooltip = _("Messages");
-		if
-			(uint32_t const nr_new_messages =
-				player().messages().nr_messages(Widelands::Message::Status::kNew))
-		{
-			msg_icon    = "images/wui/menus/menu_toggle_newmessage_menu.png";
+		if (uint32_t const nr_new_messages =
+		       player().messages().nr_messages(Widelands::Message::Status::kNew)) {
+			msg_icon = "images/wui/menus/message_new.png";
 			msg_tooltip =
 			   (boost::format(ngettext("%u new message", "%u new messages", nr_new_messages)) %
-			    nr_new_messages).str();
+			    nr_new_messages)
+			      .str();
 		}
-		toggle_message_menu_.set_pic(g_gr->images().get(msg_icon));
-		toggle_message_menu_.set_tooltip(msg_tooltip);
+		toggle_message_menu_->set_pic(g_gr->images().get(msg_icon));
+		toggle_message_menu_->set_tooltip(msg_tooltip);
 	}
 }
 
+void InteractivePlayer::draw(RenderTarget& dst) {
+	// Bail out if the game isn't actually loaded.
+	// This fixes a crash with displaying an error dialog during loading.
+	if (!game().is_loaded())
+		return;
 
-void InteractivePlayer::popup_message
-	(Widelands::MessageId const id, const Widelands::Message & message)
-{
+	draw_map_view(map_view(), &dst);
+}
+
+void InteractivePlayer::draw_map_view(MapView* given_map_view, RenderTarget* dst) {
+	// In-game, selection can never be on triangles or have a radius.
+	assert(get_sel_radius() == 0);
+	assert(!get_sel_triangles());
+
+	const Widelands::Player& plr = player();
+	const auto& gbase = egbase();
+	const Widelands::Map& map = gbase.map();
+	const uint32_t gametime = gbase.get_gametime();
+
+	Workareas workareas = get_workarea_overlays(map);
+	auto* fields_to_draw = given_map_view->draw_terrain(gbase, workareas, false, dst);
+	const auto& road_building = road_building_overlays();
+
+	const float scale = 1.f / given_map_view->view().zoom;
+
+	for (size_t idx = 0; idx < fields_to_draw->size(); ++idx) {
+		auto* f = fields_to_draw->mutable_field(idx);
+
+		const Widelands::Player::Field& player_field =
+		   plr.fields()[map.get_index(f->fcoords, map.get_width())];
+
+		// Adjust this field for visibility for this player.
+		if (!plr.see_all()) {
+			f->brightness = adjusted_field_brightness(f->fcoords, gametime, player_field);
+			f->roads = player_field.roads;
+			f->vision = player_field.vision;
+			if (player_field.vision == 1) {
+				f->owner = player_field.owner != 0 ? gbase.get_player(player_field.owner) : nullptr;
+				f->is_border = player_field.border;
+			}
+		}
+
+		// Add road building overlays if applicable.
+		if (f->vision > 0) {
+			const auto it = road_building.road_previews.find(f->fcoords);
+			if (it != road_building.road_previews.end()) {
+				f->roads |= it->second;
+			}
+
+			draw_border_markers(*f, scale, *fields_to_draw, dst);
+
+			// Render stuff that belongs to the node.
+			if (f->vision > 1) {
+				const auto text_to_draw = get_text_to_draw();
+				draw_immovable_for_visible_field(gbase, *f, scale, text_to_draw, plr, dst);
+				draw_bobs_for_visible_field(gbase, *f, scale, text_to_draw, plr, dst);
+			} else if (f->vision == 1) {
+				// We never show census or statistics for objects in the fog.
+				draw_immovable_for_formerly_visible_field(*f, player_field, scale, dst);
+			}
+		}
+
+		// Draw work area markers.
+		if (has_workarea_preview(f->fcoords, &map)) {
+			blit_field_overlay(dst, *f, grid_marker_pic_,
+			                   Vector2i(grid_marker_pic_->width() / 2, grid_marker_pic_->height() / 2),
+			                   scale);
+		}
+
+		if (f->vision > 0) {
+			// Draw build help.
+			bool show_port_space = has_expedition_port_space(f->fcoords);
+			if (show_port_space || buildhelp()) {
+				const auto* overlay = get_buildhelp_overlay(
+				   show_port_space ? f->fcoords.field->maxcaps() : plr.get_buildcaps(f->fcoords));
+				if (overlay != nullptr) {
+					blit_field_overlay(dst, *f, overlay->pic, overlay->hotspot, scale);
+				}
+			}
+
+			// Blit the selection marker.
+			if (f->fcoords == get_sel_pos().node) {
+				const Image* pic = get_sel_picture();
+				blit_field_overlay(dst, *f, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale);
+			}
+
+			// Draw road building slopes.
+			{
+				const auto it = road_building.steepness_indicators.find(f->fcoords);
+				if (it != road_building.steepness_indicators.end()) {
+					blit_field_overlay(dst, *f, it->second,
+					                   Vector2i(it->second->width() / 2, it->second->height() / 2),
+					                   scale);
+				}
+			}
+		}
+	}
+}
+
+void InteractivePlayer::popup_message(Widelands::MessageId const id,
+                                      const Widelands::Message& message) {
 	message_menu_.create();
-	dynamic_cast<GameMessageMenu&>(*message_menu_.window)
-	.show_new_message(id, message);
+	dynamic_cast<GameMessageMenu&>(*message_menu_.window).show_new_message(id, message);
 }
 
-
-//  Toolbar button callback functions.
-void InteractivePlayer::toggle_chat() {
-	if (chat_.window)
-		delete chat_.window;
-	else if (chat_provider_)
-		GameChatMenu::create_chat_console(this, chat_, *chat_provider_);
-}
-
-bool InteractivePlayer::can_see(Widelands::PlayerNumber const p) const
-{
+bool InteractivePlayer::can_see(Widelands::PlayerNumber const p) const {
 	return p == player_number() || player().see_all();
 }
-bool InteractivePlayer::can_act(Widelands::PlayerNumber const p) const
-{
+bool InteractivePlayer::can_act(Widelands::PlayerNumber const p) const {
 	return p == player_number();
 }
-Widelands::PlayerNumber InteractivePlayer::player_number() const
-{
+Widelands::PlayerNumber InteractivePlayer::player_number() const {
 	return player_number_;
 }
 
-int32_t InteractivePlayer::calculate_buildcaps(const Widelands::TCoords<Widelands::FCoords> c) {
-	assert(get_player());
-	return get_player()->get_buildcaps(c);
-}
-
-
 /// Player has clicked on the given node; bring up the context menu.
-void InteractivePlayer::node_action()
-{
-	const Map & map = egbase().map();
-	if (1 < player().vision(Map::get_index(get_sel_pos().node, map.get_width())))
-	{
+void InteractivePlayer::node_action(const Widelands::NodeAndTriangle<>& node_and_triangle) {
+	const Map& map = egbase().map();
+	if (1 < player().vision(Map::get_index(node_and_triangle.node, map.get_width()))) {
 		// Special case for buildings
-		if (upcast(Building, building, map.get_immovable(get_sel_pos().node)))
-			if (can_see(building->owner().player_number()))
-				return building->show_options(*this);
+		if (upcast(Building, building, map.get_immovable(node_and_triangle.node)))
+			if (can_see(building->owner().player_number())) {
+				show_building_window(node_and_triangle.node, false, false);
+				return;
+			}
 
 		if (!is_building_road()) {
 			if (try_show_ship_window())
@@ -305,9 +512,8 @@ void InteractivePlayer::node_action()
  * \li PageUp/PageDown: change game speed
  * \li Pause: pauses the game
  * \li Return: write chat message
-*/
-bool InteractivePlayer::handle_key(bool const down, SDL_Keysym const code)
-{
+ */
+bool InteractivePlayer::handle_key(bool const down, SDL_Keysym const code) {
 	if (down) {
 		switch (code.sym) {
 		case SDLK_SPACE:
@@ -315,11 +521,7 @@ bool InteractivePlayer::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_i:
-			main_windows_.stock.toggle();
-			return true;
-
-		case SDLK_m:
-			toggle_minimap();
+			menu_windows_.stats_stock.toggle();
 			return true;
 
 		case SDLK_n:
@@ -339,38 +541,52 @@ bool InteractivePlayer::handle_key(bool const down, SDL_Keysym const code)
 			return true;
 
 		case SDLK_b:
-			if (main_windows_.building_stats.window == nullptr) {
-				new BuildingStatisticsMenu(*this, main_windows_.building_stats);
+			if (menu_windows_.stats_buildings.window == nullptr) {
+				new BuildingStatisticsMenu(*this, menu_windows_.stats_buildings);
 			} else {
-				main_windows_.building_stats.toggle();
+				menu_windows_.stats_buildings.toggle();
+			}
+			return true;
+
+		case SDLK_e:
+			if (game().map().allows_seafaring()) {
+				if (menu_windows_.stats_seafaring.window == nullptr) {
+					new SeafaringStatisticsMenu(*this, menu_windows_.stats_seafaring);
+				} else {
+					menu_windows_.stats_seafaring.toggle();
+				}
 			}
 			return true;
 
 		case SDLK_s:
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL))
-				new GameMainMenuSaveGame(*this, main_windows_.savegame);
+				new GameMainMenuSaveGame(*this, menu_windows_.savegame);
 			else
-				set_display_flag
-					(dfShowStatistics, !get_display_flag(dfShowStatistics));
+				set_display_flag(dfShowStatistics, !get_display_flag(dfShowStatistics));
+			return true;
+
+		case SDLK_w:
+			set_display_flag(dfShowWorkareaOverlap, !get_display_flag(dfShowWorkareaOverlap));
 			return true;
 
 		case SDLK_KP_7:
 			if (code.mod & KMOD_NUM)
 				break;
-			/* no break */
+			FALLS_THROUGH;
 		case SDLK_HOME:
-			move_view_to(game().map().get_starting_pos(player_number_));
+			map_view()->scroll_to_field(
+			   game().map().get_starting_pos(player_number_), MapView::Transition::Smooth);
 			return true;
 
 		case SDLK_KP_ENTER:
 		case SDLK_RETURN:
-			if (!chat_provider_ | !chatenabled_ || !is_multiplayer())
-				break;
-
-			if (!chat_.window)
-				GameChatMenu::create_chat_console(this, chat_, *chat_provider_);
-
-			return true;
+			if (chat_provider_) {
+				if (!chat_.window) {
+					GameChatMenu::create_chat_console(this, chat_, *chat_provider_);
+				}
+				return dynamic_cast<GameChatMenu*>(chat_.window)->enter_chat_message();
+			}
+			break;
 		default:
 			break;
 		}
@@ -387,22 +603,41 @@ void InteractivePlayer::set_player_number(uint32_t const n) {
 	player_number_ = n;
 }
 
-
 /**
  * Cleanup any game-related data before loading a new game
  * while a game is currently playing.
  */
-void InteractivePlayer::cleanup_for_load() {}
+void InteractivePlayer::cleanup_for_load() {
+}
 
-void InteractivePlayer::cmdSwitchPlayer(const std::vector<std::string> & args)
-{
+void InteractivePlayer::postload() {
+	InteractiveGameBase::postload();
+
+	ToolbarImageset* imageset = player().tribe().toolbar_image_set();
+	if (imageset != nullptr) {
+		set_toolbar_imageset(*imageset);
+	}
+}
+
+bool InteractivePlayer::player_hears_field(const Widelands::Coords& coords) const {
+	const Widelands::Player& plr = player();
+	if (plr.see_all()) {
+		return true;
+	}
+	const Widelands::Map& map = egbase().map();
+	const Widelands::Player::Field& player_field =
+	   plr.fields()[map.get_index(coords, map.get_width())];
+	return (player_field.vision > 1);
+}
+
+void InteractivePlayer::cmdSwitchPlayer(const std::vector<std::string>& args) {
 	if (args.size() != 2) {
 		DebugConsole::write("Usage: switchplayer <nr>");
 		return;
 	}
 
 	int const n = atoi(args[1].c_str());
-	if (n < 1 || n > MAX_PLAYERS || !game().get_player(n)) {
+	if (n < 1 || n > kMaxPlayers || !game().get_player(n)) {
 		DebugConsole::write(str(boost::format("Player #%1% does not exist.") % n));
 		return;
 	}
@@ -411,7 +646,7 @@ void InteractivePlayer::cmdSwitchPlayer(const std::vector<std::string> & args)
 	   str(boost::format("Switching from #%1% to #%2%.") % static_cast<int>(player_number_) % n));
 	player_number_ = n;
 
-	if (UI::UniqueWindow* const building_statistics_window = main_windows_.building_stats.window) {
+	if (UI::UniqueWindow* const building_statistics_window = menu_windows_.stats_buildings.window) {
 		dynamic_cast<BuildingStatisticsMenu&>(*building_statistics_window).update();
 	}
 }

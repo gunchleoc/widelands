@@ -49,10 +49,16 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      snack = 6
+      { name = "snack", amount = 6 }
    },
    outputs = {
       "iron_ore"
+   },
+
+   indicate_workarea_overlaps = {
+      barbarians_ironmine = false,
+      barbarians_ironmine_deep = false,
+      barbarians_ironmine_deeper = false,
    },
 
    programs = {
@@ -60,15 +66,30 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start mining iron because ...
          descname = _"mining iron",
          actions = {
-            "sleep=43000",
             "return=skipped unless economy needs iron_ore",
             "consume=snack",
-            "animate=working 18000",
+            "sleep=40000",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "return=no_stats"
+         }
+      },
+      mine_produce = {
+         descname = _"mining iron",
+         actions = {
+            "animate=working 9500",
             "mine=iron 2 66 5 17",
             "produce=iron_ore",
-            "animate=working 18000",
-            "mine=iron 2 66 5 17",
-            "produce=iron_ore:1"
+         }
+      },
+      encyclopedia = {
+         -- just a dummy program to fix encyclopedia
+         descname = "encyclopedia",
+         actions = {
+            "consume=snack",
+            "produce=iron_ore:4",
          }
       },
    },

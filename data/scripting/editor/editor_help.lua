@@ -32,7 +32,7 @@ function get_trees()
          result[counter] = {
             name = immovable.name,
             title = immovable.species,
-            icon = immovable.representative_image,
+            icon = immovable.icon_name,
             script = "scripting/editor/tree_help.lua",
             script_parameters = {[1] = immovable.name}
          }
@@ -65,14 +65,21 @@ return {
                title = _"Controls",
                script = "scripting/editor/editor_controls.lua",
                script_parameters = {}
+            },
+            {
+               name = "tips",
+               title = _"Tips",
+               script = "scripting/editor/tips.lua",
+               script_parameters = {}
             }
+
          }
       },
       {
          name = "terrains",
          -- TRANSLATORS Tab title: terrain help
          title = _"Terrains",
-         icon = "images/wui/editor/editor_menu_tool_set_terrain.png",
+         icon = "images/wui/editor/tools/terrain.png",
          entries = get_terrains()
       },
       {

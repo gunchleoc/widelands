@@ -44,12 +44,16 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      atlanteans_bread = 10,
-      smoked_fish = 10,
-      smoked_meat = 6
+      { name = "smoked_fish", amount = 10 },
+      { name = "smoked_meat", amount = 6 },
+      { name = "atlanteans_bread", amount = 10 }
    },
    outputs = {
       "gold_ore"
+   },
+
+   indicate_workarea_overlaps = {
+      atlanteans_goldmine = false,
    },
 
    programs = {
@@ -57,18 +61,29 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start mining gold because ...
          descname = _"mining gold",
          actions = {
-            "sleep=45000",
             "return=skipped unless economy needs gold_ore",
             "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
-            "animate=working 20000",
+            "sleep=39000",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "return=no_stats"
+         }
+      },
+      mine_produce = {
+         descname = _"mining gold",
+         actions = {
+            "animate=working 22000",
             "mine=gold 4 100 5 2",
             "produce=gold_ore",
-            "animate=working 20000",
-            "mine=gold 4 100 5 2",
-            "produce=gold_ore",
-            "animate=working 20000",
-            "mine=gold 4 100 5 2",
-            "produce=gold_ore"
+         }
+      },
+      encyclopedia = {
+         -- just a dummy program to fix encyclopedia
+         descname = "encyclopedia",
+         actions = {
+            "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
+            "produce=gold_ore:3",
          }
       },
    },

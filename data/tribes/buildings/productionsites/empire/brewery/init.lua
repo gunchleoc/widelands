@@ -31,8 +31,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      forced_after = 900,
-      prohibited_till = 600,
+      prohibited_till = 790,
       very_weak_ai_limit = 1,
       weak_ai_limit = 2
    },
@@ -42,8 +41,8 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      water = 7,
-      wheat = 7
+      { name = "water", amount = 7 },
+      { name = "wheat", amount = 7 }
    },
    outputs = {
       "beer"
@@ -54,9 +53,10 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start brewing beer because ...
          descname = _"brewing beer",
          actions = {
-            "sleep=30000",
             "return=skipped unless economy needs beer",
             "consume=water wheat",
+            "sleep=30000",
+            "playsound=sound/empire/beerbubble 180",
             "animate=working 30000",
             "produce=beer"
          }

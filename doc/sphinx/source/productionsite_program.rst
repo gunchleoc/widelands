@@ -1,20 +1,97 @@
+.. _productionsite_programs:
+
 Productionsite Program Reference
 ================================
-Productionsites can have programs that will be executed by the game engine. Each productionsite must have a program named ``work``, which will be started automatically when the productionsite is created in the game, and then repeated until the productionsite is destroyed. Each program must be declared with ``program=<name>`` in the ``[global]`` section of the productionsite's definition. A program can call another program, which must have been declared earlier. A program is defined in the section that has the same name as the program (the order of program definitions does not matter). A program consists of a sequence of commands. A command is written as ``<type>=<parameters>``. The different command types and the parameters that they take are explained below.
+Productionsites can have programs that will be executed by the game engine. Each productionsite must have a program named ``work``, which will be started automatically when the productionsite is created in the game, and then repeated until the productionsite is destroyed.
+
+Programs are defined as Lua tables. Each program must be declared as a subtable in the productionsite's Lua table called ``programs`` and have a unique table key. The entries in a program's subtable are the translatable ``descname`` and the table of ``actions`` to execute, like this::
+
+   programs = {
+      work = {
+         -- TRANSLATORS: Completed/Skipped/Did not start working because ...
+         descname = _"working",
+         actions = {
+            <list of actions>
+         }
+      },
+   },
+
+The translations for ``descname`` can also be fetched by ``pgettext`` to disambiguate. We recommend that you do this whenever workers are referenced, or if your tribes have multiple wares with the same name::
+
+   programs = {
+      work = {
+         -- TRANSLATORS: Completed/Skipped/Did not start recruiting soldier because ...
+         descname = pgettext("atlanteans_building", "recruiting soldier"),
+         actions = {
+            <list of actions>
+         }
+      },
+   },
+
+A program can call another program, for example::
+
+   programs = {
+      work = {
+         -- TRANSLATORS: Completed/Skipped/Did not start working because ...
+         descname = _"working",
+         actions = {
+            "call=produce_ration",
+            "call=produce_snack",
+            "return=skipped"
+         }
+      },
+      produce_ration = {
+         -- TRANSLATORS: Completed/Skipped/Did not start preparing a ration because ...
+         descname = _"preparing a ration",
+         actions = {
+            <list of actions>
+         }
+      },
+      produce_snack = {
+         -- TRANSLATORS: Completed/Skipped/Did not start preparing a snack because ...
+         descname = _"preparing a snack",
+         actions = {
+            <list of actions>
+         }
+      },
+   },
+
+A program's actions consist of a sequence of commands. A command is written as ``<type>=<parameters>``::
+
+
+   produce_snack = {
+      -- TRANSLATORS: Completed/Skipped/Did not start preparing a snack because ...
+      descname = _"preparing a snack",
+      actions = {
+         "return=skipped unless economy needs snack",
+         "sleep=5000",
+         "consume=barbarians_bread fish,meat beer",
+         "playsound=sound/barbarians/taverns/inn 100",
+         "animate=working 22000",
+         "sleep=10000",
+         "produce=snack"
+      }
+   },
+
+
+The different command types and the parameters that they take are explained below.
+
+.. highlight:: default
 
 Command Types
 ^^^^^^^^^^^^^
 - `return`_
 - `call`_
-- `worker`_
+- `callworker`_
 - `sleep`_
 - `animate`_
 - `consume`_
 - `produce`_
 - `mine`_
-- `check_soldier`_
+- `checksoldier`_
+- `checkmap`_
 - `train`_
-- `play_sound`_
+- `playsound`_
 
 
 return
@@ -37,7 +114,7 @@ Parameter syntax::
     workers_condition ::= workers need_experience
     economy_needs     ::= needs ware_type
     need_experience   ::= need experience
-  
+
 Parameter semantics:
 
 ``return_value``
@@ -92,8 +169,8 @@ Parameter semantics:
 ``failure_handling_directive``
     If omitted, the value ``Ignore`` is used for ``failure_handling_method``.
 
-worker
-------
+callworker
+----------
 Calls a program of the productionsite's main worker.
 
 Parameter syntax::
@@ -186,19 +263,34 @@ For each group, the number of wares specified in count is produced. The produced
 
 mine
 ----
-Takes resources from the ground. This command type is subject to change.
+Takes resources from the ground. It takes as arguments first the resource
+name, after this the radius for searching for the resource around the building
+field. The next values is the percentage of starting resources that can be dug
+out before this mine is exhausted. The next value is the percentage that this
+building still produces something even if it is exhausted. And the last value
+is the percentage chance that a worker is gaining experience on failure - this
+is to guarantee that you can eventually extend a mine, even though it was
+exhausted for a while already.
 
-check_soldier
--------------
+checksoldier
+------------
 Returns failure unless there are a specified amount of soldiers with specified level of specified properties. This command type is subject to change.
+
+checkmap
+--------
+Checks the map for properties. At the moment, only 'seafaring' is available as parameter.
+
+Parameter syntax::
+
+  parameters ::= seafaring
 
 train
 -----
 Increases the level of a specified property of a soldier. No further documentation available.
 
-play_sound
-----------
-Plays a soundFX.
+playsound
+---------
+Plays a sound effect.
 
 Parameter syntax::
 
@@ -206,8 +298,8 @@ Parameter syntax::
 
 Parameter semantics:
 
-``soundFX``
-    The filename of a soundFX (relative to the productionsite's directory).
+``filepath``
+    The path/base_filename of a soundFX (relative to the data directory).
 ``priority``
     An integer. If omitted, 127 is used.
 

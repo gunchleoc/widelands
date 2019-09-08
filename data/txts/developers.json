@@ -1,24 +1,25 @@
 {
 	"developers":[
 		{
-			"heading": "Chieftain",
-			"image": "images/players/genstats_enable_plr_01.png",
+			"heading": "Chieftains",
+			"image": "images/players/genstats_player.png",
 			"entries":[
 				{
 					"members":[
-						"Holger Rapp (SirVer)"
+						"GunChleoc (Since 2016)",
+						"Holger Rapp (SirVer) (2001 – 2016)"
 					]
 				}
 			]
 		},
 		{
 			"heading": "Elders",
-			"image": "images/players/genstats_enable_plr_04.png",
+			"image": "images/players/genstats_player.png",
 			"entries":[
 				{
 					"subheading": "Graphics",
-					"members":[
-						"Chuck Wilder (chuckw)"
+					"translate":[
+						"vacant"
 					]
 				},
 				{
@@ -92,7 +93,7 @@
 						"Andreas Eriksson",
 						"Mark Scott",
 						"Teppo Mäenpää",
-						"Steven De Herdt",
+						"Steven De Herdt (stdh)",
 						"Charly Ghislain (cghislai)",
 						"Tino Miegel (TinoM)",
 						"Tibor Bamhor (tiborb95)",
@@ -106,7 +107,16 @@
 						"Paul Mehrer (meitis)",
 						"Miroslav Remák (MiroslavR)",
 						"Janosch Peters",
-						"Hasi50 (Klaus Halfmann)"
+						"Klaus Halfmann (Hasi50)",
+						"Philipp Klaus Krause (PkK)",
+						"Notabilis",
+						"Jukka Pakarinen",
+						"Evgeny Kapun",
+						"ypopezios",
+						"Toni Förster (stonerl)",
+						"Arty",
+						"Benedikt Straub (Nordfriese)",
+						"Lucki from Holarse.de"
 					]
 				}
 			]
@@ -141,14 +151,16 @@
 						"Chuck Wilder (chuckw)",
 						"Astuur",
 						"Gerrit Familiegrosskopf (kingcreole)",
-						"Florian Angermeier (fraang)"
+						"Florian Angermeier (fraang)",
+						"DragonAtma",
+						"Benedikt Straub (Nordfriese)"
 					]
 				}
 			]
 		},
 		{
 			"heading": "Musicians",
-			"image": "images/wui/overlays/workarea123.png",
+			"image": "images/wui/buildings/toggle_workarea.png",
 			"entries":[
 				{
 					"members":[
@@ -158,14 +170,16 @@
 						"Barry van Oudtshoorn (barryvan)",
 						"Jan Bruns (Solatis)",
 						"Nikola Whallon (Saturn)",
-						"Joshua O'Leary (Joshun)"
+						"Joshua O'Leary (Joshun)",
+						"Klaus Halfmann (Hasi50)",
+						"Stuart Marshall"
 					]
 				}
 			]
 		},
 		{
 			"heading": "Sound Effects",
-			"image": "images/wui/overlays/workarea123.png",
+			"image": "images/wui/buildings/toggle_workarea.png",
 			"entries":[
 				{
 					"members":[
@@ -173,7 +187,8 @@
 						"Peter Schwanemann (Nasenbaer)",
 						"Stephan",
 						"Adam Piggott (_aD)",
-						"Stanisław Gackowski (Soeb)"
+						"Stanisław Gackowski (Soeb)",
+						"Tada"
 					]
 				}
 			]
@@ -200,7 +215,10 @@
 						"Jenia",
 						"Robnick",
 						"wl-zocker",
-						"king of nowhere"
+						"king of nowhere",
+						"kaputtnik",
+						"Stephan Lutz (hessenfarmer)",
+						"Benedikt Straub (Nordfriese)"
 					]
 				}
 			]
@@ -210,7 +228,7 @@
 			"image": "images/ui_basic/ls_wlmap.png",
 			"entries":[
 				{
-					"subheading": "Barbarian",
+					"subheading": "Barbarians",
 					"members":[
 						"Bastian Rapp",
 						"Alexander Kahl (wolfpac)",
@@ -220,14 +238,21 @@
 				{
 					"subheading": "Empire",
 					"members":[
+						"Peter Schwanemann (Nasenbaer)",
+						"Stephan Lutz (hessenfarmer)"
+					]
+				},
+				{
+					"subheading": "Atlanteans",
+					"members":[
+						"Holger Rapp (SirVer)",
 						"Peter Schwanemann (Nasenbaer)"
 					]
 				},
 				{
-					"subheading": "Atlantean",
+					"subheading": "Frisians",
 					"members":[
-						"Holger Rapp (SirVer)",
-						"Peter Schwanemann (Nasenbaer)"
+						"Benedikt Straub (Nordfriese)"
 					]
 				}
 			]
@@ -251,7 +276,8 @@
 					"subheading": "Fedora Linux",
 					"members":[
 						"Karol Trzcionka",
-						"Jochen Wiedmann"
+						"Jochen Wiedmann",
+						"Hans de Goede"
 					]
 				},
 				{
@@ -267,12 +293,21 @@
 					]
 				},
 				{
+					"subheading": "Flatpak",
+					"members":[
+						"scx"
+					]
+				},
+				{
 					"subheading": "Mac OS X",
 					"members":[
+						"Holger Rapp (SirVer)",
 						"Philipp Engelhard",
 						"Pierre Salagnac (Tarou)",
 						"Wolf St. Kappesser",
-						"David Allwicher (aber)"
+						"David Allwicher (aber)",
+						"Toni Förster (stonerl)",
+						"Ken Cunningham"
 					]
 				},
 				{
@@ -302,7 +337,8 @@
 						"Holger Rapp (SirVer)",
 						"Stanislaw Gackowski (Soeb)",
 						"Markus Pfitzner (janus)",
-						"Tobi"
+						"Tobi",
+						"kaputtnik"
 					]
 				},
 				{
@@ -317,14 +353,15 @@
 						"Alexander Kahl (wolfpac)",
 						"Stanislaw Gackowski (Soeb)",
 						"Hanna Podewski (kristin)",
-						"king of nowhere"
+						"king of nowhere",
+						"GunChleoc"
 					]
 				}
 			]
 		},
 		{
 			"heading": "Former Elders",
-			"image": "images/players/genstats_enable_plr_04.png",
+			"image": "images/players/genstats_player.png",
 			"entries":[
 				{
 					"subheading": "Graphics",
@@ -364,6 +401,9 @@
 					"members":[
 						"Matt Howe (mdhowe)",
 						"Samuel Tilly (eldamar)",
+						"WorldSavior"
+					],
+					"translate":[
 						"and many, many more (thank you for everything you've done)"
 					]
 				}

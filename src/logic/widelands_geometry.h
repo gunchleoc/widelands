@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2008 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <tuple>
+#include <vector>
 
 #include <stdint.h>
 
@@ -30,13 +31,15 @@ namespace Widelands {
 using MapIndex = uint32_t;
 
 struct Extent {
-	Extent(uint16_t const W, uint16_t const H) : w(W), h(H) {}
+	Extent(uint16_t const W, uint16_t const H) : w(W), h(H) {
+	}
 	uint16_t w, h;
 };
 
 /**
  * Structure used to store map coordinates
  */
+// TODO(sirver): This should go away and be replaced by Vector2i16.
 struct Coords {
 	Coords();
 	Coords(int16_t nx, int16_t ny);
@@ -50,19 +53,16 @@ struct Coords {
 	/// Hash coordinates to use them as keys in a container
 	uint32_t hash() const;
 
-	bool operator== (const Coords& other) const;
-	bool operator!= (const Coords & other) const;
+	bool operator==(const Coords& other) const;
+	bool operator!=(const Coords& other) const;
+	bool operator<(const Coords& other) const {
+		return std::forward_as_tuple(y, x) < std::forward_as_tuple(other.y, other.x);
+	}
+
 	operator bool() const;
 
-	// Ordering functor for use with std:: containers.
-	struct OrderingFunctor {
-		bool operator()(const Coords & a, const Coords & b) const {
-			return std::forward_as_tuple(a.y, a.x) < std::forward_as_tuple(b.y, b.x);
-		}
-	};
-
 	// Move the coords to the 'new_origin'.
-	void reorigin(Coords new_origin, const Extent & extent);
+	void reorigin(Coords new_origin, const Extent& extent);
 
 	int16_t x;
 	int16_t y;
@@ -70,36 +70,33 @@ struct Coords {
 static_assert(sizeof(Coords) == 4, "assert(sizeof(Coords) == 4) failed.");
 
 template <typename _CoordsType = Coords, typename _RadiusType = uint16_t>
-struct Area : public _CoordsType
-{
+struct Area : public _CoordsType {
 	using CoordsType = _CoordsType;
 	using RadiusType = _RadiusType;
-	Area() {}
-	Area(const CoordsType center, const RadiusType Radius)
-		: CoordsType(center), radius(Radius)
-	{}
-
-	bool operator== (const Area& other) const {
-		return CoordsType::operator== (other) && radius == other.radius;
+	Area() {
 	}
-	bool operator!= (const Area& other) const {
-		return CoordsType::operator!= (other) ||  radius != other.radius;
+	Area(const CoordsType center, const RadiusType Radius) : CoordsType(center), radius(Radius) {
+	}
+
+	bool operator==(const Area& other) const {
+		return CoordsType::operator==(other) && radius == other.radius;
+	}
+	bool operator!=(const Area& other) const {
+		return CoordsType::operator!=(other) || radius != other.radius;
 	}
 
 	RadiusType radius;
 };
 
-template <typename AreaType = Area<> > struct HollowArea : public AreaType {
-	HollowArea
-		(const AreaType area, const typename AreaType::RadiusType Hole_Radius)
-		: AreaType(area), hole_radius(Hole_Radius)
-	{}
-
-	bool operator== (const HollowArea& other) const {
-		return
-			AreaType::operator== (other) && hole_radius == other.hole_radius;
+template <typename AreaType = Area<>> struct HollowArea : public AreaType {
+	HollowArea(const AreaType area, const typename AreaType::RadiusType Hole_Radius)
+	   : AreaType(area), hole_radius(Hole_Radius) {
 	}
-	bool operator!= (const HollowArea& other) const {
+
+	bool operator==(const HollowArea& other) const {
+		return AreaType::operator==(other) && hole_radius == other.hole_radius;
+	}
+	bool operator!=(const HollowArea& other) const {
 		return !(*this == other);
 	}
 
@@ -109,60 +106,41 @@ template <typename AreaType = Area<> > struct HollowArea : public AreaType {
 struct Field;
 
 struct FCoords : public Coords {
-	FCoords() : field(nullptr) {}
-	FCoords(const Coords & nc, Field * const nf) : Coords(nc), field(nf)
-	{}
-
-	/**
-	 * Used in RenderTarget::rendermap where this is first called, then the
-	 * coordinates are normalized and after that field is set.
-	 *
-	 * \note You really want to use \ref Map::get_fcoords instead.
-	 */
-	explicit FCoords(const Coords & nc) : Coords(nc), field(nullptr) {}
-
-	Field * field;
+	FCoords() : field(nullptr) {
+	}
+	FCoords(const Coords& nc, Field* const nf) : Coords(nc), field(nf) {
+	}
+	Field* field;
 };
 
+enum class TriangleIndex { D, R };
 
-template <typename CoordsType = Coords> struct TCoords : public CoordsType {
-	enum TriangleIndex {D, R, None};
-
-	TCoords() : t() {}
-	TCoords(const CoordsType C, const TriangleIndex T = None)
-		: CoordsType(C), t(T)
-	{}
-
-	bool operator== (const TCoords& other) const {
-		return CoordsType::operator== (other) && t == other.t;
-	}
-	bool operator!= (const TCoords& other) const {
-		return CoordsType::operator!= (other) ||  t != other.t;
+// This uniquely indexes a single Triangle on the map. A Triangle is identified
+// by its owning node and the triangle index (down or right).
+template <typename CoordsType = Coords> struct TCoords {
+	TCoords(const CoordsType C, const TriangleIndex T) : node(C), t(T) {
 	}
 
+	bool operator==(const TCoords& other) const {
+		return node == other.node && t == other.t;
+	}
+	bool operator!=(const TCoords& other) const {
+		return !(*this == other);
+	}
+	bool operator<(const TCoords& other) const {
+		return std::forward_as_tuple(node, t) < std::forward_as_tuple(other.node, other.t);
+	}
+
+	CoordsType node;
 	TriangleIndex t;
 };
 
-
-template
-<typename NodeCoordsType = Coords, typename TriangleCoordsType = Coords>
+// A pair of a coord and a triangle, used to signify which field and which
+// triangle the cursor is closest to. The triangle might belong to another
+// field.
+template <typename NodeCoordsType = Coords, typename TriangleCoordsType = Coords>
 struct NodeAndTriangle {
-	NodeAndTriangle() {}
-	NodeAndTriangle
-		(const NodeCoordsType              Node,
-		 const TCoords<TriangleCoordsType>& Triangle)
-
-			: node(Node), triangle(Triangle)
-	{}
-
-	bool operator== (NodeAndTriangle<> const other) const {
-		return node == other.node && triangle == other.triangle;
-	}
-	bool operator!= (NodeAndTriangle<> const other) const {
-		return !(*this == other);
-	}
-
-	NodeCoordsType              node;
+	NodeCoordsType node;
 	TCoords<TriangleCoordsType> triangle;
 };
 
@@ -176,6 +154,6 @@ struct HeightInterval {
 
 	uint8_t min, max;
 };
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_WIDELANDS_GEOMETRY_H

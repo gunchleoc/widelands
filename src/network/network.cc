@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2016 by the Widelands Development Team
+ * Copyright (C) 2004-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,41 +19,93 @@
 
 #include "network/network.h"
 
+#include <SDL.h>
+
 #include "base/log.h"
-#include "wlapplication.h"
 
+namespace {
 
+bool do_resolve(const boost::asio::ip::tcp& protocol,
+                NetAddress* addr,
+                const std::string& hostname,
+                uint16_t port) {
+	assert(addr != nullptr);
+	try {
+		boost::asio::io_service io_service;
+		boost::asio::ip::tcp::resolver resolver(io_service);
+		boost::asio::ip::tcp::resolver::query query(
+		   protocol, hostname, boost::lexical_cast<std::string>(port));
+		boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+		if (iter == boost::asio::ip::tcp::resolver::iterator()) {
+			// Resolution failed
+			log("Could not resolve network name '%s:%u' to %s-address\n", hostname.c_str(), port,
+			    ((protocol == boost::asio::ip::tcp::v4()) ? "IPv4" : "IPv6"));
+			return false;
+		}
+		addr->ip = iter->endpoint().address();
+		addr->port = port;
+		log("Resolved network name '%s:%u' to %s\n", hostname.c_str(), port,
+		    addr->ip.to_string().c_str());
+		return true;
+	} catch (const boost::system::system_error& ec) {
+		// Resolution failed
+		log("Could not resolve network name '%s:%u' to %s-address: %s\n", hostname.c_str(), port,
+		    ((protocol == boost::asio::ip::tcp::v4()) ? "IPv4" : "IPv6"), ec.what());
+		return false;
+	}
+}
+}  // namespace
 
-CmdNetCheckSync::CmdNetCheckSync(uint32_t const dt, SyncCallback * const cb) :
-Command (dt), callback_(cb)
-{}
-
-
-void CmdNetCheckSync::execute (Widelands::Game &) {
-	callback_->syncreport();
+bool NetAddress::resolve_to_v4(NetAddress* addr, const std::string& hostname, uint16_t port) {
+	return do_resolve(boost::asio::ip::tcp::v4(), addr, hostname, port);
 }
 
+bool NetAddress::resolve_to_v6(NetAddress* addr, const std::string& hostname, uint16_t port) {
+	return do_resolve(boost::asio::ip::tcp::v6(), addr, hostname, port);
+}
 
-NetworkTime::NetworkTime()
-{
+bool NetAddress::parse_ip(NetAddress* addr, const std::string& ip, uint16_t port) {
+	boost::system::error_code ec;
+	boost::asio::ip::address new_addr = boost::asio::ip::address::from_string(ip, ec);
+	if (ec)
+		return false;
+	addr->ip = new_addr;
+	addr->port = port;
+	return true;
+}
+
+bool NetAddress::is_ipv6() const {
+	return ip.is_v6();
+}
+
+bool NetAddress::is_valid() const {
+	return port != 0 && !ip.is_unspecified();
+}
+
+CmdNetCheckSync::CmdNetCheckSync(uint32_t const dt, SyncReportCallback cb)
+   : Command(dt), callback_(cb) {
+}
+
+void CmdNetCheckSync::execute(Widelands::Game&) {
+	callback_();
+}
+
+NetworkTime::NetworkTime() {
 	reset(0);
 }
 
-void NetworkTime::reset(int32_t const ntime)
-{
+void NetworkTime::reset(int32_t const ntime) {
 	networktime_ = time_ = ntime;
 	lastframe_ = SDL_GetTicks();
 	latency_ = 0;
 }
 
-void NetworkTime::fastforward()
-{
+void NetworkTime::fastforward() {
 	time_ = networktime_;
 	lastframe_ = SDL_GetTicks();
 }
 
-void NetworkTime::think(uint32_t const speed)
-{
+void NetworkTime::think(uint32_t const speed) {
 	uint32_t const curtime = SDL_GetTicks();
 	int32_t delta = curtime - lastframe_;
 	lastframe_ = curtime;
@@ -76,7 +128,7 @@ void NetworkTime::think(uint32_t const speed)
 		//  far behind
 		speedup = latency_ / 3;
 	else if (latency_ > static_cast<uint32_t>(delta))
-		speedup = delta / 8; //  speed up by 12.5%
+		speedup = delta / 8;  //  speed up by 12.5%
 	if (static_cast<int32_t>(delta + speedup) > behind)
 		speedup = behind - delta;
 
@@ -89,18 +141,15 @@ void NetworkTime::think(uint32_t const speed)
 	time_ += delta;
 }
 
-int32_t NetworkTime::time() const
-{
+int32_t NetworkTime::time() const {
 	return time_;
 }
 
-int32_t NetworkTime::networktime() const
-{
+int32_t NetworkTime::networktime() const {
 	return networktime_;
 }
 
-void NetworkTime::receive(int32_t const ntime)
-{
+void NetworkTime::receive(int32_t const ntime) {
 	if (ntime < networktime_)
 		throw wexception("NetworkTime: Time appears to be running backwards.");
 
@@ -118,105 +167,86 @@ void NetworkTime::receive(int32_t const ntime)
 	networktime_ = ntime;
 }
 
-
-
 /*** class SendPacket ***/
 
-SendPacket::SendPacket () {}
-
-void SendPacket::data(const void * const packet_data, const size_t size)
-{
-	if (buffer.empty()) {
-		buffer.push_back (0); //  this will finally be the length of the packet
-		buffer.push_back (0);
-	}
-	for (size_t idx = 0; idx < size; ++idx)
-		buffer.push_back(static_cast<const uint8_t *>(packet_data)[idx]);
+SendPacket::SendPacket() {
 }
 
-void SendPacket::send (TCPsocket sock)
-{
+void SendPacket::data(const void* const packet_data, const size_t size) {
+	if (buffer.empty()) {
+		buffer.push_back(0);  //  this will finally be the length of the packet
+		buffer.push_back(0);
+		// Attention! These bytes are also used by the network relay protocol.
+		// So if they are removed the protocol has to be updated
+	}
+
+	for (size_t idx = 0; idx < size; ++idx)
+		buffer.push_back(static_cast<const uint8_t*>(packet_data)[idx]);
+}
+
+void SendPacket::reset() {
+	buffer.clear();
+}
+
+size_t SendPacket::get_size() const {
+	return buffer.size();
+}
+
+uint8_t* SendPacket::get_data() const {
+
 	uint32_t const length = buffer.size();
 
-	assert (length < 0x10000);
+	assert(length < 0x10000);
 
 	// update packet length
 	buffer[0] = length >> 8;
 	buffer[1] = length & 0xFF;
 
-	if (sock)
-		SDLNet_TCP_Send (sock, &(buffer[0]), buffer.size());
+	return &(buffer[0]);
 }
-
-void SendPacket::reset ()
-{
-	buffer.clear();
-}
-
 
 /*** class RecvPacket ***/
-
-RecvPacket::RecvPacket (Deserializer & des)
-{
-	uint16_t const size = des.queue_[0] << 8 | des.queue_[1];
-
-	// The following should be caught by Deserializer::read and ::avail
-	assert(des.queue_.size() >= static_cast<size_t>(size));
-	assert(size >= 2);
-
-	buffer.insert(buffer.end(), des.queue_.begin() + 2, des.queue_.begin() + size);
-	index_ = 0;
-
-	des.queue_.erase(des.queue_.begin(), des.queue_.begin() + size);
-}
-
-size_t RecvPacket::data(void * const packet_data, size_t const bufsize)
-{
+size_t RecvPacket::data(void* const packet_data, size_t const bufsize) {
 	if (index_ + bufsize > buffer.size())
 		throw wexception("Packet too short");
 
 	for (size_t read = 0; read < bufsize; ++read)
-		static_cast<uint8_t *>(packet_data)[read] = buffer[index_++];
+		static_cast<uint8_t*>(packet_data)[read] = buffer[index_++];
 
 	return bufsize;
 }
 
-bool RecvPacket::end_of_file() const
-{
+bool RecvPacket::end_of_file() const {
 	return index_ < buffer.size();
 }
 
-bool Deserializer::read(TCPsocket sock)
-{
-	uint8_t buffer[512];
-	const int32_t bytes = SDLNet_TCP_Recv(sock, buffer, sizeof(buffer));
-	if (bytes <= 0)
-		return false;
+void Deserializer::read_data(const uint8_t* data, const int32_t len) {
 
-	queue_.insert(queue_.end(), &buffer[0], &buffer[bytes]);
-
-	return queue_.size() < 2 || 2 <= (queue_[0] << 8 | queue_[1]);
+	queue_.insert(queue_.end(), &data[0], &data[len]);
 }
 
-/**
- * Returns true if an entire packet is available
- */
-bool Deserializer::avail() const
-{
+bool Deserializer::write_packet(RecvPacket* packet) {
+	// No data at all
 	if (queue_.size() < 2)
 		return false;
 
-	const uint16_t size = queue_[0] << 8 | queue_[1];
-	if (size < 2)
+	uint16_t const size = queue_[0] << 8 | queue_[1];
+	assert(size >= 2);
+
+	// Not enough data for a complete packet
+	if (queue_.size() < static_cast<size_t>(size))
 		return false;
 
-	return queue_.size() >= static_cast<size_t>(size);
+	packet->buffer.clear();
+	packet->buffer.insert(packet->buffer.end(), queue_.begin() + 2, queue_.begin() + size);
+	packet->index_ = 0;
+
+	queue_.erase(queue_.begin(), queue_.begin() + size);
+	return true;
 }
 
-
-DisconnectException::DisconnectException(const char * fmt, ...)
-{
-	char buffer[512];
+DisconnectException::DisconnectException(const char* fmt, ...) {
+	char buffer[kNetworkBufferSize];
 	{
 		va_list va;
 		va_start(va, fmt);
@@ -226,7 +256,6 @@ DisconnectException::DisconnectException(const char * fmt, ...)
 	what_ = buffer;
 }
 
-char const * DisconnectException::what() const noexcept
-{
+char const* DisconnectException::what() const noexcept {
 	return what_.c_str();
 }

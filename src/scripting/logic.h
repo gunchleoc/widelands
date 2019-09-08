@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2016 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,8 +31,8 @@ class GameFactory;
 
 class LuaEditorInterface : public LuaInterface {
 public:
-	LuaEditorInterface(Widelands::EditorGameBase * g);
-	virtual ~LuaEditorInterface();
+	explicit LuaEditorInterface(Widelands::EditorGameBase* g);
+	~LuaEditorInterface() override;
 
 	std::unique_ptr<LuaTable> run_script(const std::string& script) override;
 
@@ -42,8 +42,8 @@ private:
 
 class LuaGameInterface : public LuaInterface {
 public:
-	LuaGameInterface(Widelands::Game * g);
-	virtual ~LuaGameInterface();
+	explicit LuaGameInterface(Widelands::Game* g);
+	~LuaGameInterface() override;
 
 	// Returns a given hook if one is defined, otherwise returns 0
 	std::unique_ptr<LuaTable> get_hook(const std::string& name);
@@ -51,14 +51,12 @@ public:
 	std::unique_ptr<LuaTable> run_script(const std::string& script) override;
 
 	// Input/output for coroutines.
-	LuaCoroutine* read_coroutine(FileRead&);
-	void write_coroutine(FileWrite&, LuaCoroutine*);
+	std::unique_ptr<LuaCoroutine> read_coroutine(FileRead&);
+	void write_coroutine(FileWrite&, const LuaCoroutine&);
 
 	// Input output for the global game state.
-	void read_global_env
-		(FileRead &, Widelands::MapObjectLoader &, uint32_t);
-	uint32_t write_global_env
-		(FileWrite &, Widelands::MapObjectSaver &);
+	void read_global_env(FileRead&, Widelands::MapObjectLoader&, uint32_t);
+	uint32_t write_global_env(FileWrite&, Widelands::MapObjectSaver&);
 
 private:
 	std::unique_ptr<GameFactory> factory_;

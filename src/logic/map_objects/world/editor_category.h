@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2015 by the Widelands Development Team
+ * Copyright (C) 2006-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ namespace Widelands {
 /// distinction and not a logical one.
 class EditorCategory {
 public:
-	EditorCategory(const LuaTable& table);
+	explicit EditorCategory(const LuaTable& table);
 
 	/// Internal name.
 	const std::string& name() const;
@@ -44,10 +44,14 @@ public:
 	/// The menu image for the category.
 	const Image* picture() const;
 
+	/// The number of items displayed in each row.
+	int items_per_row() const;
+
 private:
 	const std::string name_;
 	const std::string descname_;
 	const std::string image_file_;
+	const int items_per_row_;
 	DISALLOW_COPY_AND_ASSIGN(EditorCategory);
 };
 

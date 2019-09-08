@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008, 2010-2011 by the Widelands Development Team
+ * Copyright (C) 2008-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ enum {
 	 * The current version of the in-game network protocol. Client and host
 	 * protocol versions must match.
 	 */
-	NETWORK_PROTOCOL_VERSION = 22,
+	NETWORK_PROTOCOL_VERSION = 23,
 
 	/**
 	 * The default interval (in milliseconds) in which the host issues
@@ -55,7 +55,6 @@ enum {
 	 */
 	SERVER_TIMESTAMP_INTERVAL = 100,
 };
-
 
 /**
  * These are the command codes used in the in-game network protocol.
@@ -166,7 +165,7 @@ enum {
 	 * During game setup, this command is sent by the host to inform clients
 	 * about the names of the tribes they may choose.
 	 *
-	 * \see NetClient::handle_network
+	 * \see GameClient::handle_network
 	 */
 	NETCMD_SETTING_TRIBES = 6,
 
@@ -174,7 +173,7 @@ enum {
 	 * During game setup, this command contains complete information about all
 	 * player slots (independent of their state).
 	 *
-	 * \see NetClient::handle_network
+	 * \see GameClient::handle_network
 	 */
 	NETCMD_SETTING_ALLPLAYERS = 7,
 
@@ -185,7 +184,7 @@ enum {
 	 * Payload in that case is:
 	 * \li unsigned_8: number of the player
 	 *
-	 * \see NetClient::handle_network
+	 * \see GameClient::handle_network
 	 */
 	NETCMD_SETTING_PLAYER = 8,
 
@@ -193,7 +192,7 @@ enum {
 	 * During game setup, this command contains complete information about all
 	 * users.
 	 *
-	 * \see NetClient::handle_network
+	 * \see GameClient::handle_network
 	 */
 	NETCMD_SETTING_ALLUSERS = 9,
 
@@ -201,7 +200,7 @@ enum {
 	 * During game setup, this command updates the information associated to
 	 * one user.
 	 *
-	 * \see NetClient::handle_network
+	 * \see GameClient::handle_network
 	 */
 	NETCMD_SETTING_USER = 10,
 
@@ -365,13 +364,13 @@ enum {
 	NETCMD_FILE_PART = 24,
 
 	/**
-	* Sent by the host to change the win condition.
-	*
-	* Attached data is:
-	* \li string: name of the win condition
-	*
-	* If sent by the client, no data is attached, as it is only a request to toggle
-	*/
+	 * Sent by the host to change the win condition.
+	 *
+	 * Attached data is:
+	 * \li string: name of the win condition
+	 *
+	 * If sent by the client, no data is attached, as it is only a request to toggle
+	 */
 	NETCMD_WIN_CONDITION = 25,
 
 	/**
@@ -396,9 +395,9 @@ enum {
 	 * \li unsigned_8: new shared player
 	 *
 	 * \note The client must not assume that the host will accept this
-	 * request. Change of team number only becomes effective when/if the host
+	 * request. Change of the initialization only becomes effective when/if the host
 	 * replies with a \ref NETCMD_SETTING_PLAYER or
-	 *  \ref NETCMD_SETTING_ALLPLAYERS indicating the changed team.
+	 *  \ref NETCMD_SETTING_ALLPLAYERS indicating the changed initialization.
 	 */
 	NETCMD_SETTING_CHANGESHARED = 27,
 
@@ -407,6 +406,7 @@ enum {
 	 * client wants to change a player's initialisation.
 	 *
 	 * \li unsigned_8: number of the player
+	 * \li unsigned_8: index of the initialization
 	 *
 	 * \note The client must not assume that the host will accept this
 	 * request. Change of team number only becomes effective when/if the host
@@ -427,6 +427,14 @@ enum {
 	 * \li string:    Third attached string
 	 */
 	NETCMD_SYSTEM_MESSAGE_CODE = 32,
+
+	/**
+	 * Sent by the host to toggle peaceful mode.
+	 *
+	 * Attached data is:
+	 * \li uint8_t: 1 if peaceful mode is enabled, 0 otherwise
+	 */
+	NETCMD_PEACEFUL_MODE = 33,
 
 	/**
 	 * Sent by the metaserver to a freshly opened game to check connectability

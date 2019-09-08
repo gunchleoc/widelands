@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2008 by the Widelands Development Team
+ * Copyright (C) 2007-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,19 +20,17 @@
 #ifndef WL_LOGIC_PLAYER_AREA_H
 #define WL_LOGIC_PLAYER_AREA_H
 
-#include "logic/widelands.h"
 #include "logic/widelands_geometry.h"
 
 namespace Widelands {
 
-template <typename AreaType = Area<> > struct PlayerArea : public AreaType {
-	PlayerArea() : player_number(0) {}
-	PlayerArea(const PlayerNumber pn, const AreaType area)
-		: AreaType(area), player_number(pn)
-	{}
+template <typename AreaType = Area<>> struct PlayerArea : public AreaType {
+	PlayerArea() : player_number(0) {
+	}
+	PlayerArea(const PlayerNumber pn, const AreaType area) : AreaType(area), player_number(pn) {
+	}
 	PlayerNumber player_number;
 };
-
-}
+}  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_PLAYER_AREA_H

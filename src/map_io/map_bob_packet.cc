@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2004, 2006-2008, 2010 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 
 #include "io/fileread.h"
 #include "logic/map_objects/tribes/tribe_descr.h"
+#include "logic/map_objects/world/critter.h"
 #include "logic/map_objects/world/world.h"
 #include "logic/player.h"
 #include "map_io/map_object_loader.h"
@@ -32,10 +33,11 @@ namespace Widelands {
 constexpr uint16_t kCurrentPacketVersion = 1;
 
 void MapBobPacket::read_bob(FileRead& fr,
-									 EditorGameBase& egbase,
-									 MapObjectLoader&,
-									 Coords const coords,
-									 const WorldLegacyLookupTable& lookup_table) {
+                            EditorGameBase& egbase,
+                            MapObjectLoader&,
+                            const Coords& coords,
+                            const WorldLegacyLookupTable& lookup_table,
+                            uint16_t packet_version) {
 	const std::string owner = fr.c_string();
 	char const* const read_name = fr.c_string();
 	uint8_t subtype = fr.unsigned_8();
@@ -46,14 +48,14 @@ void MapBobPacket::read_bob(FileRead& fr,
 		throw GameDataError("unknown legacy bob %s/%s", owner.c_str(), read_name);
 	}
 
-	const std::string name = lookup_table.lookup_critter(read_name);
+	const std::string name = lookup_table.lookup_critter(read_name, packet_version);
 	try {
 		const World& world = egbase.world();
-		DescriptionIndex const idx = world.get_bob(name.c_str());
+		DescriptionIndex const idx = world.get_critter(name.c_str());
 		if (idx == INVALID_INDEX)
 			throw GameDataError("world does not define bob type \"%s\"", name.c_str());
 
-		const BobDescr& descr = *world.get_bob_descr(idx);
+		const CritterDescr& descr = *world.get_critter_descr(idx);
 		descr.create(egbase, nullptr, coords);
 		// We do not register this object as needing loading. This packet is only
 		// in fresh maps, that are just started. As soon as the game saves
@@ -68,22 +70,22 @@ void MapBobPacket::read_bob(FileRead& fr,
 }
 
 void MapBobPacket::read(FileSystem& fs,
-								EditorGameBase& egbase,
-								MapObjectLoader& mol,
-								const WorldLegacyLookupTable& lookup_table) {
+                        EditorGameBase& egbase,
+                        MapObjectLoader& mol,
+                        const WorldLegacyLookupTable& lookup_table) {
 	FileRead fr;
 	fr.open(fs, "binary/bob");
 
-	Map& map = egbase.map();
-	map.recalc_whole_map(egbase.world());  //  for movecaps checks in ReadBob
+	Map* map = egbase.mutable_map();
+	map->recalc_whole_map(egbase);  //  for movecaps checks in ReadBob
 	try {
 		uint16_t const packet_version = fr.unsigned_16();
 		if (packet_version == kCurrentPacketVersion)
-			for (uint16_t y = 0; y < map.get_height(); ++y) {
-				for (uint16_t x = 0; x < map.get_width(); ++x) {
+			for (uint16_t y = 0; y < map->get_height(); ++y) {
+				for (uint16_t x = 0; x < map->get_width(); ++x) {
 					uint32_t const nr_bobs = fr.unsigned_32();
 					for (uint32_t i = 0; i < nr_bobs; ++i)
-						read_bob(fr, egbase, mol, Coords(x, y), lookup_table);
+						read_bob(fr, egbase, mol, Coords(x, y), lookup_table, packet_version);
 				}
 			}
 		else {
@@ -93,4 +95,4 @@ void MapBobPacket::read(FileSystem& fs,
 		throw GameDataError("bobs: %s", e.what());
 	}
 }
-}
+}  // namespace Widelands

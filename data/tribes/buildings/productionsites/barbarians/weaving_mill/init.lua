@@ -13,7 +13,7 @@ tribes:new_productionsite_type {
    buildcost = {
       log = 5,
       granite = 2,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       log = 2,
@@ -36,7 +36,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      prohibited_till = 1200
+      prohibited_till = 990
    },
 
    working_positions = {
@@ -44,7 +44,7 @@ tribes:new_productionsite_type {
    },
 
    inputs = {
-      thatch_reed = 8
+      { name = "reed", amount = 8 }
    },
    outputs = {
       "cloth"
@@ -55,11 +55,12 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start weaving because ...
          descname = _"weaving",
          actions = {
-            "sleep=20000",
-            "check_map=seafaring",
+            "sleep=25000",
+            "checkmap=seafaring",
             "return=skipped unless economy needs cloth",
-            "consume=thatch_reed",
-            "animate=working 25000",
+            "consume=reed",
+            "playsound=sound/barbarians/weaver 120",
+            "animate=working 20000",
             "produce=cloth"
          }
       },

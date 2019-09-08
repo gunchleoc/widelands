@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003, 2006-2009 by the Widelands Development Team
+ * Copyright (C) 2003-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -42,24 +42,27 @@ struct Tab : public NamedPanel {
 	friend struct TabPanel;
 
 	/** If title is not empty, this will be a textual tab.
-	 *  In that case, pic will need to be the rendered title */
-	Tab
-		(TabPanel * parent,
-		 size_t id,
-		 int32_t x,
-		 int32_t w,
-		 const std::string & name,
-		 const std::string & title,
-		 const Image* pic,
-		 const std::string & gtooltip,
-		 Panel             * gpanel);
+	 *  In that case, pic will need to be the rendered title
+	 *
+	 * Text conventions: Title Case for the 'title', Sentence case for the 'gtooltip'
+	 */
+	Tab(TabPanel* parent,
+	    size_t id,
+	    int32_t x,
+	    const std::string& name,
+	    const std::string& title,
+	    const Image* pic,
+	    const std::string& gtooltip,
+	    Panel* gpanel);
 
 	bool active();
 	void activate();
 
 private:
 	// Leave handling the mouse move to the TabPanel.
-	bool handle_mousemove(uint8_t, int32_t, int32_t, int32_t, int32_t) override {return false;}
+	bool handle_mousemove(uint8_t, int32_t, int32_t, int32_t, int32_t) override {
+		return false;
+	}
 	// Play click
 	bool handle_mousepress(uint8_t, int32_t, int32_t) override;
 
@@ -67,7 +70,7 @@ private:
 	uint32_t id;
 
 	const Image* pic;
-	std::string title;
+	std::shared_ptr<const UI::RenderedText> rendered_title;
 	std::string tooltip;
 	Panel* panel;
 };
@@ -83,80 +86,72 @@ private:
  *
  */
 struct TabPanel : public Panel {
-	enum class Type {
-		kNoBorder,
-		kBorder
-	};
 
 	friend struct Tab;
 
-	TabPanel(Panel * parent, int32_t x, int32_t y, const Image* background,
-				TabPanel::Type border_type = TabPanel::Type::kNoBorder);
-	// For Fullscreen menus
-	TabPanel
-		(Panel * parent,
-		 int32_t x, int32_t y, int32_t w, int32_t h,
-		 const Image* background,
-		 TabPanel::Type border_type = TabPanel::Type::kNoBorder);
+	TabPanel(Panel* parent, UI::TabPanelStyle style);
 
-	/** Add textual tab */
-	uint32_t add
-		(const std::string & name,
-		 const std::string & title,
-		 Panel             * panel,
-		 const std::string & tooltip = std::string());
+	/** Add textual tab
+	 *
+	 * Text conventions: Title Case for the 'title', Sentence case for the 'tooltip'
+	 */
+	uint32_t add(const std::string& name,
+	             const std::string& title,
+	             Panel* panel,
+	             const std::string& tooltip = std::string());
 
-	/** Add pictorial tab */
-	uint32_t add
-		(const std::string & name,
-		 const Image* pic,
-		 Panel             * panel,
-		 const std::string & tooltip = std::string());
+	/** Add pictorial tab
+	 * Text conventions: Sentence case for the 'tooltip'
+	 */
+	uint32_t add(const std::string& name,
+	             const Image* pic,
+	             Panel* panel,
+	             const std::string& tooltip = std::string());
 
-	using TabList = std::vector<Tab *>;
+	using TabList = std::vector<Tab*>;
 
-	const TabList & tabs();
+	const TabList& tabs();
 	void activate(uint32_t idx);
-	void activate(const std::string &);
-	uint32_t active() {return active_;}
+	void activate(const std::string&);
+	uint32_t active() {
+		return active_;
+	}
 	// Removes the last tab if the 'tabname' matches. Returns whether a tab was removed.
 	// We use the tabname as a safety precaution to prevent acidentally removing the wrong tab.
 	bool remove_last_tab(const std::string& tabname);
 
-	boost::signals2::signal<void ()> sigclicked;
+	boost::signals2::signal<void()> sigclicked;
 
 protected:
 	void layout() override;
 	void update_desired_size() override;
 
-	TabPanel::Type border_type_;    ///< whether there will be a border around the panels.
+	UI::TabPanelStyle style_;
 
 private:
 	// Common adding function for textual and pictorial tabs
-	uint32_t add_tab(int32_t width,
-						  const std::string& name,
-						  const std::string& title,
-						  const Image* pic,
-						  const std::string& tooltip,
-						  Panel* contents);
+	uint32_t add_tab(const std::string& name,
+	                 const std::string& title,
+	                 const Image* pic,
+	                 const std::string& tooltip,
+	                 Panel* contents);
 
 	// Drawing and event handlers
-	void draw(RenderTarget &) override;
+	void draw(RenderTarget&) override;
 
-	bool handle_mousepress  (uint8_t btn, int32_t x, int32_t y) override;
-	bool handle_mouserelease(uint8_t btn, int32_t x, int32_t y) override;
-	bool handle_mousemove
-		(uint8_t state, int32_t x, int32_t y, int32_t xdiff, int32_t ydiff) override;
+	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y) override;
+	bool
+	handle_mousemove(uint8_t state, int32_t x, int32_t y, int32_t xdiff, int32_t ydiff) override;
 	void handle_mousein(bool inside) override;
 
 	size_t find_tab(int32_t x, int32_t y) const;
 
-	TabList          tabs_;
-	size_t           active_;         ///< index of the currently active tab
-	size_t           highlight_;      ///< index of the highlighted button
+	TabList tabs_;
+	size_t active_;     ///< index of the currently active tab
+	size_t highlight_;  ///< index of the highlighted button
 
-	const Image*     pic_background_; ///< picture used to draw background
+	const UI::PanelStyleInfo* background_style_;  // Background color and texture. Not owned.
 };
-}
+}  // namespace UI
 
 #endif  // end of include guard: WL_UI_BASIC_TABPANEL_H
