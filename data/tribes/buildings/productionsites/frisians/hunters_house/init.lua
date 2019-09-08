@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,18 +22,22 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 70},
+         hotspot = {49, 86},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 70},
+         hotspot = {49, 64},
       },
    },
 
    aihints = {
       collects_ware_from_map = "meat",
       prohibited_till = 480
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_hunters_house = false,
    },
 
    working_positions = {
@@ -50,12 +54,16 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start hunting because ...
          descname = _"hunting",
          actions = {
+            "callworker=hunt",
             "sleep=35000",
-            "worker=hunt",
+            "callworker=hunt",
             "sleep=35000",
-            "worker=hunt",
+            "callworker=hunt",
             "sleep=35000",
-            "worker=hunt",
+            "callworker=hunt",
+            "sleep=35000",
+            "callworker=hunt",
+            "sleep=35000",
             "produce=fur"
          }
       },

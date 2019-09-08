@@ -84,6 +84,7 @@ MAINPOTS = [
         '../../data/tribes/*/*/*/helptexts.lua',
         '../../data/tribes/*/*/*/*/helptexts.lua',
         '../../data/tribes/*/*/*/*/*/helptexts.lua',
+        '../../data/tribes/*/resi/helptexts/*.lua',
     ]),
     ('widelands_editor/widelands_editor', [
         '../../data/scripting/editor/*.lua',
@@ -109,7 +110,7 @@ ITERATIVEPOTS = [
      ['../../data/campaigns/%(name)s/extra_data',
       '../../data/campaigns/%(name)s/objective',
       '../../data/campaigns/%(name)s/scripting/*.lua',
-      '../../data/scripting/format_scenario.lua'
+      '../../data/scripting/richtext_scenarios.lua'
       ]
      ),
     ('map_%(name)s/map_%(name)s', 'data/maps/',
@@ -180,7 +181,6 @@ def do_makedirs(dirs):
     """Create subdirectories.
 
     Ignore errors
-
     """
     try:
         os.makedirs(dirs)
@@ -195,7 +195,6 @@ def pot_modify_header(potfile_in, potfile_out, header):
     Returns whether or not the header was successfully modified.
 
     Note: potfile_in and potfile_out must not point to the same file!
-
     """
     class State:
         (start,
@@ -266,7 +265,6 @@ def do_compile(potfile, srcfiles):
     strings.
 
     Merge the results and write out the corresponding pot file.
-
     """
     files = []
     for i in srcfiles:

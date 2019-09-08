@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,12 +22,12 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 70},
+         hotspot = {49, 87},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 70},
+         hotspot = {49, 64},
       },
    },
 
@@ -35,6 +35,10 @@ tribes:new_productionsite_type {
       collects_ware_from_map = "fish",
       needs_water = true,
       prohibited_till = 490
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_fishers_house = false,
    },
 
    working_positions = {
@@ -50,8 +54,8 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start fishing because ...
          descname = _"fishing",
          actions = {
-            "sleep=16000",
-            "worker=fish"
+            "callworker=fish",
+            "sleep=16000" -- TODO(stonerl): reduce to 3000 and move 13000 to the worker
          }
       },
    },

@@ -18,8 +18,8 @@
 			"entries":[
 				{
 					"subheading": "Graphics",
-					"members":[
-						"Chuck Wilder (chuckw)"
+					"translate":[
+						"vacant"
 					]
 				},
 				{
@@ -112,7 +112,11 @@
 						"Notabilis",
 						"Jukka Pakarinen",
 						"Evgeny Kapun",
-						"ypopezios"
+						"ypopezios",
+						"Toni Förster (stonerl)",
+						"Arty",
+						"Benedikt Straub (Nordfriese)",
+						"Lucki from Holarse.de"
 					]
 				}
 			]
@@ -156,7 +160,7 @@
 		},
 		{
 			"heading": "Musicians",
-			"image": "images/wui/overlays/workarea123.png",
+			"image": "images/wui/buildings/toggle_workarea.png",
 			"entries":[
 				{
 					"members":[
@@ -175,7 +179,7 @@
 		},
 		{
 			"heading": "Sound Effects",
-			"image": "images/wui/overlays/workarea123.png",
+			"image": "images/wui/buildings/toggle_workarea.png",
 			"entries":[
 				{
 					"members":[
@@ -183,7 +187,8 @@
 						"Peter Schwanemann (Nasenbaer)",
 						"Stephan",
 						"Adam Piggott (_aD)",
-						"Stanisław Gackowski (Soeb)"
+						"Stanisław Gackowski (Soeb)",
+						"Tada"
 					]
 				}
 			]
@@ -271,7 +276,8 @@
 					"subheading": "Fedora Linux",
 					"members":[
 						"Karol Trzcionka",
-						"Jochen Wiedmann"
+						"Jochen Wiedmann",
+						"Hans de Goede"
 					]
 				},
 				{
@@ -287,12 +293,21 @@
 					]
 				},
 				{
+					"subheading": "Flatpak",
+					"members":[
+						"scx"
+					]
+				},
+				{
 					"subheading": "Mac OS X",
 					"members":[
+						"Holger Rapp (SirVer)",
 						"Philipp Engelhard",
 						"Pierre Salagnac (Tarou)",
 						"Wolf St. Kappesser",
-						"David Allwicher (aber)"
+						"David Allwicher (aber)",
+						"Toni Förster (stonerl)",
+						"Ken Cunningham"
 					]
 				},
 				{
@@ -386,6 +401,9 @@
 					"members":[
 						"Matt Howe (mdhowe)",
 						"Samuel Tilly (eldamar)",
+						"WorldSavior"
+					],
+					"translate":[
 						"and many, many more (thank you for everything you've done)"
 					]
 				}

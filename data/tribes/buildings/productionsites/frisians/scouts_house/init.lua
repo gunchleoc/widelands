@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       granite = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       granite = 1,
@@ -22,12 +22,12 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 91},
+         hotspot = {49, 82},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 91},
+         hotspot = {49, 73},
       },
    },
 
@@ -46,9 +46,9 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start scouting because ...
          descname = _"scouting",
          actions = {
-            "sleep=30000",
             "consume=ration",
-            "worker=scout"
+            "sleep=30000",
+            "callworker=scout"
          }
       },
    },

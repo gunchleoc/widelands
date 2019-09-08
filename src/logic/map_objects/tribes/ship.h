@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2018 by the Widelands Development Team
+ * Copyright (C) 2010-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -35,10 +35,11 @@ struct Fleet;
 class PortDock;
 
 // This can't be part of the Ship class because of forward declaration in game.h
+// Keep the order of entries for savegame compatibility.
 enum class IslandExploreDirection {
-	kCounterClockwise = 0,  // This comes first for savegame compatibility (used to be = 0)
-	kClockwise = 1,
-	kNotSet
+	kNotSet,
+	kCounterClockwise,
+	kClockwise,
 };
 
 struct NoteShip {
@@ -77,6 +78,8 @@ private:
 	DISALLOW_COPY_AND_ASSIGN(ShipDescr);
 };
 
+constexpr int32_t kShipInterval = 1500;
+
 /**
  * Ships belong to a player and to an economy. The usually are in a (unique)
  * fleet for a player, but only if they are on standard duty. Exploration ships
@@ -103,7 +106,7 @@ struct Ship : Bob {
 		return economy_;
 	}
 	void set_economy(Game&, Economy* e);
-	void set_destination(Game&, PortDock&);
+	void set_destination(PortDock*);
 
 	void init_auto_task(Game&) override;
 
@@ -116,7 +119,7 @@ struct Ship : Bob {
 
 	uint32_t calculate_sea_route(Game& game, PortDock& pd, Path* finalpath = nullptr) const;
 
-	void log_general_info(const EditorGameBase&) override;
+	void log_general_info(const EditorGameBase&) const override;
 
 	uint32_t get_nritems() const {
 		return items_.size();
@@ -125,8 +128,9 @@ struct Ship : Bob {
 		return items_[idx];
 	}
 
-	void withdraw_items(Game& game, PortDock& pd, std::vector<ShippingItem>& items);
-	void add_item(Game&, const ShippingItem& item);
+	void add_item(Game&, const ShippingItem&);
+	bool withdraw_item(Game&, PortDock&);
+	void unload_unfit_items(Game&, PortDock& here, const PortDock& nextdest);
 
 	// A ship with task expedition can be in four states: kExpeditionWaiting, kExpeditionScouting,
 	// kExpeditionPortspaceFound or kExpeditionColonizing in the first states, the owning player of
@@ -195,7 +199,7 @@ struct Ship : Bob {
 	}
 
 	// whether the ship's expedition is in state "island-exploration" (circular movement)
-	bool is_exploring_island() {
+	bool is_exploring_island() const {
 		return expedition_->island_exploration;
 	}
 
@@ -233,7 +237,8 @@ struct Ship : Bob {
 protected:
 	void draw(const EditorGameBase&,
 	          const TextToDraw& draw_text,
-	          const Vector2f& field_on_dst,
+	          const Vector2f& point_on_dst,
+	          const Coords& coords,
 	          float scale,
 	          RenderTarget* dst) const override;
 
@@ -271,13 +276,15 @@ private:
 	std::string shipname_;
 
 	struct Expedition {
+		~Expedition();
+
 		std::vector<Coords> seen_port_buildspaces;
 		bool swimmable[LAST_DIRECTION];
 		bool island_exploration;
 		WalkingDir scouting_direction;
 		Coords exploration_start;
 		IslandExploreDirection island_explore_direction;
-		std::unique_ptr<Economy> economy;
+		Economy* economy;  // Owned by Player
 	};
 	std::unique_ptr<Expedition> expedition_;
 
@@ -295,6 +302,7 @@ protected:
 		// Initialize everything to make cppcheck happy.
 		uint32_t lastdock_ = 0U;
 		uint32_t destination_ = 0U;
+		Serial economy_serial_;
 		ShipStates ship_state_ = ShipStates::kTransport;
 		std::string shipname_;
 		std::unique_ptr<Expedition> expedition_;

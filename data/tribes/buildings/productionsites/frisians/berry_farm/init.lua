@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 1,
       log = 2,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,12 +22,12 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 76},
+         hotspot = {49, 90},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 64},
+         hotspot = {49, 68},
       },
    },
 
@@ -41,13 +41,23 @@ tribes:new_productionsite_type {
       frisians_berry_farmer = 1
    },
 
+   indicate_workarea_overlaps = {
+      frisians_clay_pit = false,
+      frisians_berry_farm = false,
+      frisians_reed_farm = false,
+      frisians_farm = false,
+      frisians_foresters_house = false,
+      frisians_beekeepers_house = true,
+      frisians_collectors_house = true,
+   },
+
    programs = {
       work = {
          -- TRANSLATORS: Completed/Skipped/Did not start planting bushes because ...
          descname = _"planting bushes",
          actions = {
-            "sleep=21000",
-            "worker=plant"
+            "callworker=plant",
+            "sleep=21000"
          }
       },
    },

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2018 by the Widelands Development Team
+ * Copyright (C) 2002-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 #include "base/i18n.h"
 #include "base/log.h"
 #include "base/wexception.h"
-#include "graphic/font_handler1.h"
+#include "graphic/font_handler.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/filesystem_constants.h"
 #include "logic/game_controller.h"
@@ -44,10 +44,17 @@ FullscreenMenuMapSelect::FullscreenMenuMapSelect(GameSettingsProvider* const set
    : FullscreenMenuLoadMapOrGame(),
      checkbox_space_(25),
      // Less padding for big fonts; space is tight.
-     checkbox_padding_(UI::g_fh1->fontset()->size_offset() > 0 ? 0 : 2 * padding_),
+     checkbox_padding_(UI::g_fh->fontset()->size_offset() > 0 ? 0 : 2 * padding_),
 
      // Main title
-     title_(this, 0, 0, _("Choose a map"), UI::Align::kCenter),
+     title_(this,
+            0,
+            0,
+            0,
+            0,
+            _("Choose a map"),
+            UI::Align::kCenter,
+            g_gr->styles().font_style(UI::FontStyle::kFsMenuTitle)),
      checkboxes_(this, 0, 0, UI::Box::Vertical, 0, 0, 2 * padding_),
      table_(this, tablex_, tabley_, tablew_, tableh_, UI::PanelStyle::kFsMenu),
      map_details_(this,
@@ -63,7 +70,6 @@ FullscreenMenuMapSelect::FullscreenMenuMapSelect(GameSettingsProvider* const set
      ctrl_(ctrl),
      has_translated_mapname_(false) {
 	curdir_ = basedir_;
-	title_.set_fontsize(UI_FONT_SIZE_BIG);
 	if (settings_->settings().multiplayer) {
 		back_.set_tooltip(_("Return to the multiplayer game setup"));
 	} else {

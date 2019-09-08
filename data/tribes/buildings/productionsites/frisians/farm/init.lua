@@ -13,29 +13,33 @@ tribes:new_productionsite_type {
       brick = 3,
       granite = 1,
       log = 2,
-      thatch_reed = 3
+      reed = 3
    },
    return_on_dismantle = {
       brick = 2,
       granite = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
 
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {105, 132},
+         hotspot = {105, 138},
          fps = 10,
       },
       working = {
-         pictures = path.list_files (dirname .. "working_???.png"),
-         hotspot = {105, 132},
-         fps = 15,
+         pictures = path.list_files (dirname .. "working_??.png"),
+         hotspot = {105, 138},
+         fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {105, 108},
+         hotspot = {105, 111},
+      },
+      build = {
+         pictures = path.list_files (dirname .. "build_?.png"),
+         hotspot = {105, 111},
       },
    },
 
@@ -53,6 +57,15 @@ tribes:new_productionsite_type {
       "barley"
    },
 
+   indicate_workarea_overlaps = {
+      frisians_clay_pit = false,
+      frisians_berry_farm = false,
+      frisians_reed_farm = false,
+      frisians_farm = false,
+      frisians_foresters_house = false,
+      frisians_beekeepers_house = true,
+   },
+
    programs = {
       work = {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
@@ -60,24 +73,24 @@ tribes:new_productionsite_type {
          actions = {
             "call=plant_barley",
             "call=harvest_barley",
-            "return=skipped"
+            "return=no_stats"
          }
       },
       plant_barley = {
          -- TRANSLATORS: Completed/Skipped/Did not start planting barley because ...
          descname = _"planting barley",
          actions = {
-            "sleep=18000",
-            "worker=plant"
+            "callworker=plant",
+            "sleep=18000"
          }
       },
       harvest_barley = {
          -- TRANSLATORS: Completed/Skipped/Did not start harvesting barley because ...
          descname = _"harvesting barley",
          actions = {
-            "sleep=8000",
-            "worker=harvest",
+            "callworker=harvest",
             "animate=working 40000",
+            "sleep=8000",
             "produce=barley" --produces 2 barley per field
          }
       },

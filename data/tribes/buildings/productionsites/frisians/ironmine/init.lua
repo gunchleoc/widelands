@@ -14,7 +14,7 @@ tribes:new_productionsite_type {
       brick = 1,
       granite = 2,
       log = 2,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -25,22 +25,27 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {27, 65},
+         hotspot = {38, 94},
          fps = 10,
       },
       working = {
          pictures = path.list_files (dirname .. "working_??.png"),
-         hotspot = {27, 66},
+         hotspot = {38, 94},
          fps = 10,
       },
       empty = {
-         pictures = path.list_files (dirname .. "empty_?.png"),
-         hotspot = {27, 48},
+         pictures = path.list_files (dirname .. "empty_??.png"),
+         hotspot = {38, 94},
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {27, 48},
+         hotspot = {38, 72},
       },
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_ironmine = false,
+      frisians_ironmine_deep = false,
    },
 
    aihints = {
@@ -65,9 +70,9 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start mining iron because ...
          descname = _"mining iron",
          actions = {
-            "sleep=45000",
             "return=skipped unless economy needs iron_ore",
             "consume=ration",
+            "sleep=45000",
             "animate=working 20000",
             "mine=iron 3 50 5 20",
             "produce=iron_ore"

@@ -13,29 +13,29 @@ tribes:new_productionsite_type {
       brick = 4,
       granite = 2,
       log = 3,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       brick = 2,
       granite = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
 
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {56, 77},
+         hotspot = {43, 84},
          fps = 10,
       },
       working = {
          pictures = path.list_files (dirname .. "working_??.png"),
-         hotspot = {56, 77},
+         hotspot = {43, 84},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {56, 59},
+         hotspot = {43, 69},
       },
    },
 
@@ -63,9 +63,9 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start recruiting soldier because ...
          descname = pgettext("frisians_building", "recruiting soldier"),
          actions = {
-            "sleep=15000",
             "return=skipped unless economy needs frisians_soldier",
             "consume=sword_short fur_garment frisians_carrier",
+            "sleep=15000",
             "animate=working 15000",
             "recruit=frisians_soldier"
          }

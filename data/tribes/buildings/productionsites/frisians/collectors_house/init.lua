@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 1,
       log = 2,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,13 +22,18 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 76},
+         hotspot = {49, 89},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 64},
+         hotspot = {49, 67},
       },
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_berry_farm = true,
+      frisians_collectors_house = false,
    },
 
    aihints = {
@@ -51,7 +56,7 @@ tribes:new_productionsite_type {
          descname = _"gathering berries",
          actions = {
             "sleep=21000",
-            "worker=harvest",
+            "callworker=harvest",
          }
       },
    },

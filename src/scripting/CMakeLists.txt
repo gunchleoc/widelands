@@ -36,6 +36,8 @@ wl_library(scripting_lua_table
     lua_table.h
   DEPENDS
     base_log
+    base_geometry
+    base_macros
     scripting_base
     scripting_coroutine
     scripting_errors
@@ -106,16 +108,19 @@ wl_library(scripting_logic
     economy
     io_fileread
     io_filesystem
+    io_profile
     logic
-    logic_campaign_visibility
+    logic_commands
     logic_constants
     logic_filesystem_constants
     logic_game_controller
     logic_game_settings
+    logic_map
+    logic_map_objects
+    logic_objectives
     logic_tribe_basic_info
     logic_widelands_geometry
     map_io
-    profile
     scripting_base
     scripting_coroutine
     scripting_errors
@@ -124,6 +129,7 @@ wl_library(scripting_logic
     scripting_luna
     third_party_eris
     ui_basic
+    widelands_options
     wui
     wui_mapview_pixelfunctions
 )

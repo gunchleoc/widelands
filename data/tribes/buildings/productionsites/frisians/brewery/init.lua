@@ -13,28 +13,28 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 3,
       log = 2,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       brick = 2,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
 
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {56, 80},
+         hotspot = {56, 92},
          fps = 10,
       },
       working = {
          pictures = path.list_files (dirname .. "working_??.png"),
-         hotspot = {56, 80},
+         hotspot = {56, 92},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {56, 80},
+         hotspot = {56, 69},
       },
    },
 
@@ -60,9 +60,9 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start brewing beer because ...
          descname = _"brewing beer",
          actions = {
-            "sleep=30000",
             "return=skipped unless economy needs beer or workers need experience",
             "consume=water barley",
+            "sleep=30000",
             "animate=working 30000",
             "produce=beer"
          },

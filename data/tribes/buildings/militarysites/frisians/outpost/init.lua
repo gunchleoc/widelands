@@ -13,23 +13,23 @@ tribes:new_militarysite_type {
       brick = 5,
       granite = 1,
       log = 1,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle = {
       brick = 2,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
 
    animations = {
       idle = {
-         pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {55, 69},
+         pictures = path.list_files (dirname .. "idle_?.png"),
+         hotspot = {50, 78},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {55, 69},
+         hotspot = {50, 78},
       },
    },
 

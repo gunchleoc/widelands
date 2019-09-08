@@ -12,8 +12,8 @@ animations = {
       fps = 10
    }
 }
-add_walking_animations (animations, "walk", dirname, "walk", {16, 23}, 15)
-add_walking_animations (animations, "walkload", dirname, "walkload", {12, 26}, 15)
+add_directional_animation(animations, "walk", dirname, "walk", {16, 23}, 15)
+add_directional_animation(animations, "walkload", dirname, "walkload", {12, 26}, 15)
 
 tribes:new_worker_type {
    msgctxt = "frisians_worker",
@@ -30,16 +30,19 @@ tribes:new_worker_type {
    },
 
    programs = {
-      chop = {
-         "findobject attrib:tree radius:10",
-         "walk object",
-         "animation hacking 10000",
-         "object fall",
-         "animation idle 2000",
-         "createware log",
+      harvest = {
+         "findobject=attrib:tree radius:10",
+         "walk=object",
+         "playsound=sound/woodcutting/woodcutting 255",
+         "animate=hacking 20000",
+         "playsound=sound/woodcutting/tree_falling 130",
+         "callobject=fall",
+         "animate=idle 2000",
+         "createware=log",
          "return"
       }
    },
 
+   ware_hotspot = {0, 20},
    animations = animations,
 }

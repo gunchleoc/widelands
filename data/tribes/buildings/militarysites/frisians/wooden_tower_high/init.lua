@@ -12,7 +12,7 @@ tribes:new_militarysite_type {
 
    enhancement_cost = {
       log = 2,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle_on_enhanced = {
       log = 1,
@@ -20,13 +20,13 @@ tribes:new_militarysite_type {
 
    animations = {
       idle = {
-         pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {40, 94},
+         pictures = path.list_files (dirname .. "idle_?.png"),
+         hotspot = {31, 93},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {40, 94},
+         hotspot = {31, 93},
       },
    },
 

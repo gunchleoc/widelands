@@ -13,33 +13,38 @@ tribes:new_productionsite_type {
       brick = 2,
       granite = 1,
       log = 1,
-      thatch_reed = 2
+      reed = 2
    },
    return_on_dismantle_on_enhanced = {
       brick = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
 
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {27, 65},
+         hotspot = {39, 94},
          fps = 10,
       },
       working = {
          pictures = path.list_files (dirname .. "working_??.png"),
-         hotspot = {27, 66},
+         hotspot = {39, 94},
          fps = 10,
       },
       empty = {
-         pictures = path.list_files (dirname .. "empty_?.png"),
-         hotspot = {27, 48},
+         pictures = path.list_files (dirname .. "empty_??.png"),
+         hotspot = {39, 94},
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {27, 48},
+         hotspot = {39, 72},
       },
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_ironmine = false,
+      frisians_ironmine_deep = false,
    },
 
    aihints = {
@@ -63,15 +68,33 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start mining iron because ...
          descname = _"mining iron",
          actions = {
-            "sleep=40000",
             "return=skipped unless economy needs iron_ore",
             "consume=meal",
-            "animate=working 18000",
+            "sleep=62100",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "call=mine_produce",
+            "return=no_stats"
+         }
+      },
+      mine_produce = {
+         descname = _"mining iron",
+         actions = {
+            "animate=working 8700",
             "mine=iron 3 100 10 5",
-            "produce=iron_ore:2",
-            "animate=working 18000",
-            "mine=iron 3 100 10 5",
-            "produce=iron_ore:2"
+            "produce=iron_ore",
+         }
+      },
+      encyclopedia = {
+         -- just a dummy program to fix encyclopedia
+         descname = "encyclopedia",
+         actions = {
+            "consume=meal",
+            "produce=iron_ore:7",
          }
       },
    },

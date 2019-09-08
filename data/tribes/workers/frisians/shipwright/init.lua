@@ -8,15 +8,15 @@ animations = {
    work = {
       pictures = path.list_files (dirname .. "work_??.png"),
       sound_effect = {
-            directory = "sound/hammering",
-            name = "hammering",
+         path = "sound/hammering/hammering",
+         priority = 64
       },
       hotspot = {9, 24},
       fps = 10
    }
 }
-add_walking_animations (animations, "walk", dirname, "walk", {11, 24}, 15)
-add_walking_animations (animations, "walkload", dirname, "walkload", {10, 26}, 15)
+add_directional_animation(animations, "walk", dirname, "walk", {11, 24}, 15)
+add_directional_animation(animations, "walkload", dirname, "walkload", {10, 26}, 15)
 
 tribes:new_worker_type {
    msgctxt = "frisians_worker",
@@ -34,14 +34,15 @@ tribes:new_worker_type {
 
    programs = {
       buildship = {
-         "walk object-or-coords",
-         "plant attrib:shipconstruction unless object",
-         "animation work 500",
+         "walk=object-or-coords",
+         "plant=attrib:shipconstruction unless object",
+         "animate=work 500",
          "construct",
-         "animation work 5000",
+         "animate=work 5000",
          "return"
       }
    },
 
+   ware_hotspot = {0, 20},
    animations = animations,
 }

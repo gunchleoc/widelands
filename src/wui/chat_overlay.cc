@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018 by the Widelands Development Team
+ * Copyright (C) 2011-2019 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,13 +21,17 @@
 
 #include <memory>
 
+#include <boost/format.hpp>
+
 #include "base/macros.h"
 #include "base/wexception.h"
 #include "chat/chat.h"
-#include "graphic/font_handler1.h"
+#include "graphic/font_handler.h"
+#include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
+#include "graphic/style_manager.h"
 #include "graphic/text/rt_errors.h"
-#include "profile/profile.h"
+#include "wlapplication_options.h"
 #include "wui/chat_msg_layout.h"
 #include "wui/logmessage.h"
 
@@ -65,7 +69,7 @@ struct ChatOverlay::Impl {
 	        Notifications::subscribe<LogMessage>([this](const LogMessage& note) {
 		        log_messages_.push_back(note);
 		        recompute();
-		     })) {
+	        })) {
 	}
 
 	void recompute();
@@ -81,8 +85,7 @@ private:
 ChatOverlay::ChatOverlay(
    UI::Panel* const parent, int32_t const x, int32_t const y, int32_t const w, int32_t const h)
    : UI::Panel(parent, x, y, w, h), m(new Impl()) {
-	Section& s = g_options.pull_section("global");
-	m->transparent_ = s.get_bool("transparent_chat", true);
+	m->transparent_ = get_config_bool("transparent_chat", true);
 
 	set_thinks(true);
 }
@@ -130,13 +133,14 @@ void ChatOverlay::Impl::recompute() {
 			oldest_ = log_messages_[log_idx].time;
 			// Do some richtext formatting here
 			if (now - oldest_ < CHAT_DISPLAY_TIME) {
-				richtext = "<p><font face=serif size=14 color=dddddd bold=1>" +
-				           log_messages_[log_idx].msg + "<br></font></p>" + richtext;
+				richtext = (boost::format("<p>%s</p>") % g_gr->styles()
+				                                            .font_style(UI::FontStyle::kChatServer)
+				                                            .as_font_tag(log_messages_[log_idx].msg))
+				              .str();
 			}
 			log_idx--;
-		} else if (log_idx < 0 ||
-		           (chat_idx >= 0 &&
-		            chat_->get_messages()[chat_idx].time >= log_messages_[log_idx].time)) {
+		} else if (log_idx < 0 || (chat_idx >= 0 && chat_->get_messages()[chat_idx].time >=
+		                                               log_messages_[log_idx].time)) {
 			// Chat message is more recent
 			oldest_ = chat_->get_messages()[chat_idx].time;
 			if (now - oldest_ < CHAT_DISPLAY_TIME) {
@@ -169,11 +173,11 @@ void ChatOverlay::draw(RenderTarget& dst) {
 
 	std::shared_ptr<const UI::RenderedText> im(nullptr);
 	try {
-		im = UI::g_fh1->render(m->all_text_, get_w());
+		im = UI::g_fh->render(m->all_text_, get_w());
 	} catch (RT::WidthTooSmall&) {
 		// Oops, maybe one long word? We render again, not limiting the width, but
 		// render everything in one single line.
-		im = UI::g_fh1->render(m->all_text_);
+		im = UI::g_fh->render(m->all_text_);
 	}
 	assert(im != nullptr);
 

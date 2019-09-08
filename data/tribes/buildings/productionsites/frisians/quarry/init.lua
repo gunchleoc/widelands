@@ -12,7 +12,7 @@ tribes:new_productionsite_type {
    buildcost = {
       brick = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,12 +22,12 @@ tribes:new_productionsite_type {
    animations = {
       idle = {
          pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {42, 65},
+         hotspot = {49, 87},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {42, 65},
+         hotspot = {49, 65},
       }
    },
 
@@ -37,6 +37,10 @@ tribes:new_productionsite_type {
 
    working_positions = {
       frisians_stonemason = 1
+   },
+
+   indicate_workarea_overlaps = {
+      frisians_quarry = false,
    },
 
    outputs = {
@@ -51,7 +55,7 @@ tribes:new_productionsite_type {
            -- This order is on purpose so that the productivity
            -- drops fast once all rocks are gone.
             "call=mine_stone",
-            "return=skipped"
+            "return=no_stats"
          },
       },
       mine_stone = {
@@ -60,8 +64,8 @@ tribes:new_productionsite_type {
          actions = {
            -- This order is on purpose so that the productivity
            -- drops fast once all rocks are gone.
-            "worker=cut_granite",
-            "sleep=25000"
+            "callworker=cut_granite",
+            "sleep=17500"
          }
       },
    },

@@ -13,7 +13,7 @@ tribes:new_militarysite_type {
    buildcost = {
       brick = 1,
       log = 1,
-      thatch_reed = 1
+      reed = 1
    },
    return_on_dismantle = {
       brick = 1,
@@ -22,13 +22,13 @@ tribes:new_militarysite_type {
 
    animations = {
       idle = {
-         pictures = path.list_files (dirname .. "idle_??.png"),
-         hotspot = {44, 70},
+         pictures = path.list_files (dirname .. "idle_?.png"),
+         hotspot = {33, 53},
          fps = 10,
       },
       unoccupied = {
          pictures = path.list_files (dirname .. "unoccupied_?.png"),
-         hotspot = {44, 70},
+         hotspot = {33, 53},
       },
    },
 
