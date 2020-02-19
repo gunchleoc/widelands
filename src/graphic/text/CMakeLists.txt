@@ -67,6 +67,7 @@ wl_library(graphic_text
     base_macros
     graphic
     graphic_align
+    graphic_animation
     graphic_color
     graphic_image_cache
     graphic_image_io
