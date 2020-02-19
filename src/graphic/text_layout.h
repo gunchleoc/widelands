@@ -31,6 +31,9 @@
 #include "graphic/text/font_set.h"
 #include "graphic/text/rendered_text.h"
 
+// NOCOM get rid
+int text_width(const std::string& text, const UI::FontStyleInfo& style, float scale = 1.0f);
+
 /**
  * Returns the exact height of the text rendered for the given font size and face.
  * This function is inefficient; only call when we need the exact height.
