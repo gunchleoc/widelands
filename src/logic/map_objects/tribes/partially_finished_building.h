@@ -63,6 +63,8 @@ public:
 	}
 	static void
 	request_builder_callback(Game&, Request&, DescriptionIndex, Worker*, PlayerImmovable&);
+    Worker* builder() const;
+    void remove_worker(Worker&) override;
 
 private:
 	void request_builder(Game&);

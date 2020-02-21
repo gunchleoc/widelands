@@ -47,6 +47,7 @@ struct ConstructionSiteWindow : public BuildingWindow {
 
 protected:
 	void init(bool avoid_fastclick, bool workarea_preview_wanted) override;
+    void evict_worker();
 
 private:
 	class FakeWaresDisplay : public WaresDisplay {
@@ -79,6 +80,8 @@ private:
 	FakeWaresDisplay* cs_warehouse_wares_;
 	FakeWaresDisplay* cs_warehouse_workers_;
 	void change_policy(Widelands::WareWorker, Widelands::StockPolicy);
+
+    UI::Button* evict_button_;
 
 	DISALLOW_COPY_AND_ASSIGN(ConstructionSiteWindow);
 };

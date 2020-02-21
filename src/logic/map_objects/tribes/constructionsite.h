@@ -133,6 +133,10 @@ public:
 
 	void enhance(Game&);
 
+    bool is_builder_idle() const {
+        return builder_idle_;
+    }
+
 protected:
 	void update_statistics_string(std::string* statistics_string) override;
 

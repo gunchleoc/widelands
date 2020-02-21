@@ -1180,7 +1180,7 @@ void Worker::set_location(PlayerImmovable* const location) {
 	if (old_location) {
 		// Note: even though we have an old location, economy_ may be zero
 		// (old_location got deleted)
-		old_location->remove_worker(*this);
+		old_location->remove_worker(*this);  // NOCOM memory leak
 	} else {
 		if (!is_shipping()) {
 			assert(!ware_economy_);
@@ -1739,9 +1739,13 @@ void Worker::buildingwork_update(Game& game, State& state) {
 
 	if (signal == "evict") {
 		if (building) {
-			// If the building was working, we do not tell it to cancel – it'll notice by itself soon –
-			// but we already change the animation so it won't look strange
-			building->start_animation(game, building->descr().get_unoccupied_animation());
+            // Evicting for constructionsites is only implemented for when the worker is idle.
+            // Not implemented at all for dismantlesites.
+            if (building->descr().type() != Widelands::MapObjectType::CONSTRUCTIONSITE) {
+                // If the building was working, we do not tell it to cancel – it'll notice by itself soon –
+                // but we already change the animation so it won't look strange
+                building->start_animation(game, building->descr().get_unoccupied_animation());
+            }
 		}
 		return pop_task(game);
 	}

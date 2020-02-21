@@ -129,6 +129,21 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 		box.add(new InputQueueDisplay(
 		   &box, 0, 0, *igbase(), *construction_site, *construction_site->get_waresqueue(i)));
 
+    // Evict worker button
+    if (igbase()->can_act(construction_site->owner().player_number())) {
+        UI::Box& evict_box = *new UI::Box(&box, 0, 0, UI::Box::Horizontal);
+        evict_button_ =
+           new UI::Button(&evict_box, "evict", 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,
+                          g_gr->images().get("images/wui/buildings/menu_drop_soldier.png"),
+                          "");
+        evict_button_->set_enabled(false);
+
+        evict_button_->sigclicked.connect([this] { evict_worker(); });
+        evict_box.add_inf_space();
+        evict_box.add(evict_button_);
+        box.add(&evict_box, UI::Box::Resizing::kFullSize);
+    }
+
 	get_tabs()->add("wares", g_gr->images().get(pic_tab_wares), &box, _("Building materials"));
 
 	if (construction_site->get_settings()) {
@@ -372,6 +387,16 @@ void ConstructionSiteWindow::think() {
 	progress_->set_state(construction_site->get_built_per64k());
 
 	const bool can_act = igbase()->can_act(construction_site->owner().player_number());
+
+    // Only allow evicting when the builder is there & idle
+    if (can_act && construction_site->is_builder_idle() && construction_site->builder() != nullptr) {
+        evict_button_->set_enabled(true);
+        evict_button_->set_tooltip(_("Send the builder away"));
+    } else {
+        evict_button_->set_enabled(false);
+        evict_button_->set_tooltip(_("You can send the builder away when he’s idle"));
+    }
+
 	// InputQueueDisplay and FakeWaresDisplay update themselves – we need to refresh the other
 	// settings
 	if (upcast(Widelands::ProductionsiteSettings, ps, construction_site->get_settings())) {
@@ -417,5 +442,17 @@ void ConstructionSiteWindow::think() {
 			assert(!ws->launch_expedition);
 		}
 #endif
+	}
+}
+
+void ConstructionSiteWindow::evict_worker() {
+    Widelands::ConstructionSite* construction_site = construction_site_.get(igbase()->egbase());
+	if (construction_site == nullptr) {
+		return;
+	}
+
+    Widelands::Worker* builder = construction_site->builder();
+    if (builder != nullptr) {
+		igbase()->game().send_player_evict_worker(*builder);
 	}
 }

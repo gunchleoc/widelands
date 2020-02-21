@@ -108,6 +108,7 @@ Issue a request for the builder.
 void PartiallyFinishedBuilding::request_builder(Game&) {
 	assert(!builder_.is_set() && !builder_request_);
 
+    // NOCOM this leaks memory
 	builder_request_ = new Request(*this, owner().tribe().builder(),
 	                               PartiallyFinishedBuilding::request_builder_callback, wwWORKER);
 }
@@ -195,5 +196,28 @@ void PartiallyFinishedBuilding::request_builder_callback(
 
 	w->start_task_buildingwork(game);
 	b.set_seeing(true);
+}
+
+Worker* PartiallyFinishedBuilding::builder() const {
+    return builder_.get(owner().egbase());
+}
+
+/**
+ * Intercept remove_worker() calls to unassign our worker, if necessary.
+ */
+void PartiallyFinishedBuilding::remove_worker(Worker& w) {
+	molog("%s leaving\n", w.descr().name().c_str());
+
+	Building::remove_worker(w);
+
+    builder_ = nullptr;
+    if (builder_request_) {
+		delete builder_request_;
+		builder_request_ = nullptr;
+	}
+
+    if (upcast(Game, game, &get_owner()->egbase())) {
+		request_builder(*game); // NOCOM memory leak
+	}
 }
 }  // namespace Widelands
