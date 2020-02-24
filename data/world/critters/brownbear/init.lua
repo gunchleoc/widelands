@@ -1,9 +1,5 @@
 dirname = path.dirname(__file__)
 
-animations = {}
-
-add_directional_animation(animations, "walk", dirname, "walk", {24, 24}, 4)
-
 world:new_critter_type{
    name = "brownbear",
    descname = _ "Brown bear",
@@ -12,7 +8,6 @@ world:new_critter_type{
    programs = {
       remove = { "remove" },
    },
-   animations = animations,
    spritesheets = {
       idle = {
          directory = dirname,
@@ -22,6 +17,16 @@ world:new_critter_type{
          rows = 5,
          columns = 4,
          hotspot = { 20, 15 }
+      },
+      walk = {
+         directory = dirname,
+         basename = "walk",
+         fps = 30,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         directional = true,
+         hotspot = { 24, 24 }
       }
    }
 }
