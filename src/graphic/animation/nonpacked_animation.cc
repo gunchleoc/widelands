@@ -31,7 +31,6 @@
 #include "graphic/graphic.h"
 #include "graphic/image.h"
 #include "graphic/playercolor.h"
-#include "graphic/texture.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
@@ -130,6 +129,28 @@ void NonPackedAnimation::NonPackedMipMapEntry::blit(uint32_t idx,
 	}
 }
 
+void NonPackedAnimation::NonPackedMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture>>* result) const {
+    for (const std::string& filename : image_files) {
+		const Image* image = g_gr->images().get(filename);
+
+        result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
+
+        Rectf frame_rect(0, 0, width(), height());
+        result->back()->blit(frame_rect, *image, frame_rect, 1., BlendMode::Copy);
+	}
+}
+
+void NonPackedAnimation::NonPackedMipMapEntry::playercolor_textures(std::vector<std::unique_ptr<Texture>>* result) const {
+    for (const std::string& filename : playercolor_mask_image_files) {
+		const Image* image = g_gr->images().get(filename);
+
+        result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
+
+        Rectf frame_rect(0, 0, width(), height());
+        result->back()->blit(frame_rect, *image, frame_rect, 1., BlendMode::Copy);
+	}
+}
+
 int NonPackedAnimation::NonPackedMipMapEntry::width() const {
 	return frames.at(0)->width();
 }
@@ -206,18 +227,6 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table, const std::string&
 	} catch (const LuaError& e) {
 		throw Widelands::GameDataError("Error in animation table: %s.", e.what());
 	}
-}
-
-std::vector<const Image*> NonPackedAnimation::images(float scale) const {
-	const NonPackedMipMapEntry& mipmap =
-	   dynamic_cast<const NonPackedMipMapEntry&>(mipmap_entry(scale));
-	return mipmap.frames;
-}
-
-std::vector<const Image*> NonPackedAnimation::pc_masks(float scale) const {
-	const NonPackedMipMapEntry& mipmap =
-	   dynamic_cast<const NonPackedMipMapEntry&>(mipmap_entry(scale));
-	return mipmap.playercolor_mask_frames;
 }
 
 const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {

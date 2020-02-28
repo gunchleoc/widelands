@@ -100,18 +100,21 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 }
 
 // Finds margins so that we can crop the animation to save space
-void find_margins(const std::vector<const Image*>& images, Recti* margins) {
-	for (const Image* image : images) {
+void find_margins(const std::vector<std::unique_ptr<Texture>>& images, Recti* margins) {
+    // NOCOM fix cropping
+	for (const auto& image : images) {
 		std::unique_ptr<Texture> temp_texture(new Texture(image->width(), image->height()));
 		Rectf image_dimensions(Vector2f::zero(), image->width(), image->height());
 		temp_texture->blit(image_dimensions, *image, image_dimensions, 1., BlendMode::Copy);
 		temp_texture->lock();
+        log("NOCOM trimming texture from (%d, %d, %d, %d) ", margins->x, margins->y, margins->w, margins->h);
 		find_trim_rect(temp_texture.get(), margins);
+        log("to (%d, %d, %d, %d)\n", margins->x, margins->y, margins->w, margins->h);
 	}
 }
 
 // Write a spritesheet of the given images into the given filename
-void write_spritesheet(std::vector<const Image*> imgs,
+void write_spritesheet(const std::vector<std::unique_ptr<Texture>>& imgs,
                        const std::string& filename,
                        const Recti& rect,
                        int columns,
@@ -130,7 +133,7 @@ void write_spritesheet(std::vector<const Image*> imgs,
 			col = 0;
 			++row;
 		}
-		const Image* image = imgs[i];
+		const Texture* image = imgs[i].get();
 		const int x = col * rect.w;
 		const int y = row * rect.h;
 		log("Frame %" PRIuS " at: %d, %d, %d, %d\n", i, x, y, x + rect.w, y + rect.h);
@@ -145,14 +148,16 @@ void write_spritesheet(std::vector<const Image*> imgs,
 // Container for writing spritesheet files
 struct SpritesheetData {
 	explicit SpritesheetData(const std::string& fb,
-	                         const std::vector<const Image*>& im,
-	                         const std::vector<const Image*>& pc)
-	   : filename_base(fb), images(im), pc_masks(pc) {
+                             const Animation& animation,
+                             const float scale)
+	   : filename_base(fb) {
+        animation.frame_textures(&images, scale);
+        animation.playercolor_textures(&pc_masks, scale);
 	}
 
 	const std::string filename_base;
-	const std::vector<const Image*> images;
-	const std::vector<const Image*> pc_masks;
+	std::vector<std::unique_ptr<Texture>> images;
+	std::vector<std::unique_ptr<Texture>> pc_masks;
 };
 
 // Reads animation data from engine and then creates spritesheets and the corresponding lua code.
@@ -277,7 +282,7 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 	// Create image files for each scale and find & write the hotspot
 	for (const float scale : representative_animation.available_scales()) {
 		// Collect animation data to write
-		std::vector<SpritesheetData> spritesheets_to_write;
+		std::vector<std::unique_ptr<SpritesheetData>> spritesheets_to_write;
 		if (is_directional) {
 			for (int dir = 1; dir <= 6; ++dir) {
 				const std::string directional_animname =
@@ -291,23 +296,20 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 				                                     .str();
 				const Animation& directional_animation = g_gr->animations().get_animation(
 				   descr->get_animation(directional_animname, nullptr));
-				spritesheets_to_write.push_back(SpritesheetData(filename_base,
-				                                                directional_animation.images(scale),
-				                                                directional_animation.pc_masks(scale)));
+				spritesheets_to_write.emplace_back(new SpritesheetData(filename_base, directional_animation, scale));
 			}
 
 		} else {
-			spritesheets_to_write.push_back(SpritesheetData(
-			   (boost::format("%s_%d") % animation_name % scale).str(),
-			   representative_animation.images(scale), representative_animation.pc_masks(scale)));
+			spritesheets_to_write.emplace_back(new SpritesheetData(
+			   (boost::format("%s_%d") % animation_name % scale).str(), representative_animation, scale));
 		}
 
 		// Find margins for trimming
-		std::vector<const Image*> images = spritesheets_to_write.front().images;
+		const auto& images = spritesheets_to_write.front()->images;
 		Recti margins(images.front()->width() / 2, images.front()->height() / 2,
 		              images.front()->width() / 2, images.front()->height() / 2);
 		for (const auto& animation_data : spritesheets_to_write) {
-			find_margins(animation_data.images, &margins);
+			find_margins(animation_data->images, &margins);
 		}
 
 		// Write the spritesheet(s)
@@ -324,10 +326,10 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 
 		// Write spritesheets for animation and player colors
 		for (const auto& spritesheet_data : spritesheets_to_write) {
-			write_spritesheet(spritesheet_data.images, spritesheet_data.filename_base + ".png",
+			write_spritesheet(spritesheet_data->images, spritesheet_data->filename_base + ".png",
 			                  margins, columns, spritesheet_width, spritesheet_height, out_filesystem);
-			if (!spritesheet_data.pc_masks.empty()) {
-				write_spritesheet(spritesheet_data.pc_masks, spritesheet_data.filename_base + "_pc.png",
+			if (!spritesheet_data->pc_masks.empty()) {
+				write_spritesheet(spritesheet_data->pc_masks, spritesheet_data->filename_base + "_pc.png",
 				                  margins, columns, spritesheet_width, spritesheet_height,
 				                  out_filesystem);
 			}
