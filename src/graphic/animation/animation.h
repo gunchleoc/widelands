@@ -110,11 +110,7 @@ public:
 	/// We need to expose these for the packed animation,
 	/// so that the create_spritesheet utility can use them.
 	/// Do not use otherwise.
-	void frame_textures(std::vector<std::unique_ptr<Texture>>* result, float scale) const;
-	/// We need to expose these for the packed animation,
-	/// so that the create_spritemap utility can use them.
-	/// Do not use otherwise.
-	void playercolor_textures(std::vector<std::unique_ptr<Texture>>* result, float scale) const;
+	void frame_textures(std::vector<std::unique_ptr<Texture>>* result, float scale, bool return_playercolor_masks) const;
 
 	/// The scales for which this animation has exact images.
 	std::set<float> available_scales() const;
@@ -151,8 +147,7 @@ protected:
 		/// The height of this mipmap entry's textures
 		virtual int height() const = 0;
 
-        virtual void frame_textures(std::vector<std::unique_ptr<Texture>>* result) const = 0;
-        virtual void playercolor_textures(std::vector<std::unique_ptr<Texture>>* result) const = 0;
+        virtual void frame_textures(std::vector<std::unique_ptr<Texture>>* result, bool return_playercolor_masks) const = 0;
 
 		/// Whether this texture set has player color masks provided
 		bool has_playercolor_masks;

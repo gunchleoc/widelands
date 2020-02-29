@@ -78,8 +78,7 @@ private:
 		/// Texture height
 		int h;
 
-        void frame_textures(std::vector<std::unique_ptr<Texture>>* result) const override;
-        void playercolor_textures(std::vector<std::unique_ptr<Texture>>* result) const override;
+        void frame_textures(std::vector<std::unique_ptr<Texture>>* result, bool return_playercolor_masks) const override;
 
 	private:
 		/// Sprite sheet file name on disk

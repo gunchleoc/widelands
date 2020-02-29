@@ -196,10 +196,6 @@ int Animation::representative_frame() const {
 	return representative_frame_;
 }
 
-void Animation::frame_textures(std::vector<std::unique_ptr<Texture>>* result, float scale) const {
-	mipmap_entry(scale).frame_textures(result);
-}
-
-void Animation::playercolor_textures(std::vector<std::unique_ptr<Texture>>* result, float scale) const {
-	mipmap_entry(scale).playercolor_textures(result);
+void Animation::frame_textures(std::vector<std::unique_ptr<Texture>>* result, float scale, bool return_playercolor_masks) const {
+	mipmap_entry(scale).frame_textures(result, return_playercolor_masks);
 }

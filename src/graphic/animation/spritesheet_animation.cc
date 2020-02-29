@@ -132,33 +132,19 @@ void SpriteSheetAnimation::SpriteSheetMipMapEntry::blit(uint32_t idx,
 	}
 }
 
-void SpriteSheetAnimation::SpriteSheetMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture> >* result) const {
+void SpriteSheetAnimation::SpriteSheetMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture>>* result, bool return_playercolor_masks) const {
     // NOCOM fix this
-    const size_t no_of_frames = rows * columns;
-    for (size_t i = 0; i < no_of_frames; ++i) {
-
-        result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
-
-        const int column = i % columns;
-        const int row = i / columns;
-
-        Rectf rect(Vector2f::zero(), w, h);
-        result->back()->blit(Rectf(column * width(), row * height(), width(), height()), *sheet, rect, 1., BlendMode::Copy);
-    }
-}
-
-void SpriteSheetAnimation::SpriteSheetMipMapEntry::playercolor_textures(std::vector<std::unique_ptr<Texture>>* result) const {
-    // NOCOM fix this
-    if (has_playercolor_masks) {
+    if (!return_playercolor_masks || has_playercolor_masks) {
         const size_t no_of_frames = rows * columns;
         for (size_t i = 0; i < no_of_frames; ++i) {
+
             result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
 
             const int column = i % columns;
             const int row = i / columns;
 
             Rectf rect(Vector2f::zero(), w, h);
-            result->back()->blit(Rectf(column * width(), row * height(), width(), height()), *playercolor_mask_sheet, rect, 1., BlendMode::Copy);
+            result->back()->blit(Rectf(column * width(), row * height(), width(), height()), *sheet, rect, 1., BlendMode::Copy);
         }
     }
 }

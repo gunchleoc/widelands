@@ -151,8 +151,8 @@ struct SpritesheetData {
                              const Animation& animation,
                              const float scale)
 	   : filename_base(fb) {
-        animation.frame_textures(&images, scale);
-        animation.playercolor_textures(&pc_masks, scale);
+        animation.frame_textures(&images, scale, false);
+        animation.frame_textures(&pc_masks, scale, true);
 	}
 
 	const std::string filename_base;

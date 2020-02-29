@@ -129,19 +129,8 @@ void NonPackedAnimation::NonPackedMipMapEntry::blit(uint32_t idx,
 	}
 }
 
-void NonPackedAnimation::NonPackedMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture>>* result) const {
-    for (const std::string& filename : image_files) {
-		const Image* image = g_gr->images().get(filename);
-
-        result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
-
-        Rectf frame_rect(0, 0, width(), height());
-        result->back()->blit(frame_rect, *image, frame_rect, 1., BlendMode::Copy);
-	}
-}
-
-void NonPackedAnimation::NonPackedMipMapEntry::playercolor_textures(std::vector<std::unique_ptr<Texture>>* result) const {
-    for (const std::string& filename : playercolor_mask_image_files) {
+void NonPackedAnimation::NonPackedMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture>>* result, bool return_playercolor_masks) const {
+    for (const std::string& filename : return_playercolor_masks ? playercolor_mask_image_files : image_files) {
 		const Image* image = g_gr->images().get(filename);
 
         result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
