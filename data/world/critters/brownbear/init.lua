@@ -21,7 +21,7 @@ world:new_critter_type{
       walk = {
          directory = dirname,
          basename = "walk",
-         fps = 30,
+         fps = 35,
          frames = 20,
          rows = 5,
          columns = 4,
