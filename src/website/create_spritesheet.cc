@@ -70,7 +70,7 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 		for (int y = 0; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				rect->w = std::max(max_x, x + 1 - rect->x);
+				rect->w = std::min(max_x, x - rect->x) + 1;
 				found = true;
 			}
 		}
@@ -92,7 +92,7 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 		for (int x = 0; x < max_x && !found; ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				rect->h = std::max(max_y, y + 1 - rect->y);
+				rect->h = std::min(max_y, y - rect->y) + 1;
 				found = true;
 			}
 		}
@@ -101,15 +101,12 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 
 // Finds margins so that we can crop the animation to save space
 void find_margins(const std::vector<std::unique_ptr<const Texture>>& images, Recti* margins) {
-    // NOCOM fix cropping
 	for (const auto& image : images) {
 		std::unique_ptr<Texture> temp_texture(new Texture(image->width(), image->height()));
 		Rectf image_dimensions(Vector2f::zero(), image->width(), image->height());
 		temp_texture->blit(image_dimensions, *image, image_dimensions, 1., BlendMode::Copy);
 		temp_texture->lock();
-        log("NOCOM trimming texture from (%d, %d, %d, %d) ", margins->x, margins->y, margins->w, margins->h);
 		find_trim_rect(temp_texture.get(), margins);
-        log("to (%d, %d, %d, %d)\n", margins->x, margins->y, margins->w, margins->h);
 	}
 }
 
