@@ -100,7 +100,7 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 }
 
 // Finds margins so that we can crop the animation to save space
-void find_margins(const std::vector<std::unique_ptr<Texture>>& images, Recti* margins) {
+void find_margins(const std::vector<std::unique_ptr<const Texture>>& images, Recti* margins) {
     // NOCOM fix cropping
 	for (const auto& image : images) {
 		std::unique_ptr<Texture> temp_texture(new Texture(image->width(), image->height()));
@@ -114,7 +114,7 @@ void find_margins(const std::vector<std::unique_ptr<Texture>>& images, Recti* ma
 }
 
 // Write a spritesheet of the given images into the given filename
-void write_spritesheet(const std::vector<std::unique_ptr<Texture>>& imgs,
+void write_spritesheet(const std::vector<std::unique_ptr<const Texture>>& imgs,
                        const std::string& filename,
                        const Recti& rect,
                        int columns,
@@ -150,14 +150,14 @@ struct SpritesheetData {
 	explicit SpritesheetData(const std::string& fb,
                              const Animation& animation,
                              const float scale)
-	   : filename_base(fb) {
-        animation.frame_textures(&images, scale, false);
-        animation.frame_textures(&pc_masks, scale, true);
+	   : filename_base(fb),
+         images(animation.frame_textures(scale, false)),
+         pc_masks(animation.frame_textures(scale, true)) {
 	}
 
 	const std::string filename_base;
-	std::vector<std::unique_ptr<Texture>> images;
-	std::vector<std::unique_ptr<Texture>> pc_masks;
+	const std::vector<std::unique_ptr<const Texture>> images;
+	const std::vector<std::unique_ptr<const Texture>> pc_masks;
 };
 
 // Reads animation data from engine and then creates spritesheets and the corresponding lua code.

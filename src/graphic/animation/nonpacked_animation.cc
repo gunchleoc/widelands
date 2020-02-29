@@ -129,15 +129,15 @@ void NonPackedAnimation::NonPackedMipMapEntry::blit(uint32_t idx,
 	}
 }
 
-void NonPackedAnimation::NonPackedMipMapEntry::frame_textures(std::vector<std::unique_ptr<Texture>>* result, bool return_playercolor_masks) const {
+std::vector<std::unique_ptr<const Texture>> NonPackedAnimation::NonPackedMipMapEntry::frame_textures(bool return_playercolor_masks) const {
+    std::vector<std::unique_ptr<const Texture>> result;
+    const Rectf rect(Vector2f::zero(), width(), height());
     for (const std::string& filename : return_playercolor_masks ? playercolor_mask_image_files : image_files) {
-		const Image* image = g_gr->images().get(filename);
-
-        result->push_back(std::unique_ptr<Texture>(new Texture(width(), height())));
-
-        Rectf frame_rect(0, 0, width(), height());
-        result->back()->blit(frame_rect, *image, frame_rect, 1., BlendMode::Copy);
+        std::unique_ptr<Texture> texture(new Texture(width(), height()));
+        texture->blit(rect, *g_gr->images().get(filename), rect, 1., BlendMode::Copy);
+        result.push_back(std::move(texture));
 	}
+    return result;
 }
 
 int NonPackedAnimation::NonPackedMipMapEntry::width() const {
