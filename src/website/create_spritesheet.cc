@@ -59,6 +59,7 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 		for (int y = 0; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
+                // NOCOM broken at badger walk
 				rect->x = std::min(rect->x, x - 1);
 				found = true;
 			}
@@ -70,6 +71,7 @@ void find_trim_rect(Texture* texture, Recti* rect) {
 		for (int y = 0; y < max_y && !found; ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
+                // NOCOM cropped at badger walk
 				rect->w = std::min(max_x, x - rect->x) + 1;
 				found = true;
 			}
