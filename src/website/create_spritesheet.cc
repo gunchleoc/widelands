@@ -45,70 +45,79 @@
 namespace {
 char const* const animation_direction_names[6] = {"_ne", "_e", "_se", "_sw", "_w", "_nw"};
 
-// Find trimmed rect according to transparent pixels.
+// Find trimmed rect for a teaxture according to transparent pixels, searching from the outside in.
 // Lock texture before you call this function.
-// TODO(GunChleoc): Revisit trimming when we have fresh Blender exports, to make sure that we won't
-// jump a pixel when zooming
-void find_trim_rect(Texture* texture, Recti* rect) {
-	const int max_x = texture->width();
-	const int max_y = texture->height();
+Recti find_trim_rect(Texture* texture) {
+    Recti result(Vector2i::zero(), texture->width(), texture->height());
 
-	// Find left margin
-	bool found = false;
-	for (int x = 0; x < max_x && !found; ++x) {
-		for (int y = 0; y < max_y && !found; ++y) {
+    // Left margin
+    bool loop_done = false;
+    for (int x = 0; x < texture->width() && !loop_done; ++x) {
+        for (int y = 0; y < texture->height(); ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                // NOCOM broken at badger walk
-				rect->x = std::min(rect->x, x - 1);
-				found = true;
+                result.x = x;
+                loop_done = true;
+                break;
 			}
 		}
-	}
-	// Find right margin
-	found = false;
-	for (int x = max_x - 1; x >= 0 && !found; --x) {
-		for (int y = 0; y < max_y && !found; ++y) {
+    }
+
+    // Right margin
+    loop_done = false;
+    for (int x = texture->width() - 1; x > 0 && !loop_done; --x) {
+        for (int y = 0; y < texture->height(); ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                // NOCOM cropped at badger walk
-				rect->w = std::min(max_x, x - rect->x) + 1;
-				found = true;
+                result.w = x;
+                loop_done = true;
+                break;
 			}
 		}
-	}
-	// Find top margin
-	found = false;
-	for (int y = 0; y < max_y && !found; ++y) {
-		for (int x = 0; x < max_x && !found; ++x) {
+    }
+
+    // Top margin
+    loop_done = false;
+    for (int y = 0; y < texture->height() && !loop_done; ++y) {
+        for (int x = 0; x < texture->width(); ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				rect->y = std::min(rect->y, y - 1);
-				found = true;
+                result.y = y;
+                loop_done = true;
+                break;
 			}
 		}
-	}
-	// Find bottom margin
-	found = false;
-	for (int y = max_y - 1; y >= 0 && !found; --y) {
-		for (int x = 0; x < max_x && !found; ++x) {
+    }
+
+    // Bottom margin
+    loop_done = false;
+    for (int y = texture->height() - 1; y >= 0 && !loop_done; --y) {
+        for (int x = 0; x < texture->width(); ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-				rect->h = std::min(max_y, y - rect->y) + 1;
-				found = true;
+                result.h = y;
+                loop_done = true;
+                break;
 			}
 		}
-	}
+    }
+
+    return result;
 }
 
 // Finds margins so that we can crop the animation to save space
 void find_margins(const std::vector<std::unique_ptr<const Texture>>& images, Recti* margins) {
 	for (const auto& image : images) {
 		std::unique_ptr<Texture> temp_texture(new Texture(image->width(), image->height()));
-		Rectf image_dimensions(Vector2f::zero(), image->width(), image->height());
+		const Rectf image_dimensions(Vector2f::zero(), image->width(), image->height());
 		temp_texture->blit(image_dimensions, *image, image_dimensions, 1., BlendMode::Copy);
 		temp_texture->lock();
-		find_trim_rect(temp_texture.get(), margins);
+
+        const Recti new_rect = find_trim_rect(temp_texture.get());
+        margins->x = std::min(margins->x, new_rect.x);
+        margins->w = std::max(margins->w, new_rect.w);
+        margins->y = std::min(margins->y, new_rect.y);
+        margins->h = std::max(margins->h, new_rect.h);
 	}
 }
 
@@ -304,12 +313,14 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		}
 
 		// Find margins for trimming
-		const auto& images = spritesheets_to_write.front()->images;
-		Recti margins(images.front()->width() / 2, images.front()->height() / 2,
-		              images.front()->width() / 2, images.front()->height() / 2);
+		Recti margins(spritesheets_to_write.front()->images.front()->width(),
+                      spritesheets_to_write.front()->images.front()->height(),
+                      0, 0);
 		for (const auto& animation_data : spritesheets_to_write) {
 			find_margins(animation_data->images, &margins);
 		}
+        assert (margins->w > 1);
+        assert (margins->h > 1);
 
 		// Write the spritesheet(s)
 		const int spritesheet_width = columns * margins.w;
