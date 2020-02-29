@@ -2,7 +2,8 @@ dirname = path.dirname(__file__)
 
 animations = {
    idle = {
-      pictures = path.list_files(dirname .. "idle_??.png"),
+      directory = dirname,
+      basename = "idle",
       sound_effect = {
          -- Sound files with numbers starting for 10 are generating silence. Remove when we move the sound triggering to programs
          path = "sound/animals/coyote",
