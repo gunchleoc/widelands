@@ -133,7 +133,7 @@ void SpriteSheetAnimation::SpriteSheetMipMapEntry::blit(uint32_t idx,
 }
 
 std::vector<std::unique_ptr<const Texture>> SpriteSheetAnimation::SpriteSheetMipMapEntry::frame_textures(bool return_playercolor_masks) const {
-    // NOCOM fix this
+    // NOCOM fix scale 4 badger
     std::vector<std::unique_ptr<const Texture>> result;
     const Rectf rect(Vector2f::zero(), width(), height());
     if (!return_playercolor_masks || has_playercolor_masks) {
@@ -145,9 +145,9 @@ std::vector<std::unique_ptr<const Texture>> SpriteSheetAnimation::SpriteSheetMip
             const int row = i / columns;
 
             texture->fill_rect(rect, RGBAColor(0, 0, 0, 0));
-            texture->blit(Rectf(column * width(), row * height(), width(), height()),
+            texture->blit(rect,
                           return_playercolor_masks ? *playercolor_mask_sheet : *sheet,
-                          rect, 1., BlendMode::Copy);
+                          Rectf(column * width(), row * height(), width(), height()), 1., BlendMode::Copy);
             result.push_back(std::move(texture));
         }
     }
