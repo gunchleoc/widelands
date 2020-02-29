@@ -134,6 +134,7 @@ std::vector<std::unique_ptr<const Texture>> NonPackedAnimation::NonPackedMipMapE
     const Rectf rect(Vector2f::zero(), width(), height());
     for (const std::string& filename : return_playercolor_masks ? playercolor_mask_image_files : image_files) {
         std::unique_ptr<Texture> texture(new Texture(width(), height()));
+        texture->fill_rect(rect, RGBAColor(0, 0, 0, 0));
         texture->blit(rect, *g_gr->images().get(filename), rect, 1., BlendMode::Copy);
         result.push_back(std::move(texture));
 	}

@@ -144,6 +144,7 @@ std::vector<std::unique_ptr<const Texture>> SpriteSheetAnimation::SpriteSheetMip
             const int column = i % columns;
             const int row = i / columns;
 
+            texture->fill_rect(rect, RGBAColor(0, 0, 0, 0));
             texture->blit(Rectf(column * width(), row * height(), width(), height()),
                           return_playercolor_masks ? *playercolor_mask_sheet : *sheet,
                           rect, 1., BlendMode::Copy);
