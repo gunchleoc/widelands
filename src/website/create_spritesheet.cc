@@ -69,7 +69,7 @@ Recti find_trim_rect(Texture* texture) {
         for (int y = 0; y < texture->height(); ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.w = x;
+                result.w = x + 1;
                 loop_done = true;
                 break;
 			}
@@ -95,7 +95,7 @@ Recti find_trim_rect(Texture* texture) {
         for (int x = 0; x < texture->width(); ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.h = y;
+                result.h = y + 1;
                 loop_done = true;
                 break;
 			}
@@ -313,14 +313,25 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		}
 
 		// Find margins for trimming
-		Recti margins(spritesheets_to_write.front()->images.front()->width(),
-                      spritesheets_to_write.front()->images.front()->height(),
-                      0, 0);
+        const int max_width = spritesheets_to_write.front()->images.front()->width();
+        const int max_height = spritesheets_to_write.front()->images.front()->height();
+		Recti margins(max_width, max_height, 0, 0);
 		for (const auto& animation_data : spritesheets_to_write) {
 			find_margins(animation_data->images, &margins);
 		}
-        assert (margins->w > 1);
-        assert (margins->h > 1);
+
+        // Turn right and bottom edges from absolute coordinates to relative
+        margins.w -= margins.x;
+        margins.h -= margins.y;
+        margins.w = std::min(margins.w, max_width);
+        margins.h = std::min(margins.h, max_height);
+
+        assert(margins.x >= 0);
+        assert(margins.y >= 0);
+        assert(margins.w <= max_width);
+        assert(margins.h <= max_height);
+        assert(margins.w > 1);
+        assert(margins.h > 1);
 
 		// Write the spritesheet(s)
 		const int spritesheet_width = columns * margins.w;
