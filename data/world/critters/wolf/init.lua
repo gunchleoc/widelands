@@ -1,20 +1,5 @@
 dirname = path.dirname(__file__)
 
-animations = {
-   idle = {
-      directory = dirname,
-      basename = "idle",
-      hotspot = { 8, 15 },
-      fps = 10,
-      sound_effect = {
-         -- Sound files with numbers starting from 10 are generating silence.
-         path = "sound/animals/wolf",
-      },
-   },
-}
-
-add_directional_animation(animations, "walk", dirname, "walk", {19, 19}, 20)
-
 world:new_critter_type{
    name = "wolf",
    descname = _ "Wolf",
@@ -23,5 +8,29 @@ world:new_critter_type{
    programs = {
       remove = { "remove" },
    },
-   animations = animations,
+   spritesheets = {
+      idle = {
+         directory = dirname,
+         basename = "idle",
+         fps = 10,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         hotspot = { 8, 15 },
+         sound_effect = {
+            -- Sound files with numbers starting from 10 are generating silence.
+            path = "sound/animals/wolf",
+         }
+      },
+      walk = {
+         directory = dirname,
+         basename = "walk",
+         fps = 20,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         directional = true,
+         hotspot = { 19, 19 }
+      }
+   }
 }
