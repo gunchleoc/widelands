@@ -285,7 +285,7 @@ print_loading_message("┗━ took", function()
          name = "critters_herbivores",
          -- TRANSLATORS: A category in the editor for placing animals on the map.
          descname = _ "Herbivores",
-         picture = "world/critters/sheep/idle_00.png",
+         picture = "world/critters/herbivores.png",
          items_per_row = 10,
       }
 
