@@ -16,7 +16,11 @@ world:new_critter_type{
          frames = 20,
          rows = 5,
          columns = 4,
-         hotspot = { 15, 26 }
+         hotspot = { 15, 26 },
+         sound_effect = {
+            -- Sound files with numbers starting for 10 are generating silence. Remove when we move the sound triggering to programs
+            path = "sound/animals/elk",
+         }
       },
       walk = {
          directory = dirname,

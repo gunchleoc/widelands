@@ -20,7 +20,10 @@ world:new_critter_type{
          frames = 8,
          rows = 4,
          columns = 2,
-         hotspot = { 5, 7 }
+         hotspot = { 5, 7 },
+         sound_effect = {
+            path = dirname .. "duck",
+         }
       }
    }
 }
