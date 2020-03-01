@@ -2,13 +2,14 @@ dirname = path.dirname(__file__)
 
 animations = {
    idle = {
-      pictures = path.list_files(dirname .. "idle_??.png"),
+      directory = dirname,
+      basename ="idle",
       hotspot = { 23, 21 },
       fps = 20,
    },
 }
 
-add_directional_animation(animations, "walk", dirname, "walk", {25, 30}, 20)
+add_directional_animation(animations, "walk", dirname, "walk", {25, 30}, 30)
 
 
 world:new_critter_type{
