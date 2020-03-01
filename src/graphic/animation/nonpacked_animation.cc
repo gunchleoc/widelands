@@ -130,6 +130,8 @@ void NonPackedAnimation::NonPackedMipMapEntry::blit(uint32_t idx,
 }
 
 std::vector<std::unique_ptr<const Texture>> NonPackedAnimation::NonPackedMipMapEntry::frame_textures(bool return_playercolor_masks) const {
+    ensure_graphics_are_loaded();
+
     std::vector<std::unique_ptr<const Texture>> result;
     const Rectf rect(Vector2f::zero(), width(), height());
     for (const std::string& filename : return_playercolor_masks ? playercolor_mask_image_files : image_files) {
