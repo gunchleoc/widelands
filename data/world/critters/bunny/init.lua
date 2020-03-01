@@ -1,14 +1,5 @@
 dirname = path.dirname(__file__)
 
-animations = {
-   idle = {
-      pictures = path.list_files(dirname .. "idle.png"),
-      hotspot = { 4, 9 },
-   },
-}
-
-add_directional_animation(animations, "walk", dirname, "walk", {5, 9}, 4)
-
 world:new_critter_type{
    name = "bunny",
    descname = _ "Bunny",
@@ -17,5 +8,22 @@ world:new_critter_type{
    programs = {
       remove = { "remove" },
    },
-   animations = animations,
+   animations = {
+      idle = {
+         directory = dirname,
+         basename = "idle",
+         hotspot = { 4, 9 },
+      },
+   },
+   spritesheets = {
+      walk = {
+         directory = dirname,
+         basename = "walk",
+         frames = 2,
+         rows = 2,
+         columns = 1,
+         directional = true,
+         hotspot = { 5, 9 }
+      }
+   }
 }
