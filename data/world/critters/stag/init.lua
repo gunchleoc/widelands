@@ -2,7 +2,8 @@ dirname = path.dirname(__file__)
 
 animations = {
    idle = {
-      pictures = path.list_files(dirname .. "idle_??.png"),
+      directory = dirname,
+      basename ="idle",
       sound_effect = {
          -- Sound files with numbers starting for 10 are generating silence. Remove when we move the sound triggering to programs
          path = "sound/animals/stag",
@@ -12,7 +13,7 @@ animations = {
    },
 }
 
-add_directional_animation(animations, "walk", dirname, "walk", {25, 30}, 20)
+add_directional_animation(animations, "walk", dirname, "walk", {25, 30}, 30)
 
 world:new_critter_type{
    name = "stag",
