@@ -65,7 +65,7 @@ world:new_critter_type{
          frames = 20,
          rows = 5,
          columns = 4,
-         hotspot = { 10, 12 }
+         hotspot = { 9, 11 }
       },
       walk = {
          directory = dirname,
@@ -75,7 +75,7 @@ world:new_critter_type{
          rows = 5,
          columns = 4,
          directional = true,
-         hotspot = { 13, 15 }
+         hotspot = { 12, 14 }
       }
    }
 }
