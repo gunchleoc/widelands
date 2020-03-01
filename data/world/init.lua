@@ -320,7 +320,7 @@ print_loading_message("┗━ took", function()
          name = "critters_aquatic",
          -- TRANSLATORS: A category in the editor for placing animals on the map.
          descname = _ "Aquatic",
-         picture = "world/critters/duck/idle_00.png",
+         picture = "world/critters/aquatic.png",
          items_per_row = 10,
       }
 
