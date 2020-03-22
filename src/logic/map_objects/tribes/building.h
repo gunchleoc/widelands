@@ -20,37 +20,21 @@
 #ifndef WL_LOGIC_MAP_OBJECTS_TRIBES_BUILDING_H
 #define WL_LOGIC_MAP_OBJECTS_TRIBES_BUILDING_H
 
-#include <cstring>
-#include <string>
-#include <vector>
-
-#include <boost/signals2.hpp>
-
 #include "ai/ai_hints.h"
 #include "base/macros.h"
 #include "logic/map_objects/buildcost.h"
 #include "logic/map_objects/immovable.h"
 #include "logic/map_objects/tribes/attack_target.h"
-#include "logic/map_objects/tribes/bill_of_materials.h"
 #include "logic/map_objects/tribes/building_settings.h"
 #include "logic/map_objects/tribes/soldiercontrol.h"
 #include "logic/map_objects/tribes/wareworker.h"
 #include "logic/map_objects/tribes/workarea_info.h"
 #include "logic/message.h"
-#include "notifications/notifications.h"
 #include "scripting/lua_table.h"
-
-struct BuildingHints;
-class Image;
 
 namespace Widelands {
 
-struct Flag;
-struct Message;
-class TribeDescr;
 class InputQueue;
-
-class Building;
 
 constexpr int32_t kPriorityLow = 2;
 constexpr int32_t kPriorityNormal = 4;
@@ -360,13 +344,13 @@ protected:
 	void act(Game&, uint32_t data) override;
 
 	void draw(uint32_t gametime,
-	          TextToDraw draw_text,
+	          InfoToDraw info_to_draw,
 	          const Vector2f& point_on_dst,
 	          const Coords& coords,
 	          float scale,
 	          RenderTarget* dst) override;
 	void
-	draw_info(TextToDraw draw_text, const Vector2f& point_on_dst, float scale, RenderTarget* dst);
+	draw_info(InfoToDraw info_to_draw, const Vector2f& point_on_dst, float scale, RenderTarget* dst);
 
 	void set_seeing(bool see);
 	void set_attack_target(AttackTarget* new_attack_target);

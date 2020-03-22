@@ -19,23 +19,15 @@
 
 #include "wlapplication.h"
 
-#include <cerrno>
+#include <cassert>
 #ifndef _WIN32
 #include <csignal>
 #endif
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <fstream>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/format.hpp>
 #include <boost/regex.hpp>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -46,6 +38,7 @@
 
 #include "base/i18n.h"
 #include "base/log.h"
+#include "base/random.h"
 #include "base/time_string.h"
 #include "base/warning.h"
 #include "base/wexception.h"
@@ -55,10 +48,10 @@
 #include "graphic/default_resolution.h"
 #include "graphic/font_handler.h"
 #include "graphic/text/font_set.h"
+#include "graphic/text_layout.h"
 #include "io/filesystem/disk_filesystem.h"
 #include "io/filesystem/filesystem_exceptions.h"
 #include "io/filesystem/layered_filesystem.h"
-#include "logic/ai_dna_handler.h"
 #include "logic/filesystem_constants.h"
 #include "logic/game.h"
 #include "logic/game_data_error.h"
@@ -73,7 +66,6 @@
 #include "network/gameclient.h"
 #include "network/gamehost.h"
 #include "network/internet_gaming.h"
-#include "random/random.h"
 #include "sound/sound_handler.h"
 #include "ui_basic/messagebox.h"
 #include "ui_basic/progresswindow.h"
@@ -91,9 +83,7 @@
 #include "ui_fsmenu/options.h"
 #include "ui_fsmenu/scenario_select.h"
 #include "ui_fsmenu/singleplayer.h"
-#include "wlapplication_messages.h"
 #include "wlapplication_options.h"
-#include "wui/game_tips.h"
 #include "wui/interactive_player.h"
 #include "wui/interactive_spectator.h"
 
@@ -311,6 +301,8 @@ WLApplication* WLApplication::get(int const argc, char const** argv) {
 /**
  * Initialize an instance of WLApplication.
  *
+ * Exits with code 2 if the SDL/TTF system is not available.
+ *
  * This constructor is protected \e on \e purpose !
  * Use WLApplication::get() instead and look at the class description.
  *
@@ -371,14 +363,16 @@ WLApplication::WLApplication(int const argc, char const* const* const argv)
 		// We sometimes run into a missing video driver in our CI environment, so we exit 0 to prevent
 		// too frequent failures
 		log("Failed to initialize SDL, no valid video driver: %s", SDL_GetError());
-		exit(0);
+		exit(2);
 	}
 
 	SDL_ShowCursor(SDL_DISABLE);
 	g_gr = new Graphic();
 
-	if (TTF_Init() == -1)
-		throw wexception("True Type library did not initialize: %s\n", TTF_GetError());
+	if (TTF_Init() == -1) {
+		log("True Type library did not initialize: %s\n", TTF_GetError());
+		exit(2);
+	}
 
 	UI::g_fh = UI::create_fonthandler(
 	   &g_gr->images(), i18n::get_locale());  // This will create the fontset, so loading it first.
@@ -1363,24 +1357,22 @@ bool WLApplication::new_game() {
 			// the chat
 			game.set_ibase(new InteractivePlayer(game, get_config_section(), pn, false));
 			std::unique_ptr<GameController> ctrl(new SinglePlayerGameController(game, true, pn));
-			UI::ProgressWindow loader_ui;
-			std::vector<std::string> tipstext;
-			tipstext.push_back("general_game");
-			tipstext.push_back("singleplayer");
-			if (sp.has_players_tribe()) {
-				tipstext.push_back(sp.get_players_tribe());
-			}
-			GameTips tips(loader_ui, tipstext);
 
-			loader_ui.step(_("Preparing game"));
+			std::vector<std::string> tipstexts{"general_game", "singleplayer"};
+			if (sp.has_players_tribe()) {
+				tipstexts.push_back(sp.get_players_tribe());
+			}
+			game.create_loader_ui(tipstexts, false);
+
+			game.step_loader_ui(_("Preparing game"));
 
 			game.set_game_controller(ctrl.get());
-			game.set_loader_ui(&loader_ui);
 			game.init_newgame(sp.settings());
 			game.run(Widelands::Game::NewNonScenario, "", false, "single_player");
-			game.set_loader_ui(nullptr);
 		} catch (const std::exception& e) {
 			log("Fatal exception: %s\n", e.what());
+			std::unique_ptr<GameController> ctrl(new SinglePlayerGameController(game, true, pn));
+			game.set_game_controller(ctrl.get());
 			emergency_save(game);
 			throw;
 		}
@@ -1479,12 +1471,8 @@ void WLApplication::replay() {
 	}
 
 	try {
-		UI::ProgressWindow loader_ui;
-		std::vector<std::string> tipstext;
-		tipstext.push_back("general_game");
-		GameTips tips(loader_ui, tipstext);
-
-		loader_ui.step(_("Loading…"));
+		game.create_loader_ui({"general_game"}, true);
+		game.step_loader_ui(_("Loading…"));
 
 		game.set_ibase(new InteractiveSpectator(game, get_config_section()));
 		game.set_write_replay(false);
@@ -1492,9 +1480,7 @@ void WLApplication::replay() {
 
 		game.save_handler().set_allow_saving(false);
 
-		game.set_loader_ui(&loader_ui);
 		game.run(Widelands::Game::Loaded, "", true, "replay");
-		game.set_loader_ui(nullptr);
 	} catch (const std::exception& e) {
 		log("Fatal Exception: %s\n", e.what());
 		emergency_save(game);
@@ -1532,7 +1518,7 @@ void WLApplication::cleanup_replays() {
 	for (const std::string& filename : g_fs->filter_directory(kReplayDir, [](const std::string& fn) {
 		     return boost::ends_with(
 		        fn, (boost::format("%s%s") % kReplayExtension % kSyncstreamExtension).str());
-	     })) {
+		  })) {
 		if (is_autogenerated_and_expired(filename, kReplayKeepAroundTime)) {
 			log("Delete syncstream or replay %s\n", filename.c_str());
 			try {
@@ -1551,7 +1537,7 @@ void WLApplication::cleanup_replays() {
 void WLApplication::cleanup_ai_files() {
 	for (const std::string& filename : g_fs->filter_directory(kAiDir, [](const std::string& fn) {
 		     return boost::ends_with(fn, kAiExtension) || boost::contains(fn, "ai_player");
-	     })) {
+		  })) {
 		if (is_autogenerated_and_expired(filename, kAIFilesKeepAroundTime)) {
 			log("Deleting generated ai file: %s\n", filename.c_str());
 			try {
@@ -1607,7 +1593,7 @@ void WLApplication::cleanup_temp_backups(std::string dir) {
 		            !boost::ends_with(fn, kSavegameExtension) &&
 		            !boost::ends_with(fn, kWidelandsMapExtension) &&
 		            !boost::ends_with(fn, kTempBackupExtension);
-	     })) {
+		  })) {
 		cleanup_temp_backups(dirname);
 	}
 }

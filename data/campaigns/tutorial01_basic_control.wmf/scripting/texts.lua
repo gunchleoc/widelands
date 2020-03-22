@@ -200,7 +200,7 @@ obj_lumberjack_progress = {
    title=_"Let’s see the progress",
    number = 1,
    body = objective_text(_"Let’s see the progress",
-      li(_[[Click on the construction site to have a look at it, then close it again when you have seen enough.]]) ..
+      li(_[[Click on the construction site to have a look at it, then close its window again when you have seen enough.]]) ..
       li_arrow(_[[To close the construction site’s window, simply right-click on it.]])
    ),
    h = 300,
@@ -223,7 +223,8 @@ lumberjack_message_08 = {
    body = (
       p(_[[Well done! Let’s wait till the hut is finished.]]) ..
       li_image("images/wui/menus/gamespeed.png",
-   _[[If you want things to go faster, simply use the Page Up key on your keyboard to increase the game speed. You can use Page Down to make the game slower again.]])
+         _[[If you want things to go faster, simply use the Page Up key on your keyboard to increase the game speed. You can use Page Down to make the game slower again.]]) ..
+         p(_[[Change is rapid with pressed Ctrl and smooth with pressed Shift.]])
    ),
    h = 200,
    w = 350

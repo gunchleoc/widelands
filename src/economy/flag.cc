@@ -27,6 +27,7 @@
 #include "economy/road.h"
 #include "economy/ware_instance.h"
 #include "economy/waterway.h"
+#include "graphic/rendertarget.h"
 #include "logic/editor_game_base.h"
 #include "logic/game.h"
 #include "logic/map_objects/map_object.h"
@@ -226,7 +227,7 @@ void Flag::attach_building(EditorGameBase& egbase, Building& building) {
 	const Map& map = egbase.map();
 	egbase.set_road(
 	   map.get_fcoords(map.tl_n(position_)), WALK_SE,
-	   building_->get_size() == BaseImmovable::SMALL ? RoadType::kNormal : RoadType::kBusy);
+	   building_->get_size() == BaseImmovable::SMALL ? RoadSegment::kNormal : RoadSegment::kBusy);
 
 	building.set_economy(get_economy(wwWARE), wwWARE);
 	building.set_economy(get_economy(wwWORKER), wwWORKER);
@@ -242,7 +243,7 @@ void Flag::detach_building(EditorGameBase& egbase) {
 	building_->set_economy(nullptr, wwWORKER);
 
 	const Map& map = egbase.map();
-	egbase.set_road(map.get_fcoords(map.tl_n(position_)), WALK_SE, RoadType::kNone);
+	egbase.set_road(map.get_fcoords(map.tl_n(position_)), WALK_SE, RoadSegment::kNone);
 
 	building_ = nullptr;
 }
@@ -640,7 +641,7 @@ void Flag::propagate_promoted_road(Road* const promoted_road) {
 	// Distribute propagation coins in a smart way
 	for (int8_t i = 0; i < WalkingDir::LAST_DIRECTION; ++i) {
 		Road* const road = get_road(i);
-		if (road && road->get_roadtype() != RoadType::kBusy) {
+		if (road && !road->is_busy()) {
 			road->add_to_wallet(0.5 * (kRoadMaxWallet - road->wallet()) *
 			                    (kRoadMaxWallet + road->wallet() * road->wallet()) / sum);
 		}
@@ -862,7 +863,7 @@ void Flag::cleanup(EditorGameBase& egbase) {
 }
 
 void Flag::draw(uint32_t gametime,
-                const TextToDraw,
+                const InfoToDraw,
                 const Vector2f& field_on_dst,
                 const Coords& coords,
                 float scale,

@@ -20,17 +20,13 @@
 #ifndef WL_ECONOMY_WATERWAY_H
 #define WL_ECONOMY_WATERWAY_H
 
-#include <vector>
-
 #include "base/macros.h"
 #include "economy/roadbase.h"
 #include "logic/path.h"
-#include "logic/roadtype.h"
 
 namespace Widelands {
 struct Ferry;
 struct FerryFleet;
-class Request;
 
 class WaterwayDescr : public RoadBaseDescr {
 public:
@@ -78,6 +74,10 @@ struct Waterway : public RoadBase {
 
 protected:
 	void cleanup(EditorGameBase&) override;
+
+	RoadSegment road_type_for_drawing() const override {
+		return RoadSegment::kWaterway;
+	}
 
 private:
 	friend struct FerryFleet;

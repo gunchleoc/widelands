@@ -21,12 +21,12 @@
 #define WL_LOGIC_FIELD_H
 
 #include <cassert>
-#include <limits>
 
 #include "base/wexception.h"
 #include "graphic/playercolor.h"
+#include "graphic/road_segments.h"
+#include "logic/map_objects/walkingdir.h"
 #include "logic/nodecaps.h"
-#include "logic/roadtype.h"
 #include "logic/widelands.h"
 #include "logic/widelands_geometry.h"
 
@@ -49,7 +49,6 @@ namespace Widelands {
 // class all around the code
 
 class Bob;
-class TerrainDescription;
 struct BaseImmovable;
 
 // Field is used so often, make sure it is as small as possible.
@@ -77,11 +76,18 @@ struct Field {
 	struct Terrains {
 		DescriptionIndex d, r;
 	};
-	static_assert(sizeof(Terrains) == 2, "assert(sizeof(Terrains) == 2) failed.");
+	static_assert(sizeof(Terrains) == sizeof(DescriptionIndex) * 2,
+	              "assert(sizeof(Terrains) == sizeof(DescriptionIndex) * 2) failed.");
 	struct Resources {
 		DescriptionIndex d : 4, r : 4;
 	};
-	static_assert(sizeof(Resources) == 1, "assert(sizeof(Resources) == 1) failed.");
+#ifndef WIN32
+	static_assert(sizeof(Resources) == sizeof(DescriptionIndex) / 2,
+	              "assert(sizeof(Resources) == sizeof(DescriptionIndex) / 2) failed.");
+#else
+	static_assert(sizeof(Resources) == sizeof(DescriptionIndex),
+	              "assert(sizeof(Resources) == sizeof(DescriptionIndex)) failed.");
+#endif
 	struct ResourceAmounts {
 		ResourceAmount d : 4, r : 4;
 	};
@@ -178,27 +184,27 @@ struct Field {
 		owner_info_and_selections = (owner_info_and_selections & ~Border_Bitmask) | (b << Border_Bit);
 	}
 
-	RoadType get_road(uint8_t dir) const {
+	RoadSegment get_road(uint8_t dir) const {
 		switch (dir) {
-		case WALK_E:
+		case WalkingDir::WALK_E:
 			return road_east;
-		case WALK_SE:
+		case WalkingDir::WALK_SE:
 			return road_southeast;
-		case WALK_SW:
+		case WalkingDir::WALK_SW:
 			return road_southwest;
 		default:
 			throw wexception("Queried road going in invalid direction %i", dir);
 		}
 	}
-	void set_road(uint8_t dir, RoadType type) {
+	void set_road(uint8_t dir, RoadSegment type) {
 		switch (dir) {
-		case WALK_E:
+		case WalkingDir::WALK_E:
 			road_east = type;
 			break;
-		case WALK_SE:
+		case WalkingDir::WALK_SE:
 			road_southeast = type;
 			break;
-		case WALK_SW:
+		case WalkingDir::WALK_SW:
 			road_southwest = type;
 			break;
 		default:
@@ -260,9 +266,9 @@ private:
 	uint8_t caps = 0U;
 	uint8_t max_caps = 0U;
 
-	RoadType road_east = RoadType::kNone;
-	RoadType road_southeast = RoadType::kNone;
-	RoadType road_southwest = RoadType::kNone;
+	RoadSegment road_east = RoadSegment::kNone;
+	RoadSegment road_southeast = RoadSegment::kNone;
+	RoadSegment road_southwest = RoadSegment::kNone;
 
 	Height height = 0U;
 	int8_t brightness = 0;
@@ -278,13 +284,10 @@ private:
 #pragma pack(pop)
 
 // Check that Field is tightly packed.
-#ifndef WIN32
-static_assert(sizeof(Field) == sizeof(void*) * 2 + sizeof(RoadType) * 3 + 10,
+static_assert(sizeof(Field) ==
+                 sizeof(void*) * 2 + sizeof(RoadSegment) * 3 + sizeof(DescriptionIndex) * 3 +
+                    sizeof(uint8_t) * 7,
               "Field is not tightly packed.");
-#else
-static_assert(sizeof(Field) <= sizeof(void*) * 2 + sizeof(RoadType) * 3 + 11,
-              "Field is not tightly packed.");
-#endif
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_FIELD_H

@@ -23,7 +23,9 @@
 
 #include "base/macros.h"
 #include "base/math.h"
+#include "graphic/game_renderer.h"
 #include "graphic/rendertarget.h"
+#include "logic/map_objects/world/world.h"
 #include "wlapplication.h"
 #include "wlapplication_options.h"
 #include "wui/mapviewpixelfunctions.h"
@@ -126,7 +128,7 @@ void do_plan_map_transition(uint32_t start_time,
                             std::deque<MapView::TimestampedView>* plan) {
 	for (int i = 1; i < kNumKeyFrames - 2; i++) {
 		float dt = (duration_ms / kNumKeyFrames) * i;
-		// Using math::clamp as a workaround for https://bugs.launchpad.net/widelands/+bug/1818494
+		// Using math::clamp fixes crashes with leaning on the zoom keys and resetting zoom.
 		const float zoom = math::clamp(zoom_t.value(dt), 1.f / kMaxZoom, kMaxZoom);
 		const Vector2f center_point = center_point_t.value(dt);
 		const Vector2f viewpoint = center_point - Vector2f(width * zoom / 2.f, height * zoom / 2.f);
@@ -359,12 +361,12 @@ FieldsToDraw* MapView::draw_terrain(const Widelands::EditorGameBase& egbase,
 		}
 
 		// Linearly interpolate between the next and the last.
-		// Using std::max as a workaround for https://bugs.launchpad.net/widelands/+bug/1818494
+		// Using std::max fixes crashes with leaning on the zoom keys and resetting zoom.
 		const float t =
 		   (std::max(1U, now - plan[0].t)) / static_cast<float>(std::max(1U, plan[1].t - plan[0].t));
 		const View new_view = {
 		   mix(t, plan[0].view.viewpoint, plan[1].view.viewpoint),
-		   // Using math::clamp as a workaround for https://bugs.launchpad.net/widelands/+bug/1818494
+		   // Using math::clamp fixes crashes with leaning on the zoom keys and resetting zoom.
 		   math::clamp(mix(t, plan[0].view.zoom, plan[1].view.zoom), 1.f / kMaxZoom, kMaxZoom)};
 		set_view(new_view, Transition::Jump);
 		break;
@@ -389,7 +391,8 @@ FieldsToDraw* MapView::draw_terrain(const Widelands::EditorGameBase& egbase,
 
 	fields_to_draw_.reset(egbase, view_.viewpoint, view_.zoom, dst);
 	const float scale = 1.f / view_.zoom;
-	::draw_terrain(egbase, fields_to_draw_, scale, workarea, grid, dst);
+	::draw_terrain(
+	   egbase.get_gametime(), egbase.world(), fields_to_draw_, scale, workarea, grid, dst);
 	return &fields_to_draw_;
 }
 
@@ -402,7 +405,7 @@ void MapView::set_view(const View& target_view, const Transition& passed_transit
 			return;
 		}
 		view_ = target_view;
-		// Using math::clamp as a workaround for https://bugs.launchpad.net/widelands/+bug/1818494
+		// Using math::clamp fixes crashes with leaning on the zoom keys and resetting zoom.
 		view_.zoom = math::clamp(view_.zoom, 1.f / kMaxZoom, kMaxZoom);
 		MapviewPixelFunctions::normalize_pix(map_, &view_.viewpoint);
 		changeview();
@@ -543,8 +546,12 @@ void MapView::zoom_around(float new_zoom,
 	}
 
 	case Transition::Smooth: {
+		if (view_plans_.empty() && view_.zoom_near(new_zoom)) {
+			// We're already at the target zoom...
+			return;
+		}
 		if (!view_plans_.empty() && view_plans_.back().back().view.zoom_near(new_zoom)) {
-			// We're already there
+			// ...or on the way there.
 			return;
 		}
 		const int w = get_w();

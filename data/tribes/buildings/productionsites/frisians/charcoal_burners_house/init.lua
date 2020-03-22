@@ -4,7 +4,7 @@ tribes:new_productionsite_type {
    msgctxt = "frisians_building",
    name = "frisians_charcoal_burners_house",
    -- TRANSLATORS: This is a building name used in lists of buildings
-   descname = pgettext ("frisians_building", "Charcoal Burner's House"),
+   descname = pgettext ("frisians_building", "Charcoal Burner’s House"),
    helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "small",
@@ -79,9 +79,9 @@ tribes:new_productionsite_type {
          descname = _"making a charcoal stack",
          actions = {
             "return=skipped unless economy needs coal",
-            "return=failed unless site has log:3",
-            "callworker=make_stack",
+            "callworker=find_pond",
             "consume=log:3",
+            "callworker=make_stack",
             "sleep=15000",
          },
       },
@@ -89,7 +89,6 @@ tribes:new_productionsite_type {
          -- TRANSLATORS: Completed/Skipped/Did not start collecting coal because ...
          descname = _"collecting coal",
          actions = {
-            "return=skipped unless economy needs coal",
             "sleep=15000",
             "callworker=collect_coal",
          },
@@ -100,7 +99,7 @@ tribes:new_productionsite_type {
       -- Translators: Short for "Out of ..." for a resource
       title = _"No Ponds",
       heading = _"Out of Clay Ponds",
-      message = pgettext ("frisians_building", "The charcoal burner working at this charcoal burner's house can’t find any clay ponds in his work area. Please make sure there is a working clay pit nearby and the charcoal kiln is supplied with all needed wares, or consider dismantling or destroying this building."),
+      message = pgettext ("frisians_building", "The charcoal burner working at this charcoal burner’s house can’t find any clay ponds in his work area. Please make sure there is a working clay pit nearby and the charcoal burner’s house is supplied with all needed wares, or consider dismantling or destroying this building."),
       productivity_threshold = 12
    },
 }

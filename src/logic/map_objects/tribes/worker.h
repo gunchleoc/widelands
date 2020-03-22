@@ -30,7 +30,6 @@
 #include "map_io/tribes_legacy_lookup_table.h"
 
 namespace Widelands {
-class Building;
 
 /**
  * Worker is the base class for all humans (and actually potential non-humans,
@@ -186,7 +185,7 @@ protected:
 	                        const float scale,
 	                        RenderTarget* dst) const;
 	void draw(const EditorGameBase&,
-	          const TextToDraw& draw_text,
+	          const InfoToDraw& info_to_draw,
 	          const Vector2f& field_on_dst,
 	          const Widelands::Coords& coords,
 	          float scale,

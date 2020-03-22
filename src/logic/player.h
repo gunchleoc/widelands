@@ -21,13 +21,10 @@
 #define WL_LOGIC_PLAYER_H
 
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "base/macros.h"
 #include "economy/economy.h"
 #include "graphic/color.h"
-#include "graphic/playercolor.h"
 #include "logic/editor_game_base.h"
 #include "logic/map_objects/tribes/building.h"
 #include "logic/map_objects/tribes/constructionsite.h"
@@ -44,14 +41,9 @@ namespace Widelands {
 
 struct Path;
 struct PlayerImmovable;
-class Soldier;
 class TrainingSite;
-struct Flag;
-class TribeDescr;
-struct RoadBase;
 struct Road;
 struct Waterway;
-struct AttackController;
 
 /**
  * Manage in-game aspects of players, such as tribe, team, fog-of-war, statistics,
@@ -226,9 +218,9 @@ public:
 		Field()
 		   : military_influence(0),
 		     vision(0),
-		     r_e(Widelands::RoadType::kNone),
-		     r_se(Widelands::RoadType::kNone),
-		     r_sw(Widelands::RoadType::kNone),
+		     r_e(RoadSegment::kNone),
+		     r_se(RoadSegment::kNone),
+		     r_sw(RoadSegment::kNone),
 		     owner(0),
 		     time_node_last_unseen(0),
 		     map_object_descr(nullptr),
@@ -312,9 +304,9 @@ public:
 		 * Each value is only valid when this player has seen this node
 		 * or the node to the the edge leads up to.
 		 */
-		Widelands::RoadType r_e;
-		Widelands::RoadType r_se;
-		Widelands::RoadType r_sw;
+		RoadSegment r_e;
+		RoadSegment r_se;
+		RoadSegment r_sw;
 
 		/**
 		 * The owner of this node, as far as this player knows.
@@ -335,7 +327,7 @@ public:
 		/// east, as far as this player knows.
 		/// Only valid when this player has seen this node or the node to the
 		/// east.
-		Widelands::RoadType road_e() const {
+		RoadSegment road_e() const {
 			return r_e;
 		}
 
@@ -343,7 +335,7 @@ public:
 		/// southeast, as far as this player knows.
 		/// Only valid when this player has seen this node or the node to the
 		/// southeast.
-		Widelands::RoadType road_se() const {
+		RoadSegment road_se() const {
 			return r_se;
 		}
 
@@ -351,7 +343,7 @@ public:
 		/// southwest, as far as this player knows.
 		/// Only valid when this player has seen this node or the node to the
 		/// southwest.
-		Widelands::RoadType road_sw() const {
+		RoadSegment road_sw() const {
 			return r_sw;
 		}
 

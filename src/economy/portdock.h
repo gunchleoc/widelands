@@ -20,7 +20,6 @@
 #ifndef WL_ECONOMY_PORTDOCK_H
 #define WL_ECONOMY_PORTDOCK_H
 
-#include <list>
 #include <memory>
 
 #include "base/macros.h"
@@ -129,18 +128,18 @@ public:
 	ExpeditionBootstrap* expedition_bootstrap() const;
 
 	// Gets called by the ExpeditionBootstrap as soon as all wares and workers are available.
-	void expedition_bootstrap_complete(Game& game);
+	void set_expedition_bootstrap_complete(Game& game, bool complete);
 
 private:
 	friend struct ShipFleet;
 
 	// Does nothing - we do not show them on the map
-	void draw(uint32_t, TextToDraw, const Vector2f&, const Coords&, float, RenderTarget*) override {
+	void draw(uint32_t, InfoToDraw, const Vector2f&, const Coords&, float, RenderTarget*) override {
 	}
 
 	void init_fleet(EditorGameBase& egbase);
 	void set_fleet(ShipFleet* fleet);
-	void update_shippingitem(Game&, std::list<ShippingItem>::iterator);
+	std::list<ShippingItem>::iterator update_shippingitem(Game&, std::list<ShippingItem>::iterator);
 	void set_need_ship(Game&, bool need);
 
 	void load_wares(Game&, Ship&);
