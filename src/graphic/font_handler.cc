@@ -21,8 +21,6 @@
 
 #include <memory>
 
-#include <boost/lexical_cast.hpp>
-
 #include "graphic/text/rt_render.h"
 #include "graphic/text/texture_cache.h"
 #include "graphic/text/transient_cache.h"

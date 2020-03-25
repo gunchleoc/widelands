@@ -21,12 +21,9 @@
 #define WL_GRAPHIC_TEXT_TEST_RENDER_H
 
 #include <memory>
-#include <string>
 
 #include "graphic/text/rt_render.h"
 #include "graphic/text/texture_cache.h"
-
-class SDLSurface;
 
 // A stand alone richtext renderer for tests and binaries.
 class StandaloneRenderer {

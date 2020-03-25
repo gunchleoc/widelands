@@ -19,10 +19,7 @@
 
 #include "ui_basic/editbox.h"
 
-#include <limits>
-
 #include <SDL_keycode.h>
-#include <boost/format.hpp>
 
 #include "graphic/color.h"
 #include "graphic/font_handler.h"
@@ -31,7 +28,6 @@
 #include "graphic/style_manager.h"
 #include "graphic/text/bidi.h"
 #include "graphic/text/font_set.h"
-#include "graphic/text/rt_errors.h"
 #include "graphic/text_layout.h"
 #include "ui_basic/mouse_constants.h"
 
@@ -377,8 +373,9 @@ void EditBox::draw(RenderTarget& dst) {
 	const int max_width = get_w() - 2 * kMarginX;
 	FontStyleInfo scaled_style(*m_->font_style);
 	scaled_style.set_size(scaled_style.size() * m_->font_scale);
-	std::shared_ptr<const UI::RenderedText> rendered_text = UI::g_fh->render(
-	   as_editor_richtext_paragraph(password_ ? text_to_asterisk() : m_->text, scaled_style));
+	std::shared_ptr<const UI::RenderedText> rendered_text =
+	   UI::g_fh->render(as_editor_richtext_paragraph(
+	      password_ ? text_to_asterisk() : richtext_escape(m_->text), scaled_style));
 
 	const int linewidth = m_->rendered_text->width(); // NOCOM crash in password mode
 	const int lineheight = m_->text.empty() ? text_height(scaled_style) : m_->rendered_text->height();

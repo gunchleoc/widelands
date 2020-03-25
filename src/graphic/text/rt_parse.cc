@@ -23,7 +23,6 @@
 
 #include <SDL.h>
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/format.hpp>
 
 #include "graphic/text/rt_errors.h"
 #include "graphic/text/rt_errors_impl.h"

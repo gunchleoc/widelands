@@ -20,7 +20,6 @@
 #include "ui_basic/multilineeditbox.h"
 
 #include <boost/algorithm/string.hpp>
-#include <boost/bind.hpp>
 
 #include "base/utf8.h"
 #include "graphic/font_handler.h"

@@ -25,8 +25,9 @@
 
 #include "graphic/wordwrap.h"
 
+#include <memory>
+
 #include <SDL_ttf.h>
-#include <boost/format.hpp>
 #include <unicode/unistr.h>
 
 #include "base/log.h"
