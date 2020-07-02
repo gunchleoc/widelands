@@ -1238,6 +1238,14 @@ void Warehouse::plan_workers(Game& game, DescriptionIndex index, Quantity amount
 void Warehouse::update_planned_workers(Game& game, Warehouse::PlannedWorkers& pw) {
 	const WorkerDescr& w_desc = *owner().tribe().get_worker_descr(pw.index);
 
+    // Check which PlayerImmovables that requested the worker still exist
+    for (auto it = pw.requests.begin(); it != pw.requests.end(); ++it) {
+        if (!(*it)->target()) {
+            molog("target disappeared for worker '%s' request - canceling\n", w_desc.name().c_str());
+            it = pw.requests.erase(it);
+            --pw.amount;
+        }
+    }
 	while (pw.amount && can_create_worker(game, pw.index)) {
 		create_worker(game, pw.index);
 	}

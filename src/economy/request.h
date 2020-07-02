@@ -62,7 +62,7 @@ public:
 	Request(PlayerImmovable& target, DescriptionIndex, CallbackFn, WareWorker);
 	~Request();
 
-	PlayerImmovable& target() const {
+	PlayerImmovable* target() const {
 		return target_;
 	}
 	DescriptionIndex get_index() const {
@@ -136,7 +136,7 @@ private:
 
 	WareWorker type_;
 
-	PlayerImmovable& target_;  //  who requested it?
+	PlayerImmovable* target_;  //  who requested it?
 	//  Copies of target_ of various pointer types, to avoid expensive
 	//  dynamic casting at runtime. Variables with an incompatible type
 	//  are filled with nulls.

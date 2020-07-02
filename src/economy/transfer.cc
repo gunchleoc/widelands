@@ -39,12 +39,12 @@
 namespace Widelands {
 
 Transfer::Transfer(Game& game, Request& req, WareInstance& it)
-   : game_(game), request_(&req), destination_(&req.target()), ware_(&it), worker_(nullptr) {
+   : game_(game), request_(&req), destination_(req.target()), ware_(&it), worker_(nullptr) {
 	ware_->set_transfer(game, *this);
 }
 
 Transfer::Transfer(Game& game, Request& req, Worker& w)
-   : game_(game), request_(&req), destination_(&req.target()), ware_(nullptr), worker_(&w) {
+   : game_(game), request_(&req), destination_(req.target()), ware_(nullptr), worker_(&w) {
 	worker_->start_task_transfer(game, this);
 }
 
@@ -86,12 +86,12 @@ void Transfer::set_request(Request* req) {
 	assert(!request_);
 	assert(req);
 
-	if (&req->target() != destination_.get(game_)) {
+	if (req->target() != destination_.get(game_)) {
 		if (destination_.is_set())
 			log("WARNING: Transfer::set_request req->target (%u) "
 			    "vs. destination (%u) mismatch\n",
-			    req->target().serial(), destination_.serial());
-		destination_ = &req->target();
+			    req->target()->serial(), destination_.serial());
+		destination_ = req->target();
 	}
 	request_ = req;
 }

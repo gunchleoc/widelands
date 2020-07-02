@@ -52,7 +52,7 @@ Request::Request(PlayerImmovable& init_target,
                  CallbackFn const cbfn,
                  WareWorker const w)
    : type_(w),
-     target_(init_target),
+     target_(&init_target),
      target_building_(dynamic_cast<Building*>(&init_target)),
      target_productionsite_(dynamic_cast<ProductionSite*>(&init_target)),
      target_warehouse_(dynamic_cast<Warehouse*>(&init_target)),
@@ -105,7 +105,7 @@ void Request::read(FileRead& fr,
 	try {
 		uint16_t const packet_version = fr.unsigned_16();
 		if (packet_version == kCurrentPacketVersion) {
-			const TribeDescr& tribe = target_.owner().tribe();
+			const TribeDescr& tribe = target_->owner().tribe();
 			char const* const type_name = fr.c_string();
 			DescriptionIndex const wai = tribe.ware_index(tribes_lookup_table.lookup_ware(type_name));
 			if (tribe.has_ware(wai)) {
@@ -126,7 +126,7 @@ void Request::read(FileRead& fr,
 			if (economy_) {
 				economy_->remove_request(*this);
 			}
-			economy_ = target_.get_economy(type_);
+			economy_ = target_->get_economy(type_);
 			assert(economy_);
 
 			count_ = fr.unsigned_32();
@@ -224,7 +224,7 @@ void Request::write(FileWrite& fw, Game& game, MapObjectSaver& mos) const {
  * Figure out the flag we need to deliver to.
  */
 Flag& Request::target_flag() const {
-	return target().base_flag();
+	return target()->base_flag();
 }
 
 /**
@@ -397,7 +397,7 @@ void Request::start_transfer(Game& game, Supply& supp) {
 
 	::StreamWrite& ss = game.syncstream();
 	ss.unsigned_8(SyncEntry::kStartTransfer);
-	ss.unsigned_32(target().serial());
+	ss.unsigned_32(target()->serial());
 	ss.unsigned_32(supp.get_position(game)->serial());
 
 	Transfer* t;
@@ -449,7 +449,7 @@ void Request::transfer_finish(Game& game, Transfer& t) {
 	// the callback functions are likely to delete us,
 	// therefore we musn't access member variables behind this
 	// point
-	(*callbackfn_)(game, *this, index_, w, target_);
+	(*callbackfn_)(game, *this, index_, w, *target_);
 }
 
 /**

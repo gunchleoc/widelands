@@ -706,7 +706,7 @@ void Economy::process_requests(Game& game, RSPairStruct* supply_pairs) {
 			ss.unsigned_8(SyncEntry::kProcessRequests);
 			ss.unsigned_8(req.get_type());
 			ss.unsigned_8(req.get_index());
-			ss.unsigned_32(req.target().serial());
+			ss.unsigned_32(req.target()->serial());
 		}
 
 		int32_t cost;  // estimated time in milliseconds to fulfill Request
