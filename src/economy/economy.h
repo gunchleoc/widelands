@@ -36,6 +36,7 @@ namespace Widelands {
 
 class Economy;
 struct Flag;
+struct NoteImmovable;
 struct RSPairStruct;
 struct Route;
 struct Router;
@@ -281,6 +282,8 @@ private:
 
 	// 'list' of unique providers
 	std::map<UniqueDistance, Supply*> available_supplies_;
+
+    std::unique_ptr<Notifications::Subscriber<NoteImmovable>> immovable_subscriber_;
 
 	DISALLOW_COPY_AND_ASSIGN(Economy);
 };

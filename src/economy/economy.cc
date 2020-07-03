@@ -31,6 +31,7 @@
 #include "economy/router.h"
 #include "economy/warehousesupply.h"
 #include "logic/game.h"
+#include "logic/map_objects/immovable.h"
 #include "logic/map_objects/tribes/soldier.h"
 #include "logic/map_objects/tribes/tribe_descr.h"
 #include "logic/map_objects/tribes/warehouse.h"
@@ -81,6 +82,49 @@ Economy::Economy(Player& player, Serial init_serial, WareWorker wwtype)
 	}
 
 	router_.reset(new Router([this]() { reset_all_pathfinding_cycles(); }));
+
+    // Subscribe to NoteImmovables for cleaning up requests
+	immovable_subscriber_ =
+	   Notifications::subscribe<NoteImmovable>([this](const NoteImmovable& note) {
+            if (note.ownership == NoteImmovable::Ownership::GAINED) {
+                return;
+            }
+		   if (note.pi->owner().player_number() != owner().player_number()) {
+			   return;
+		   }
+		   // An immovable was lost
+
+           /*
+            *
+NOCOM ***** economy found lost serial: 526
+NOCOM ware: felling_ax
+NOCOM should KEEP request -> barbarians_warehouse
+NOCOM ware: coal
+NOCOM should KEEP request -> barbarians_lime_kiln
+NOCOM ***** economy found lost serial: 526
+NOCOM worker: barbarians_ox
+NOCOM should KEEP request -> road
+
+            * */
+
+           Widelands::Serial lost_serial = note.pi->serial();
+           log("NOCOM ***** economy found lost serial: %d\n", lost_serial);
+
+           for (Request* req : requests_) {
+               if (req->type_ == WareWorker::wwWARE) {
+                   log("NOCOM ware: %s\n", owner().tribe().get_ware_descr(req->get_index())->name().c_str());
+               } else {
+                   log("NOCOM worker: %s\n", owner().tribe().get_worker_descr(req->get_index())->name().c_str());
+               }
+               if (req->target()->serial() == lost_serial) {
+                   log("NOCOM should LOSE request -> %s\n", req->target()->descr().name().c_str());
+                   // remove_request
+                   // balance_requestsupply
+               } else {
+                   log("NOCOM should KEEP request -> %s\n", req->target()->descr().name().c_str());
+               }
+           }
+		});
 }
 
 Economy::~Economy() {
