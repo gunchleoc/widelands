@@ -135,7 +135,7 @@ SoundOptions::SoundOptions(UI::Panel& parent, UI::SliderStyle style)
 
 	add(new SoundControl(this, style, pgettext("sound_options", "Ambient Sounds"),
 	                     SoundType::kAmbient,
-	                     g_sh->register_fx(SoundType::kAmbient, "sound/create_construction_site")));
+	                     g_sh->register_fx(SoundType::kAmbient, "sound/metal/goldping")));
 
 	// TODO(GunChleoc): There's a bug (probably somewhere in Box, triggered in combination with
 	// Window::set_center_panel) that will hide the bottom SoundControl in GameOptionsSoundMenu if

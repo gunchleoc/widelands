@@ -120,7 +120,7 @@ ConstructionSiteDescr::ConstructionSiteDescr(const std::string& init_descname,
                                              const Tribes& tribes)
    : BuildingDescr(init_descname, MapObjectType::CONSTRUCTIONSITE, table, tribes),
      creation_fx_(
-        SoundHandler::register_fx(SoundType::kAmbient, "sound/create_construction_site")) {
+        SoundHandler::register_fx(SoundType::kUI, "sound/create_construction_site")) {
 	add_attribute(MapObject::CONSTRUCTIONSITE);
 }
 
@@ -192,7 +192,7 @@ Initialize the construction site by starting orders
 */
 bool ConstructionSite::init(EditorGameBase& egbase) {
 	Notifications::publish(
-	   NoteSound(SoundType::kAmbient, descr().creation_fx(), position_, kFxPriorityAlwaysPlay));
+	   NoteSound(SoundType::kUI, descr().creation_fx(), position_, kFxPriorityAlwaysPlay));
 	PartiallyFinishedBuilding::init(egbase);
 
 	const std::map<DescriptionIndex, uint8_t>* buildcost = nullptr;
