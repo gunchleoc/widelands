@@ -62,11 +62,6 @@ tribes:new_productionsite_type {
       { name = "coal", amount = 8 },
       { name = "iron", amount = 8 },
    },
-   outputs = {
-      "sword_short",
-      "sword_long",
-      "helmet",
-   },
 
    programs = {
       work = {
@@ -77,7 +72,6 @@ tribes:new_productionsite_type {
             "call=produce_s2",
             "call=produce_h",
             "call=produce_s2",
-            "return=no_stats",
          },
       },
       produce_s1 = {
@@ -87,11 +81,11 @@ tribes:new_productionsite_type {
             -- time total: 57 + 3.6
             "return=skipped unless economy needs sword_short",
             "consume=coal iron",
-            "sleep=24000",
+            "sleep=duration:24s",
             "playsound=sound/smiths/smith 192",
-            "animate=working 24000",
+            "animate=working duration:24s",
             "playsound=sound/smiths/sharpening 120",
-            "sleep=9000",
+            "sleep=duration:9s",
             "produce=sword_short"
          },
       },
@@ -102,11 +96,11 @@ tribes:new_productionsite_type {
             -- time total: 57 + 3.6
             "return=skipped unless economy needs sword_long",
             "consume=coal iron:2",
-            "sleep=24000",
+            "sleep=duration:24s",
             "playsound=sound/smiths/smith 192",
-            "animate=working 24000",
+            "animate=working duration:24s",
             "playsound=sound/smiths/sharpening 120",
-            "sleep=9000",
+            "sleep=duration:9s",
             "produce=sword_long"
          },
       },
@@ -117,9 +111,9 @@ tribes:new_productionsite_type {
             -- time total: 67 + 3.6
             "return=skipped unless economy needs helmet",
             "consume=coal iron",
-            "sleep=30000",
+            "sleep=duration:30s",
             "playsound=sound/smiths/smith 192",
-            "animate=working 37000",
+            "animate=working duration:37s",
             "produce=helmet"
          },
       },

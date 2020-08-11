@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -170,7 +170,7 @@ private:
 	void write_setting_user(SendPacket& packet, uint32_t number);
 	void broadcast_setting_user(uint32_t number);
 	void write_setting_all_users(SendPacket&);
-	bool write_map_transfer_info(SendPacket&, std::string);
+	bool write_map_transfer_info(SendPacket&, const std::string&);
 
 	void disconnect_player_controller(uint8_t number, const std::string& name);
 	void disconnect_client(uint32_t number,

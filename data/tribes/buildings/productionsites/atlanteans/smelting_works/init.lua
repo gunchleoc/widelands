@@ -45,10 +45,6 @@ tribes:new_productionsite_type {
       { name = "iron_ore", amount = 8 },
       { name = "gold_ore", amount = 8 }
    },
-   outputs = {
-      "iron",
-      "gold"
-   },
 
    programs = {
       work = {
@@ -58,7 +54,6 @@ tribes:new_productionsite_type {
             "call=smelt_iron",
             "call=smelt_gold",
             "call=smelt_iron_2",
-            "return=no_stats"
          }
       },
       -- 2 identical programs for iron to prevent unnecessary skipping penalty
@@ -68,9 +63,9 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs iron",
             "consume=iron_ore coal",
-            "sleep=25000",
+            "sleep=duration:25s",
             "playsound=sound/metal/fizzle 150",
-            "animate=working 35000",
+            "animate=working duration:35s",
             "playsound=sound/metal/ironping 80",
             "produce=iron"
          }
@@ -81,9 +76,9 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs iron",
             "consume=iron_ore coal",
-            "sleep=25000",
+            "sleep=duration:25s",
             "playsound=sound/metal/fizzle 150",
-            "animate=working 35000",
+            "animate=working duration:35s",
             "playsound=sound/metal/ironping 80",
             "produce=iron"
          }
@@ -94,9 +89,9 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs gold",
             "consume=gold_ore coal",
-            "sleep=25000",
+            "sleep=duration:25s",
             "playsound=sound/metal/fizzle 150",
-            "animate=working 35000",
+            "animate=working duration:35s",
             "playsound=sound/metal/goldping 80",
             "produce=gold"
          }

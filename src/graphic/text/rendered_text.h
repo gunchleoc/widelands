@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 by the Widelands Development Team
+ * Copyright (C) 2017-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -66,7 +66,7 @@ public:
 	/// RenderedRect will contain a normal image that is managed by a transient cache.
 	/// Use this if the image is managed by an instance of TextureCache.
 	/// Specify 'advances_caret', 'text' and 'font' if this is a text node
-	explicit RenderedRect(std::shared_ptr<const Image> init_image, bool advances_caret = false, const std::string& text = "", const RT::IFont* font = nullptr);
+	explicit RenderedRect(std::shared_ptr<const Image>& init_image, bool advances_caret = false, const std::string& text = "", const RT::IFont* font = nullptr);
 
 	/// RenderedRect will contain a normal image that is managed by a permanent cache.
 	/// Use this if the image is managed by g_gr->images().

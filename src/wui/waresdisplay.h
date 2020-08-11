@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2019 by the Widelands Development Team
+ * Copyright (C) 2003-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -182,5 +182,6 @@ private:
 
 std::string waremap_to_richtext(const Widelands::TribeDescr& tribe,
                                 const std::map<Widelands::DescriptionIndex, uint8_t>& map);
+std::string get_amount_string(uint32_t, bool cutoff1k = false);
 
 #endif  // end of include guard: WL_WUI_WARESDISPLAY_H

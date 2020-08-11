@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 
 #include <csignal>
 
-#include <SDL.h>
+#include <SDL_messagebox.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
@@ -186,8 +186,8 @@ SDL_GLContext initialize(
 
 	// Show a basic SDL window with an error message, and log it too, then exit 1. Since font support
 	// does not exist for all languages, we show both the original and a localized text.
-	auto show_opengl_error_and_exit = [](
-	   const std::string& message, const std::string& localized_message) {
+	auto show_opengl_error_and_exit = [](const std::string& message,
+	                                     const std::string& localized_message) {
 		std::string display_message = "";
 		if (message != localized_message) {
 			display_message =
@@ -230,14 +230,14 @@ SDL_GLContext initialize(
 
 	std::vector<std::string> shading_language_version_vector;
 	boost::split(
-	   shading_language_version_vector, shading_language_version_string, boost::is_any_of("."));
+	   shading_language_version_vector, shading_language_version_string, boost::is_any_of(". "));
 	if (shading_language_version_vector.size() >= 2) {
 		// The shading language version has been detected properly. Exit if the shading language
 		// version is too old.
 		const int major_shading_language_version =
-		   atoi(shading_language_version_vector.front().c_str());
+		   boost::lexical_cast<int>(shading_language_version_vector.front());
 		const int minor_shading_language_version =
-		   atoi(shading_language_version_vector.at(1).c_str());
+		   boost::lexical_cast<int>(shading_language_version_vector.at(1));
 		if (major_shading_language_version < 1 ||
 		    (major_shading_language_version == 1 && minor_shading_language_version < 20)) {
 			show_opengl_error_and_exit(
@@ -257,7 +257,8 @@ SDL_GLContext initialize(
 		// conversion
 		boost::regex re("\\d+");
 		if (boost::regex_match(shading_language_version_string, re)) {
-			const int major_shading_language_version = atoi(shading_language_version_string);
+			const int major_shading_language_version =
+			   boost::lexical_cast<int>(shading_language_version_string);
 			if (major_shading_language_version < 2) {
 				show_opengl_error_and_exit(
 				   "Widelands won’t work because your graphics driver is too old.\n"

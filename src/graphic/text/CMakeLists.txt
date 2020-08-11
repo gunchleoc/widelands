@@ -26,7 +26,6 @@ wl_library(graphic_text_font_backend
     font_io.h
     sdl_ttf_font.cc
     sdl_ttf_font.h
-  USES_SDL2
   USES_SDL2_TTF
   DEPENDS
     graphic_sdl_utils
@@ -57,7 +56,6 @@ wl_library(graphic_text
     rt_render.h
     rendered_text.cc
     rendered_text.h
-  USES_SDL2
   USES_ICU
   DEPENDS
     base_exceptions
@@ -76,9 +74,7 @@ wl_library(graphic_text
     graphic_text_cache
     graphic_text_errors
     graphic_text_font_backend
-    graphic_text_layout
     graphic_text_stream
-    io_fileread
     io_filesystem
     scripting_lua_interface
     scripting_lua_table

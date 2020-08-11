@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 by the Widelands Development Team
+ * Copyright (C) 2009-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -48,22 +48,24 @@ bool CheckStepRoadAI::allowed(
 	}
 
 	// Calculate cost and passability
-	if (!(endcaps & movecaps))
+	if (!(endcaps & movecaps)) {
 		return false;
+	}
 
 	// Check for blocking immovables
-	if (BaseImmovable const* const imm = map.get_immovable(end))
+	if (BaseImmovable const* const imm = map.get_immovable(end)) {
 		if (imm->get_size() >= BaseImmovable::SMALL) {
-			if (id != CheckStep::stepLast && !open_end)
+			if (id != CheckStep::stepLast && !open_end) {
 				return false;
-
-			if (dynamic_cast<Flag const*>(imm))
+			}
+			if (dynamic_cast<Flag const*>(imm)) {
 				return true;
-
-			if (!dynamic_cast<Road const*>(imm) || !(endcaps & BUILDCAPS_FLAG))
+			}
+			if (!dynamic_cast<Road const*>(imm) || !(endcaps & BUILDCAPS_FLAG)) {
 				return false;
+			}
 		}
-
+	}
 	return true;
 }
 
@@ -71,11 +73,12 @@ bool CheckStepRoadAI::reachable_dest(const Map& map, const FCoords& dest) const 
 	NodeCaps const caps = dest.field->nodecaps();
 
 	if (!(caps & movecaps)) {
-		if (!((movecaps & MOVECAPS_SWIM) && (caps & MOVECAPS_WALK)))
+		if (!((movecaps & MOVECAPS_SWIM) && (caps & MOVECAPS_WALK))) {
 			return false;
-
-		if (!map.can_reach_by_water(dest))
+		}
+		if (!map.can_reach_by_water(dest)) {
 			return false;
+		}
 	}
 
 	return true;
@@ -237,9 +240,10 @@ bool FindNodeOpenWater::accept(const EditorGameBase&, const FCoords& coord) cons
 
 // FindNodeWithFlagOrRoad
 bool FindNodeWithFlagOrRoad::accept(const EditorGameBase&, FCoords fc) const {
-	if (upcast(PlayerImmovable const, pimm, fc.field->get_immovable()))
+	if (upcast(PlayerImmovable const, pimm, fc.field->get_immovable())) {
 		return (dynamic_cast<Flag const*>(pimm) ||
 		        (dynamic_cast<Road const*>(pimm) && (fc.field->nodecaps() & BUILDCAPS_FLAG)));
+	}
 	return false;
 }
 
@@ -567,7 +571,7 @@ int8_t ManagementData::shift_weight_value(const int8_t old_value, const bool agg
 
 	const int16_t upper_limit = std::min<int16_t>(old_value + halfVArRange, kNeuronWeightLimit);
 	const int16_t bottom_limit = std::max<int16_t>(old_value - halfVArRange, -kNeuronWeightLimit);
-	int16_t new_value = bottom_limit + std::rand() % (upper_limit - bottom_limit + 1);
+	int16_t new_value = bottom_limit + std::rand() % (upper_limit - bottom_limit + 1);  // NOLINT
 
 	if (!aggressive && ((old_value > 0 && new_value < 0) || (old_value < 0 && new_value > 0))) {
 		new_value = 0;
@@ -626,8 +630,8 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 
 	log("%2d: DNA initialization... \n", pn);
 
-	primary_parent = std::rand() % 4;
-	const uint8_t parent2 = std::rand() % 4;
+	primary_parent = std::rand() % 4;         // NOLINT
+	const uint8_t parent2 = std::rand() % 4;  // NOLINT
 
 	std::vector<int16_t> AI_military_numbers_P1(
 	   Widelands::Player::AiPersistentState::kMagicNumbersSize);
@@ -650,8 +654,9 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 	// First setting of military numbers, they go directly to persistent data
 	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kMagicNumbersSize; ++i) {
 		// Child inherits DNA with probability 1/kSecondParentProbability from main parent
-		DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ? DnaParent::kPrimary :
-		                                                                       DnaParent::kSecondary;
+		DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?  // NOLINT
+		                         DnaParent::kPrimary :
+		                         DnaParent::kSecondary;
 		if (i == kMutationRatePosition) {  // Overwriting
 			dna_donor = DnaParent::kPrimary;
 		}
@@ -671,7 +676,7 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 	persistent_data->f_neurons.clear();
 
 	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kNeuronPoolSize; ++i) {
-		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?
+		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?  // NOLINT
 		                               DnaParent::kPrimary :
 		                               DnaParent::kSecondary;
 
@@ -688,7 +693,7 @@ void ManagementData::new_dna_for_persistent(const uint8_t pn, const Widelands::A
 	}
 
 	for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kFNeuronPoolSize; ++i) {
-		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?
+		const DnaParent dna_donor = ((std::rand() % kSecondParentProbability) > 0) ?  // NOLINT
 		                               DnaParent::kPrimary :
 		                               DnaParent::kSecondary;
 		switch (dna_donor) {
@@ -710,7 +715,7 @@ MutatingIntensity ManagementData::do_mutate(const uint8_t is_preferred,
 	if (is_preferred > 0) {
 		return MutatingIntensity::kAgressive;
 	}
-	if (std::rand() % mutation_probability == 0) {
+	if (std::rand() % mutation_probability == 0) {  // NOLINT
 		return MutatingIntensity::kNormal;
 	}
 	return MutatingIntensity::kNo;
@@ -754,7 +759,8 @@ void ManagementData::mutate(const uint8_t pn) {
 	}
 
 	// Wildcard for ai trainingmode
-	if (ai_training_mode_ && std::rand() % 8 == 0 && ai_type == Widelands::AiType::kNormal) {
+	if (ai_training_mode_ && std::rand() % 8 == 0 &&  // NOLINT
+	    ai_type == Widelands::AiType::kNormal) {
 		probability /= 3;
 		preferred_numbers_count = 5;
 		wild_card = true;
@@ -773,7 +779,7 @@ void ManagementData::mutate(const uint8_t pn) {
 			// [-kWeightRange, kWeightRange]
 			std::set<int32_t> preferred_numbers;
 			for (int i = 0; i < preferred_numbers_count; i++) {
-				preferred_numbers.insert(std::rand() % pref_number_probability);
+				preferred_numbers.insert(std::rand() % pref_number_probability);  // NOLINT
 			}
 
 			for (uint16_t i = 0; i < Widelands::Player::AiPersistentState::kMagicNumbersSize; ++i) {
@@ -801,7 +807,7 @@ void ManagementData::mutate(const uint8_t pn) {
 			// Neurons to be mutated more agressively
 			std::set<int32_t> preferred_neurons;
 			for (int i = 0; i < preferred_numbers_count; i++) {
-				preferred_neurons.insert(std::rand() % pref_number_probability);
+				preferred_neurons.insert(std::rand() % pref_number_probability);  // NOLINT
 			}
 			for (auto& item : neuron_pool) {
 
@@ -810,9 +816,9 @@ void ManagementData::mutate(const uint8_t pn) {
 
 				if (mutating_intensity != MutatingIntensity::kNo) {
 					const int16_t old_value = item.get_weight();
-					if (std::rand() % 4 == 0) {
+					if (std::rand() % 4 == 0) {  // NOLINT
 						assert(!neuron_curves.empty());
-						item.set_type(std::rand() % neuron_curves.size());
+						item.set_type(std::rand() % neuron_curves.size());  // NOLINT
 						persistent_data->neuron_functs[item.get_id()] = item.get_type();
 					} else {
 						int16_t new_value = shift_weight_value(
@@ -836,7 +842,7 @@ void ManagementData::mutate(const uint8_t pn) {
 			// preferred_numbers_count is multiplied by 3 because FNeuron store more than
 			// one value
 			for (int i = 0; i < 3 * preferred_numbers_count; i++) {
-				preferred_f_neurons.insert(std::rand() % pref_number_probability);
+				preferred_f_neurons.insert(std::rand() % pref_number_probability);  // NOLINT
 			}
 
 			for (auto& item : f_neuron_pool) {
@@ -844,14 +850,14 @@ void ManagementData::mutate(const uint8_t pn) {
 				// is this a preferred neuron
 				if (preferred_f_neurons.count(item.get_id()) > 0) {
 					for (uint8_t i = 0; i < kFNeuronBitSize; ++i) {
-						if (std::rand() % 5 == 0) {
+						if (std::rand() % 5 == 0) {  // NOLINT
 							item.flip_bit(i);
 							++changed_bits;
 						}
 					}
 				} else {  // normal mutation
 					for (uint8_t i = 0; i < kFNeuronBitSize; ++i) {
-						if (std::rand() % (probability * 3) == 0) {
+						if (std::rand() % (probability * 3) == 0) {  // NOLINT
 							item.flip_bit(i);
 							++changed_bits;
 						}
@@ -966,7 +972,7 @@ bool SchedulerTask::operator<(const SchedulerTask& other) const {
 void BlockedFields::add(Widelands::Coords coords, uint32_t till) {
 	const uint32_t hash = coords.hash();
 	if (blocked_fields_.count(hash) == 0) {
-		blocked_fields_.insert(std::pair<uint32_t, uint32_t>(hash, till));
+		blocked_fields_.insert(std::make_pair(hash, till));
 	} else if (blocked_fields_[hash] < till) {
 		blocked_fields_[hash] = till;
 	}
@@ -1492,7 +1498,7 @@ void FlagCandidates::sort_by_air_distance() {
 	std::sort(flags_.begin(), flags_.end(),
 	          [](const FlagCandidates::Candidate& lf, const FlagCandidates::Candidate& rf) {
 		          return lf.air_distance < rf.air_distance;
-		       });
+	          });
 }
 
 void FlagCandidates::add_flag(const uint32_t coords,

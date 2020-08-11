@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,8 +18,6 @@
  */
 
 #include "editor/ui_menus/tool_place_immovable_options_menu.h"
-
-#include <SDL_keycode.h>
 
 #include "base/i18n.h"
 #include "editor/editorinteractive.h"
@@ -53,7 +51,7 @@ EditorToolPlaceImmovableOptionsMenu::EditorToolPlaceImmovableOptionsMenu(
 	      this, world.editor_immovable_categories(), world.immovables(),
 	      [](UI::Panel* cb_parent, const ImmovableDescr& immovable_descr) {
 		      return create_immovable_checkbox(cb_parent, immovable_descr);
-		   },
+	      },
 	      [this] { select_correct_tool(); }, &tool));
 	set_center_panel(multi_select_menu_.get());
 }

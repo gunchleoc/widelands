@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
 
 #include "wui/mapview.h"
 
-#include <SDL.h>
+#include <SDL_timer.h>
 
 #include "base/macros.h"
 #include "base/math.h"
@@ -345,7 +345,8 @@ void MapView::mouse_to_pixel(const Vector2i& pixel, const Transition& transition
 }
 
 FieldsToDraw* MapView::draw_terrain(const Widelands::EditorGameBase& egbase,
-                                    Workareas workarea,
+                                    const Widelands::Player* player,
+                                    const Workareas& workarea,
                                     bool grid,
                                     RenderTarget* dst) {
 	uint32_t now = SDL_GetTicks();
@@ -392,7 +393,7 @@ FieldsToDraw* MapView::draw_terrain(const Widelands::EditorGameBase& egbase,
 	fields_to_draw_.reset(egbase, view_.viewpoint, view_.zoom, dst);
 	const float scale = 1.f / view_.zoom;
 	::draw_terrain(
-	   egbase.get_gametime(), egbase.world(), fields_to_draw_, scale, workarea, grid, dst);
+	   egbase.get_gametime(), egbase.world(), fields_to_draw_, scale, workarea, grid, player, dst);
 	return &fields_to_draw_;
 }
 
@@ -439,6 +440,7 @@ void MapView::scroll_to_field(const Widelands::Coords& c, const Transition& tran
 }
 
 void MapView::scroll_to_map_pixel(const Vector2f& pos, const Transition& transition) {
+	jump();
 	const TimestampedView current = animation_target_view();
 	const Rectf area = get_view_area(current.view, get_w(), get_h());
 	const Vector2f target_view = pos - Vector2f(area.w / 2.f, area.h / 2.f);
@@ -475,6 +477,7 @@ bool MapView::handle_mousepress(uint8_t const btn, int32_t const x, int32_t cons
 		// also handle the click.
 	}
 	if (btn == SDL_BUTTON_RIGHT) {
+		jump();
 		dragging_ = true;
 		grab_mouse(true);
 		WLApplication::get()->set_mouse_lock(true);
@@ -596,6 +599,7 @@ Widelands::NodeAndTriangle<> MapView::track_sel(const Vector2i& p) {
 }
 
 bool MapView::scroll_map() {
+	const bool numpad_diagonalscrolling = get_config_bool("numpad_diagonalscrolling", false);
 	// arrow keys
 	const bool kUP = get_key_state(SDL_SCANCODE_UP);
 	const bool kDOWN = get_key_state(SDL_SCANCODE_DOWN);
@@ -617,16 +621,16 @@ bool MapView::scroll_map() {
 	int32_t distance_to_scroll_y = 0;
 
 	// check the directions
-	if (kUP || kNP7 || kNP8 || kNP9) {
+	if (kUP || kNP8 || (numpad_diagonalscrolling && (kNP7 || kNP9))) {
 		distance_to_scroll_y -= scroll_distance_y;
 	}
-	if (kDOWN || kNP1 || kNP2 || kNP3) {
+	if (kDOWN || kNP2 || (numpad_diagonalscrolling && (kNP1 || kNP3))) {
 		distance_to_scroll_y += scroll_distance_y;
 	}
-	if (kLEFT || kNP1 || kNP4 || kNP7) {
+	if (kLEFT || kNP4 || (numpad_diagonalscrolling && (kNP1 || kNP7))) {
 		distance_to_scroll_x -= scroll_distance_x;
 	}
-	if (kRIGHT || kNP3 || kNP6 || kNP9) {
+	if (kRIGHT || kNP6 || (numpad_diagonalscrolling && (kNP3 || kNP9))) {
 		distance_to_scroll_x += scroll_distance_x;
 	}
 
@@ -650,15 +654,26 @@ bool MapView::handle_key(bool down, SDL_Keysym code) {
 	}
 
 	switch (code.sym) {
+	case SDLK_KP_PLUS:
 	case SDLK_PLUS:
+	case SDLK_EQUALS:
 		increase_zoom();
 		return true;
+
+	case SDLK_KP_MINUS:
 	case SDLK_MINUS:
 		decrease_zoom();
 		return true;
+
+	case SDLK_KP_0:
+		if (!(code.mod & KMOD_NUM)) {
+			return false;
+		}
+		FALLS_THROUGH;
 	case SDLK_0:
 		reset_zoom();
 		return true;
+
 	default:
 		return false;
 	}

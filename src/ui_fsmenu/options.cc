@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 #include "graphic/default_resolution.h"
 #include "graphic/font_handler.h"
 #include "graphic/graphic.h"
+#include "graphic/mouse_cursor.h"
 #include "graphic/text/bidi.h"
 #include "graphic/text/font_set.h"
 #include "graphic/text_layout.h"
@@ -125,6 +126,7 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 
      fullscreen_(&box_interface_left_, Vector2i::zero(), _("Fullscreen"), "", 0),
      inputgrab_(&box_interface_left_, Vector2i::zero(), _("Grab Input"), "", 0),
+     sdl_cursor_(&box_interface_left_, Vector2i::zero(), _("Use system mouse cursor"), "", 0),
      sb_maxfps_(&box_interface_left_,
                 0,
                 0,
@@ -221,6 +223,8 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
      /** TRANSLATORS: This refers to to zooming with the scrollwheel.*/
      ctrl_zoom_(&box_game_, Vector2i::zero(), _("Zoom only when Ctrl is pressed")),
      game_clock_(&box_game_, Vector2i::zero(), _("Display game time in the top left corner")),
+     numpad_diagonalscrolling_(
+        &box_game_, Vector2i::zero(), _("Allow diagonal scrolling with the numeric keypad")),
      os_(opt) {
 
 	// Buttons
@@ -249,6 +253,7 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 	box_interface_left_.add(&resolution_dropdown_);
 	box_interface_left_.add(&fullscreen_);
 	box_interface_left_.add(&inputgrab_);
+	box_interface_left_.add(&sdl_cursor_);
 	box_interface_left_.add(&sb_maxfps_);
 
 	// Windows
@@ -273,13 +278,13 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 	box_game_.add(&single_watchwin_);
 	box_game_.add(&ctrl_zoom_);
 	box_game_.add(&game_clock_);
+	box_game_.add(&numpad_diagonalscrolling_);
 
 	// Bind actions
-	language_dropdown_.selected.connect(
-	   boost::bind(&FullscreenMenuOptions::update_language_stats, this, false));
-	cancel_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_cancel, this));
-	apply_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_apply, this));
-	ok_.sigclicked.connect(boost::bind(&FullscreenMenuOptions::clicked_ok, this));
+	language_dropdown_.selected.connect([this]() { update_language_stats(); });
+	cancel_.sigclicked.connect([this]() { clicked_cancel(); });
+	apply_.sigclicked.connect([this]() { clicked_apply(); });
+	ok_.sigclicked.connect([this]() { clicked_ok(); });
 
 	/** TRANSLATORS: Options: Save game automatically every: */
 	sb_autosave_.add_replacement(0, _("Off"));
@@ -293,8 +298,9 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 		    (SDL_BITSPERPIXEL(mode.format) == 32 || SDL_BITSPERPIXEL(mode.format) == 24)) {
 			ScreenResolution this_res = {
 			   mode.w, mode.h, static_cast<int32_t>(SDL_BITSPERPIXEL(mode.format))};
-			if (this_res.depth == 24)
+			if (this_res.depth == 24) {
 				this_res.depth = 32;
+			}
 			if (resolutions_.empty() || this_res.xres != resolutions_.rbegin()->xres ||
 			    this_res.yres != resolutions_.rbegin()->yres) {
 				resolutions_.push_back(this_res);
@@ -322,6 +328,7 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 
 	fullscreen_.set_state(opt.fullscreen);
 	inputgrab_.set_state(opt.inputgrab);
+	sdl_cursor_.set_state(opt.sdl_cursor);
 
 	// Windows options
 	snap_win_overlap_only_.set_state(opt.snap_win_overlap_only);
@@ -338,10 +345,11 @@ FullscreenMenuOptions::FullscreenMenuOptions(OptionsCtrl::OptionsStruct opt)
 	single_watchwin_.set_state(opt.single_watchwin);
 	ctrl_zoom_.set_state(opt.ctrl_zoom);
 	game_clock_.set_state(opt.game_clock);
+	numpad_diagonalscrolling_.set_state(opt.numpad_diagonalscrolling);
 
 	// Language options
 	add_languages_to_list(opt.language);
-	update_language_stats(true);
+	update_language_stats();
 	layout();
 }
 
@@ -383,6 +391,7 @@ void FullscreenMenuOptions::layout() {
 
 	fullscreen_.set_desired_size(column_width, fullscreen_.get_h());
 	inputgrab_.set_desired_size(column_width, inputgrab_.get_h());
+	sdl_cursor_.set_desired_size(column_width, sdl_cursor_.get_h());
 	sb_maxfps_.set_unit_width(column_width / 2);
 	sb_maxfps_.set_desired_size(column_width, sb_maxfps_.get_h());
 
@@ -412,6 +421,7 @@ void FullscreenMenuOptions::layout() {
 	single_watchwin_.set_desired_size(tab_panel_width, single_watchwin_.get_h());
 	ctrl_zoom_.set_desired_size(tab_panel_width, ctrl_zoom_.get_h());
 	game_clock_.set_desired_size(tab_panel_width, game_clock_.get_h());
+	numpad_diagonalscrolling_.set_desired_size(tab_panel_width, numpad_diagonalscrolling_.get_h());
 }
 
 void FullscreenMenuOptions::add_languages_to_list(const std::string& current_locale) {
@@ -419,6 +429,11 @@ void FullscreenMenuOptions::add_languages_to_list(const std::string& current_loc
 	// We want these two entries on top - the most likely user's choice and the default.
 	language_dropdown_.add(_("Try system language"), "", nullptr, current_locale == "");
 	language_dropdown_.add("English", "en", nullptr, current_locale == "en");
+
+	// Handle non-standard setups where the locale directory might be missing
+	if (!g_fs->is_directory(i18n::get_localedir())) {
+		return;
+	}
 
 	// Add translation directories to the list. Using the LanguageEntries' sortnames as a key for
 	// getting a sorted result.
@@ -480,13 +495,13 @@ void FullscreenMenuOptions::add_languages_to_list(const std::string& current_loc
  * @param include_system_lang We only want to include the system lang if it matches the Widelands
  * locale.
  */
-void FullscreenMenuOptions::update_language_stats(bool include_system_lang) {
+void FullscreenMenuOptions::update_language_stats() {
 	int percent = 100;
 	std::string message = "";
 	if (language_dropdown_.has_selection()) {
 		std::string locale = language_dropdown_.get_selected();
 		// Empty locale means try system locale
-		if (locale.empty() && include_system_lang) {
+		if (locale.empty()) {
 			std::vector<std::string> parts;
 			boost::split(parts, i18n::get_locale(), boost::is_any_of("."));
 			if (language_entries_.count(parts[0]) == 1) {
@@ -564,6 +579,7 @@ OptionsCtrl::OptionsStruct FullscreenMenuOptions::get_values() {
 	}
 	os_.fullscreen = fullscreen_.get_state();
 	os_.inputgrab = inputgrab_.get_state();
+	os_.sdl_cursor = sdl_cursor_.get_state();
 	os_.maxfps = sb_maxfps_.get_value();
 
 	// Windows options
@@ -585,6 +601,7 @@ OptionsCtrl::OptionsStruct FullscreenMenuOptions::get_values() {
 	os_.single_watchwin = single_watchwin_.get_state();
 	os_.ctrl_zoom = ctrl_zoom_.get_state();
 	os_.game_clock = game_clock_.get_state();
+	os_.numpad_diagonalscrolling = numpad_diagonalscrolling_.get_state();
 
 	// Last tab for reloading the options menu
 	os_.active_tab = tabs_.active();
@@ -603,8 +620,9 @@ OptionsCtrl::OptionsCtrl(Section& s)
 
 void OptionsCtrl::handle_menu() {
 	FullscreenMenuBase::MenuTarget i = opt_dialog_->run<FullscreenMenuBase::MenuTarget>();
-	if (i != FullscreenMenuBase::MenuTarget::kBack)
+	if (i != FullscreenMenuBase::MenuTarget::kBack) {
 		save_options();
+	}
 	if (i == FullscreenMenuBase::MenuTarget::kApplyOptions) {
 		uint32_t active_tab = opt_dialog_->get_values().active_tab;
 		g_gr->change_resolution(opt_dialog_->get_values().xres, opt_dialog_->get_values().yres);
@@ -622,6 +640,7 @@ OptionsCtrl::OptionsStruct OptionsCtrl::options_struct(uint32_t active_tab) {
 	opt.fullscreen = opt_section_.get_bool("fullscreen", false);
 	opt.inputgrab = opt_section_.get_bool("inputgrab", false);
 	opt.maxfps = opt_section_.get_int("maxfps", 25);
+	opt.sdl_cursor = opt_section_.get_bool("sdl_cursor", true);
 
 	// Windows options
 	opt.snap_win_overlap_only = opt_section_.get_bool("snap_windows_only_when_overlapping", false);
@@ -642,6 +661,7 @@ OptionsCtrl::OptionsStruct OptionsCtrl::options_struct(uint32_t active_tab) {
 	opt.single_watchwin = opt_section_.get_bool("single_watchwin", false);
 	opt.ctrl_zoom = opt_section_.get_bool("ctrl_zoom", false);
 	opt.game_clock = opt_section_.get_bool("game_clock", true);
+	opt.numpad_diagonalscrolling = opt_section_.get_bool("numpad_diagonalscrolling", false);
 
 	// Language options
 	opt.language = opt_section_.get_string("language", "");
@@ -660,6 +680,7 @@ void OptionsCtrl::save_options() {
 	opt_section_.set_bool("fullscreen", opt.fullscreen);
 	opt_section_.set_bool("inputgrab", opt.inputgrab);
 	opt_section_.set_int("maxfps", opt.maxfps);
+	opt_section_.set_bool("sdl_cursor", opt.sdl_cursor);
 
 	// Windows options
 	opt_section_.set_bool("snap_windows_only_when_overlapping", opt.snap_win_overlap_only);
@@ -680,11 +701,13 @@ void OptionsCtrl::save_options() {
 	opt_section_.set_bool("single_watchwin", opt.single_watchwin);
 	opt_section_.set_bool("ctrl_zoom", opt.ctrl_zoom);
 	opt_section_.set_bool("game_clock", opt.game_clock);
+	opt_section_.set_bool("numpad_diagonalscrolling", opt.numpad_diagonalscrolling);
 
 	// Language options
 	opt_section_.set_string("language", opt.language);
 
 	WLApplication::get()->set_input_grab(opt.inputgrab);
+	g_mouse_cursor->set_use_sdl(opt_dialog_->get_values().sdl_cursor);
 	i18n::set_locale(opt.language);
 	UI::g_fh->reinitialize_fontset(i18n::get_locale());
 

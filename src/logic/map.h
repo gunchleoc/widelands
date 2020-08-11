@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@ struct S2MapLoader;
 
 namespace Widelands {
 
+class CritterDescr;
 class MapLoader;
 struct MapGenerator;
 struct PathfieldManager;
@@ -95,6 +96,41 @@ struct FindBobAlwaysTrue : public FindBob {
 	}  // make gcc shut up
 };
 
+struct FindBobByName : public FindBob {
+	bool accept(Bob* b) const override;
+	explicit FindBobByName(const std::string& n) : name_(n) {
+	}
+	~FindBobByName() override {
+	}
+
+private:
+	std::string name_;
+};
+struct FindCritter : public FindBob {
+	bool accept(Bob* b) const override;
+	~FindCritter() override {
+	}
+};
+struct FindCarnivores : public FindBob {
+	bool accept(Bob* b) const override;
+	explicit FindCarnivores() {
+	}
+	~FindCarnivores() override {
+	}
+};
+struct FindCritterByClass : public FindBob {
+	enum class Class { Herbivore, Carnivore, Neither };
+	static Class classof(const CritterDescr&);
+	bool accept(Bob* b) const override;
+	explicit FindCritterByClass(const CritterDescr& b) : class_(classof(b)) {
+	}
+	~FindCritterByClass() override {
+	}
+
+private:
+	Class class_;
+};
+
 // Helper struct to save certain elemental data of a field without an actual instance of Field
 struct FieldData {
 	FieldData(const Field& f);
@@ -105,6 +141,16 @@ struct FieldData {
 	DescriptionIndex resources;
 	uint8_t resource_amount;
 	Field::Terrains terrains;
+};
+// used for undoing map resize
+struct ResizeHistory {
+	ResizeHistory() : size(0, 0) {
+	}
+
+	Extent size;
+	std::list<FieldData> fields;
+	std::set<Coords> port_spaces;
+	std::vector<Coords> starting_positions;
 };
 
 /** class Map
@@ -261,6 +307,9 @@ public:
 	}
 
 	const std::vector<SuggestedTeamLineup>& get_suggested_teams() const {
+		return suggested_teams_;
+	}
+	std::vector<SuggestedTeamLineup>& get_suggested_teams() {
 		return suggested_teams_;
 	}
 
@@ -500,7 +549,7 @@ public:
 	const PortSpacesSet& get_port_spaces() const {
 		return port_spaces_;
 	}
-	std::vector<Coords> find_portdock(const Widelands::Coords& c) const;
+	std::vector<Coords> find_portdock(const Widelands::Coords& c, bool force) const;
 
 	/// Return true if there are at least 2 port spaces that can be reached from each other by water
 	bool allows_seafaring() const;
@@ -517,9 +566,15 @@ public:
 	// Visible for testing.
 	void set_size(uint32_t w, uint32_t h);
 
-	// Change the map size
-	std::map<Coords, FieldData>
-	resize(EditorGameBase& egbase, const Coords coords, int32_t w, int32_t h);
+	// Change the map size. Must not be used outside the editor.
+	void resize(EditorGameBase&, Coords, int32_t w, int32_t h);
+	// Used only to undo a resize() operation.
+	// Force-resets the entire map's state to the given preserved state.
+	void set_to(EditorGameBase&, ResizeHistory);
+	// Creates a ResizeHistory that can be passed to set_to() later.
+	// This has to save the entire map's state because resize operations
+	// may affect all fields when resolving height differences etc.
+	ResizeHistory dump_state(const EditorGameBase&) const;
 
 	uint32_t get_waterway_max_length() const;
 	void set_waterway_max_length(uint32_t max_length);

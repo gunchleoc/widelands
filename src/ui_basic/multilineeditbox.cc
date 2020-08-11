@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,6 +18,8 @@
  */
 
 #include "ui_basic/multilineeditbox.h"
+
+#include <memory>
 
 #include <boost/algorithm/string.hpp>
 
@@ -108,6 +110,7 @@ MultilineEditbox::Data::Data(MultilineEditbox& o, const UI::TextPanelStyleInfo& 
                           (text_height(style.font()) * text_height(style.font())),
                        std::numeric_limits<int32_t>::max())),
      owner(o) {
+
 	scrollbar.set_pagesize(owner.get_h() - 2 * lineheight);
 	scrollbar.set_singlestepsize(lineheight);
 	update_rendered_text();
@@ -124,8 +127,9 @@ const std::string& MultilineEditbox::get_text() const {
  * Replace the currently stored text with something else.
  */
 void MultilineEditbox::set_text(const std::string& text) {
-	if (text == d_->text)
+	if (text == d_->text) {
 		return;
+	}
 
 	d_->text = text;
 	while (d_->text.size() > d_->maxbytes) {
@@ -162,8 +166,9 @@ void MultilineEditbox::Data::erase_bytes(uint32_t start, uint32_t end) {
 uint32_t MultilineEditbox::Data::prev_char(uint32_t cursor) {
 	assert(cursor <= text.size());
 
-	if (cursor == 0)
+	if (cursor == 0) {
 		return cursor;
+	}
 
 	do {
 		--cursor;
@@ -179,8 +184,9 @@ uint32_t MultilineEditbox::Data::prev_char(uint32_t cursor) {
 uint32_t MultilineEditbox::Data::next_char(uint32_t cursor) {
 	assert(cursor <= text.size());
 
-	if (cursor >= text.size())
+	if (cursor >= text.size()) {
 		return cursor;
+	}
 
 	do {
 		++cursor;
@@ -193,8 +199,9 @@ uint32_t MultilineEditbox::Data::next_char(uint32_t cursor) {
  * Return the starting offset of the (multi-byte) character that @p cursor points to.
  */
 uint32_t MultilineEditbox::Data::snap_to_char(uint32_t cursor) {
-	while (cursor > 0 && Utf8::is_utf8_extended(text[cursor]))
+	while (cursor > 0 && Utf8::is_utf8_extended(text[cursor])) {
 		--cursor;
+	}
 	return cursor;
 }
 
@@ -240,12 +247,14 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_LEFT: {
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				uint32_t newpos = d_->prev_char(d_->caret_index);
-				while (newpos > 0 && isspace(d_->text[newpos]))
+				while (newpos > 0 && isspace(d_->text[newpos])) {
 					newpos = d_->prev_char(newpos);
+				}
 				while (newpos > 0) {
 					uint32_t prev = d_->prev_char(newpos);
-					if (isspace(d_->text[prev]))
+					if (isspace(d_->text[prev])) {
 						break;
+					}
 					newpos = prev;
 				}
 				d_->set_cursor_pos(newpos);
@@ -258,10 +267,12 @@ bool MultilineEditbox::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_RIGHT:
 			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				uint32_t newpos = d_->next_char(d_->caret_index);
-				while (newpos < d_->text.size() && isspace(d_->text[newpos]))
+				while (newpos < d_->text.size() && isspace(d_->text[newpos])) {
 					newpos = d_->next_char(newpos);
-				while (newpos < d_->text.size() && !isspace(d_->text[newpos]))
+				}
+				while (newpos < d_->text.size() && !isspace(d_->text[newpos])) {
 					newpos = d_->next_char(newpos);
+				}
 				d_->set_cursor_pos(newpos);
 			} else {
 				d_->set_cursor_pos(d_->next_char(d_->caret_index));
@@ -355,8 +366,9 @@ void MultilineEditbox::draw(RenderTarget& dst) {
 		dst.fill_rect(Recti(1, 0, 1, get_h() - 2), black);
 	}
 
-	if (has_focus())
+	if (has_focus()) {
 		dst.brighten_rect(Recti(0, 0, get_w(), get_h()), MOUSE_OVER_BRIGHT_FACTOR);
+	}
 
 	d_->rendered_text->draw(
 	   dst, Vector2i::zero(), Recti(0, d_->scrollbar.get_scrollpos(), d_->rendered_text->width(),

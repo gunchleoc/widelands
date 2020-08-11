@@ -32,7 +32,7 @@ MAINPOTS = [
     ('maps/maps', [
         '../../data/maps/*/elemental',
         '../../data/maps/*/*/elemental',
-        '../../data/campaigns/*.conf',
+        '../../data/campaigns/*.lua',
         '../../data/campaigns/*/elemental'
     ]),
     ('texts/texts', ['../../data/txts/*.lua',
@@ -71,6 +71,7 @@ MAINPOTS = [
     ('tribes/tribes', [
         '../../data/tribes/scripting/starting_conditions/*/*.lua',
         '../../data/tribes/*.lua',
+        '../../data/tribes/economy_profiles/*',
         '../../data/tribes/*/init.lua',
         '../../data/tribes/*/*/init.lua',
         '../../data/tribes/*/*/*/init.lua',
@@ -110,7 +111,7 @@ ITERATIVEPOTS = [
      ['../../data/campaigns/%(name)s/extra_data',
       '../../data/campaigns/%(name)s/objective',
       '../../data/campaigns/%(name)s/scripting/*.lua',
-      '../../data/scripting/richtext_scenarios.lua'
+      '../../data/campaigns/%(name)s/scripting/*/*.lua',
       ]
      ),
     ('map_%(name)s/map_%(name)s', 'data/maps/',

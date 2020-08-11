@@ -62,10 +62,6 @@ tribes:new_productionsite_type {
       { name = "water", amount = 8 },
       { name = "honey", amount = 6 },
    },
-   outputs = {
-      "honey_bread",
-      "bread_frisians"
-   },
 
    programs = {
       work = {
@@ -75,7 +71,6 @@ tribes:new_productionsite_type {
             "call=bake_honey",
             "call=bake_normal",
             "call=bake_honey_2",
-            "return=no_stats"
          }
       },
       -- 2 identical programs for honey bread to prevent unnecessary skipping penalty
@@ -85,8 +80,8 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs honey_bread or workers need experience",
             "consume=barley water honey",
-            "sleep=20000",
-            "animate=working 25000",
+            "sleep=duration:20s",
+            "animate=working duration:25s",
             "produce=honey_bread"
          }
       },
@@ -96,8 +91,8 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs honey_bread or workers need experience",
             "consume=barley water honey",
-            "sleep=20000",
-            "animate=working 25000",
+            "sleep=duration:20s",
+            "animate=working duration:25s",
             "produce=honey_bread"
          }
       },
@@ -107,8 +102,8 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs bread_frisians",
             "consume=barley water",
-            "sleep=20000",
-            "animate=working 20000",
+            "sleep=duration:20s",
+            "animate=working duration:20s",
             "produce=bread_frisians"
          }
       },

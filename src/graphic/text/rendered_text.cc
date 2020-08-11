@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 by the Widelands Development Team
+ * Copyright (C) 2017-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@ RenderedRect::RenderedRect(const Recti& init_rect,
                            DrawMode init_mode, bool advances_caret,
 						   const std::string& text, const RT::IFont* font)
    : rect_(init_rect),
-     transient_image_(init_image),
+     transient_image_(std::move(init_image)),
      permanent_image_(nullptr),
      visited_(visited),
      background_color_(color),
@@ -70,7 +70,7 @@ RenderedRect::RenderedRect(const Recti& init_rect, const Image* init_image)
 RenderedRect::RenderedRect(const Recti& init_rect, const RGBColor& color)
    : RenderedRect(init_rect, nullptr, false, color, true, DrawMode::kTile) {
 }
-RenderedRect::RenderedRect(std::shared_ptr<const Image> init_image, bool advances_caret, const std::string& text, const RT::IFont* font)
+RenderedRect::RenderedRect(std::shared_ptr<const Image>& init_image, bool advances_caret, const std::string& text, const RT::IFont* font)
    : RenderedRect(Recti(0, 0, init_image->width(), init_image->height()),
                   init_image,
                   false,

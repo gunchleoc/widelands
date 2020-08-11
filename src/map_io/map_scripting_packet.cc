@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -48,11 +48,11 @@ void write_lua_dir(FileSystem& target_fs, FileSystem* map_fs, const std::string&
 	}
 }
 }  // namespace
-   /*
-    * ========================================================================
-    *            PUBLIC IMPLEMENTATION
-    * ========================================================================
-    */
+/*
+ * ========================================================================
+ *            PUBLIC IMPLEMENTATION
+ * ========================================================================
+ */
 void MapScriptingPacket::read(FileSystem& fs, EditorGameBase& egbase, bool, MapObjectLoader& mol) {
 	// Always try to load the global State: even in a normal game, some lua
 	// coroutines could run. But make sure that this is really a game, other

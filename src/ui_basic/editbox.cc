@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2019 by the Widelands Development Team
+ * Copyright (C) 2003-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,6 +18,8 @@
  */
 
 #include "ui_basic/editbox.h"
+
+#include <memory>
 
 #include <SDL_keycode.h>
 
@@ -106,8 +108,9 @@ EditBox::EditBox(Panel* const parent, int32_t x, int32_t y, uint32_t w, UI::Pane
 	set_handle_textinput();
 
 	// Initialize history as empty string
-	for (uint8_t i = 0; i < CHAT_HISTORY_SIZE; ++i)
+	for (uint8_t i = 0; i < CHAT_HISTORY_SIZE; ++i) {
 		history_[i] = "";
+	}
 }
 
 EditBox::~EditBox() {
@@ -128,16 +131,19 @@ const std::string& EditBox::text() const {
  * \ref set_max_length().
  */
 void EditBox::set_text(const std::string& t) {
-	if (t == m_->text)
+	if (t == m_->text) {
 		return;
+	}
 
 	bool caretatend = m_->caret_index == m_->text.size();
 
 	m_->text = t;
-	if (m_->text.size() > m_->max_length)
+	if (m_->text.size() > m_->max_length) {
 		m_->text.erase(m_->text.begin() + m_->max_length, m_->text.end());
-	if (caretatend || m_->caret_index > m_->text.size())
+	}
+	if (caretatend || m_->caret_index > m_->text.size()) {
 		m_->caret_index = m_->text.size();
+	}
 	update();
 }
 
@@ -209,8 +215,9 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 			// Save history if active and text is not empty
 			if (history_active_) {
 				if (!m_->text.empty()) {
-					for (uint8_t i = CHAT_HISTORY_SIZE - 1; i > 0; --i)
+					for (uint8_t i = CHAT_HISTORY_SIZE - 1; i > 0; --i) {
 						history_[i] = history_[i - 1];
+					}
 					history_[0] = m_->text;
 					history_position_ = -1;
 				}
@@ -234,8 +241,9 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 			FALLS_THROUGH;
 		case SDLK_BACKSPACE:
 			if (m_->caret_index > 0) {
-				while ((m_->text[--m_->caret_index] & 0xc0) == 0x80)
+				while ((m_->text[--m_->caret_index] & 0xc0) == 0x80) {
 					m_->text.erase(m_->text.begin() + m_->caret_index);
+				}
 				m_->text.erase(m_->text.begin() + m_->caret_index);
 				update();
 			}
@@ -245,11 +253,13 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 			if (m_->caret_index > 0) {
 				while ((m_->text[--m_->caret_index] & 0xc0) == 0x80) {
 				}
-				if (code.mod & (KMOD_LCTRL | KMOD_RCTRL))
-					for (uint32_t new_caret = m_->caret_index;; m_->caret_index = new_caret)
-						if (0 == new_caret || isspace(m_->text[--new_caret]))
+				if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
+					for (uint32_t new_caret = m_->caret_index;; m_->caret_index = new_caret) {
+						if (0 == new_caret || isspace(m_->text[--new_caret])) {
 							break;
-
+						}
+					}
+				}
 				check_caret();
 			}
 			return true;
@@ -259,13 +269,14 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 				while ((m_->text[++m_->caret_index] & 0xc0) == 0x80) {
 					// We're just advancing the caret
 				}
-				if (code.mod & (KMOD_LCTRL | KMOD_RCTRL))
-					for (uint32_t new_caret = m_->caret_index;; ++new_caret)
+				if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
+					for (uint32_t new_caret = m_->caret_index;; ++new_caret) {
 						if (new_caret == m_->text.size() || isspace(m_->text[new_caret - 1])) {
 							m_->caret_index = new_caret;
 							break;
 						}
-
+					}
+				}
 				check_caret();
 			}
 			return true;
@@ -273,7 +284,6 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_HOME:
 			if (m_->caret_index != 0) {
 				m_->caret_index = 0;
-
 				check_caret();
 			}
 			return true;
@@ -288,8 +298,9 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_UP:
 			// Load entry from history if active and text is not empty
 			if (history_active_) {
-				if (history_position_ > CHAT_HISTORY_SIZE - 2)
+				if (history_position_ > CHAT_HISTORY_SIZE - 2) {
 					history_position_ = CHAT_HISTORY_SIZE - 2;
+				}
 				if (history_[++history_position_].size() > 0) {
 					m_->text = history_[history_position_];
 					m_->caret_index = m_->text.size();
@@ -301,8 +312,9 @@ bool EditBox::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_DOWN:
 			// Load entry from history if active and text is not equivalent to the current one
 			if (history_active_) {
-				if (history_position_ < 1)
+				if (history_position_ < 1) {
 					history_position_ = 1;
+				}
 				if (history_[--history_position_] != m_->text) {
 					m_->text = history_[history_position_];
 					m_->caret_index = m_->text.size();
@@ -435,22 +447,26 @@ void EditBox::check_caret() {
 
 	// NOCOM why / 5?
 	/*
-	if (caretpos < kMarginX)
+	if (caretpos < kMarginX) {
 		m_->scrolloffset += kMarginX - caretpos + get_w() / 5;
-	else if (caretpos > get_w() - kMarginX)
+	} else if (caretpos > get_w() - kMarginX) {
 		m_->scrolloffset -= caretpos - get_w() + kMarginX + get_w() / 5;
+	}
 		*/
-	if (caretpos < kMarginX)
+	if (caretpos < kMarginX) {
 		m_->scrolloffset += kMarginX - caretpos + get_w();
-	else if (caretpos > get_w() - kMarginX)
+	} else if (caretpos > get_w() - kMarginX) {
 		m_->scrolloffset -= caretpos - get_w() + kMarginX + get_w();
+	}
 
 	if (m_->align == UI::Align::kLeft) {
-		if (m_->scrolloffset > 0)
+		if (m_->scrolloffset > 0) {
 			m_->scrolloffset = 0;
+		}
 	} else if (m_->align == UI::Align::kRight) {
-		if (m_->scrolloffset < 0)
+		if (m_->scrolloffset < 0) {
 			m_->scrolloffset = 0;
+		}
 	}
 }
 

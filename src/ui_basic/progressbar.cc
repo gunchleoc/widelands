@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -69,9 +69,9 @@ void ProgressBar::draw(RenderTarget& dst) {
 	assert(0 <= fraction);
 	assert(fraction <= 1);
 
-	const RGBColor& color = fraction <= 0.33f ? style_.low_color() : fraction <= 0.67f ?
-	                                            style_.medium_color() :
-	                                            style_.high_color();
+	const RGBColor& color = fraction <= 0.33f ?
+	                           style_.low_color() :
+	                           fraction <= 0.67f ? style_.medium_color() : style_.high_color();
 
 	// Draw the actual bar
 	if (orientation_ == Horizontal) {

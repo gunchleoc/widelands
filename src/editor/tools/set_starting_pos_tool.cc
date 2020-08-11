@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -46,9 +46,9 @@ Widelands::NodeCaps set_starting_pos_tool_nodecaps(const Widelands::FCoords& c,
 	}
 
 	Widelands::NodeCaps const caps = c.field->nodecaps();
-	if ((caps & Widelands::BUILDCAPS_SIZEMASK) == Widelands::BUILDCAPS_BIG)
+	if ((caps & Widelands::BUILDCAPS_SIZEMASK) == Widelands::BUILDCAPS_BIG) {
 		return caps;
-
+	}
 	return Widelands::NodeCaps::CAPS_NONE;
 }
 

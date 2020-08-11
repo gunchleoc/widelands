@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +22,8 @@
 #include <memory>
 
 #include <SDL_keycode.h>
+#include <SDL_mouse.h>
+#include <SDL_timer.h>
 
 #include "base/i18n.h"
 #include "base/warning.h"
@@ -45,12 +47,14 @@
 #include "editor/ui_menus/tool_set_terrain_options_menu.h"
 #include "editor/ui_menus/toolsize_menu.h"
 #include "graphic/graphic.h"
+#include "graphic/mouse_cursor.h"
 #include "graphic/playercolor.h"
 #include "graphic/text_layout.h"
 #include "logic/map.h"
 #include "logic/map_objects/tribes/tribes.h"
 #include "logic/map_objects/world/resource_description.h"
 #include "logic/map_objects/world/world.h"
+#include "logic/mapregion.h"
 #include "logic/maptriangleregion.h"
 #include "logic/player.h"
 #include "map_io/map_loader.h"
@@ -442,11 +446,12 @@ void EditorInteractive::load(const std::string& filename) {
 	cleanup_for_load();
 
 	std::unique_ptr<Widelands::MapLoader> ml(map->get_correct_loader(filename));
-	if (!ml.get())
+	if (!ml.get()) {
 		throw WLWarning(
 		   _("Unsupported Format"),
 		   _("Widelands could not load the file \"%s\". The file format seems to be incompatible."),
 		   filename.c_str());
+	}
 	ml->preload_map(true);
 
 	load_all_tribes(&egbase());
@@ -462,7 +467,7 @@ void EditorInteractive::load(const std::string& filename) {
 	}
 
 	ml->load_map_complete(egbase(), Widelands::MapLoader::LoadType::kEditor);
-	egbase().postload();
+	egbase().create_tempfile_and_save_mapdata(FileSystem::ZIP);
 	egbase().load_graphics();
 	map_changed(MapWas::kReplaced);
 }
@@ -508,8 +513,9 @@ void EditorInteractive::exit() {
 			UI::WLMessageBox mmb(this, _("Unsaved Map"),
 			                     _("The map has not been saved, do you really want to quit?"),
 			                     UI::WLMessageBox::MBoxType::kOkCancel);
-			if (mmb.run<UI::Panel::Returncodes>() == UI::Panel::Returncodes::kBack)
+			if (mmb.run<UI::Panel::Returncodes>() == UI::Panel::Returncodes::kBack) {
 				return;
+			}
 		}
 	}
 	g_sh->change_music("menu", 200);
@@ -539,7 +545,7 @@ bool EditorInteractive::handle_mousepress(uint8_t btn, int32_t x, int32_t y) {
 
 void EditorInteractive::draw(RenderTarget& dst) {
 	const auto& ebase = egbase();
-	auto* fields_to_draw = map_view()->draw_terrain(ebase, Workareas(), draw_grid_, &dst);
+	auto* fields_to_draw = map_view()->draw_terrain(ebase, nullptr, Workareas(), draw_grid_, &dst);
 
 	const float scale = 1.f / map_view()->view().zoom;
 	const uint32_t gametime = ebase.get_gametime();
@@ -558,17 +564,19 @@ void EditorInteractive::draw(RenderTarget& dst) {
 	// Figure out which fields are currently under the selection.
 	std::set<Widelands::Coords> selected_nodes;
 	std::set<Widelands::TCoords<>> selected_triangles;
-	if (!get_sel_triangles()) {
-		Widelands::MapRegion<> mr(map, Widelands::Area<>(get_sel_pos().node, get_sel_radius()));
-		do {
-			selected_nodes.emplace(mr.location());
-		} while (mr.advance(map));
-	} else {
-		Widelands::MapTriangleRegion<> mr(
-		   map, Widelands::Area<Widelands::TCoords<>>(get_sel_pos().triangle, get_sel_radius()));
-		do {
-			selected_triangles.emplace(mr.location());
-		} while (mr.advance(map));
+	if (g_mouse_cursor->is_visible()) {
+		if (!get_sel_triangles()) {
+			Widelands::MapRegion<> mr(map, Widelands::Area<>(get_sel_pos().node, get_sel_radius()));
+			do {
+				selected_nodes.emplace(mr.location());
+			} while (mr.advance(map));
+		} else {
+			Widelands::MapTriangleRegion<> mr(
+			   map, Widelands::Area<Widelands::TCoords<>>(get_sel_pos().triangle, get_sel_radius()));
+			do {
+				selected_triangles.emplace(mr.location());
+			} while (mr.advance(map));
+		}
 	}
 
 	const auto& world = ebase.world();
@@ -622,36 +630,43 @@ void EditorInteractive::draw(RenderTarget& dst) {
 			                   Vector2i(player_image->width() / 2, kStartingPosHotspotY), scale);
 		}
 
-		// Draw selection markers on the field.
-		if (selected_nodes.count(field.fcoords) > 0) {
-			const Image* pic = get_sel_picture();
-			blit_field_overlay(&dst, field, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale);
-		}
-
-		// Draw selection markers on the triangles.
-		if (field.all_neighbors_valid()) {
-			const FieldsToDraw::Field& rn = fields_to_draw->at(field.rn_index);
-			const FieldsToDraw::Field& brn = fields_to_draw->at(field.brn_index);
-			const FieldsToDraw::Field& bln = fields_to_draw->at(field.bln_index);
-			if (selected_triangles.count(
-			       Widelands::TCoords<>(field.fcoords, Widelands::TriangleIndex::R))) {
-				const Vector2i tripos(
-				   (field.rendertarget_pixel.x + rn.rendertarget_pixel.x + brn.rendertarget_pixel.x) /
-				      3,
-				   (field.rendertarget_pixel.y + rn.rendertarget_pixel.y + brn.rendertarget_pixel.y) /
-				      3);
+		if (g_mouse_cursor->is_visible()) {
+			// Draw selection markers on the field.
+			if (selected_nodes.count(field.fcoords) > 0) {
 				const Image* pic = get_sel_picture();
-				blit_overlay(&dst, tripos, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale);
+				blit_field_overlay(
+				   &dst, field, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale);
 			}
-			if (selected_triangles.count(
-			       Widelands::TCoords<>(field.fcoords, Widelands::TriangleIndex::D))) {
-				const Vector2i tripos(
-				   (field.rendertarget_pixel.x + bln.rendertarget_pixel.x + brn.rendertarget_pixel.x) /
-				      3,
-				   (field.rendertarget_pixel.y + bln.rendertarget_pixel.y + brn.rendertarget_pixel.y) /
-				      3);
-				const Image* pic = get_sel_picture();
-				blit_overlay(&dst, tripos, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale);
+
+			// Draw selection markers on the triangles.
+			if (field.all_neighbors_valid()) {
+				const FieldsToDraw::Field& rn = fields_to_draw->at(field.rn_index);
+				const FieldsToDraw::Field& brn = fields_to_draw->at(field.brn_index);
+				const FieldsToDraw::Field& bln = fields_to_draw->at(field.bln_index);
+				if (selected_triangles.count(
+				       Widelands::TCoords<>(field.fcoords, Widelands::TriangleIndex::R))) {
+					const Vector2i tripos((field.rendertarget_pixel.x + rn.rendertarget_pixel.x +
+					                       brn.rendertarget_pixel.x) /
+					                         3,
+					                      (field.rendertarget_pixel.y + rn.rendertarget_pixel.y +
+					                       brn.rendertarget_pixel.y) /
+					                         3);
+					const Image* pic = get_sel_picture();
+					blit_overlay(
+					   &dst, tripos, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale, 1.f);
+				}
+				if (selected_triangles.count(
+				       Widelands::TCoords<>(field.fcoords, Widelands::TriangleIndex::D))) {
+					const Vector2i tripos((field.rendertarget_pixel.x + bln.rendertarget_pixel.x +
+					                       brn.rendertarget_pixel.x) /
+					                         3,
+					                      (field.rendertarget_pixel.y + bln.rendertarget_pixel.y +
+					                       brn.rendertarget_pixel.y) /
+					                         3);
+					const Image* pic = get_sel_picture();
+					blit_overlay(
+					   &dst, tripos, pic, Vector2i(pic->width() / 2, pic->height() / 2), scale, 1.f);
+				}
 			}
 		}
 	}
@@ -708,6 +723,11 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 	if (down) {
 		switch (code.sym) {
 		// Sel radius
+		case SDLK_KP_1:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_1:
 			if (code.mod & (KMOD_CTRL)) {
 				toggle_buildhelp();
@@ -715,6 +735,12 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 				set_sel_radius_and_update_menu(0);
 			}
 			return true;
+
+		case SDLK_KP_2:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_2:
 			if (code.mod & (KMOD_CTRL)) {
 				toggle_immovables();
@@ -722,6 +748,12 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 				set_sel_radius_and_update_menu(1);
 			}
 			return true;
+
+		case SDLK_KP_3:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_3:
 			if (code.mod & (KMOD_CTRL)) {
 				toggle_bobs();
@@ -729,6 +761,12 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 				set_sel_radius_and_update_menu(2);
 			}
 			return true;
+
+		case SDLK_KP_4:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_4:
 			if (code.mod & (KMOD_CTRL)) {
 				toggle_resources();
@@ -736,21 +774,57 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 				set_sel_radius_and_update_menu(3);
 			}
 			return true;
+
+		case SDLK_KP_5:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_5:
 			set_sel_radius_and_update_menu(4);
 			return true;
+
+		case SDLK_KP_6:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_6:
 			set_sel_radius_and_update_menu(5);
 			return true;
+
+		case SDLK_KP_7:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_7:
 			set_sel_radius_and_update_menu(6);
 			return true;
+
+		case SDLK_KP_8:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_8:
 			set_sel_radius_and_update_menu(7);
 			return true;
+
+		case SDLK_KP_9:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_9:
 			set_sel_radius_and_update_menu(8);
 			return true;
+
+		case SDLK_KP_0:
+			if (!(code.mod & KMOD_NUM)) {
+				break;
+			}
+			FALLS_THROUGH;
 		case SDLK_0:
 			if (!(code.mod & KMOD_CTRL)) {
 				set_sel_radius_and_update_menu(9);
@@ -760,8 +834,9 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 
 		case SDLK_LSHIFT:
 		case SDLK_RSHIFT:
-			if (tools_->use_tool == EditorTool::First)
+			if (tools_->use_tool == EditorTool::First) {
 				select_tool(tools_->current(), EditorTool::Second);
+			}
 			return true;
 
 		case SDLK_LCTRL:
@@ -770,8 +845,9 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_LALT:
 		case SDLK_RALT:
 		case SDLK_MODE:
-			if (tools_->use_tool == EditorTool::First)
+			if (tools_->use_tool == EditorTool::First) {
 				select_tool(tools_->current(), EditorTool::Third);
+			}
 			return true;
 
 		case SDLK_g:
@@ -807,15 +883,17 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 			return true;
 
 		case SDLK_y:
-			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL))
+			if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				history_->redo_action();
+			}
 			return true;
 
 		case SDLK_z:
-			if ((code.mod & (KMOD_LCTRL | KMOD_RCTRL)) && (code.mod & (KMOD_LSHIFT | KMOD_RSHIFT)))
+			if ((code.mod & (KMOD_LCTRL | KMOD_RCTRL)) && (code.mod & (KMOD_LSHIFT | KMOD_RSHIFT))) {
 				history_->redo_action();
-			else if (code.mod & (KMOD_LCTRL | KMOD_RCTRL))
+			} else if (code.mod & (KMOD_LCTRL | KMOD_RCTRL)) {
 				history_->undo_action();
+			}
 			return true;
 
 		case SDLK_F1:
@@ -838,8 +916,9 @@ bool EditorInteractive::handle_key(bool const down, SDL_Keysym const code) {
 		case SDLK_LALT:
 		case SDLK_RALT:
 		case SDLK_MODE:
-			if (tools_->use_tool != EditorTool::First)
+			if (tools_->use_tool != EditorTool::First) {
 				select_tool(tools_->current(), EditorTool::First);
+			}
 			return true;
 		default:
 			break;

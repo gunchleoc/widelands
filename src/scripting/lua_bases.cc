@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +22,8 @@
 #include <boost/algorithm/string.hpp>
 
 #include "economy/economy.h"
+#include "economy/road.h"
+#include "economy/waterway.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "io/profile.h"
 #include "logic/filesystem_constants.h"
@@ -81,7 +83,9 @@ EditorGameBase
 const char LuaEditorGameBase::className[] = "EditorGameBase";
 const MethodType<LuaEditorGameBase> LuaEditorGameBase::Methods[] = {
    METHOD(LuaEditorGameBase, get_immovable_description),
+   METHOD(LuaEditorGameBase, tribe_immovable_exists),
    METHOD(LuaEditorGameBase, get_building_description),
+   METHOD(LuaEditorGameBase, get_ship_description),
    METHOD(LuaEditorGameBase, get_tribe_description),
    METHOD(LuaEditorGameBase, get_ware_description),
    METHOD(LuaEditorGameBase, get_worker_description),
@@ -140,8 +144,9 @@ int LuaEditorGameBase::get_players(lua_State* L) {
 	uint32_t idx = 1;
 	for (PlayerNumber i = 1; i <= kMaxPlayers; i++) {
 		Player* rv = egbase.get_player(i);
-		if (!rv)
+		if (!rv) {
 			continue;
+		}
 
 		lua_pushuint32(L, idx++);
 		get_factory(L).push_player(L, i);
@@ -188,6 +193,24 @@ int LuaEditorGameBase::get_immovable_description(lua_State* L) {
 }
 
 /* RST
+   .. function:: tribe_immovable_exists(immovable_name)
+
+      :arg immovable_name: the name of the tribe immovable
+
+      Returns whether the tribes know about an ImmovableDescription for the named object.
+
+      (RO) ``true`` if the named tribe immovable exists, ``false`` otherwise.
+*/
+int LuaEditorGameBase::tribe_immovable_exists(lua_State* L) {
+	if (lua_gettop(L) != 2) {
+		report_error(L, "Wrong number of arguments");
+	}
+	const std::string immovable_name = luaL_checkstring(L, 2);
+	lua_pushboolean(L, get_egbase(L).tribes().immovable_index(immovable_name) != INVALID_INDEX);
+	return 1;
+}
+
+/* RST
    .. function:: get_building_description(building_description.name)
 
       :arg building_name: the name of the building
@@ -211,6 +234,29 @@ int LuaEditorGameBase::get_building_description(lua_State* L) {
 	return LuaMaps::upcasted_map_object_descr_to_lua(L, building_description);
 }
 
+/* RST
+   .. function:: get_ship_description(ship_description.name)
+
+      :arg ship_name: the name of the ship
+
+      Returns the description for the given ship.
+
+      (RO) The :class:`~wl.Game.Ship_description`.
+*/
+int LuaEditorGameBase::get_ship_description(lua_State* L) {
+	if (lua_gettop(L) != 2) {
+		report_error(L, "Wrong number of arguments");
+	}
+	const Tribes& tribes = get_egbase(L).tribes();
+	const std::string ship_name = luaL_checkstring(L, 2);
+	const DescriptionIndex ship_index = tribes.ship_index(ship_name);
+	if (!tribes.ship_exists(ship_index)) {
+		report_error(L, "Ship %s does not exist", ship_name.c_str());
+	}
+	const ShipDescr* ship_description = tribes.get_ship_descr(ship_index);
+
+	return LuaMaps::upcasted_map_object_descr_to_lua(L, ship_description);
+}
 /* RST
    .. function:: get_tribe_description(tribe_name)
 
@@ -577,7 +623,9 @@ const MethodType<LuaPlayerBase> LuaPlayerBase::Methods[] = {
    METHOD(LuaPlayerBase, place_ship),  {nullptr, nullptr},
 };
 const PropertyType<LuaPlayerBase> LuaPlayerBase::Properties[] = {
-   PROP_RO(LuaPlayerBase, number), PROP_RO(LuaPlayerBase, tribe_name), {nullptr, nullptr, nullptr},
+   PROP_RO(LuaPlayerBase, number),
+   PROP_RO(LuaPlayerBase, tribe_name),
+   {nullptr, nullptr, nullptr},
 };
 
 void LuaPlayerBase::__persist(lua_State* L) {
@@ -657,14 +705,16 @@ int LuaPlayerBase::place_flag(lua_State* L) {
 	uint32_t n = lua_gettop(L);
 	LuaMaps::LuaField* c = *get_user_class<LuaMaps::LuaField>(L, 2);
 	bool force = false;
-	if (n > 2)
+	if (n > 2) {
 		force = luaL_checkboolean(L, 3);
+	}
 
 	Flag* f;
 	if (!force) {
 		f = get(L, get_egbase(L)).build_flag(c->fcoords(L));
-		if (!f)
+		if (!f) {
 			report_error(L, "Couldn't build flag!");
+		}
 	} else {
 		f = &get(L, get_egbase(L)).force_flag(c->fcoords(L));
 	}
@@ -673,15 +723,17 @@ int LuaPlayerBase::place_flag(lua_State* L) {
 }
 
 /* RST
-   .. method:: place_road(f1, dir1, dir2, ...[, force=false])
+   .. method:: place_road(roadtype, f1, dir1, dir2, ...[, force=false])
 
-      Start a road at the given field, then walk the directions
+      Start a road or waterway at the given field, then walk the directions
       given. Places a flag at the last field.
 
       If the last argument to this function is :const:`true` the road will
       be created by force: all immovables in the way are removed and land
       is conquered.
 
+      :arg roadtype: 'normal', 'busy', or 'waterway'
+      :type roadtype: :class:`string`
       :arg f1: fields to connect with this road
       :type f1: :class:`wl.map.Field`
       :arg dirs: direction, can be either ("r", "l", "br", "bl", "tr", "tl") or
@@ -694,7 +746,8 @@ int LuaPlayerBase::place_road(lua_State* L) {
 	EditorGameBase& egbase = get_egbase(L);
 	const Map& map = egbase.map();
 
-	Flag* starting_flag = (*get_user_class<LuaMaps::LuaFlag>(L, 2))->get(L, egbase);
+	const std::string roadtype = luaL_checkstring(L, 2);
+	Flag* starting_flag = (*get_user_class<LuaMaps::LuaFlag>(L, 3))->get(L, egbase);
 	Coords current = starting_flag->get_position();
 	Path path(current);
 
@@ -706,7 +759,7 @@ int LuaPlayerBase::place_road(lua_State* L) {
 
 	// Construct the path
 	CheckStepLimited cstep;
-	for (int32_t i = 3; i <= lua_gettop(L); i++) {
+	for (int32_t i = 4; i <= lua_gettop(L); i++) {
 		std::string d = luaL_checkstring(L, i);
 
 		if (d == "ne" || d == "tr") {
@@ -727,8 +780,9 @@ int LuaPlayerBase::place_road(lua_State* L) {
 		} else if (d == "nw" || d == "tl") {
 			path.append(map, 6);
 			map.get_tln(current, &current);
-		} else
+		} else {
 			report_error(L, "Illegal direction: %s", d.c_str());
+		}
 
 		cstep.add_allowed_location(current);
 	}
@@ -736,27 +790,56 @@ int LuaPlayerBase::place_road(lua_State* L) {
 	// Make sure that the road cannot cross itself
 	Path optimal_path;
 	map.findpath(path.get_start(), path.get_end(), 0, optimal_path, cstep, Map::fpBidiCost);
-	if (optimal_path.get_nsteps() != path.get_nsteps())
+	if (optimal_path.get_nsteps() != path.get_nsteps()) {
 		report_error(L, "Cannot build a road that crosses itself!");
+	}
 
-	Road* r = nullptr;
+	RoadBase* r = nullptr;
 	if (force_road) {
-		r = &get(L, egbase).force_road(path);
+		if (roadtype == "waterway") {
+			r = &get(L, egbase).force_waterway(path);
+		} else {
+			Road& road = get(L, egbase).force_road(path);
+			if (roadtype == "busy") {
+				road.set_busy(egbase, true);
+			} else if (roadtype != "normal") {
+				report_error(
+				   L, "Invalid road type '%s' (permitted values are 'normal', 'busy', and 'waterway'",
+				   roadtype.c_str());
+			}
+			r = &road;
+		}
 	} else {
 		BaseImmovable* bi = map.get_immovable(current);
 		if (!bi || bi->descr().type() != MapObjectType::FLAG) {
-			if (!get(L, egbase).build_flag(current))
+			if (!get(L, egbase).build_flag(current)) {
 				report_error(L, "Could not place end flag!");
+			}
 		}
-		if (bi && bi == starting_flag)
+		if (bi && bi == starting_flag) {
 			report_error(L, "Cannot build a closed loop!");
+		}
 
-		r = get(L, egbase).build_road(path);
+		if (roadtype == "waterway") {
+			r = get(L, egbase).build_waterway(path);
+		} else {
+			Road* road = get(L, egbase).build_road(path);
+			if (roadtype == "busy") {
+				if (road) {
+					road->set_busy(egbase, true);
+				}
+			} else if (roadtype != "normal") {
+				report_error(
+				   L, "Invalid road type '%s' (permitted values are 'normal', 'busy', and 'waterway'",
+				   roadtype.c_str());
+			}
+			r = road;
+		}
 	}
 
 	if (!r) {
 		report_error(L, "Error while creating Road. May be: something is in "
-		                "the way or you do not own the territory were you want to build "
+		                "the way or you do not own the territory where you want to build "
 		                "the road");
 	}
 
@@ -784,10 +867,12 @@ int LuaPlayerBase::place_building(lua_State* L) {
 	bool constructionsite = false;
 	bool force = false;
 
-	if (lua_gettop(L) >= 4)
+	if (lua_gettop(L) >= 4) {
 		constructionsite = luaL_checkboolean(L, 4);
-	if (lua_gettop(L) >= 5)
+	}
+	if (lua_gettop(L) >= 5) {
 		force = luaL_checkboolean(L, 5);
+	}
 
 	EditorGameBase& egbase = get_egbase(L);
 	const Tribes& tribes = egbase.tribes();
@@ -813,8 +898,9 @@ int LuaPlayerBase::place_building(lua_State* L) {
 	} else {
 		b = get(L, egbase).build(c->coords(), building_index, constructionsite, former_buildings);
 	}
-	if (!b)
+	if (!b) {
 		report_error(L, "Couldn't place building!");
+	}
 
 	LuaMaps::upcasted_map_object_to_lua(L, b);
 	return 1;
@@ -862,8 +948,9 @@ int LuaPlayerBase::place_ship(lua_State* L) {
 */
 int LuaPlayerBase::conquer(lua_State* L) {
 	uint32_t radius = 1;
-	if (lua_gettop(L) > 2)
+	if (lua_gettop(L) > 2) {
 		radius = luaL_checkuint32(L, 3);
+	}
 
 	get_egbase(L).conquer_area_no_building(PlayerArea<Area<FCoords>>(
 	   player_number_,
@@ -932,11 +1019,13 @@ int LuaPlayerBase::get_wares(lua_State* L) {
  ==========================================================
  */
 Player& LuaPlayerBase::get(lua_State* L, Widelands::EditorGameBase& egbase) {
-	if (player_number_ > kMaxPlayers)
+	if (player_number_ > kMaxPlayers) {
 		report_error(L, "Illegal player number %i", player_number_);
+	}
 	Player* rv = egbase.get_player(player_number_);
-	if (!rv)
+	if (!rv) {
 		report_error(L, "Player with the number %i does not exist", player_number_);
+	}
 	return *rv;
 }
 

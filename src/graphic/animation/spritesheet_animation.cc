@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by the Widelands Development Team
+ * Copyright (C) 2019-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 #include "base/log.h"
 #include "graphic/graphic.h"
 #include "graphic/image.h"
-#include "graphic/texture.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
@@ -111,7 +110,8 @@ void SpriteSheetAnimation::SpriteSheetMipMapEntry::blit(uint32_t idx,
                                                         const Rectf& source_rect,
                                                         const Rectf& destination_rect,
                                                         const RGBColor* clr,
-                                                        Surface* target) const {
+                                                        Surface* target,
+                                                        const float opacity) const {
 	assert(sheet != nullptr);
 	assert(target);
 	assert(static_cast<int>(idx) <= columns * rows);
@@ -123,11 +123,35 @@ void SpriteSheetAnimation::SpriteSheetMipMapEntry::blit(uint32_t idx,
 	                 source_rect.h);
 
 	if (!has_playercolor_masks || clr == nullptr) {
-		target->blit(destination_rect, *sheet, frame_rect, 1., BlendMode::UseAlpha);
+		target->blit(destination_rect, *sheet, frame_rect, opacity, BlendMode::UseAlpha);
 	} else {
 		assert(playercolor_mask_sheet != nullptr);
 		target->blit_blended(destination_rect, *sheet, *playercolor_mask_sheet, frame_rect, *clr);
 	}
+}
+
+std::vector<std::unique_ptr<const Texture>>
+SpriteSheetAnimation::SpriteSheetMipMapEntry::frame_textures(bool return_playercolor_masks) const {
+	ensure_graphics_are_loaded();
+
+	std::vector<std::unique_ptr<const Texture>> result;
+	const Rectf rect(Vector2f::zero(), width(), height());
+	if (!return_playercolor_masks || has_playercolor_masks) {
+		const size_t no_of_frames = rows * columns;
+		for (size_t i = 0; i < no_of_frames; ++i) {
+			std::unique_ptr<Texture> texture(new Texture(width(), height()));
+
+			const int column = i % columns;
+			const int row = i / columns;
+
+			texture->fill_rect(rect, RGBAColor(0, 0, 0, 0));
+			texture->blit(rect, return_playercolor_masks ? *playercolor_mask_sheet : *sheet,
+			              Rectf(column * width(), row * height(), width(), height()), 1.,
+			              BlendMode::Copy);
+			result.push_back(std::move(texture));
+		}
+	}
+	return result;
 }
 
 int SpriteSheetAnimation::SpriteSheetMipMapEntry::width() const {
@@ -206,18 +230,6 @@ SpriteSheetAnimation::SpriteSheetAnimation(const LuaTable& table,
 	}
 }
 
-std::vector<const Image*> SpriteSheetAnimation::images(float) const {
-	// We only need to implement this if we add compressed spritemaps, or maybe for usage in a test
-	log("ERROR: Accessing image files is not supported by spritesheets\n");
-	NEVER_HERE();
-}
-
-std::vector<const Image*> SpriteSheetAnimation::pc_masks(float) const {
-	// We only need to implement this if we add compressed spritemaps, or maybe for usage in a test
-	log("ERROR: Accessing image files is not supported by spritesheets\n");
-	NEVER_HERE();
-}
-
 const Image* SpriteSheetAnimation::representative_image(const RGBColor* clr) const {
 	const SpriteSheetMipMapEntry& mipmap =
 	   dynamic_cast<const SpriteSheetMipMapEntry&>(mipmap_entry(1.0f));
@@ -230,10 +242,10 @@ const Image* SpriteSheetAnimation::representative_image(const RGBColor* clr) con
 	Rectf rect(Vector2f::zero(), w, h);
 	if (mipmap.has_playercolor_masks && clr) {
 		rv->fill_rect(rect, RGBAColor(0, 0, 0, 0));
-		rv->blit_blended(Rectf(column * w, row * h, w, h), *mipmap.sheet,
-		                 *mipmap.playercolor_mask_sheet, rect, *clr);
+		rv->blit_blended(rect, *mipmap.sheet, *mipmap.playercolor_mask_sheet,
+		                 Rectf(column * w, row * h, w, h), *clr);
 	} else {
-		rv->blit(Rectf(column * w, row * h, w, h), *mipmap.sheet, rect, 1., BlendMode::Copy);
+		rv->blit(rect, *mipmap.sheet, Rectf(column * w, row * h, w, h), 1., BlendMode::Copy);
 	}
 	return rv;
 }

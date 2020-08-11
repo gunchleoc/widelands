@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2019 by the Widelands Development Team
+ * Copyright (C) 2010-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@ Buildcost::Buildcost(std::unique_ptr<LuaTable> table, const Tribes& tribes)
 		}
 
 		// Add
-		insert(std::pair<DescriptionIndex, uint8_t>(tribes.safe_ware_index(warename), value));
+		insert(std::make_pair(tribes.safe_ware_index(warename), value));
 	}
 }
 

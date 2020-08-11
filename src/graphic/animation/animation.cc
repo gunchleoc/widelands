@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -166,9 +166,10 @@ void Animation::blit(uint32_t time,
                      const Rectf& destination_rect,
                      const RGBColor* clr,
                      Surface* target,
-                     float scale) const {
+                     float scale,
+                     float opacity) const {
 	mipmap_entry(find_best_scale(scale))
-	   .blit(current_frame(time), source_rect, destination_rect, clr, target);
+	   .blit(current_frame(time), source_rect, destination_rect, clr, target, opacity);
 	trigger_sound(time, coords);
 }
 
@@ -194,4 +195,9 @@ float Animation::find_best_scale(float scale) const {
 
 int Animation::representative_frame() const {
 	return representative_frame_;
+}
+
+std::vector<std::unique_ptr<const Texture>>
+Animation::frame_textures(float scale, bool return_playercolor_masks) const {
+	return mipmap_entry(scale).frame_textures(return_playercolor_masks);
 }

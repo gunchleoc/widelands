@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,7 +22,6 @@
 #include <memory>
 #include <queue>
 
-#include <SDL.h>
 #include <boost/algorithm/string.hpp>
 
 #include "base/i18n.h"
@@ -173,8 +172,9 @@ IFont& FontCache::get_font(NodeStyle* ns) {
 
 	FontDescr fd = {ns->font_face, font_size};
 	FontMap::iterator i = fontmap_.find(fd);
-	if (i != fontmap_.end())
+	if (i != fontmap_.end()) {
 		return *i->second;
+	}
 
 	std::unique_ptr<IFont> font;
 	try {
@@ -483,7 +483,7 @@ uint16_t Layout::fit_line(const uint16_t w_max,  // Maximum width of line
 			if (rv->back()->halign() == UI::Align::kCenter) {
 				remaining_space /= 2;  // Otherwise, we align right
 			}
-			for (std::shared_ptr<RenderNode> node : *rv) {
+			for (const auto& node : *rv) {
 				node->set_x(node->x() + remaining_space);
 			}
 		}
@@ -491,7 +491,7 @@ uint16_t Layout::fit_line(const uint16_t w_max,  // Maximum width of line
 
 	// Find the biggest hotspot of the truly remaining non-floating items.
 	uint16_t cur_line_hotspot = 0;
-	for (std::shared_ptr<RenderNode> node : *rv) {
+	for (const auto& node : *rv) {
 		if (node->get_floating() != RenderNode::Floating::kNone) {
 			continue;
 		}
@@ -523,7 +523,7 @@ uint16_t Layout::fit_nodes(std::vector<std::shared_ptr<RenderNode>>* rv,
 		int line_height = 0;
 		int line_start = INFINITE_WIDTH;
 		// Compute real line height and width, taking into account alignment
-		for (std::shared_ptr<RenderNode> n : nodes_in_line) {
+		for (const auto& n : nodes_in_line) {
 			if (n->get_floating() == RenderNode::Floating::kNone) {
 				line_height = std::max(line_height, biggest_hotspot - n->hotspot_y() + n->height());
 				n->set_y(h_ + biggest_hotspot - n->hotspot_y());
@@ -535,7 +535,7 @@ uint16_t Layout::fit_nodes(std::vector<std::shared_ptr<RenderNode>>* rv,
 		}
 
 		// Go over again and adjust position for VALIGN
-		for (std::shared_ptr<RenderNode> n : nodes_in_line) {
+		for (const auto& n : nodes_in_line) {
 			int space = line_height - n->height();
 			if (!space || n->valign() == UI::Align::kBottom) {
 				continue;
@@ -904,7 +904,7 @@ public:
 			   new UI::RenderedRect(Recti(margin_.left, margin_.top, w_, h_), background_color_);
 			// Size is automatically adjusted in RenderedText while blitting, so no need to call
 			// check_size() here.
-			rendered_text->rects.push_back(std::unique_ptr<UI::RenderedRect>(std::move(bg_rect)));
+			rendered_text->rects.push_back(std::unique_ptr<UI::RenderedRect>(bg_rect));
 		}
 
 		// Draw background image (tiling)
@@ -912,10 +912,10 @@ public:
 			UI::RenderedRect* bg_rect =
 			   new UI::RenderedRect(Recti(margin_.left, margin_.top, w_, h_), background_image_);
 			check_size(bg_rect->width(), bg_rect->height());
-			rendered_text->rects.push_back(std::unique_ptr<UI::RenderedRect>(std::move(bg_rect)));
+			rendered_text->rects.push_back(std::unique_ptr<UI::RenderedRect>(bg_rect));
 		}
 
-		for (std::shared_ptr<RenderNode> n : nodes_to_render_) {
+		for (const auto& n : nodes_to_render_) {
 			const auto& renderme = n->render(texture_cache);
 			for (auto& rendered_rect : renderme->rects) {
 				if (rendered_rect->was_visited()) {
@@ -1063,7 +1063,7 @@ public:
 	               ImageCache* image_cache,
 	               RendererStyle& init_renderer_style,
 	               const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets) {
+	   : TagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets) {
 	}
 
 	TagType type() const override {
@@ -1072,22 +1072,30 @@ public:
 
 	void enter() override {
 		const AttrMap& a = tag_.attrs();
-		if (a.has("color"))
+		if (a.has("color")) {
 			nodestyle_.font_color = a["color"].get_color();
-		if (a.has("size"))
+		}
+		if (a.has("size")) {
 			nodestyle_.font_size = a["size"].get_int();
-		if (a.has("face"))
+		}
+		if (a.has("face")) {
 			nodestyle_.font_face = a["face"].get_string();
-		if (a.has("bold"))
+		}
+		if (a.has("bold")) {
 			nodestyle_.font_style |= a["bold"].get_bool() ? IFont::BOLD : 0;
-		if (a.has("italic"))
+		}
+		if (a.has("italic")) {
 			nodestyle_.font_style |= a["italic"].get_bool() ? IFont::ITALIC : 0;
-		if (a.has("underline"))
+		}
+		if (a.has("underline")) {
 			nodestyle_.font_style |= a["underline"].get_bool() ? IFont::UNDERLINE : 0;
-		if (a.has("shadow"))
+		}
+		if (a.has("shadow")) {
 			nodestyle_.font_style |= a["shadow"].get_bool() ? IFont::SHADOW : 0;
-		if (a.has("ref"))
+		}
+		if (a.has("ref")) {
 			nodestyle_.reference = a["ref"].get_string();
+		}
 	}
 };
 
@@ -1099,7 +1107,7 @@ public:
 	            ImageCache* image_cache,
 	            RendererStyle& init_renderer_style,
 	            const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), indent_(0) {
+	   : TagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets), indent_(0) {
 	}
 
 	TagType type() const override {
@@ -1108,8 +1116,9 @@ public:
 
 	void enter() override {
 		const AttrMap& a = tag_.attrs();
-		if (a.has("indent"))
+		if (a.has("indent")) {
 			indent_ = a["indent"].get_int();
+		}
 		if (a.has("align")) {
 			const std::string align = a["align"].get_string();
 			if (align == "right") {
@@ -1131,8 +1140,9 @@ public:
 				nodestyle_.valign = UI::Align::kTop;
 			}
 		}
-		if (a.has("spacing"))
+		if (a.has("spacing")) {
 			nodestyle_.spacing = a["spacing"].get_int();
+		}
 	}
 	void emit_nodes(std::vector<std::shared_ptr<RenderNode>>& nodes) override {
 		// Put a newline if this is not the first paragraph
@@ -1157,7 +1167,8 @@ public:
 	              ImageCache* image_cache,
 	              RendererStyle& init_renderer_style,
 	              const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), render_node_(nullptr) {
+	   : TagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets),
+	     render_node_(nullptr) {
 	}
 
 	TagType type() const override {
@@ -1215,7 +1226,7 @@ public:
 	                 ImageCache* image_cache,
 	                 RendererStyle& init_renderer_style,
 	                 const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets), space_(0) {
+	   : TagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets), space_(0) {
 	}
 
 	TagType type() const override {
@@ -1244,7 +1255,7 @@ public:
 	                 ImageCache* image_cache,
 	                 RendererStyle& init_renderer_style,
 	                 const UI::FontSets& fontsets)
-	   : TagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets),
+	   : TagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets),
 	     background_image_(nullptr),
 	     space_(0) {
 	}
@@ -1256,10 +1267,11 @@ public:
 	void enter() override {
 		const AttrMap& a = tag_.attrs();
 
-		if (a.has("gap"))
+		if (a.has("gap")) {
 			space_ = a["gap"].get_int();
-		else
+		} else {
 			space_ = INFINITE_WIDTH;
+		}
 
 		if (a.has("fill")) {
 			fill_text_ = a["fill"].get_string();
@@ -1391,14 +1403,18 @@ public:
 		// TODO(GunChleoc): padding_l and padding_r don't seem to produce balanced results.
 		// We ran into that with the game tips,
 		// using "<rt padding_l=48 padding_t=28 padding_r=48 padding_b=28>" there.
-		if (a.has("padding_r"))
+		if (a.has("padding_r")) {
 			padding.right = a["padding_r"].get_int();
-		if (a.has("padding_b"))
+		}
+		if (a.has("padding_b")) {
 			padding.bottom = a["padding_b"].get_int();
-		if (a.has("padding_l"))
+		}
+		if (a.has("padding_l")) {
 			padding.left = a["padding_l"].get_int();
-		if (a.has("padding_t"))
+		}
+		if (a.has("padding_t")) {
 			padding.top = a["padding_t"].get_int();
+		}
 		if (a.has("margin")) {
 			uint8_t p = a["margin"].get_int();
 			margin.left = margin.top = margin.right = margin.bottom = p;
@@ -1419,7 +1435,7 @@ public:
 		// Determine the required width by the width of the widest subnode
 		uint16_t width_first_subnode = INFINITE_WIDTH;
 		uint16_t widest_subnode = 0;
-		for (std::shared_ptr<RenderNode> n : subnodes) {
+		for (const auto& n : subnodes) {
 			if (n->width() >= INFINITE_WIDTH) {
 				continue;
 			}
@@ -1477,7 +1493,7 @@ public:
 		}
 
 		// Collect all tags from children
-		for (std::shared_ptr<RenderNode> rn : nodes_to_render) {
+		for (const auto& rn : nodes_to_render) {
 			for (const Reference& r : rn->get_references()) {
 				render_node_->add_reference(
 				   rn->x() + r.dim.x, rn->y() + r.dim.y, r.dim.w, r.dim.h, r.ref);
@@ -1536,19 +1552,21 @@ public:
 		}
 		if (a.has("float")) {
 			const std::string s = a["float"].get_string();
-			if (s == "right")
+			if (s == "right") {
 				render_node_->set_floating(RenderNode::Floating::kRight);
-			else if (s == "left")
+			} else if (s == "left") {
 				render_node_->set_floating(RenderNode::Floating::kLeft);
+			}
 		}
 		if (a.has("valign")) {
 			const std::string align = a["valign"].get_string();
-			if (align == "top")
+			if (align == "top") {
 				render_node_->set_valign(UI::Align::kTop);
-			else if (align == "bottom")
+			} else if (align == "bottom") {
 				render_node_->set_valign(UI::Align::kBottom);
-			else if (align == "center" || align == "middle")
+			} else if (align == "center" || align == "middle") {
 				render_node_->set_valign(UI::Align::kCenter);
+			}
 		}
 	}
 
@@ -1571,7 +1589,7 @@ public:
 	             RendererStyle& init_renderer_style,
 	             const UI::FontSets& fontsets,
 	             uint16_t w)
-	   : DivTagHandler(tag, fc, ns, image_cache, init_renderer_style, fontsets, w, true) {
+	   : DivTagHandler(tag, fc, std::move(ns), image_cache, init_renderer_style, fontsets, w, true) {
 	}
 
 	TagType type() const override {
@@ -1675,11 +1693,12 @@ TagHandler* create_taghandler(Tag& tag,
 		map["space"] = &create_taghandler<HspaceTagHandler>;
 	}
 	TagHandlerMap::iterator i = map.find(tag.name());
-	if (i == map.end())
+	if (i == map.end()) {
 		throw RenderError(
 		   (boost::format("No Tag handler for %s. This is a bug, please submit a report.") %
 		    tag.name())
 		      .str());
+	}
 	return i->second(tag, fc, ns, image_cache, renderer_style, fontsets);
 }
 

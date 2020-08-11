@@ -27,7 +27,8 @@ if(POLICY CMP0072)
     # DISTRO_NAME is different on the build-servers.
     if ((DISTRO_NAME MATCHES "Ubuntu 18.10" OR DISTRO_NAME MATCHES "Cosmic"
          OR DISTRO_NAME MATCHES "Ubuntu 19.04" OR DISTRO_NAME MATCHES "Disco"
-         OR DISTRO_NAME MATCHES "Ubuntu 19.10" OR DISTRO_NAME MATCHES "Eoan")
+         OR DISTRO_NAME MATCHES "Ubuntu 19.10" OR DISTRO_NAME MATCHES "Eoan"
+         OR DISTRO_NAME MATCHES "Ubuntu 20.04" OR DISTRO_NAME MATCHES "Focal")
         AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       cmake_policy(SET CMP0072 OLD)
     endif()
@@ -87,11 +88,10 @@ endif()
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
+set (Boost_USE_STATIC_LIBS  OFF)
 if (WIN32)
   set (Boost_USE_STATIC_LIBS  ON)
   link_libraries(wsock32 ws2_32 bcrypt)
-else()
-  set (Boost_USE_STATIC_LIBS  OFF)
 endif()
 set (Boost_USE_MULTITHREADED ON)
 set (Boost_DETAILED_FAILURE_MSG ON)
@@ -107,7 +107,36 @@ find_package (PythonInterp REQUIRED)
 find_package(Gettext REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(PNG REQUIRED)
-find_package(SDL2 REQUIRED)
+
+find_package(Threads REQUIRED)
+find_package(SDL2 CONFIG)
+if(SDL2_FOUND)
+  message(STATUS "Found SDL2 configuration file")
+  if(TARGET SDL2::SDL2)
+    # SDL2 was built with CMake (e.g. Arch Linux)
+    message(STATUS "Target SDL2::SDL2 found")
+  elseif(SDL2_INCLUDE_DIRS AND SDL2_LIBRARIES)
+    # SDL2 was built with Autotools (e.g. Debian)
+    message(STATUS "SDL2_INCLUDE_DIRS: ${SDL2_INCLUDE_DIRS}")
+    message(STATUS "SDL2_LIBRARIES: ${SDL2_LIBRARIES}")
+    # Workaround for trailing whitespace problem (CMP0004) in some SDL2 versions
+    # See: https://hg.libsdl.org/SDL/rev/28be2719184c
+    string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
+  else()
+    # This should not happen but try to recover anyway
+    message(STATUS "SDL2 variables not set! Falling back to FindSDL2 module")
+    find_package(SDL2 REQUIRED MODULE)
+    SET(SDL2_LIBRARIES ${SDL2_LIBRARY})
+    SET(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
+  endif()
+else()
+  # Fallback for old SDL2 versions that don't provide a CMake configuration file
+  message(STATUS "SDL2 configuration file not found - falling back to FindSDL2 module")
+  find_package(SDL2 REQUIRED MODULE)
+  SET(SDL2_LIBRARIES ${SDL2_LIBRARY})
+  SET(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
+endif()
+
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
 find_package(SDL2_ttf REQUIRED)
@@ -271,6 +300,33 @@ wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Werror=format-security")
 wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Werror=return-type")
 wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Werror=shadow")
 wl_add_flag(WL_COMPILE_DIAGNOSTICS "-Werror=uninitialized")
+
+# Cross-compile-unit optimization slows linking significantly.
+# Therefore, impatient user may want to prevent that.
+if(USE_FLTO_IF_AVAILABLE STREQUAL "yes")
+# Cross-compile-unit optimization not supported by gcc with debug on!
+# Therefore, this may only be done with Release builds.
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  # Only tested on Linux. Might work also on other platforms.
+  # If tested and found good, remove this check
+  if (CMAKE_SYSTEM MATCHES "Linux")
+    # Usage of -flto tested only with gcc 8.3 and 9.3 (2020-04); when in doubt, leaving it out..
+    if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0))
+      #
+      # The execution jumps between compile units rather often. -flot allows optimization across
+      # comple units. Binary size reduced by >15% on tested environments. This does not directly
+      # translate to execution speed, but might still be noticeable.
+      #
+      # This is not related to -O2 or -O3 discussion, and not enable by either.
+      #
+      # If using lto, it needs to happen both during compile and link, else no benefits.
+      wl_add_flag(WL_GENERIC_CXX_FLAGS "-flto")
+      SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -flto")
+      message(STATUS "Enabling link-time optimizations")
+    endif()
+  endif(CMAKE_SYSTEM MATCHES "Linux")
+endif(CMAKE_BUILD_TYPE STREQUAL "Release")
+endif(USE_FLTO_IF_AVAILABLE STREQUAL  "yes")
 
 IF (WIN32)
   add_definitions(-DMINGW_HAS_SECURE_API -DWIN32_LEAN_AND_MEAN -D__STDC_FORMAT_MACROS -D__USE_MINGW_ANSI_STDIO)

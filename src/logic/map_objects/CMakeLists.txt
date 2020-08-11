@@ -38,9 +38,12 @@ wl_library(logic_map_objects
     immovable.cc
     immovable.h
     immovable_program.h
+    immovable_program.cc
     info_to_draw.h
     map_object.cc
     map_object.h
+    map_object_program.cc
+    map_object_program.h
     terrain_affinity.cc
     terrain_affinity.h
     tribes/attack_target.h
@@ -115,6 +118,7 @@ wl_library(logic_map_objects
     world/terrain_description.h
     world/world.cc
     world/world.h
+  USES_BOOST_REGEX
   DEPENDS
     ai_hints
     base_exceptions
@@ -132,7 +136,6 @@ wl_library(logic_map_objects
     graphic_surface
     graphic_text_layout
     graphic_toolbar_imageset
-    helper
     io_fileread
     io_filesystem
     logic # TODO(GunChleoc): Circular dependency

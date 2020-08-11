@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@ class LuaTable;
 
 namespace Widelands {
 
-struct CritterDescr;
+class CritterDescr;
 class EditorCategory;
 class ImmovableDescr;
 class ResourceDescription;
@@ -54,6 +54,7 @@ public:
 	DescriptionIndex get_critter(char const* const l) const;
 	CritterDescr const* get_critter_descr(DescriptionIndex index) const;
 	CritterDescr const* get_critter_descr(const std::string& name) const;
+	DescriptionIndex get_nr_critters() const;
 
 	const DescriptionMaintainer<ImmovableDescr>& immovables() const;
 	DescriptionIndex get_immovable_index(const std::string& name) const;
@@ -90,6 +91,8 @@ public:
 	// Load the graphics for the world. Animations are loaded on
 	// demand.
 	void load_graphics();
+
+	// Validate the world objects
 	void postload();
 
 private:

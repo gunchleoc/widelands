@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 #include "sound/constants.h"
 
 class RenderTarget;
-class Image;
 
 namespace UI {
 
@@ -264,6 +263,9 @@ public:
 		return (get_can_focus() && parent_->focus_ == this);
 	}
 	virtual void focus(bool topcaller = true);
+	Panel* focused_child() const {
+		return focus_;
+	}
 
 	void set_top_on_click(bool const on) {
 		if (on)
@@ -323,9 +325,6 @@ protected:
 	static bool draw_tooltip(const std::string& text);
 	void draw_background(RenderTarget& dst, const UI::PanelStyleInfo&);
 	void draw_background(RenderTarget& dst, Recti rect, const UI::PanelStyleInfo&);
-
-	static const Image* default_cursor_;
-	static const Image* default_cursor_click_;
 
 private:
 	bool handles_mouse() const {

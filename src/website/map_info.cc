@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,8 +18,6 @@
  */
 
 #include <memory>
-
-#include <SDL.h>
 
 #include "base/log.h"
 #include "config.h"
@@ -92,7 +90,7 @@ int main(int argc, char** argv) {
 			json->add_int("needs_widelands_version_after", map->needs_widelands_version_after());
 
 			const std::string world_name =
-			   static_cast<Widelands::WidelandsMapLoader*>(ml.get())->old_world_name();
+			   dynamic_cast<Widelands::WidelandsMapLoader*>(ml.get())->old_world_name();
 			json->add_string("world_name", world_name);
 			json->add_string("minimap", map_path + ".png");
 			json->write_to_file(*in_out_filesystem, (map_file + ".json").c_str());

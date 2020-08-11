@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -50,7 +50,7 @@ MultilineTextarea::MultilineTextarea(Panel* const parent,
      scrollbar_(this, get_w() - Scrollbar::kSize, 0, Scrollbar::kSize, h, style, false) {
 	set_thinks(false);
 
-	scrollbar_.moved.connect(boost::bind(&MultilineTextarea::scrollpos_changed, this, _1));
+	scrollbar_.moved.connect([this](int32_t a) { scrollpos_changed(a); });
 
 	scrollbar_.set_singlestepsize(text_height(*style_, font_scale_));
 	scrollbar_.set_steps(1);
@@ -83,7 +83,9 @@ void MultilineTextarea::set_text(const std::string& text) {
  */
 void MultilineTextarea::recompute() {
 	// We wrap the text twice. We need to do this to account for the presence/absence of the
-	// scollbar.
+	// scrollbar. We first try without the scrollbar (unless it's forced) so it's only enabled
+	// when necessary.
+	scrollbar_.set_steps(1);
 	bool scrollbar_was_enabled = scrollbar_.is_enabled();
 	for (int i = 0; i < 2; ++i) {
 		int height = 0;
@@ -165,9 +167,9 @@ void MultilineTextarea::draw(RenderTarget& dst) {
 	case UI::Align::kLeft:
 		anchor = RICHTEXT_MARGIN;
 	}
-	rendered_text_->draw(
-	   dst, Vector2i(anchor, 0), Recti(0, scrollbar_.get_scrollpos(), rendered_text_->width(),
-	                                   rendered_text_->height() - scrollbar_.get_scrollpos()));
+	rendered_text_->draw(dst, Vector2i(anchor, 0),
+	                     Recti(0, scrollbar_.get_scrollpos(), rendered_text_->width(),
+	                           rendered_text_->height() - scrollbar_.get_scrollpos()));
 }
 
 bool MultilineTextarea::handle_mousewheel(uint32_t which, int32_t x, int32_t y) {

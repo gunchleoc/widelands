@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -146,10 +146,10 @@ void Tribes::add_worker_type(const LuaTable& table) {
 	   table, *this));
 }
 
-void Tribes::add_tribe(const LuaTable& table) {
+void Tribes::add_tribe(const LuaTable& table, const World& world) {
 	const std::string name = table.get_string("name");
 	if (Widelands::tribe_exists(name)) {
-		tribes_->add(new TribeDescr(table, Widelands::get_tribeinfo(name), *this));
+		tribes_->add(new TribeDescr(table, Widelands::get_tribeinfo(name), world, *this));
 	} else {
 		throw GameDataError("The tribe '%s'' has no preload file.", name.c_str());
 	}
@@ -323,15 +323,6 @@ const TribeDescr* Tribes::get_tribe_descr(DescriptionIndex tribeindex) const {
 	return tribes_->get_mutable(tribeindex);
 }
 
-void Tribes::set_ware_type_has_demand_check(const DescriptionIndex& wareindex,
-                                            const std::string& tribename) const {
-	wares_->get_mutable(wareindex)->set_has_demand_check(tribename);
-}
-
-void Tribes::set_worker_type_has_demand_check(const DescriptionIndex& workerindex) const {
-	workers_->get_mutable(workerindex)->set_has_demand_check();
-}
-
 void Tribes::load_graphics() {
 	for (size_t tribeindex = 0; tribeindex < nrtribes(); ++tribeindex) {
 		TribeDescr* tribe = tribes_->get_mutable(tribeindex);
@@ -368,22 +359,6 @@ void Tribes::postload() {
 			for (const auto& job : de->working_positions()) {
 				workers_->get_mutable(job.first)->add_employer(i);
 			}
-
-			// Check that all workarea overlap hints are valid
-			for (const auto& pair : de->get_highlight_overlapping_workarea_for()) {
-				const DescriptionIndex di = safe_building_index(pair.first);
-				if (upcast(const ProductionSiteDescr, p, get_building_descr(di))) {
-					if (!p->workarea_info().empty()) {
-						continue;
-					}
-					throw GameDataError("Productionsite %s will inform about conflicting building %s "
-					                    "which doesn’t have a workarea",
-					                    de->name().c_str(), pair.first.c_str());
-				}
-				throw GameDataError("Productionsite %s will inform about conflicting building %s which "
-				                    "is not a productionsite",
-				                    de->name().c_str(), pair.first.c_str());
-			}
 		}
 
 		// Register which buildings buildings can have been enhanced from
@@ -396,9 +371,29 @@ void Tribes::postload() {
 	// Calculate the trainingsites proportions.
 	postload_calculate_trainingsites_proportions();
 
+	// Validate immovable grows/transforms data
+	for (DescriptionIndex i = 0; i < immovables_->size(); ++i) {
+		const ImmovableDescr& imm = immovables_->get(i);
+		for (const auto& target : imm.becomes()) {
+			bool target_exists = immovable_index(target.second) != INVALID_INDEX;
+			if (!target_exists) {
+				target_exists = ship_index(target.second) != INVALID_INDEX;
+			}
+			if (!target_exists) {
+				throw GameDataError("Unknown grow/transform target '%s' for tribe immovable '%s'",
+				                    target.second.c_str(), imm.name().c_str());
+			}
+		}
+	}
+
 	// Some final checks on the gamedata
 	for (DescriptionIndex i = 0; i < tribes_->size(); ++i) {
 		TribeDescr* tribe_descr = tribes_->get_mutable(i);
+
+		// Register which wares and workers have economy demand checks for each tribe
+		for (const DescriptionIndex bi : tribe_descr->buildings()) {
+			postload_register_economy_demand_checks(*buildings_->get_mutable(bi), *tribe_descr);
+		}
 		// Verify that the preciousness has been set for all of the tribe's wares
 		for (const DescriptionIndex wi : tribe_descr->wares()) {
 			if (tribe_descr->get_ware_descr(wi)->ai_hints().preciousness(tribe_descr->name()) ==
@@ -411,7 +406,36 @@ void Tribes::postload() {
 	}
 }
 
-// Set default trainingsites proportions for AI. Make sure that we get a sum of ca. 100
+/// Register wares and workers that have economy demand checks for a building
+void Tribes::postload_register_economy_demand_checks(BuildingDescr& building_descr,
+                                                     const TribeDescr& tribe_descr) {
+	if (upcast(ProductionSiteDescr, prodsite, &building_descr)) {
+		// This function can be called only once per loading of tribes
+		assert(prodsite->ware_demand_checks() != nullptr);
+
+		for (const DescriptionIndex wi : *prodsite->ware_demand_checks()) {
+			if (!tribe_descr.has_ware(wi)) {
+				throw GameDataError("Productionsite '%s' for tribe '%s' has an economy demand check "
+				                    "for ware '%s', but the tribe does not use this ware",
+				                    prodsite->name().c_str(), tribe_descr.name().c_str(),
+				                    get_ware_descr(wi)->name().c_str());
+			}
+			wares_->get_mutable(wi)->set_has_demand_check(tribe_descr.name());
+		}
+		for (const DescriptionIndex wi : *prodsite->worker_demand_checks()) {
+			if (!tribe_descr.has_worker(wi)) {
+				throw GameDataError("Productionsite '%s' for tribe '%s' has an economy demand check "
+				                    "for worker '%s', but the tribe does not use this worker",
+				                    prodsite->name().c_str(), tribe_descr.name().c_str(),
+				                    get_worker_descr(wi)->name().c_str());
+			}
+			workers_->get_mutable(wi)->set_has_demand_check();
+		}
+		prodsite->clear_demand_checks();
+	}
+}
+
+/// Set default trainingsites proportions for AI. Make sure that we get a sum of ca. 100
 void Tribes::postload_calculate_trainingsites_proportions() {
 	for (DescriptionIndex i = 0; i < tribes_->size(); ++i) {
 		TribeDescr* tribe_descr = tribes_->get_mutable(i);

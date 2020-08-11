@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@ class MapLoader {
 public:
 	enum class LoadType { kGame, kScenario, kEditor };
 
-	MapLoader(const std::string& filename, Map& M) : map_(M), state_(STATE_INIT) {
+	MapLoader(const std::string& filename, Map& M) : map_(M), state_(State::kInit) {
 		map_.set_filename(filename);
 	}
 	virtual ~MapLoader() {
@@ -50,7 +50,7 @@ public:
 	}
 
 protected:
-	enum State { STATE_INIT, STATE_PRELOADED, STATE_LOADED };
+	enum class State { kInit, kPreLoaded, kLoaded };
 	void set_state(State const s) {
 		state_ = s;
 	}

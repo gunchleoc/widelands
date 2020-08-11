@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -61,9 +61,9 @@ const Animation& AnimationManager::get_animation(uint32_t id) const {
 const Image* AnimationManager::get_representative_image(uint32_t id, const RGBColor* clr) {
 	const auto hash = std::make_pair(id, clr);
 	if (representative_images_.count(hash) != 1) {
-		representative_images_.insert(std::make_pair(
-		   hash, std::unique_ptr<const Image>(
-		            std::move(g_gr->animations().get_animation(id).representative_image(clr)))));
+		representative_images_.insert(
+		   std::make_pair(hash, std::unique_ptr<const Image>(
+		                           g_gr->animations().get_animation(id).representative_image(clr))));
 	}
 	return representative_images_.at(hash).get();
 }

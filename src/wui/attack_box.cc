@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,6 +20,8 @@
 #include "wui/attack_box.h"
 
 #include <memory>
+
+#include <SDL_mouse.h>
 
 #include "base/macros.h"
 #include "graphic/text_layout.h"
@@ -43,7 +45,7 @@ AttackBox::AttackBox(UI::Panel* parent,
 std::vector<Widelands::Soldier*> AttackBox::get_max_attackers() {
 	assert(player_);
 	if (upcast(Building, building, map_.get_immovable(*node_coordinates_))) {
-		if (player_->vision(map_.get_index(building->get_position(), map_.get_width())) > 1) {
+		if (player_->is_seeing(map_.get_index(building->get_position(), map_.get_width()))) {
 			std::vector<Widelands::Soldier*> v;
 			// TODO(Nordfriese): This method decides by itself which soldier remains in the building.
 			// This soldier will not show up in the result vector. Perhaps we should show all
@@ -73,7 +75,7 @@ std::unique_ptr<UI::HorizontalSlider> AttackBox::add_slider(UI::Box& parent,
 }
 
 UI::Textarea& AttackBox::add_text(UI::Box& parent,
-                                  std::string str,
+                                  const std::string& str,
                                   UI::Align alignment,
                                   const UI::FontStyle style) {
 	UI::Textarea& result =
@@ -88,7 +90,7 @@ std::unique_ptr<UI::Button> AttackBox::add_button(UI::Box& parent,
                                                   const std::string& tooltip_text) {
 	std::unique_ptr<UI::Button> button(new UI::Button(
 	   &parent, text, 8, 8, 34, 34, UI::ButtonStyle::kWuiPrimary, text, tooltip_text));
-	button->sigclicked.connect(boost::bind(fn, boost::ref(*this)));
+	button->sigclicked.connect([this, fn]() { (this->*fn)(); });
 	parent.add(button.get());
 	return button;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -74,8 +74,9 @@ EditorGameBase::EditorGameBase(LuaInterface* lua_interface)
      loader_ui_(nullptr),
      game_tips_(nullptr),
      tmp_fs_(nullptr) {
-	if (!lua_)  // TODO(SirVer): this is sooo ugly, I can't say
+	if (!lua_) {  // TODO(SirVer): this is sooo ugly, I can't say
 		lua_.reset(new LuaEditorInterface(this));
+	}
 }
 
 EditorGameBase::~EditorGameBase() {
@@ -96,8 +97,9 @@ void EditorGameBase::delete_tempfile() {
 
 	std::string fs_filename = tmp_fs_->get_basename();
 	std::string mapfs_filename = map_.filesystem()->get_basename();
-	if (mapfs_filename == fs_filename)
+	if (mapfs_filename == fs_filename) {
 		map_.reset_filesystem();
+	}
 	tmp_fs_.reset();
 	try {
 		g_fs->fs_unlink(fs_filename);
@@ -114,50 +116,63 @@ void EditorGameBase::delete_tempfile() {
  * throws an exception if something goes wrong
  */
 void EditorGameBase::create_tempfile_and_save_mapdata(FileSystem::Type const type) {
-	// should only be called when a map was already loaded
-	assert(map_.filesystem());
-
-	g_fs->ensure_directory_exists(kTempFileDir);
-
-	std::string filename = kTempFileDir + g_fs->file_separator() + timestring() + "_mapdata";
-	std::string complete_filename = filename + kTempFileExtension;
-
-	// if a file with that name already exists, then try a few name modifications
-	if (g_fs->file_exists(complete_filename)) {
-		int suffix;
-		for (suffix = 0; suffix <= 9; suffix++) {
-			complete_filename = filename + "-" + std::to_string(suffix) + kTempFileExtension;
-			if (!g_fs->file_exists(complete_filename))
-				break;
-		}
-		if (suffix > 9) {
-			throw wexception("EditorGameBase::create_tempfile_and_save_mapdata(): for all considered "
-			                 "filenames a file already existed");
-		}
+	if (!map_.filesystem()) {
+		return;
 	}
 
-	// create tmp_fs_
-	tmp_fs_.reset(g_fs->create_sub_file_system(complete_filename, type));
+	// save map data to temporary file and reassign map fs
+	try {
+		g_fs->ensure_directory_exists(kTempFileDir);
 
-	// save necessary map data (we actually save the whole map)
-	std::unique_ptr<Widelands::MapSaver> wms(new Widelands::MapSaver(*tmp_fs_, *this));
-	wms->save();
+		std::string filename = kTempFileDir + g_fs->file_separator() + timestring() + "_mapdata";
+		std::string complete_filename = filename + kTempFileExtension;
 
-	// swap map fs
-	std::unique_ptr<FileSystem> mapfs(tmp_fs_->make_sub_file_system("."));
-	map_.swap_filesystem(mapfs);
-	mapfs.reset();
+		// if a file with that name already exists, then try a few name modifications
+		if (g_fs->file_exists(complete_filename)) {
+			int suffix;
+			for (suffix = 0; suffix <= 9; suffix++) {
+				complete_filename =
+				   filename.append("-").append(std::to_string(suffix)).append(kTempFileExtension);
+				if (!g_fs->file_exists(complete_filename)) {
+					break;
+				}
+			}
+			if (suffix > 9) {
+				throw wexception(
+				   "EditorGameBase::create_tempfile_and_save_mapdata(): for all considered "
+				   "filenames a file already existed");
+			}
+		}
 
-	// This is just a convenience hack:
-	// If tmp_fs_ is a zip filesystem then - because of the way zip filesystems are currently
-	// implemented -
-	// the file is still in zip mode right now, which means that the file isn't finalized yet, i.e.,
-	// not even a valid zip file until zip mode ends. To force ending the zip mode (thus finalizing
-	// the file)
-	// we simply perform a (otherwise useless) filesystem request.
-	// It's not strictly necessary, but this way we get a valid zip file immediately istead of
-	// at some unkown later point (when an unzip operation happens or a filesystem object destructs).
-	tmp_fs_->file_exists("binary");
+		// create tmp_fs_
+		tmp_fs_.reset(g_fs->create_sub_file_system(complete_filename, type));
+
+		// save necessary map data (we actually save the whole map)
+		std::unique_ptr<Widelands::MapSaver> wms(new Widelands::MapSaver(*tmp_fs_, *this));
+		wms->save();
+
+		// swap map fs
+		std::unique_ptr<FileSystem> mapfs(tmp_fs_->make_sub_file_system("."));
+		map_.swap_filesystem(mapfs);
+		mapfs.reset();
+
+		// This is just a convenience hack:
+		// If tmp_fs_ is a zip filesystem then - because of the way zip filesystems are currently
+		// implemented -
+		// the file is still in zip mode right now, which means that the file isn't finalized yet,
+		// i.e.,
+		// not even a valid zip file until zip mode ends. To force ending the zip mode (thus
+		// finalizing
+		// the file)
+		// we simply perform a (otherwise useless) filesystem request.
+		// It's not strictly necessary, but this way we get a valid zip file immediately istead of
+		// at some unkown later point (when an unzip operation happens or a filesystem object
+		// destructs).
+		tmp_fs_->file_exists("binary");
+	} catch (const WException& e) {
+		log("EditorGameBase: saving map to temporary file failed: %s", e.what());
+		throw;
+	}
 }
 
 void EditorGameBase::think() {
@@ -253,20 +268,21 @@ void EditorGameBase::inform_players_about_ownership(MapIndex const i,
                                                     PlayerNumber const new_owner) {
 	iterate_players_existing_const(plnum, kMaxPlayers, *this, p) {
 		Player::Field& player_field = p->fields_[i];
-		if (1 < player_field.vision) {
+		if (SeeUnseeNode::kVisible == player_field.seeing) {
 			player_field.owner = new_owner;
 		}
 	}
 }
 void EditorGameBase::inform_players_about_immovable(MapIndex const i,
                                                     MapObjectDescr const* const descr) {
-	if (!Road::is_road_descr(descr) && !Waterway::is_waterway_descr(descr))
+	if (!Road::is_road_descr(descr) && !Waterway::is_waterway_descr(descr)) {
 		iterate_players_existing_const(plnum, kMaxPlayers, *this, p) {
 			Player::Field& player_field = p->fields_[i];
-			if (1 < player_field.vision) {
+			if (SeeUnseeNode::kVisible == player_field.seeing) {
 				player_field.map_object_descr = descr;
 			}
 		}
+	}
 }
 
 void EditorGameBase::allocate_player_maps() {
@@ -276,20 +292,12 @@ void EditorGameBase::allocate_player_maps() {
 }
 
 /**
- * Load and prepare detailed game data.
- * This happens once just after the host has started the game and before the
- * graphics are loaded.
+ * Load and prepare detailed game and map data.
+ * This happens once just after the host has started the game / the editor has started and before
+ * the graphics are loaded.
  */
 void EditorGameBase::postload() {
-	if (map_.filesystem()) {
-		// save map data to temporary file and reassign map fs
-		try {
-			create_tempfile_and_save_mapdata(FileSystem::ZIP);
-		} catch (const WException& e) {
-			log("EditorGameBase::postload: saving map to temporary file failed: %s", e.what());
-			throw;
-		}
-	}
+	create_tempfile_and_save_mapdata(FileSystem::ZIP);
 
 	// Postload tribes and world
 	step_loader_ui(_("Postloading world and tribes…"));
@@ -377,7 +385,8 @@ Building& EditorGameBase::warp_building(const Coords& c,
                                         FormerBuildings former_buildings) {
 	Player* plr = get_player(owner);
 	const TribeDescr& tribe = plr->tribe();
-	return tribe.get_building_descr(idx)->create(*this, plr, c, false, true, former_buildings);
+	return tribe.get_building_descr(idx)->create(
+	   *this, plr, c, false, true, std::move(former_buildings));
 }
 
 /**
@@ -387,19 +396,22 @@ Building& EditorGameBase::warp_building(const Coords& c,
  * \li former_buildings : the former buildings. If it is not empty, this is
  * an enhancement.
  */
-Building& EditorGameBase::warp_constructionsite(const Coords& c,
-                                                PlayerNumber const owner,
-                                                DescriptionIndex idx,
-                                                bool loading,
-                                                FormerBuildings former_buildings,
-                                                const BuildingSettings* settings) {
+Building&
+EditorGameBase::warp_constructionsite(const Coords& c,
+                                      PlayerNumber const owner,
+                                      DescriptionIndex idx,
+                                      bool loading,
+                                      FormerBuildings former_buildings,
+                                      const BuildingSettings* settings,
+                                      const std::map<DescriptionIndex, Quantity>& preserved_wares) {
 	Player* plr = get_player(owner);
 	const TribeDescr& tribe = plr->tribe();
-	Building& b =
-	   tribe.get_building_descr(idx)->create(*this, plr, c, true, loading, former_buildings);
+	ConstructionSite& b = dynamic_cast<ConstructionSite&>(tribe.get_building_descr(idx)->create(
+	   *this, plr, c, true, loading, std::move(former_buildings)));
 	if (settings) {
-		dynamic_cast<ConstructionSite&>(b).apply_settings(*settings);
+		b.apply_settings(*settings);
 	}
+	b.add_dropout_wares(preserved_wares);
 	return b;
 }
 
@@ -408,10 +420,12 @@ Building& EditorGameBase::warp_constructionsite(const Coords& c,
  * \li former_buildings : the former buildings list. This should not be empty,
  * except during loading.
  */
-Building& EditorGameBase::warp_dismantlesite(const Coords& c,
-                                             PlayerNumber const owner,
-                                             bool loading,
-                                             FormerBuildings former_buildings) {
+Building&
+EditorGameBase::warp_dismantlesite(const Coords& c,
+                                   PlayerNumber const owner,
+                                   bool loading,
+                                   FormerBuildings former_buildings,
+                                   const std::map<DescriptionIndex, Quantity>& preserved_wares) {
 	Player* plr = get_player(owner);
 	const TribeDescr& tribe = plr->tribe();
 
@@ -420,7 +434,7 @@ Building& EditorGameBase::warp_dismantlesite(const Coords& c,
 
 	upcast(const DismantleSiteDescr, ds_descr, descr);
 
-	return *new DismantleSite(*ds_descr, *this, c, plr, loading, former_buildings);
+	return *new DismantleSite(*ds_descr, *this, c, plr, loading, former_buildings, preserved_wares);
 }
 
 /**
@@ -444,9 +458,10 @@ Bob& EditorGameBase::create_critter(const Coords& c,
 
 Bob& EditorGameBase::create_critter(const Coords& c, const std::string& name, Player* owner) {
 	const BobDescr* descr = dynamic_cast<const BobDescr*>(world().get_critter_descr(name));
-	if (descr == nullptr)
+	if (descr == nullptr) {
 		throw GameDataError("create_critter(%i,%i,%s,%s): critter not found", c.x, c.y, name.c_str(),
 		                    owner->get_name().c_str());
+	}
 	return create_bob(c, *descr, owner);
 }
 
@@ -499,7 +514,6 @@ Immovable& EditorGameBase::do_create_immovable(const Coords& c,
 	const ImmovableDescr& descr =
 	   *(type == MapObjectDescr::OwnerType::kTribe ? tribes().get_immovable_descr(idx) :
 	                                                 world().get_immovable_descr(idx));
-	assert(&descr);
 	inform_players_about_immovable(Map::get_index(c, map().get_width()), &descr);
 	Immovable& immovable = descr.create(*this, c, former_building_descr);
 	if (owner != nullptr) {
@@ -530,9 +544,12 @@ Bob& EditorGameBase::create_ship(const Coords& c, const std::string& name, Playe
 	}
 }
 
-Bob& EditorGameBase::create_ferry(const Coords& c, Player* owner) {
-	const BobDescr* descr =
-	   dynamic_cast<const BobDescr*>(tribes().get_worker_descr(owner->tribe().ferry()));
+Bob& EditorGameBase::create_worker(const Coords& c, DescriptionIndex worker, Player* owner) {
+	if (!owner->tribe().has_worker(worker)) {
+		throw GameDataError(
+		   "Tribe %s does not have worker with index %d", owner->tribe().name().c_str(), worker);
+	}
+	const BobDescr* descr = dynamic_cast<const BobDescr*>(tribes().get_worker_descr(worker));
 	return create_bob(c, *descr, owner);
 }
 
@@ -602,9 +619,10 @@ void EditorGameBase::set_road(const FCoords& f,
 	MapIndex const i = f.field - &first_field;
 	MapIndex const neighbour_i = neighbour.field - &first_field;
 	iterate_players_existing_const(plnum, kMaxPlayers, *this, p) {
-		Player::Field& first_player_field = *p->fields_;
+		Player::Field& first_player_field = *p->fields_.get();
 		Player::Field& player_field = (&first_player_field)[i];
-		if (1 < player_field.vision || 1 < (&first_player_field)[neighbour_i].vision) {
+		if (SeeUnseeNode::kVisible == player_field.seeing ||
+		    SeeUnseeNode::kVisible == (&first_player_field)[neighbour_i].seeing) {
 			switch (direction) {
 			case WALK_SE:
 				player_field.r_se = roadtype;
@@ -741,8 +759,9 @@ void EditorGameBase::do_conquer_area(PlayerArea<Area<FCoords>> player_area,
 			//  adds the influence
 			MilitaryInfluence new_influence_modified = conquering_player->military_influence(index) +=
 			   influence;
-			if (owner && !conquer_guarded_location_by_superior_influence)
+			if (owner && !conquer_guarded_location_by_superior_influence) {
 				new_influence_modified = 1;
+			}
 			if (!owner || player(owner).military_influence(index) < new_influence_modified) {
 				change_field_owner(mr.location(), player_area.player_number);
 			}
@@ -752,9 +771,9 @@ void EditorGameBase::do_conquer_area(PlayerArea<Area<FCoords>> player_area,
 			//  owned. Now we must see if some other player has influence and if
 			//  so, transfer the ownership to that player.
 			PlayerNumber best_player;
-			if (preferred_player && player(preferred_player).military_influence(index))
+			if (preferred_player && player(preferred_player).military_influence(index)) {
 				best_player = preferred_player;
-			else {
+			} else {
 				best_player = neutral_when_no_influence ? 0 : player_area.player_number;
 				MilitaryInfluence highest_military_influence = 0;
 				PlayerNumber const nr_players = map().get_nrplayers();
@@ -812,15 +831,18 @@ void EditorGameBase::cleanup_playerimmovables_area(PlayerArea<Area<FCoords>> con
 	//  fix all immovables
 	upcast(Game, game, this);
 	for (PlayerImmovable* temp_imm : burnlist) {
-		if (upcast(Building, building, temp_imm))
+		if (upcast(Building, building, temp_imm)) {
 			building->set_defeating_player(area.player_number);
-		else if (upcast(Flag, flag, temp_imm))
-			if (Building* const flag_building = flag->get_building())
+		} else if (upcast(Flag, flag, temp_imm)) {
+			if (Building* const flag_building = flag->get_building()) {
 				flag_building->set_defeating_player(area.player_number);
-		if (game)
+			}
+		}
+		if (game) {
 			temp_imm->schedule_destroy(*game);
-		else
+		} else {
 			temp_imm->remove(*this);
+		}
 	}
 }
 }  // namespace Widelands
