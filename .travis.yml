@@ -70,29 +70,11 @@ jobs:
 
     # Separate stage to speed things up in case the regression test suite fails
     - stage: testsuite
-      name: "DEBUG: Ubuntu 18.04 with gcc 9.1"
+      name: "DEBUG: Ubuntu 20.04 with gcc 10"
       os: linux
-      dist: bionic
+      dist: focal
       cache: false
-      addons:
-        apt:
-          sources:
-            - sourceline: 'ppa:ubuntu-toolchain-r/test'
-          packages:
-            - g++-9
-            - libboost-dev
-            - libboost-regex-dev
-            - libboost-system-dev
-            - libboost-test-dev
-            - libglew-dev
-            - libicu-dev
-            - libpng-dev
-            - libsdl2-dev
-            - libsdl2-image-dev
-            - libsdl2-mixer-dev
-            - libsdl2-ttf-dev
-            - zlib1g-dev
-      env: BUILD_TYPE=Debug BUILD_TRANSLATIONS=OFF BUILD_WEBSITE_TOOLS=ON CC=gcc-9 CXX=g++-9
+      env: BUILD_TYPE=Debug BUILD_TRANSLATIONS=OFF BUILD_WEBSITE_TOOLS=ON CC=gcc-10 CXX=g++-10
       services: xvfb
     - name: "DEBUG: Ubuntu 14.04 with gcc 4.8"
       os: linux
@@ -100,28 +82,10 @@ jobs:
       cache: false
       env: BUILD_TYPE=Debug BUILD_TRANSLATIONS=OFF BUILD_WEBSITE_TOOLS=ON
       before_script: 'export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start && sleep 3'
-    - name: "RELEASE: Ubuntu 18.04 with gcc 9.1"
+    - name: "RELEASE: Ubuntu 20.04 with gcc 10"
       os: linux
-      dist: bionic
-      addons:
-        apt:
-          sources:
-            - sourceline: 'ppa:ubuntu-toolchain-r/test'
-          packages:
-            - g++-9
-            - libboost-dev
-            - libboost-regex-dev
-            - libboost-system-dev
-            - libboost-test-dev
-            - libglew-dev
-            - libicu-dev
-            - libpng-dev
-            - libsdl2-dev
-            - libsdl2-image-dev
-            - libsdl2-mixer-dev
-            - libsdl2-ttf-dev
-            - zlib1g-dev
-      env: BUILD_TYPE=Release BUILD_TRANSLATIONS=ON BUILD_WEBSITE_TOOLS=ON CC=gcc-9 CXX=g++-9
+      dist: focal
+      env: BUILD_TYPE=Release BUILD_TRANSLATIONS=ON BUILD_WEBSITE_TOOLS=ON CC=gcc-10 CXX=g++-10
       services: xvfb
     - name: "RELEASE: Ubuntu 14.04 with gcc 4.8"
       os: linux
@@ -211,9 +175,10 @@ jobs:
         - 'sudo ln -s /usr/bin/ccache /usr/lib/ccache/clang'
         - 'sudo ln -s /usr/bin/ccache /usr/lib/ccache/clang++'
         - 'export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start && sleep 3'
-    - name: "DEBUG: Ubuntu 18.04 with gcc 7.4"
+    - stage: testsuite
+      name: "DEBUG: Ubuntu 20.04 with gcc 9.3"
       os: linux
-      dist: bionic
+      dist: focal
       cache: false
       env: BUILD_TYPE=Debug BUILD_TRANSLATIONS=OFF BUILD_WEBSITE_TOOLS=ON
       services: xvfb
@@ -300,9 +265,9 @@ jobs:
         - 'sudo ln -s /usr/bin/ccache /usr/lib/ccache/clang'
         - 'sudo ln -s /usr/bin/ccache /usr/lib/ccache/clang++'
         - 'export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start && sleep 3'
-    - name: "RELEASE: Ubuntu 18.04 with gcc 7.4"
+    - name: "RELEASE: Ubuntu 20.04 with gcc 9.3"
       os: linux
-      dist: bionic
+      dist: focal
       env: BUILD_TYPE=Release BUILD_TRANSLATIONS=ON BUILD_WEBSITE_TOOLS=ON
       services: xvfb
     - name: "RELEASE: Ubuntu 16.04 with gcc 5.4"
