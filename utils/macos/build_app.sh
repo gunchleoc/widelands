@@ -43,6 +43,12 @@ if [ ! -z "$3" ]; then
       CXX_COMPILER="g++-6"
       COMPILER=$(gcc-6 --version | grep -i "GCC")
       ;;
+   gcc9)
+      # Used for the nightly builds.
+      C_COMPILER="gcc-9"
+      CXX_COMPILER="g++-9"
+      COMPILER=$(gcc-9 --version | grep -i "GCC")
+      ;;
    *)
       echo $USAGE
       exit 1
