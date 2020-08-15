@@ -29,7 +29,7 @@ jobs:
         # For compilers to find boost@1.60 you may need to set:
         if [ ${{ matrix.compiler }} = "gcc9" ] ; then export LDFLAGS="-L/usr/local/opt/boost@1.60/lib" ; export CPPFLAGS="-I/usr/local/opt/boost@1.60/include" ; fi
         # CMake didn't find it, try this
-        if [ ${{ matrix.compiler }} = "gcc9" ] ; then  ln -s /usr/local/opt/boost@1.60/lib /usr/local/opt/boost/lib ;  /usr/local/opt/boost@1.60/include /usr/local/opt/boost/include ; fi
+        if [ ${{ matrix.compiler }} = "gcc9" ] ; then  ln -s /usr/local/opt/boost/lib /usr/local/opt/boost@1.60/lib ; /usr/local/opt/boost/include /usr/local/opt/boost@1.60/include ; fi
 
 
     - name: Checkout
