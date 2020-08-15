@@ -28,6 +28,10 @@ jobs:
         if [ ${{ matrix.compiler }} = "gcc9" ] ; then brew install --cc=gcc-9 boost@1.60 ; else brew install boost ; fi
         # For compilers to find boost@1.60 you may need to set:
         if [ ${{ matrix.compiler }} = "gcc9" ] ; then export LDFLAGS="-L/usr/local/opt/boost@1.60/lib" ; export CPPFLAGS="-I/usr/local/opt/boost@1.60/include" ; fi
+        # CMake didn't find it, try this
+        if [ ${{ matrix.compiler }} = "gcc9" ] ; then  ln -s /usr/local/opt/boost@1.60/lib /usr/local/opt/boost/lib ;  /usr/local/opt/boost@1.60/include /usr/local/opt/boost/include ; fi
+
+
     - name: Checkout
       uses: actions/checkout@v2
       with:
