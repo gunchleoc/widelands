@@ -2,7 +2,7 @@
 
 set -e
 
-USAGE="Usage: $0 <clang|gcc|gcc6> <debug|release> <git_repo_directory>"
+USAGE="Usage: $0 <clang|gcc|gcc6|gcc9> <debug|release> <git_repo_directory>"
 USE_ASAN="OFF"
 
 if [ ! -z "$3" ]; then

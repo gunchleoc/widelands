@@ -26,6 +26,8 @@ jobs:
         if [ ${{ matrix.compiler }} = "gcc9" ] ; then brew install gcc@9 ; fi
         brew install ccache glew ninja sdl2 sdl2_image sdl2_mixer sdl2_ttf
         if [ ${{ matrix.compiler }} = "gcc9" ] ; then brew install --cc=gcc-9 boost@1.60 ; else brew install boost ; fi
+        # For compilers to find boost@1.60 you may need to set:
+        if [ ${{ matrix.compiler }} = "gcc9" ] ; then export LDFLAGS="-L/usr/local/opt/boost@1.60/lib" ; export CPPFLAGS="-I/usr/local/opt/boost@1.60/include" ; fi
     - name: Checkout
       uses: actions/checkout@v2
       with:
