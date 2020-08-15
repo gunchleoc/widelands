@@ -33,15 +33,20 @@ if [ ! -z "$3" ]; then
       COMPILER=$(clang --version | grep "clang")
       ;;
    gcc)
-      C_COMPILER="gcc-7"
-      CXX_COMPILER="g++-7"
-      COMPILER=$(gcc-7 --version | grep "GCC")
+      C_COMPILER="gcc"
+      CXX_COMPILER="g++"
+      COMPILER=$(gcc --version | grep "GCC")
       ;;
    gcc6)
       # Used for the nightly builds.
       C_COMPILER="gcc-6"
       CXX_COMPILER="g++-6"
       COMPILER=$(gcc-6 --version | grep -i "GCC")
+      ;;
+   gcc7)
+      C_COMPILER="gcc-7"
+      CXX_COMPILER="g++-7"
+      COMPILER=$(gcc-7 --version | grep "GCC")
       ;;
    *)
       echo $USAGE
