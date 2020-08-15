@@ -7,7 +7,7 @@ on:
 
 jobs:
   macos:
-    needs: [clang_tidy]
+    #needs: [clang_tidy]
     strategy:
       matrix:
         config:
