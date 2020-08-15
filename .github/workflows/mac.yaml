@@ -15,7 +15,7 @@ jobs:
           #- debug
         compiler:
           #- clang
-          - gcc
+          - gcc6
     name: MacOS ${{ matrix.config }} ${{ matrix.compiler }}
     runs-on: macOS-latest
     steps:
@@ -23,11 +23,11 @@ jobs:
       run: |
         export ICU_ROOT="$(brew --prefix icu4c)" && \
         export PATH="/usr/local/opt/ccache/libexec:/usr/local/opt/gettext/bin:$PATH";
-        if [ ${{ matrix.compiler }} = "gcc" ] ; then brew install gcc@7 ; fi
+        if [ ${{ matrix.compiler }} = "gcc6" ] ; then brew install gcc@6 ; fi
         brew install ccache glew ninja sdl2 sdl2_image sdl2_mixer sdl2_ttf
         # brew install boost
         # Code below can be tested for boost switching
-        if [ ${{ matrix.compiler }} = "gcc" ] ; then brew install --cc=gcc-7 boost ; else brew install boost ; fi
+        if [ ${{ matrix.compiler }} = "gcc6" ] ; then brew install --cc=gcc-6 boost ; else brew install boost ; fi
     - name: Checkout
       uses: actions/checkout@v2
       with:
