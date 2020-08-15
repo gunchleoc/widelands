@@ -27,7 +27,6 @@ jobs:
         brew install ccache glew ninja sdl2 sdl2_image sdl2_mixer sdl2_ttf
         # brew install boost
         # Code below can be tested for boost switching
-        brew uninstall boost
         if [ ${{ matrix.compiler }} = "gcc" ] ; then brew install --cc=gcc-7 boost ; else brew install boost ; fi
     - name: Checkout
       uses: actions/checkout@v2
