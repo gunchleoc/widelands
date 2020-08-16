@@ -17,7 +17,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
     - name: Build something requiring CL.EXE
       run: |
-        export BOOST_ROOT=$BOOST_ROOT_1_72_0
+        setx BOOST_ROOT $BOOST_ROOT_1_72_0
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
