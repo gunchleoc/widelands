@@ -23,7 +23,7 @@ jobs:
         echo "Boost is at " $env:BOOST_ROOT
         # Install zlib
         powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
-        npm install --global --production windows-build-tools
+        nuget install libpng-msvc-x64
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
@@ -31,3 +31,4 @@ jobs:
 
 # C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
 # https://github.com/marketplace/actions/enable-developer-command-prompt
+# http://downloads.sourceforge.net/gnuwin32/libpng-1.2.37-lib.zip
