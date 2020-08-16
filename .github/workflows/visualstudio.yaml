@@ -19,6 +19,10 @@ jobs:
       run: |
         set BOOST_ROOT=%BOOST_ROOT_1_72_0%
         echo %BOOST_ROOT%
+        # Maybe it's a powershell?
+        $env:BOOST_ROOT=$env:%BOOST_ROOT_1_72_0%
+        $env:BOOST_ROOT
+        echo $env:BOOST_ROOT
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
