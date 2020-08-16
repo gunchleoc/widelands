@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3 -tt
 
 error_msg = 'Checks for outdated symbols, e.g. we should use std::function rather than boost::function'
 

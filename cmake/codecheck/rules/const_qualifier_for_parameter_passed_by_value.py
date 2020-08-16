@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 """This catches const qualifiers for parameters passed by value to functions,
 in function declarations. Such qualifiers should only be in the definitions. It

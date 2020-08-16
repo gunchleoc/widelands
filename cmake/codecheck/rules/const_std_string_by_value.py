@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 """This catches std::string constants that are passed by value.
 

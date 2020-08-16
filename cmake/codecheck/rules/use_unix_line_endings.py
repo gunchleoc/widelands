@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 """Do not end lines with \r\n."""
 

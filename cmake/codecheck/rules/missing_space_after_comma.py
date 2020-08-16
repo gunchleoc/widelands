@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """This catches a comma that is followed by another character than a space, for
 example "a,b,c", which should be "a, b, c".

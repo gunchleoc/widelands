@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """Opening braces need to be at the start of a line, or be preceded by a
 space."""

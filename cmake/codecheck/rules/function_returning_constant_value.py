@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """This catches functions that return a value as const, which makes no sense.
 

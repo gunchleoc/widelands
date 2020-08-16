@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 """strdup isn't available on win32."""
 

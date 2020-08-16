@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """For standard containers and similar, do not use "not something.size()" to
 test if it is empty.

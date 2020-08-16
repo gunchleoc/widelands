@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 
 """This catches some functions that are declared to have no parameters with the

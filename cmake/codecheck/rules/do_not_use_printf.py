@@ -1,5 +1,4 @@
-#!/usr/bin/python -tt
-
+#!/usr/bin/env python3 -tt
 
 import re
 

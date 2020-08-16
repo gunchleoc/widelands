@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -tt
 
 error_msg = 'Do not use private inheritance. Favor composition instead.'
 

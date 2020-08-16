@@ -1,5 +1,4 @@
-#!/usr/bin/python -tt
-
+#!/usr/bin/env python3 -tt
 
 def does_include_libintl(lines, fn):
     if 'i18n.h' in fn:

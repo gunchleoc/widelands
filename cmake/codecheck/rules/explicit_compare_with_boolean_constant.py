@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """
 This detects redundant code like "if (a == true)" (shoud be "if (a)") and

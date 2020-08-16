@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """Do not create a temporary std::string with std::string::substr just to
 compare it with another std::string or a char[] constant.

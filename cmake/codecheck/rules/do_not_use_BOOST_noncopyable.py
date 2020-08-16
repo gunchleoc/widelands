@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 error_msg = "Do not inherit from boost::noncopyable. Instead #include \"base/macros.h\" and add \"DISALLOW_COPY_AND_ASSIGN(<Objectname>);\" as the last entry in the private section."
 

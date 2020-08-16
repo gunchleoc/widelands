@@ -1,5 +1,4 @@
-#!/usr/bin/python -tt
-
+#!/usr/bin/env python3 -tt
 
 class EvalMatches(object):
     def __call__(self, lines, fn):

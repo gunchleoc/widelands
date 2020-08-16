@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """This catches a tab that comes after the first non-whitespace character on a
 line.

@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """Do not call std::string::find_first_of or std::string::find with a string of
 characters to locate that has the size 1.

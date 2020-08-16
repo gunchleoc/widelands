@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """This catches a numerical constant used as a loop condition. Instead of while
 (true) or while (1), one should write for (;;). But it avoids catching some

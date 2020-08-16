@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """This catches use of the contrived syntax for dereference and member
 selection: (*pointer).member.

@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3 -tt
 
 """For standard containers and similar, do not use "something.size() > 0" to
 check whether it contains something.
