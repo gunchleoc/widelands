@@ -1,4 +1,5 @@
 name: Visual Studio
+
 on:
   push:
     branches: [ visualstudio ]
@@ -7,9 +8,6 @@ jobs:
   visualstudio:
     strategy:
       matrix:
-        #config:
-        #  - Release
-        #  - Debug
         arch:
           - x64
     - uses: actions/checkout@v2
