@@ -6,10 +6,6 @@ on:
 
 jobs:
   visualstudio:
-    strategy:
-      matrix:
-        arch:
-          - x64
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
