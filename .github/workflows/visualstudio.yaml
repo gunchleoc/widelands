@@ -20,9 +20,10 @@ jobs:
         # gci env:* | sort-object name
         # It's a powershell
         $env:BOOST_ROOT=$env:BOOST_ROOT_1_72_0
-        echo "Boost is at " $env:BOOST_ROOT
+        echo "Boost is at: " $env:BOOST_ROOT
         # Install zlib
-        powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
+        nuget install zlib-msvc-x64
+        # powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
         nuget install libpng-msvc-x64
         mkdir build
         cd build
