@@ -6,6 +6,7 @@ on:
 
 jobs:
   visualstudio:
+    - name: Dependencies
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
