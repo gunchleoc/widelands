@@ -22,9 +22,9 @@ jobs:
         $env:BOOST_ROOT=$env:BOOST_ROOT_1_72_0
         echo "Boost is at: " $env:BOOST_ROOT
         # Install zlib
-        nuget install Zlib.Portable.Signed
+        nuget install Zlib.Portable
         # powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
-        nuget install libpng-msvc-x64
+        # nuget install libpng-msvc-x64
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
