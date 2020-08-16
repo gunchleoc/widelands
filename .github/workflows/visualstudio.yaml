@@ -13,16 +13,16 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
-    - name: Configure
+    - name: Configure PowerShell
       uses: ilammy/msvc-dev-cmd@v1
-    - name: Build something requiring CL.EXE
+    - name: Build
       run: |
         # gci env:* | sort-object name
         # It's a powershell
-        echo $env:BOOST_ROOT_1_72_0
         $env:BOOST_ROOT=$env:BOOST_ROOT_1_72_0
-        $env:BOOST_ROOT
-        echo $env:BOOST_ROOT
+        echo "Boost is at " $env:BOOST_ROOT
+        # Install zlib
+        powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
