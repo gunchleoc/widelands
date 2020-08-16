@@ -6,7 +6,10 @@ on:
 
 jobs:
   visualstudio:
-    - name: Dependencies
+    name: Dependencies
+    runs-on: windows-latest
+    steps:
+    - name: Test
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
