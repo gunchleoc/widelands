@@ -23,6 +23,7 @@ jobs:
         echo "Boost is at " $env:BOOST_ROOT
         # Install zlib
         powershell -Command "(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/horta/zlib.install/master/install.bat', 'install.bat')"; ./install.bat
+        npm install --global --production windows-build-tools
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
