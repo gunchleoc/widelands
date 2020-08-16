@@ -13,8 +13,9 @@ jobs:
         arch:
           - x64
         #  - x86
-    - name: Installing dependencies
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Build something requiring CL.EXE
       run: |
@@ -24,3 +25,4 @@ jobs:
         nmake
 
 # C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
+# https://github.com/marketplace/actions/enable-developer-command-prompt
