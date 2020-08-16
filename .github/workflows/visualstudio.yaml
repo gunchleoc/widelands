@@ -9,15 +9,16 @@ jobs:
     name: Visual Studio
     runs-on: windows-latest
     steps:
-    - name: Test
+    - name: Checkout
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
-    - name: Test2
+    - name: Configure
       uses: ilammy/msvc-dev-cmd@v1
     - name: Build something requiring CL.EXE
       run: |
         set BOOST_ROOT=%BOOST_ROOT_1_72_0%
+        echo %BOOST_ROOT%
         mkdir build
         cd build
         cmake -G "NMake Makefiles" ..
