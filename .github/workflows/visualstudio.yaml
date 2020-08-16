@@ -1,0 +1,26 @@
+name: Visual Studio
+on:
+  push:
+    branches: [ visualstudio ]
+
+jobs:
+  visualstudio:
+    strategy:
+      matrix:
+        #config:
+        #  - Release
+        #  - Debug
+        arch:
+          - x64
+        #  - x86
+    - name: Installing dependencies
+    - uses: actions/checkout@v1
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Build something requiring CL.EXE
+      run: |
+        mkdir build
+        cd build
+        cmake -G "NMake Makefiles" ..
+        nmake
+
+# C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
