@@ -1,4 +1,4 @@
-dirname = "tribes/buildings/warehouses/empire/warehouse/"
+dirname = "map:scripting/tribes/temple_of_vesta/"
 
 push_textdomain("scenario_emp04.wmf")
 
@@ -7,7 +7,8 @@ tribes:new_warehouse_type {
    name = "empire_temple_of_vesta",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Temple of Vesta"),
-   helptext_script = path.dirname(__file__) .. "helptexts.lua",
+   helptext_script = dirname .. "helptexts.lua",
+   animation_directory = dirname,
    icon = dirname .. "menu.png",
    size = "medium",
 
@@ -20,7 +21,6 @@ tribes:new_warehouse_type {
 
    animations = {
       idle = {
-         pictures = path.list_files(dirname .. "idle_??.png"),
          hotspot = { 58, 55  },
       },
    },
