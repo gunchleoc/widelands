@@ -40,6 +40,8 @@ public:
 	DescriptionManager(LuaInterface* lua);
 	~DescriptionManager();
 
+	static std::string description_path(const std::string& description_name, FileSystem* map_filesystem);
+
 	/// Search a directory for 'register.lua' files and register their 'init.lua' scripts
 	void register_directory(const std::string& dirname, FileSystem* filesystem, bool is_scenario);
 	/// Map a map object description's name to its init script so that we can load it when we want
@@ -59,6 +61,8 @@ public:
 
 	/// Return the attributes registered to the given description name.
 	const std::vector<std::string>& get_attributes(const std::string& description_name) const;
+
+	std::string get_object_directory(const std::string& description_name) const;
 
 	/// Deregister all scenario object descrptions
 	void clear_scenario_descriptions();

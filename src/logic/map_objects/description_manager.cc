@@ -22,12 +22,29 @@
 #include <cassert>
 #include <memory>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "base/log.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
 #include "scripting/lua_table.h"
 
 namespace Widelands {
+
+std::string DescriptionManager::description_path(const std::string& directory, FileSystem* map_filesystem) {
+	std::string result = directory;
+	FileSystem* fs = g_fs;
+	if (boost::starts_with(result, "map:")) {
+		fs = map_filesystem;
+		result = result.substr(4);
+	}
+	if (boost::ends_with(result, ".lua")) {
+		result = FileSystem::fs_dirname(result);
+	}
+	result = fs->canonicalize_name(fs->get_basename() + fs->file_separator() + result);
+	return result;
+}
+
 DescriptionManager::DescriptionManager(LuaInterface* lua) : lua_(lua) {
 
 	map_objecttype_subscriber_ = Notifications::subscribe<NoteMapObjectDescription>(
@@ -183,6 +200,19 @@ DescriptionManager::get_attributes(const std::string& description_name) const {
 	          registered_scenario_descriptions_.at(description_name).attributes :
 	          registered_descriptions_.at(description_name).attributes;
 }
+
+std::string DescriptionManager::get_object_directory(const std::string& description_name) const {
+	std::string result = "";
+	if (registered_scenario_descriptions_.count(description_name) == 1) {
+		result = registered_scenario_descriptions_.at(description_name).script_path;
+	} else if (registered_descriptions_.count(description_name) == 1) {
+		result = registered_descriptions_.at(description_name).script_path;
+	} else {
+		NEVER_HERE();
+	}
+	return result;
+}
+
 
 void DescriptionManager::clear_scenario_descriptions() {
 	registered_scenario_descriptions_.clear();

@@ -142,10 +142,10 @@ void ConstructionsiteInformation::draw(const Vector2f& point_on_dst,
  * The contents of 'table' are documented in
  * /data/tribes/buildings/partially_finished/constructionsite/init.lua
  */
-ConstructionSiteDescr::ConstructionSiteDescr(const std::string& init_descname,
+ConstructionSiteDescr::ConstructionSiteDescr(const std::string& init_descname, const std::string& files_directory,
                                              const LuaTable& table,
                                              Tribes& tribes)
-   : BuildingDescr(init_descname, MapObjectType::CONSTRUCTIONSITE, table, tribes),
+   : BuildingDescr(init_descname, files_directory, MapObjectType::CONSTRUCTIONSITE, table, tribes),
      creation_fx_(
         SoundHandler::register_fx(SoundType::kAmbient, "sound/create_construction_site")) {
 }

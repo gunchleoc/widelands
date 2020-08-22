@@ -55,6 +55,7 @@ using FormerBuildings = std::vector<std::pair<DescriptionIndex, std::string>>;
 class BuildingDescr : public MapObjectDescr {
 public:
 	BuildingDescr(const std::string& init_descname,
+				  const std::string& files_directory,
 	              MapObjectType type,
 	              const LuaTable& t,
 	              Tribes& tribes);

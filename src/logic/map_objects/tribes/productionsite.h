@@ -53,12 +53,14 @@ public:
 
 	ProductionSiteDescr(const std::string& init_descname,
 	                    const std::string& msgctxt,
+						const std::string& files_directory,
 	                    MapObjectType type,
 	                    const LuaTable& t,
 	                    Tribes& tribes,
 	                    const World& world);
 	ProductionSiteDescr(const std::string& init_descname,
 	                    const std::string& msgctxt,
+						const std::string& files_directory,
 	                    const LuaTable& t,
 	                    Tribes& tribes,
 	                    const World& world);

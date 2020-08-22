@@ -46,11 +46,11 @@
 
 namespace Widelands {
 
-BobDescr::BobDescr(const std::string& init_descname,
+BobDescr::BobDescr(const std::string& init_descname, const std::string& files_directory,
                    const MapObjectType init_type,
                    MapObjectDescr::OwnerType owner_type,
                    const LuaTable& table)
-   : MapObjectDescr(init_type, table.get_string("name"), init_descname, table),
+   : MapObjectDescr(init_type, table.get_string("name"), init_descname, files_directory, table),
      owner_type_(owner_type),
      // Only tribe bobs have a vision range, since it would be irrelevant for world bobs.
      vision_range_(owner_type == MapObjectDescr::OwnerType::kTribe ? table.get_int("vision_range") :

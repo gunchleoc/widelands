@@ -131,11 +131,11 @@ ImmovableDescr IMPLEMENTATION
 /**
  * Parse a common immovable functions from init file.
  */
-ImmovableDescr::ImmovableDescr(const std::string& init_descname,
+ImmovableDescr::ImmovableDescr(const std::string& init_descname, const std::string& files_directory,
                                const LuaTable& table,
                                MapObjectDescr::OwnerType input_type,
                                const std::vector<std::string>& attribs)
-   : MapObjectDescr(MapObjectType::IMMOVABLE, table.get_string("name"), init_descname, table),
+   : MapObjectDescr(MapObjectType::IMMOVABLE, table.get_string("name"), init_descname, files_directory, table),
      size_(BaseImmovable::NONE),
      owner_type_(input_type),
      editor_category_(nullptr) {
@@ -224,10 +224,11 @@ ImmovableDescr::ImmovableDescr(const std::string& init_descname,
  * Parse a world immovable from its init file.
  */
 ImmovableDescr::ImmovableDescr(const std::string& init_descname,
+							   const std::string& files_directory,
                                const LuaTable& table,
                                const std::vector<std::string>& attribs,
                                const World& world)
-   : ImmovableDescr(init_descname, table, MapObjectDescr::OwnerType::kWorld, attribs) {
+   : ImmovableDescr(init_descname, files_directory, table, MapObjectDescr::OwnerType::kWorld, attribs) {
 
 	const DescriptionIndex editor_category_index =
 	   world.editor_immovable_categories().get_index(table.get_string("editor_category"));
@@ -244,11 +245,11 @@ ImmovableDescr::ImmovableDescr(const std::string& init_descname,
  * The contents of 'table' are documented in
  * /data/tribes/immovables/ashes/init.lua
  */
-ImmovableDescr::ImmovableDescr(const std::string& init_descname,
+ImmovableDescr::ImmovableDescr(const std::string& init_descname, const std::string& files_directory,
                                const LuaTable& table,
                                const std::vector<std::string>& attribs,
                                Tribes& tribes)
-   : ImmovableDescr(init_descname, table, MapObjectDescr::OwnerType::kTribe, attribs) {
+   : ImmovableDescr(init_descname, files_directory, table, MapObjectDescr::OwnerType::kTribe, attribs) {
 	if (table.has_key("buildcost")) {
 		buildcost_ = Buildcost(table.get_table("buildcost"), tribes);
 	}

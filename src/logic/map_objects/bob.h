@@ -43,6 +43,7 @@ public:
 	friend struct MapBobdataPacket;
 
 	BobDescr(const std::string& init_descname,
+			 const std::string& files_directory,
 	         const MapObjectType type,
 	         MapObjectDescr::OwnerType owner_type,
 	         const LuaTable& table);

@@ -129,11 +129,13 @@ public:
 
 	/// World immovable
 	ImmovableDescr(const std::string& init_descname,
+				   const std::string& files_directory,
 	               const LuaTable&,
 	               const std::vector<std::string>& attribs,
 	               const World& world);
 	/// Tribes immovable
 	ImmovableDescr(const std::string& init_descname,
+				   const std::string& files_directory,
 	               const LuaTable&,
 	               const std::vector<std::string>& attribs,
 	               Tribes& tribes);
@@ -195,6 +197,7 @@ protected:
 private:
 	// Common constructor functions for tribes and world.
 	ImmovableDescr(const std::string& init_descname,
+				   const std::string& files_directory,
 	               const LuaTable&,
 	               MapObjectDescr::OwnerType type,
 	               const std::vector<std::string>& attribs);

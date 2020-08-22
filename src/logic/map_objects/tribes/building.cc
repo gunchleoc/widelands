@@ -51,10 +51,11 @@ static const int32_t BUILDING_LEAVE_INTERVAL = 1000;
  * The contents of 'table' are documented in doc/sphinx/source/lua_tribes_buildings.rst.org
  */
 BuildingDescr::BuildingDescr(const std::string& init_descname,
+							 const std::string& files_directory,
                              const MapObjectType init_type,
                              const LuaTable& table,
                              Tribes& tribes)
-   : MapObjectDescr(init_type, table.get_string("name"), init_descname, table),
+   : MapObjectDescr(init_type, table.get_string("name"), init_descname, files_directory, table),
      tribes_(tribes),
      buildable_(table.has_key("buildcost")),
      can_be_dismantled_(table.has_key("return_on_dismantle") ||

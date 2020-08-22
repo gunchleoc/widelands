@@ -327,10 +327,10 @@ Warehouse Building
  * The contents of 'table' are documented in
  * /data/tribes/buildings/warehouses/atlanteans/headquarters/init.lua
  */
-WarehouseDescr::WarehouseDescr(const std::string& init_descname,
+WarehouseDescr::WarehouseDescr(const std::string& init_descname, const std::string& files_directory,
                                const LuaTable& table,
                                Tribes& tribes)
-   : BuildingDescr(init_descname, MapObjectType::WAREHOUSE, table, tribes),
+   : BuildingDescr(init_descname, files_directory, MapObjectType::WAREHOUSE, table, tribes),
      conquers_(0),
      heal_per_second_(0) {
 	heal_per_second_ = table.get_int("heal_per_second");

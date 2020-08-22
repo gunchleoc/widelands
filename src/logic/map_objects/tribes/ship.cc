@@ -106,8 +106,8 @@ bool can_build_port_here(const PlayerNumber player_number, const Map& map, const
  * The contents of 'table' are documented in
  * /data/tribes/ships/atlanteans/init.lua
  */
-ShipDescr::ShipDescr(const std::string& init_descname, const LuaTable& table)
-   : BobDescr(init_descname, MapObjectType::SHIP, MapObjectDescr::OwnerType::kTribe, table) {
+ShipDescr::ShipDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& table)
+   : BobDescr(init_descname, files_directory, MapObjectType::SHIP, MapObjectDescr::OwnerType::kTribe, table) {
 
 	i18n::Textdomain td("tribes");
 

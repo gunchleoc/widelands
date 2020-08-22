@@ -89,7 +89,7 @@ public:
 	void register_scenario_tribes(FileSystem* filesystem);
 
 	/// Add a tribe object type to the tribes.
-	void add_tribe_object_type(const LuaTable& table, const World& world, MapObjectType type);
+	void add_tribe_object_type(const LuaTable& table, const World& world, FileSystem* map_filesystem, MapObjectType type);
 
 	/// Adds a specific tribe's configuration.
 	void add_tribe(const LuaTable& table, const World& world);

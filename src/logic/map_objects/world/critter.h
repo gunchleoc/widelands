@@ -40,7 +40,7 @@ class World;
 //
 class CritterDescr : public BobDescr {
 public:
-	CritterDescr(const std::string& init_descname, const LuaTable&, const Widelands::World& world);
+	CritterDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable&, const Widelands::World& world);
 	~CritterDescr() override;
 
 	Bob& create_object() const override;

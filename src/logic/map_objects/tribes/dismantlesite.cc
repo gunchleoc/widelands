@@ -37,10 +37,10 @@ namespace Widelands {
  * /data/tribes/buildings/partially_finished/dismantlesite/init.lua
  */
 
-DismantleSiteDescr::DismantleSiteDescr(const std::string& init_descname,
+DismantleSiteDescr::DismantleSiteDescr(const std::string& init_descname, const std::string& files_directory,
                                        const LuaTable& table,
                                        Tribes& tribes)
-   : BuildingDescr(init_descname, MapObjectType::DISMANTLESITE, table, tribes),
+   : BuildingDescr(init_descname, files_directory, MapObjectType::DISMANTLESITE, table, tribes),
      creation_fx_(
         SoundHandler::register_fx(SoundType::kAmbient, "sound/create_construction_site")) {
 }

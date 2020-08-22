@@ -93,10 +93,10 @@ bool Critter::run_remove(Game& game, State& state, const CritterAction&) {
 ===========================================================================
 */
 
-CritterDescr::CritterDescr(const std::string& init_descname,
+CritterDescr::CritterDescr(const std::string& init_descname, const std::string& files_directory,
                            const LuaTable& table,
                            const World& world)
-   : BobDescr(init_descname, MapObjectType::CRITTER, MapObjectDescr::OwnerType::kWorld, table),
+   : BobDescr(init_descname, files_directory, MapObjectType::CRITTER, MapObjectDescr::OwnerType::kWorld, table),
      editor_category_(nullptr),
      size_(table.get_int("size")),
      carnivore_(table.has_key("carnivore") && table.get_bool("carnivore")),

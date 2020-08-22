@@ -33,11 +33,11 @@
 
 namespace Widelands {
 
-WorkerDescr::WorkerDescr(const std::string& init_descname,
+WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& files_directory,
                          MapObjectType init_type,
                          const LuaTable& table,
                          Tribes& tribes)
-   : BobDescr(init_descname, init_type, MapObjectDescr::OwnerType::kTribe, table),
+   : BobDescr(init_descname, files_directory, init_type, MapObjectDescr::OwnerType::kTribe, table),
      ware_hotspot_(table.has_key("ware_hotspot") ?
                       table.get_vector<std::string, int>("ware_hotspot") :
                       Vector2i(0, 15)),
@@ -120,8 +120,8 @@ WorkerDescr::WorkerDescr(const std::string& init_descname,
 	}
 }
 
-WorkerDescr::WorkerDescr(const std::string& init_descname, const LuaTable& table, Tribes& tribes)
-   : WorkerDescr(init_descname, MapObjectType::WORKER, table, tribes) {
+WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& table, Tribes& tribes)
+   : WorkerDescr(init_descname, files_directory, MapObjectType::WORKER, table, tribes) {
 }
 
 WorkerDescr::~WorkerDescr() {

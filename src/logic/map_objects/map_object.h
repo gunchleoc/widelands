@@ -55,11 +55,12 @@ public:
 
 	MapObjectDescr(const MapObjectType init_type,
 	               const std::string& init_name,
-	               const std::string& init_descname,
+	               const std::string& init_descname, const std::string& files_directory,
 	               const std::string& init_helptext_script);
 	MapObjectDescr(const MapObjectType init_type,
 	               const std::string& init_name,
 	               const std::string& init_descname,
+				   const std::string& files_directory,
 	               const LuaTable& table);
 	virtual ~MapObjectDescr();
 
@@ -113,7 +114,6 @@ protected:
 
 private:
 	void add_animations(const LuaTable& table,
-	                    const std::string& animation_directory,
 	                    Animation::Type anim_type);
 
 	/// Throws an exception if the MapObjectDescr has no representative image
@@ -127,6 +127,7 @@ private:
 	const MapObjectType type_;    /// Subclasses pick from the enum above
 	std::string const name_;      /// The name for internal reference
 	std::string const descname_;  /// A localized Descriptive name
+	const std::string files_directory_; /// Base path for animation files etc.
 	/// The path and filename to the helptext script. Can be empty, but some subtypes like buildings,
 	/// wares and workers require it.
 	const std::string helptext_script_;

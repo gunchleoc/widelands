@@ -87,12 +87,12 @@ ProductionSite BUILDING
  * /data/tribes/buildings/productionsites/atlanteans/armorsmithy/init.lua
  */
 ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
-                                         const std::string& msgctxt,
+                                         const std::string& msgctxt, const std::string& files_directory,
                                          MapObjectType init_type,
                                          const LuaTable& table,
                                          Tribes& tribes,
                                          const World& world)
-   : BuildingDescr(init_descname, init_type, table, tribes),
+   : BuildingDescr(init_descname, files_directory, init_type, table, tribes),
      ware_demand_checks_(new std::set<DescriptionIndex>()),
      worker_demand_checks_(new std::set<DescriptionIndex>()),
      out_of_resource_productivity_threshold_(100) {
@@ -235,12 +235,12 @@ ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
 }
 
 ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
-                                         const std::string& msgctxt,
+                                         const std::string& msgctxt, const std::string& files_directory,
                                          const LuaTable& table,
                                          Tribes& tribes,
                                          const World& world)
    : ProductionSiteDescr(
-        init_descname, msgctxt, MapObjectType::PRODUCTIONSITE, table, tribes, world) {
+        init_descname, msgctxt, files_directory, MapObjectType::PRODUCTIONSITE, table, tribes, world) {
 }
 
 void ProductionSiteDescr::clear_attributes() {

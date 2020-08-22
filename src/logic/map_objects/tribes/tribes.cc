@@ -235,59 +235,66 @@ void Tribes::register_scenario_tribes(FileSystem* filesystem) {
 	}
 }
 
-void Tribes::add_tribe_object_type(const LuaTable& table, const World& world, MapObjectType type) {
+void Tribes::add_tribe_object_type(const LuaTable& table, const World& world, FileSystem* map_filesystem, MapObjectType type) {
 	i18n::Textdomain td("tribes");
 	const std::string& type_name = table.get_string("name");
+
+	description_manager_->mark_loading_in_progress(type_name);
+
 	const std::string& msgctxt = table.get_string("msgctxt");
 	const std::string& type_descname =
 	   pgettext_expr(msgctxt.c_str(), table.get_string("descname").c_str());
 
-	description_manager_->mark_loading_in_progress(type_name);
-
+	// TODO(GunChleoc): Clean up animation_directory - we only need it if it differs from the init.lua file's location.
+	const std::string files_directory(
+				DescriptionManager::description_path(table.has_key("animation_directory") ?
+														 table.get_string("animation_directory") :
+														 description_manager_->get_object_directory(type_name),
+													 map_filesystem));
 	// Add
 	switch (type) {
 	case MapObjectType::CARRIER:
-		workers_->add(new CarrierDescr(type_descname, table, *this));
+		workers_->add(new CarrierDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::CONSTRUCTIONSITE:
-		buildings_->add(new ConstructionSiteDescr(type_descname, table, *this));
+		buildings_->add(new ConstructionSiteDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::DISMANTLESITE:
-		buildings_->add(new DismantleSiteDescr(type_descname, table, *this));
+		buildings_->add(new DismantleSiteDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::FERRY:
-		workers_->add(new FerryDescr(type_descname, table, *this));
+		workers_->add(new FerryDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::IMMOVABLE: {
 		immovables_->add(new ImmovableDescr(
-		   type_descname, table, description_manager_->get_attributes(type_name), *this));
+		   type_descname, files_directory, table, description_manager_->get_attributes(type_name), *this));
 	} break;
 	case MapObjectType::MARKET:
-		buildings_->add(new MarketDescr(type_descname, table, *this));
+		buildings_->add(new MarketDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::MILITARYSITE:
-		buildings_->add(new MilitarySiteDescr(type_descname, table, *this));
+		buildings_->add(new MilitarySiteDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::PRODUCTIONSITE:
-		buildings_->add(new ProductionSiteDescr(type_descname, msgctxt, table, *this, world));
+		buildings_->add(new ProductionSiteDescr(type_descname, msgctxt, files_directory, table, *this, world));
 		break;
 	case MapObjectType::SHIP:
-		ships_->add(new ShipDescr(type_descname, table));
+		ships_->add(new ShipDescr(type_descname, files_directory, table));
 		break;
 	case MapObjectType::SOLDIER:
-		workers_->add(new SoldierDescr(type_descname, table, *this));
+		workers_->add(new SoldierDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::TRAININGSITE:
-		buildings_->add(new TrainingSiteDescr(type_descname, msgctxt, table, *this, world));
+		buildings_->add(new TrainingSiteDescr(type_descname, msgctxt, files_directory, table, *this, world));
 		break;
 	case MapObjectType::WARE:
-		wares_->add(new WareDescr(type_descname, table));
+		wares_->add(new WareDescr(type_descname, files_directory, table));
 		break;
 	case MapObjectType::WAREHOUSE:
-		buildings_->add(new WarehouseDescr(type_descname, table, *this));
+		buildings_->add(new WarehouseDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::WORKER:
-		workers_->add(new WorkerDescr(type_descname, table, *this));
+		workers_->add(new WorkerDescr(type_descname, files_directory, table, *this));
 		break;
 	default:
 		NEVER_HERE();

@@ -587,11 +587,11 @@ void Carrier::do_save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw
 	fw.signed_32(promised_pickup_to_);
 }
 
-CarrierDescr::CarrierDescr(const std::string& init_descname,
+CarrierDescr::CarrierDescr(const std::string& init_descname, const std::string& files_directory,
                            const LuaTable& table,
                            Tribes& tribes,
                            MapObjectType t)
-   : WorkerDescr(init_descname, t, table, tribes) {
+   : WorkerDescr(init_descname, files_directory, t, table, tribes) {
 }
 
 /**

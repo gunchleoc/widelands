@@ -38,7 +38,7 @@ namespace Widelands {
  */
 class WareDescr : public MapObjectDescr {
 public:
-	WareDescr(const std::string& init_descname, const LuaTable& t);
+	WareDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t);
 	~WareDescr() override {
 	}
 

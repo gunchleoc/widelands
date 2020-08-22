@@ -93,7 +93,8 @@ void World::add_terrain_type(const LuaTable& table) {
 
 void World::add_critter_type(const LuaTable& table) {
 	i18n::Textdomain td("world");
-	critters_->add(new CritterDescr(_(table.get_string("descname")), table, *this));
+	const std::string files_directory(table.has_key("animation_directory") ? table.get_string("animation_directory") : "");
+	critters_->add(new CritterDescr(_(table.get_string("descname")), files_directory, table, *this));
 }
 
 const DescriptionMaintainer<ImmovableDescr>& World::immovables() const {
@@ -106,7 +107,8 @@ void World::add_immovable_type(const LuaTable& table) {
 	if (table.has_key("attributes")) {
 		attributes = table.get_table("attributes")->array_entries<std::string>();
 	}
-	immovables_->add(new ImmovableDescr(_(table.get_string("descname")), table, attributes, *this));
+	const std::string files_directory(table.has_key("animation_directory") ? table.get_string("animation_directory") : "");
+	immovables_->add(new ImmovableDescr(_(table.get_string("descname")), files_directory, table, attributes, *this));
 }
 
 void World::add_editor_terrain_category(const LuaTable& table) {
