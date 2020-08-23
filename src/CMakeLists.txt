@@ -43,8 +43,10 @@ if (WIN32)
     SRCS
       main.cc
       ${WIN32_ICON_O}
+    USES_SDL2
     DEPENDS
       base_exceptions
+      base_log
       widelands_ball_of_mud
       build_info
   )
@@ -52,8 +54,10 @@ else()
   wl_binary(widelands
     SRCS
       main.cc
+    USES_SDL2
     DEPENDS
       base_exceptions
+      base_log
       widelands_ball_of_mud
       build_info
   )

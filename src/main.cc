@@ -20,13 +20,29 @@
 #include <iostream>
 #include <typeinfo>
 
+#include <SDL2/SDL.h>
 #include <unistd.h>
 
+#include "base/log.h"
 #include "base/wexception.h"
 #include "build_info.h"
 #include "config.h"
 #include "wlapplication.h"
 #include "wlapplication_messages.h"
+
+/* Very simple thread - counts 0 to 9 delaying 50ms between increments */
+static int TestThread(void*)
+{
+    int cnt;
+
+    for (cnt = 0; cnt < 10; ++cnt) {
+        log("Thread counter: %d\n", cnt);
+        SDL_Delay(50);
+    }
+
+    return cnt;
+}
+
 
 /**
  * Cross-platform entry point for SDL applications.
@@ -34,6 +50,32 @@
 int main(int argc, char* argv[]) {
 	std::cout << "This is Widelands Version " << build_id() << " (" << build_type() << ")"
 	          << std::endl;
+
+
+	SDL_Thread *thread;
+    int         threadReturnValue;
+	SDL_Thread *thread2;
+    int         threadReturnValue2;
+
+    log("Simple SDL_CreateThread test:\n");
+
+    /* Simply create a thread */
+    thread = SDL_CreateThread(TestThread, "TestThread", nullptr);
+	thread2 = SDL_CreateThread(TestThread, "TestThread", nullptr);
+
+    if (nullptr == thread) {
+        log("SDL_CreateThread failed: %s\n", SDL_GetError());
+    } else {
+        SDL_WaitThread(thread, &threadReturnValue);
+        log("Thread returned value: %d\n", threadReturnValue);
+    }
+
+	if (nullptr == thread2) {
+        log("SDL_CreateThread failed: %s\n", SDL_GetError());
+    } else {
+        SDL_WaitThread(thread2, &threadReturnValue2);
+        log("Thread returned value: %d\n", threadReturnValue);
+    }
 
 	WLApplication* g_app = nullptr;
 	try {

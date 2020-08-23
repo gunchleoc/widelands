@@ -28,6 +28,7 @@
 #include <memory>
 
 #include <SDL_log.h>
+#include <SDL_mutex.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -62,7 +63,7 @@ std::string get_output_directory() {
 // This Logger emulates the SDL1.2 behavior of writing a stdout.txt.
 class WindowsLogger {
 public:
-	WindowsLogger(const std::string& dir) : stdout_filename_(dir + "\\stdout.txt") {
+	WindowsLogger(const std::string& dir) : stdout_filename_(dir + "\\stdout.txt"), lock_(SDL_CreateMutex()) {
 		stdout_.open(stdout_filename_);
 		if (!stdout_.good()) {
 			throw wexception(
@@ -77,14 +78,21 @@ public:
 		stdout_.flush();
 	}
 
+	~WindowsLogger() {
+		SDL_DestroyMutex(lock_);
+	}
+
 	void log_cstring(const char* buffer) {
+		SDL_LockMutex(lock_);
 		stdout_ << buffer;
 		stdout_.flush();
+		SDL_UnlockMutex(lock_);
 	}
 
 private:
 	const std::string stdout_filename_;
 	std::ofstream stdout_;
+	SDL_mutex* lock_;
 
 	DISALLOW_COPY_AND_ASSIGN(WindowsLogger);
 };
@@ -99,16 +107,23 @@ void sdl_logging_func(void* userdata,
 
 class Logger {
 public:
-	Logger() {
+	Logger() : lock_(SDL_CreateMutex()) {
 		SDL_LogSetOutputFunction(sdl_logging_func, this);
 	}
 
+	~Logger() {
+		SDL_DestroyMutex(lock_);
+	}
+
 	void log_cstring(const char* buffer) {
+		SDL_LockMutex(lock_);
 		std::cout << buffer;
 		std::cout.flush();
+		SDL_UnlockMutex(lock_);
 	}
 
 private:
+	SDL_mutex* lock_;
 	DISALLOW_COPY_AND_ASSIGN(Logger);
 };
 
