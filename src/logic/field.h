@@ -21,6 +21,7 @@
 #define WL_LOGIC_FIELD_H
 
 #include <cassert>
+#include <deque>
 
 #include "base/wexception.h"
 #include "graphic/playercolor.h"
@@ -130,9 +131,13 @@ struct Field {
 		terrains.r = i;
 	}
 
-	Bob* get_first_bob() const {
-		return bobs;
-	}
+	// NOCOM document
+	void clear_bobs();
+	const std::deque<Bob*>& bobs() const;
+	Bob* remove_first_bob();
+	void add_bob(Bob* bob, bool front);
+	void remove_bob(Bob* bob);
+
 	const BaseImmovable* get_immovable() const {
 		return immovable;
 	}
@@ -254,8 +259,8 @@ private:
 	static_assert(kMaxPlayers <= Player_Number_Bitmask, "Bitmask is too big.");
 
 	// Data Members. Initialize everything to make cppcheck happy.
-	/** linked list, \sa Bob::linknext_ */
-	Bob* bobs = nullptr;
+	// NOCOM const?
+	std::deque<Bob*> bobs_queue = std::deque<Bob*>();
 	BaseImmovable* immovable = nullptr;
 
 	uint8_t caps = 0U;
@@ -278,10 +283,6 @@ private:
 };
 #pragma pack(pop)
 
-// Check that Field is tightly packed.
-static_assert(sizeof(Field) == sizeof(void*) * 2 + sizeof(RoadSegment) * 3 +
-                                  sizeof(DescriptionIndex) * 3 + sizeof(uint8_t) * 7,
-              "Field is not tightly packed.");
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_FIELD_H

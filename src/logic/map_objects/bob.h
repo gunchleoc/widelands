@@ -234,9 +234,6 @@ public:
 	const FCoords& get_position() const {
 		return position_;
 	}
-	Bob* get_next_bob() const {
-		return linknext_;
-	}
 
 	/// Check whether this bob should be able to move onto the given node.
 	///
@@ -327,15 +324,6 @@ public:
 		return walking_ != IDLE;
 	}
 
-	/**
-	 * This is a hack that should not be used, if possible.
-	 * It is only introduced here because profiling showed
-	 * that soldiers spend a lot of time in the node blocked check.
-	 */
-	Bob* get_next_on_field() const {
-		return linknext_;
-	}
-
 protected:
 	explicit Bob(const BobDescr& descr);
 	~Bob() override;
@@ -362,8 +350,6 @@ private:
 	static Task const taskMove;
 
 	FCoords position_;  ///< where are we right now?
-	Bob* linknext_;     ///< next object on this node
-	Bob** linkpprev_;
 	uint32_t anim_;
 	int32_t animstart_;  ///< gametime when the animation was started
 	WalkingDir walking_;

@@ -117,8 +117,7 @@ void draw_bobs_for_visible_field(const Widelands::EditorGameBase& egbase,
                                  const InfoToDraw info_to_draw,
                                  const Widelands::Player& player,
                                  RenderTarget* dst) {
-	for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
-	     bob = bob->get_next_bob()) {
+	for (Widelands::Bob* bob : field.fcoords.field->bobs()) {
 		bob->draw(egbase, filter_info_to_draw(info_to_draw, bob, player), field.rendertarget_pixel,
 		          field.fcoords, scale, dst);
 	}

@@ -576,8 +576,7 @@ void EditorInteractive::draw(RenderTarget& dst) {
 		}
 
 		if (draw_bobs_) {
-			for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
-			     bob = bob->get_next_bob()) {
+			for (Widelands::Bob* bob : field.fcoords.field->bobs()) {
 				bob->draw(
 				   ebase, InfoToDraw::kNone, field.rendertarget_pixel, field.fcoords, scale, &dst);
 			}

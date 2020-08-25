@@ -345,9 +345,9 @@ void Critter::roam_update(Game& game, State& state) {
 	bool foundme = false;
 	std::vector<Critter*> all_critters_on_field;
 	all_critters_on_field.push_back(this);  // not caught by the following loop
-	for (Bob* b = get_position().field->get_first_bob(); b; b = b->get_next_bob()) {
-		assert(b);
-		if (b == this) {
+	for (Widelands::Bob* bob : get_position().field->bobs()) {
+		assert(bob);
+		if (bob == this) {
 			assert(!foundme);
 			foundme = true;
 			continue;
@@ -355,10 +355,10 @@ void Critter::roam_update(Game& game, State& state) {
 		if (!foundme) {
 			++n_th_bob_on_field;
 		}
-		if (descr().name() == b->descr().name()) {
+		if (descr().name() == bob->descr().name()) {
 			++mating_partners;
 		}
-		if (upcast(Critter, c, b)) {
+		if (upcast(Critter, c, bob)) {
 			all_critters_on_field.push_back(c);
 			other_herbivores_on_field |= c->descr().is_herbivore();
 		}

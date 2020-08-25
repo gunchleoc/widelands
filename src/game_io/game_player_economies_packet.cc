@@ -43,8 +43,7 @@ bool write_expedition_ship_economy(Economy* economy,
                                    FileWrite* fw,
                                    MapObjectSaver* const mos) {
 	for (Field const* field = &map[0]; field < &map[map.max_index()]; ++field) {
-		Bob* bob = field->get_first_bob();
-		while (bob) {
+		for (Widelands::Bob* bob : field->bobs()) {
 			if (upcast(Ship const, ship, bob)) {
 				if (ship->get_economy(economy->type()) == economy) {
 					fw->unsigned_32(mos->get_object_file_index(*ship));
@@ -53,7 +52,6 @@ bool write_expedition_ship_economy(Economy* economy,
 					return true;
 				}
 			}
-			bob = bob->get_next_bob();
 		}
 	}
 	return false;

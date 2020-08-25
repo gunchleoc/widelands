@@ -1027,8 +1027,8 @@ void Game::sample_statistics() {
 		}
 
 		// Now, walk the bobs
-		for (Bob const* b = fc.field->get_first_bob(); b; b = b->get_next_bob()) {
-			if (upcast(Soldier const, s, b)) {
+		for (Widelands::Bob* bob : fc.field->bobs()) {
+			if (upcast(Soldier const, s, bob)) {
 				miltary_strength[s->owner().player_number() - 1] +=
 				   s->get_level(TrainingAttribute::kTotal) + 1;  //  So that level 0 also counts.
 			}

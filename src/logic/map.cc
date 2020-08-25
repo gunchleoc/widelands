@@ -51,6 +51,7 @@
 
 namespace Widelands {
 
+// NOCOM can we refactor this too and avoid all the copying, so that the field has FieldData?
 FieldData::FieldData(const Field& field)
    : height(field.get_height()),
      resources(field.get_resources()),
@@ -61,7 +62,7 @@ FieldData::FieldData(const Field& field)
 	} else {
 		immovable = "";
 	}
-	for (Bob* bob = field.get_first_bob(); bob; bob = bob->get_next_bob()) {
+	for (Widelands::Bob* bob : field.bobs()) {
 		bobs.push_back(bob->descr().name());
 	}
 }
@@ -553,15 +554,10 @@ void Map::set_origin(const Coords& new_origin) {
 			if (upcast(Immovable, immovable, c.field->get_immovable())) {
 				immovable->position_ = c;
 			}
-			bool is_first_bob = true;
-			for (Bob* bob = c.field->get_first_bob(); bob; bob = bob->get_next_bob()) {
+			for (Widelands::Bob* bob : c.field->bobs()) {
 				bob->position_.x = c.x;
 				bob->position_.y = c.y;
 				bob->position_.field = c.field;
-				if (is_first_bob) {
-					bob->linkpprev_ = &c.field->bobs;
-					is_first_bob = false;
-				}
 			}
 		}
 	}
@@ -690,8 +686,8 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 				if (upcast(Immovable, i, f.get_immovable())) {
 					i->remove(egbase);
 				}
-				while (Bob* b = f.get_first_bob()) {
-					b->remove(egbase);
+				while (Bob* bob = f.remove_first_bob()) {
+					bob->remove(egbase);
 				}
 			}
 		}
@@ -718,11 +714,8 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 			if (upcast(Immovable, imm, f.get_immovable())) {
 				imm->position_ = fc;
 			}
-			if (Bob* b = f.get_first_bob()) {
-				b->linkpprev_ = &f.bobs;
-			}
-			for (Bob* b = f.get_first_bob(); b; b = b->get_next_bob()) {
-				b->position_ = fc;
+			for (Widelands::Bob* bob : f.bobs()) {
+				bob->position_ = fc;
 			}
 		}
 	}
@@ -752,8 +745,8 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 			if (upcast(Immovable, i, f.get_immovable())) {
 				i->remove(egbase);
 			}
-			while (Bob* b = f.get_first_bob()) {
-				b->remove(egbase);
+			while (Bob* bob = f.remove_first_bob()) {
+				bob->remove(egbase);
 			}
 		}
 	}
@@ -768,10 +761,13 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 	port_spaces_ = rh.port_spaces;
 	starting_pos_ = rh.starting_positions;
 
+	log("NOCOM clearing bobs\n");
+
 	// First pass: Initialize all fields with the saved basic data
 	for (MapIndex i = max_index(); i; --i) {
 		const FieldData& fd = rh.fields.front();
 		Field& f = fields_[i - 1];
+		f.clear_bobs();
 		f.set_terrains(fd.terrains);
 		f.set_height(fd.height);
 		f.resources = fd.resources;
@@ -812,6 +808,14 @@ void Map::set_size(const uint32_t w, const uint32_t h) {
 
 	fields_.reset(new Field[field_size]);
 	clear_array<>(&fields_, field_size);
+
+	log("NOCOM clearing bobs\n");
+
+	// First pass: Initialize all fields with the saved basic data
+	for (MapIndex i = max_index(); i; --i) {
+		Field& f = fields_[i - 1];
+		f.clear_bobs();
+	}
 
 	pathfieldmgr_->set_size(field_size);
 }
@@ -1071,7 +1075,7 @@ struct FindBobsCallback {
 	}
 
 	void operator()(const EditorGameBase&, const FCoords& cur) {
-		for (Bob* bob = cur.field->get_first_bob(); bob; bob = bob->get_next_bob()) {
+		for (Widelands::Bob* bob : cur.field->bobs()) {
 			if (list_ && std::find(list_->begin(), list_->end(), bob) != list_->end()) {
 				continue;
 			}

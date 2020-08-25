@@ -19,9 +19,63 @@
 
 #include "logic/field.h"
 
+#include <algorithm>
+
+#include "base/log.h" // NOCOM
+#include "logic/map_objects/bob.h" // NOCOM
 #include "wui/mapviewpixelconstants.h"
 
 namespace Widelands {
+
+void Field::clear_bobs() {
+	bobs_queue.clear();
+}
+const std::deque<Bob*>& Field::bobs() const {
+	return bobs_queue;
+}
+Bob* Field::remove_first_bob() {
+	assert(!bobs_queue.empty());
+	Bob* result = bobs_queue.front();
+	bobs_queue.pop_front();
+	return result;
+}
+void Field::add_bob(Bob* bob, bool front) {
+	/*
+NOCOM add_bob badger
+NOCOM elements: 18446744073709551552
+NOCOM queue is empty
+	 * */
+	if (bob == nullptr) {
+		log("NOCOM bob is nullptr!\n");
+	}
+	log("NOCOM add_bob %s\n", bob->descr().name().c_str());
+	log("NOCOM elements: %lu\n", bobs_queue.size());
+	if (!bobs_queue.empty()) {
+		int counter = 0;
+		for (Bob* b : bobs_queue) {
+			log("NOCOM have %s\n", b->descr().name().c_str());
+			++counter;
+			if (counter > 10) break;
+		}
+	} else {
+		log("NOCOM queue is empty\n");
+	}
+	if (front) {
+		bobs_queue.push_front(bob);
+	} else {
+		// NOCOM points to zero page.
+		bobs_queue.push_back(bob);
+	}
+	log("NOCOM elements after: %lu\n", bobs_queue.size());
+}
+void Field::remove_bob(Bob* bob) {
+	auto it = std::find(bobs_queue.begin(), bobs_queue.end(), bob);
+	if (it == bobs_queue.end()) {
+		bobs_queue.erase(it);
+	} else {
+		NEVER_HERE();
+	}
+}
 
 /**
  * Set the field's brightness based upon the slopes.

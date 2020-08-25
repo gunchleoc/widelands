@@ -37,7 +37,8 @@ int32_t EditorDeleteCritterTool::handle_click_impl(
 	   *map, Widelands::Area<Widelands::FCoords>(map->get_fcoords(center.node), radius));
 
 	do {
-		if (Widelands::Bob* const bob = mr.location().field->get_first_bob()) {
+		if (!mr.location().field->bobs().empty()) {
+			Widelands::Bob* bob = mr.location().field->remove_first_bob();
 			args->old_bob_type.push_back(&bob->descr());
 			bob->remove(eia.egbase());
 		} else {

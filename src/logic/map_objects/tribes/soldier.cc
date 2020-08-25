@@ -1644,7 +1644,7 @@ bool Soldier::check_node_blocked(Game& game, const FCoords& field, bool const co
 	bool foundopponent = false;
 	bool multiplesoldiers = false;
 
-	for (Bob* bob = field.field->get_first_bob(); bob; bob = bob->get_next_on_field()) {
+	for (Widelands::Bob* bob : field.field->bobs()) {
 		if (upcast(Soldier, soldier, bob)) {
 			if (!soldier->is_on_battlefield() || !soldier->get_current_health()) {
 				continue;

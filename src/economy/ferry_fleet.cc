@@ -130,7 +130,7 @@ bool FerryFleet::find_other_fleet(EditorGameBase& egbase) {
 			}
 		}
 
-		for (Bob* bob = cur.field->get_first_bob(); bob != nullptr; bob = bob->get_next_bob()) {
+		for (Widelands::Bob* bob : cur.field->bobs()) {
 			const MapObjectType type = bob->descr().type();
 			if (type == MapObjectType::FERRY) {
 				upcast(Ferry, ferry, bob);

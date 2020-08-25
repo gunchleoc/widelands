@@ -86,8 +86,6 @@ Bob& BobDescr::create(EditorGameBase& egbase, Player* const owner, const Coords&
 Bob::Bob(const BobDescr& init_descr)
    : MapObject(&init_descr),
      position_(FCoords(Coords(0, 0), nullptr)),  // not linked anywhere
-     linknext_(nullptr),
-     linkpprev_(nullptr),
      anim_(0),
      animstart_(0),
      walking_(IDLE),
@@ -136,11 +134,8 @@ void Bob::cleanup(EditorGameBase& egbase) {
 	set_owner(nullptr);  // implicitly remove ourselves from owner's map
 
 	if (position_.field) {
+		position_.field->remove_bob(this);
 		position_.field = nullptr;
-		*linkpprev_ = linknext_;
-		if (linknext_) {
-			linknext_->linkpprev_ = linkpprev_;
-		}
 	}
 
 	MapObject::cleanup(egbase);
@@ -910,21 +905,18 @@ void Bob::set_owner(Player* const player) {
 void Bob::set_position(EditorGameBase& egbase, const Coords& coords) {
 	FCoords oldposition = position_;
 
-	if (position_.field) {
-		*linkpprev_ = linknext_;
-		if (linknext_) {
-			linknext_->linkpprev_ = linkpprev_;
-		}
+	log("NOCOM setting position for %s", descr().name().c_str());
+	log(" to coords %d, %d\n", coords.x, coords.y);
+
+	if (oldposition.field) {
+		oldposition.field->remove_bob(this);
 	}
 
 	position_ = egbase.map().get_fcoords(coords);
 
-	linknext_ = position_.field->bobs;
-	linkpprev_ = &position_.field->bobs;
-	if (linknext_) {
-		linknext_->linkpprev_ = &linknext_;
+	if (position_.field) {
+		position_.field->add_bob(this, false);
 	}
-	*linkpprev_ = this;
 
 	if (owner_) {
 		owner_->update_vision(Area<FCoords>(get_position(), descr().vision_range()), true);
@@ -1183,9 +1175,6 @@ void Bob::save(EditorGameBase& eg, MapObjectSaver& mos, FileWrite& fw) {
 
 	fw.unsigned_8(owner_ ? owner_->player_number() : 0);
 	write_coords_32(&fw, position_);
-
-	// linkprev_ and linknext_ are recreated automatically
-
 	fw.c_string(anim_ ? descr().get_animation_name(anim_) : "");
 	fw.signed_32(animstart_);
 	write_direction_8_allow_null(&fw, walking_);
