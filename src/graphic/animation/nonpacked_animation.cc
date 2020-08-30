@@ -178,9 +178,7 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 		} else {
 			// TODO(GunChleoc): When all animations have been converted, require that
 			// animation_directory is not empty.
-			add_available_scales(basename, animation_directory.empty() ?
-			                                  table.get_string("directory") :
-			                                  animation_directory);
+			add_available_scales(basename, animation_directory);
 		}
 
 		// Frames

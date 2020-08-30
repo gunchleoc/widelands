@@ -174,17 +174,13 @@ SpriteSheetAnimation::SpriteSheetAnimation(const LuaTable& table,
    : Animation(table) {
 	try {
 		// Get image files
-		// TODO(GunChleoc): When all animations have been converted, require that animation_directory
-		// is not empty.
-		const std::string directory =
-		   animation_directory.empty() ? table.get_string("directory") : animation_directory;
 
 		// Frames, rows and columns
 		nr_frames_ = table.get_int("frames");
 		rows_ = table.get_int("rows");
 		columns_ = table.get_int("columns");
 
-		add_available_scales(basename, directory);
+		add_available_scales(basename, animation_directory);
 
 		// Perform some checks to make sure that the data is complete and consistent
 		const SpriteSheetMipMapEntry& first =
