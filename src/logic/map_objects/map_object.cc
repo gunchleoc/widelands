@@ -325,7 +325,6 @@ void MapObjectDescr::add_animations(const LuaTable& table,
 			const std::string& animation_directory =
 					anim->has_key<std::string>("directory") ? anim->get_string("directory") : files_directory_;
 
-			// TODO(GunChleoc): Maybe remove basename after conversion has been completed
 			const std::string basename =
 			   anim->has_key<std::string>("basename") ? anim->get_string("basename") : animname;
 			const bool is_directional =
