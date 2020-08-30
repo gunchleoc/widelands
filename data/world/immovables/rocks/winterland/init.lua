@@ -13,7 +13,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks1",
-         hotspot = { 38, 83 }
+         hotspot = { 14, 37 }
       },
    }
 }
@@ -31,7 +31,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks2",
-         hotspot = { 36, 86 }
+         hotspot = { 23, 40 }
       },
    }
 }
@@ -49,7 +49,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks3",
-         hotspot = { 42, 89 }
+         hotspot = { 33, 48 }
       },
    }
 }
@@ -67,7 +67,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks4",
-         hotspot = { 44, 84 }
+         hotspot = { 33, 78 }
       },
    }
 }
@@ -85,7 +85,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks5",
-         hotspot = { 42, 92 }
+         hotspot = { 33, 86 }
       },
    }
 }
@@ -103,7 +103,7 @@ wl.World():new_immovable_type{
    animations = {
       idle = {
          basename = "rocks6",
-         hotspot = { 39, 90 }
+         hotspot = { 38, 84 }
       },
    }
 }

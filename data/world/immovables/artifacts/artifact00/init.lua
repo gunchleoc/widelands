@@ -139,18 +139,15 @@
 --   commands in their program. They also need to specify a ``fall`` program,
 --   which will be triggered when a lumberjack fells them.
 
-
-dirname = path.dirname(__file__)
-
 wl.World():new_immovable_type{
    name = "artifact00",
    descname = _ "Artifact",
    size = "small",
+   animation_directory = path.dirname(__file__),
    programs = {},
    animations = {
       idle = {
-         pictures = path.list_files(dirname .. "idle.png"),
-         hotspot = { 14, 20 },
+         hotspot = { 14, 20 }
       },
    }
 }

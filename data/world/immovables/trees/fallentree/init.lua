@@ -11,7 +11,7 @@ wl.World():new_immovable_type{
    },
    animations = {
       idle = {
-         hotspot = { 2, 31 },
+         hotspot = { 2, 30 }
       },
    }
 }

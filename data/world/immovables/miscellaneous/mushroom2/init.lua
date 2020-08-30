@@ -1,14 +1,12 @@
-dirname = path.dirname(__file__)
-
 wl.World():new_immovable_type{
    name = "mushroom2",
    descname = _ "Mushroom",
    size = "none",
+   animation_directory = path.dirname(__file__),
    programs = {},
    animations = {
       idle = {
-         pictures = path.list_files(dirname .. "idle.png"),
-         hotspot = { 5, 7 },
+         hotspot = { 4, 6 }
       },
    }
 }
