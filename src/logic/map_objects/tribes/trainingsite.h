@@ -34,7 +34,6 @@ class World;
 class TrainingSiteDescr : public ProductionSiteDescr {
 public:
 	TrainingSiteDescr(const std::string& init_descname,
-	                  const std::string& msgctxt,
 					  const std::string& files_directory,
 	                  const LuaTable& table,
 	                  Tribes& tribes,

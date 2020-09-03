@@ -254,13 +254,11 @@ MapObjectDescr IMPLEMENTATION
 MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
                                const std::string& init_name,
                                const std::string& init_descname,
-							   const std::string& files_directory,
-                               const std::string& init_helptext_script)
+							   const std::string& files_directory)
    : type_(init_type),
      name_(init_name),
      descname_(init_descname),
-	 files_directory_(files_directory),
-     helptext_script_(init_helptext_script) {
+	 files_directory_(files_directory) {
 }
 MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
                                const std::string& init_name,
@@ -270,8 +268,14 @@ MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
    : MapObjectDescr(init_type,
                     init_name,
                     init_descname,
-					files_directory,
-                    table.has_key("helptext_script") ? table.get_string("helptext_script") : "") {
+					files_directory) {
+	if (table.has_key("helptext_script")) {
+		// TODO(GunChleoc): Compatibility - remove after v1.0
+		log_warn("Helptexts script for %s is obsolete - please move strings to "
+		         "tribes/initializations/<tribename>/units.lua",
+		         name().c_str());
+	}
+
 	bool has_animations = false;
 	if (table.has_key("animations")) {
 		has_animations = true;
@@ -507,6 +511,20 @@ MapObjectDescr::AttributeIndex MapObjectDescr::get_attribute_id(const std::strin
 	}
 }
 
+void MapObjectDescr::set_helptexts(const std::string& tribename,
+                                   std::map<std::string, std::string> localized_helptext) {
+	// Create or overwrite
+	helptexts_[tribename] = std::move(localized_helptext);
+}
+
+const std::map<std::string, std::string>&
+MapObjectDescr::get_helptexts(const std::string& tribename) const {
+	assert(has_helptext(tribename));
+	return helptexts_.at(tribename);
+}
+bool MapObjectDescr::has_helptext(const std::string& tribename) const {
+	return helptexts_.count(tribename) == 1;
+}
 /*
 ==============================================================================
 

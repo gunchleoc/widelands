@@ -52,14 +52,12 @@ public:
 	friend struct ProductionProgram;  // To add animations, outputs etc.
 
 	ProductionSiteDescr(const std::string& init_descname,
-	                    const std::string& msgctxt,
 						const std::string& files_directory,
 	                    MapObjectType type,
 	                    const LuaTable& t,
 	                    Tribes& tribes,
 	                    World& world);
 	ProductionSiteDescr(const std::string& init_descname,
-	                    const std::string& msgctxt,
 						const std::string& files_directory,
 	                    const LuaTable& t,
 	                    Tribes& tribes,

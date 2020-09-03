@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "base/log.h"
 #include "base/wexception.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
@@ -198,7 +199,9 @@ BuildingDescr* Tribes::get_mutable_building_descr(DescriptionIndex buildingindex
 const ImmovableDescr* Tribes::get_immovable_descr(DescriptionIndex immovableindex) const {
 	return immovables_->get_mutable(immovableindex);
 }
-
+ImmovableDescr* Tribes::get_mutable_immovable_descr(DescriptionIndex immovableindex) const {
+	return immovables_->get_mutable(immovableindex);
+}
 const ShipDescr* Tribes::get_ship_descr(DescriptionIndex shipindex) const {
 	return ships_->get_mutable(shipindex);
 }
@@ -236,14 +239,20 @@ void Tribes::register_scenario_tribes(FileSystem* filesystem) {
 }
 
 void Tribes::add_tribe_object_type(const LuaTable& table, World& world, FileSystem* map_filesystem, MapObjectType type) {
-	i18n::Textdomain td("tribes");
 	const std::string& type_name = table.get_string("name");
+	const std::string& type_descname = table.get_string("descname").c_str();
 
-	description_manager_->mark_loading_in_progress(type_name);
+	/* NOCOM
+INFO: ┏━ Loading barbarians:
+INFO: ┃    Ships:
+Segmentation fault (core dumped)
+	 * */
 
-	const std::string& msgctxt = table.get_string("msgctxt");
-	const std::string& type_descname =
-	   pgettext_expr(msgctxt.c_str(), table.get_string("descname").c_str());
+	// TODO(GunChleoc): Compatibility, remove after v1.0
+	if (table.has_key<std::string>("msgctxt")) {
+		log_warn(
+		   "The 'msgctxt' entry is no longer needed in '%s', please remove it", type_name.c_str());
+	}
 
 	// TODO(GunChleoc): Clean up animation_directory - we only need it if it differs from the init.lua file's location.
 	const std::string files_directory(
@@ -276,7 +285,7 @@ void Tribes::add_tribe_object_type(const LuaTable& table, World& world, FileSyst
 		buildings_->add(new MilitarySiteDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::PRODUCTIONSITE:
-		buildings_->add(new ProductionSiteDescr(type_descname, msgctxt, files_directory, table, *this, world));
+		buildings_->add(new ProductionSiteDescr(type_descname, files_directory, table, *this, world));
 		break;
 	case MapObjectType::SHIP:
 		ships_->add(new ShipDescr(type_descname, files_directory, table));
@@ -285,7 +294,7 @@ void Tribes::add_tribe_object_type(const LuaTable& table, World& world, FileSyst
 		workers_->add(new SoldierDescr(type_descname, files_directory, table, *this));
 		break;
 	case MapObjectType::TRAININGSITE:
-		buildings_->add(new TrainingSiteDescr(type_descname, msgctxt, files_directory, table, *this, world));
+		buildings_->add(new TrainingSiteDescr(type_descname, files_directory, table, *this, world));
 		break;
 	case MapObjectType::WARE:
 		wares_->add(new WareDescr(type_descname, files_directory, table));
