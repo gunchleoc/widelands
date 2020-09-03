@@ -736,6 +736,14 @@ void Ship::set_economy(Game& game, Economy* e, WareWorker type) {
 	}
 }
 
+void Ship::set_position(EditorGameBase& egbase, const Coords& coords) {
+	const bool ship_can_be_controlled = get_ship_state() == ShipStates::kExpeditionWaiting ||
+			get_ship_state() == ShipStates::kExpeditionScouting ||
+			get_ship_state() == ShipStates::kExpeditionPortspaceFound;
+
+	do_set_position(egbase, coords, ship_can_be_controlled);
+}
+
 void Ship::set_destination(Game& game, PortDock* dock) {
 	destination_ = dock;
 	send_signal(game, "wakeup");
@@ -843,6 +851,9 @@ void Ship::start_task_expedition(Game& game) {
 	expedition_->island_explore_direction = IslandExploreDirection::kClockwise;
 	expedition_->ware_economy = get_owner()->create_economy(wwWARE);
 	expedition_->worker_economy = get_owner()->create_economy(wwWORKER);
+
+	// Put ship on top of any other ships that might be on the same field
+	do_set_position(game, get_position(), true);
 
 	// We are no longer in any other economy, but instead are an economy of our
 	// own.

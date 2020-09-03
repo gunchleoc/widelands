@@ -132,7 +132,7 @@ int32_t EditorInfoTool::handle_click_impl(const Widelands::NodeAndTriangle<>& ce
 
 	// *** Map Object info
 	const Widelands::BaseImmovable* immovable = f.get_immovable();
-	if (immovable || !f.bobs().empty()) {
+	if (immovable || !f.get_bobs().empty()) {
 		/** TRANSLATORS: Heading for immovables and animals in editor info tool */
 		buf += as_heading(_("Objects"), UI::PanelStyle::kWui);
 		if (immovable) {
@@ -140,12 +140,12 @@ int32_t EditorInfoTool::handle_click_impl(const Widelands::NodeAndTriangle<>& ce
 			   (boost::format(_("Immovable: %s")) % immovable->descr().descname()).str(), font_style);
 		}
 
-		if (!f.bobs().empty()) {
+		if (!f.get_bobs().empty()) {
 			// Collect bobs
 			std::vector<std::string> critternames;
 			std::vector<std::string> shipnames;
 			std::vector<std::string> workernames;
-			for (Widelands::Bob* bob : f.bobs()) {
+			for (Widelands::Bob* bob : f.get_bobs()) {
 				switch (bob->descr().type()) {
 				case (Widelands::MapObjectType::CRITTER):
 					critternames.push_back(bob->descr().descname());

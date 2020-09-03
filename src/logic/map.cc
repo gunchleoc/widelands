@@ -62,7 +62,7 @@ FieldData::FieldData(const Field& field)
 	} else {
 		immovable = "";
 	}
-	for (Widelands::Bob* bob : field.bobs()) {
+	for (Widelands::Bob* bob : field.get_bobs()) {
 		bobs.push_back(bob->descr().name());
 	}
 }
@@ -554,7 +554,7 @@ void Map::set_origin(const Coords& new_origin) {
 			if (upcast(Immovable, immovable, c.field->get_immovable())) {
 				immovable->position_ = c;
 			}
-			for (Widelands::Bob* bob : c.field->bobs()) {
+			for (Widelands::Bob* bob : c.field->get_bobs()) {
 				bob->position_.x = c.x;
 				bob->position_.y = c.y;
 				bob->position_.field = c.field;
@@ -714,7 +714,7 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 			if (upcast(Immovable, imm, f.get_immovable())) {
 				imm->position_ = fc;
 			}
-			for (Widelands::Bob* bob : f.bobs()) {
+			for (Widelands::Bob* bob : f.get_bobs()) {
 				bob->position_ = fc;
 			}
 		}
@@ -1075,7 +1075,10 @@ struct FindBobsCallback {
 	}
 
 	void operator()(const EditorGameBase&, const FCoords& cur) {
-		for (Widelands::Bob* bob : cur.field->bobs()) {
+		// Iterate from back to front so that e.g. user mouseclicks will prefer the one on top
+		const std::list<Bob*>& field_bobs = cur.field->get_bobs();
+		for (auto it = field_bobs.rbegin(); it != field_bobs.rend(); ++it) {
+			Widelands::Bob* bob = *it;
 			if (list_ && std::find(list_->begin(), list_->end(), bob) != list_->end()) {
 				continue;
 			}

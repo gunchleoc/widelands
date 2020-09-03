@@ -6722,7 +6722,7 @@ int LuaField::get_immovable(lua_State* L) {
 int LuaField::get_bobs(lua_State* L) {
 	lua_newtable(L);
 	uint32_t cidx = 1;
-	for (Widelands::Bob* bob : fcoords(L).field->bobs()) {
+	for (Widelands::Bob* bob : fcoords(L).field->get_bobs()) {
 		lua_pushuint32(L, cidx++);
 		upcasted_map_object_to_lua(L, bob);
 		lua_rawset(L, -3);

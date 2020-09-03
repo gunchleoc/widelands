@@ -230,7 +230,10 @@ public:
 	Vector2f calc_drawpos(const EditorGameBase&, const Vector2f& field_on_dst, float scale) const;
 	void set_owner(Player*);
 
-	void set_position(EditorGameBase&, const Coords&);
+	// Override this if you want to show the bob on top
+	// We show expedition ships and soldiers on top, everything else on the bottom
+	virtual void set_position(EditorGameBase& egbase, const Coords& coords);
+	void do_set_position(EditorGameBase& egbase, const Coords& coords, bool show_on_top);
 	const FCoords& get_position() const {
 		return position_;
 	}

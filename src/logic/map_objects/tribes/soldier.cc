@@ -360,6 +360,11 @@ void Soldier::cleanup(EditorGameBase& egbase) {
 	Worker::cleanup(egbase);
 }
 
+void Soldier::set_position(EditorGameBase& egbase, const Coords& coords) {
+	// check_node_blocked can abort faster if we put soldiers on top of other bobs
+	do_set_position(egbase, coords, true);
+}
+
 bool Soldier::is_evict_allowed() {
 	return !is_on_battlefield();
 }
@@ -1644,8 +1649,9 @@ bool Soldier::check_node_blocked(Game& game, const FCoords& field, bool const co
 	bool foundopponent = false;
 	bool multiplesoldiers = false;
 
-	for (Widelands::Bob* bob : field.field->bobs()) {
-		if (upcast(Soldier, soldier, bob)) {
+	const std::list<Bob*>& field_bobs = field.field->get_bobs();
+	for (auto it = field_bobs.rbegin(); it != field_bobs.rend(); ++it) {
+		if (upcast(Soldier, soldier, (*it))) {
 			if (!soldier->is_on_battlefield() || !soldier->get_current_health()) {
 				continue;
 			}
@@ -1665,6 +1671,9 @@ bool Soldier::check_node_blocked(Game& game, const FCoords& field, bool const co
 					foundopponent = true;
 				}
 			}
+		} else {
+			// We have sorted workers and critters to the front of the list via do_set_position, so we can stop now
+			break;
 		}
 	}
 

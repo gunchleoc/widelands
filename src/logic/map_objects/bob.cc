@@ -903,10 +903,10 @@ void Bob::set_owner(Player* const player) {
  * updates the owner's viewing area, if the bob has an owner.
  */
 void Bob::set_position(EditorGameBase& egbase, const Coords& coords) {
+	do_set_position(egbase, coords, false);
+}
+void Bob::do_set_position(EditorGameBase& egbase, const Coords& coords, bool show_on_top) {
 	FCoords oldposition = position_;
-
-	log("NOCOM setting position for %s", descr().name().c_str());
-	log(" to coords %d, %d\n", coords.x, coords.y);
 
 	if (oldposition.field) {
 		oldposition.field->remove_bob(this);
@@ -915,7 +915,7 @@ void Bob::set_position(EditorGameBase& egbase, const Coords& coords) {
 	position_ = egbase.map().get_fcoords(coords);
 
 	if (position_.field) {
-		position_.field->add_bob(this, false);
+		position_.field->add_bob(this, show_on_top);
 	}
 
 	if (owner_) {

@@ -104,6 +104,8 @@ struct Ship : Bob {
 	}
 	void set_destination(Game&, PortDock*);
 
+	void set_position(EditorGameBase& egbase, const Coords& coords) override;
+
 	// Returns the last visited portdock of this ship or nullptr if there is none or
 	// the last visited was removed.
 	PortDock* get_lastdock(EditorGameBase& egbase) const;

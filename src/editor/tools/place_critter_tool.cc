@@ -41,7 +41,7 @@ int32_t EditorPlaceCritterTool::handle_click_impl(const Widelands::NodeAndTriang
 		   *map,
 		   Widelands::Area<Widelands::FCoords>(map->get_fcoords(center.node), args->sel_radius));
 		do {
-			Widelands::Bob* const mbob = mr.location().field->bobs().front();
+			Widelands::Bob* const mbob = mr.location().field->get_bobs().front();
 			args->old_bob_type.push_back((mbob ? &mbob->descr() : nullptr));
 			args->new_bob_type.push_back(dynamic_cast<const Widelands::BobDescr*>(
 			   egbase.world().get_critter_descr(get_random_enabled())));
@@ -56,7 +56,7 @@ int32_t EditorPlaceCritterTool::handle_click_impl(const Widelands::NodeAndTriang
 		do {
 			const Widelands::BobDescr& descr = *(*i);
 			if (mr.location().field->nodecaps() & descr.movecaps()) {
-				if (!mr.location().field->bobs().empty()) {
+				if (!mr.location().field->get_bobs().empty()) {
 					Widelands::Bob* bob = mr.location().field->remove_first_bob();
 					bob->remove(egbase);  //  There is already a bob. Remove it.
 				}
@@ -85,13 +85,13 @@ int32_t EditorPlaceCritterTool::handle_undo_impl(
 			if (*i) {
 				const Widelands::BobDescr& descr = *(*i);
 				if (mr.location().field->nodecaps() & descr.movecaps()) {
-					if (!mr.location().field->bobs().empty()) {
+					if (!mr.location().field->get_bobs().empty()) {
 						Widelands::Bob* bob = mr.location().field->remove_first_bob();
 						bob->remove(egbase);  //  There is already a bob. Remove it.
 					}
 					descr.create(egbase, nullptr, mr.location());
 				}
-			} else if (!mr.location().field->bobs().empty()) {
+			} else if (!mr.location().field->get_bobs().empty()) {
 				Widelands::Bob* bob = mr.location().field->remove_first_bob();
 				bob->remove(egbase);
 			}

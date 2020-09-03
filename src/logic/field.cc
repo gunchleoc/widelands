@@ -21,78 +21,38 @@
 
 #include <algorithm>
 
-#include "base/log.h" // NOCOM
-#include "logic/map_objects/bob.h" // NOCOM
 #include "wui/mapviewpixelconstants.h"
 
 namespace Widelands {
 
 void Field::clear_bobs() {
-	// NOCOM why is it not there in spite of being initialized in the constructor?!
-	if (bobs_queue) {
-		bobs_queue->clear();
+	if (bobs) {
+		bobs->clear();
 	} else {
-		bobs_queue = new std::list<Bob*>();
+		// NOCOM why is it not there in spite of being initialized in the constructor?!
+		bobs = new std::list<Bob*>();
 	}
 }
-const std::list<Bob*>& Field::bobs() const {
-	return *bobs_queue;
+const std::list<Bob*>& Field::get_bobs() const {
+	assert(bobs);
+	return *bobs;
 }
 Bob* Field::remove_first_bob() {
-	// NOCOM why is it not there in spite of being initialized in the constructor?!
-	if (!bobs_queue) {
-		bobs_queue = new std::list<Bob*>();
-	}
-	assert(!bobs_queue->empty());
-	Bob* result = bobs_queue->front();
-	bobs_queue->pop_front();
+	assert(bobs && !bobs->empty());
+	Bob* result = bobs->front();
+	bobs->pop_front();
 	return result;
 }
-void Field::add_bob(Bob* bob, bool front) {
-	// NOCOM why is it not there in spite of being initialized in the constructor?!
-	if (!bobs_queue) {
-		bobs_queue = new std::list<Bob*>();
-	}
-	/*
-NOCOM add_bob badger
-NOCOM elements: 18446744073709551552
-NOCOM queue is empty
-	 * */
-	if (bob == nullptr) {
-		log("NOCOM bob is nullptr!\n");
-	}
-	log("NOCOM add_bob %s\n", bob->descr().name().c_str());
-	log("NOCOM elements: %lu\n", bobs_queue->size());
-	if (!bobs_queue->empty()) {
-		int counter = 0;
-		for (Bob* b : *bobs_queue) {
-			log("NOCOM have %s\n", b->descr().name().c_str());
-			++counter;
-			if (counter > 10) break;
-		}
+void Field::add_bob(Bob* bob, bool show_on_top) {
+	if (show_on_top) {
+		bobs->push_back(bob);
 	} else {
-		log("NOCOM queue is empty\n");
+		bobs->push_front(bob);
 	}
-	if (front) {
-		bobs_queue->push_front(bob);
-	} else {
-		// NOCOM points to zero page.
-		bobs_queue->push_back(bob);
-	}
-	log("NOCOM elements after: %lu\n", bobs_queue->size());
 }
 void Field::remove_bob(Bob* bob) {
-	// NOCOM why is it not there in spite of being initialized in the constructor?!
-	if (!bobs_queue) {
-		bobs_queue = new std::list<Bob*>();
-	}
-	// NOCOM use list::remove
-	auto it = std::find(bobs_queue->begin(), bobs_queue->end(), bob);
-	if (it != bobs_queue->end()) {
-		bobs_queue->erase(it);
-	} else {
-		NEVER_HERE();
-	}
+	assert(bobs && !bobs->empty());
+	bobs->remove(bob);
 }
 
 /**

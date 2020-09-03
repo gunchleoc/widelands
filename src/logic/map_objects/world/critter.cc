@@ -345,7 +345,7 @@ void Critter::roam_update(Game& game, State& state) {
 	bool foundme = false;
 	std::vector<Critter*> all_critters_on_field;
 	all_critters_on_field.push_back(this);  // not caught by the following loop
-	for (Widelands::Bob* bob : get_position().field->bobs()) {
+	for (Widelands::Bob* bob : get_position().field->get_bobs()) {
 		assert(bob);
 		if (bob == this) {
 			assert(!foundme);

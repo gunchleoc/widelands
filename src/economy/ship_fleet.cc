@@ -172,7 +172,7 @@ bool ShipFleet::find_other_fleet(EditorGameBase& egbase) {
 			}
 		}
 
-		for (Widelands::Bob* bob : cur.field->bobs()) {
+		for (Widelands::Bob* bob : cur.field->get_bobs()) {
 			const MapObjectType type = bob->descr().type();
 			if (type == MapObjectType::SHIP) {
 				upcast(Ship, ship, bob);

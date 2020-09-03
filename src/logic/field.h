@@ -71,12 +71,12 @@ struct Field {
 		Buildhelp_None = 6
 	};
 
-	Field() : bobs_queue(new std::list<Bob*>()) {}
+	Field() : bobs(new std::list<Bob*>()) {}
 
 	~Field() {
-		if (bobs_queue) {
-			bobs_queue->clear();
-			delete bobs_queue;
+		if (bobs) {
+			bobs->clear();
+			delete bobs;
 		}
 	}
 
@@ -142,9 +142,9 @@ struct Field {
 
 	// NOCOM document
 	void clear_bobs();
-	const std::list<Bob*>& bobs() const;
+	const std::list<Bob*>& get_bobs() const;
 	Bob* remove_first_bob();
-	void add_bob(Bob* bob, bool front);
+	void add_bob(Bob* bob, bool show_on_top);
 	void remove_bob(Bob* bob);
 
 	const BaseImmovable* get_immovable() const {
@@ -268,8 +268,7 @@ private:
 	static_assert(kMaxPlayers <= Player_Number_Bitmask, "Bitmask is too big.");
 
 	// Data Members. Initialize everything to make cppcheck happy.
-	// NOCOM const?
-	std::list<Bob*>* bobs_queue;
+	std::list<Bob*>* bobs;
 	BaseImmovable* immovable = nullptr;
 
 	uint8_t caps = 0U;

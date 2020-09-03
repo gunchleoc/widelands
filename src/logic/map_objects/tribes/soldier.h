@@ -213,6 +213,8 @@ public:
 	bool init(EditorGameBase&) override;
 	void cleanup(EditorGameBase&) override;
 
+	void set_position(EditorGameBase& egbase, const Coords& coords) override;
+
 	void set_level(uint32_t health, uint32_t attack, uint32_t defense, uint32_t evade);
 	void set_health_level(uint32_t);
 	void set_attack_level(uint32_t);

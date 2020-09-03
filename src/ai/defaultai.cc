@@ -1013,7 +1013,7 @@ void DefaultAI::late_initialization() {
 			// there are too many bobs on the map so we investigate
 			// only bobs on water
 			if (f.field->nodecaps() & MOVECAPS_SWIM) {
-				for (Widelands::Bob* bob : f.field->bobs()) {
+				for (Widelands::Bob* bob : f.field->get_bobs()) {
 					if (upcast(Ship, ship, bob)) {
 						if (ship->get_owner() == player_ && !found_ships.count(ship)) {
 							found_ships.insert(ship);

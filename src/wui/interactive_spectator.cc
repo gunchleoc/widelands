@@ -101,7 +101,7 @@ void InteractiveSpectator::draw_map_view(MapView* given_map_view, RenderTarget* 
 			imm->draw(gametime, info_to_draw, field.rendertarget_pixel, field.fcoords, scale, dst);
 		}
 
-		for (Widelands::Bob* bob : field.fcoords.field->bobs()) {
+		for (Widelands::Bob* bob : field.fcoords.field->get_bobs()) {
 			bob->draw(the_game, info_to_draw, field.rendertarget_pixel, field.fcoords, scale, dst);
 		}
 
