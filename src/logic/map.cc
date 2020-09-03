@@ -761,7 +761,7 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 	port_spaces_ = rh.port_spaces;
 	starting_pos_ = rh.starting_positions;
 
-	log("NOCOM clearing bobs\n");
+	log("NOCOM clearing bobs 1\n");
 
 	// First pass: Initialize all fields with the saved basic data
 	for (MapIndex i = max_index(); i; --i) {
@@ -809,7 +809,7 @@ void Map::set_size(const uint32_t w, const uint32_t h) {
 	fields_.reset(new Field[field_size]);
 	clear_array<>(&fields_, field_size);
 
-	log("NOCOM clearing bobs\n");
+	log("NOCOM clearing bobs 2\n");
 
 	// First pass: Initialize all fields with the saved basic data
 	for (MapIndex i = max_index(); i; --i) {

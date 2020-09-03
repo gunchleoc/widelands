@@ -8,5 +8,6 @@ return {
    "tutorial01_basic_control.wmf",
    "tutorial02_warfare.wmf",
    "tutorial03_seafaring.wmf",
-   "tutorial04_economy.wmf"
+   "tutorial04_economy.wmf",
+   "shiptest.wmf"
 }

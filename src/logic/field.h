@@ -21,7 +21,7 @@
 #define WL_LOGIC_FIELD_H
 
 #include <cassert>
-#include <deque>
+#include <list>
 
 #include "base/wexception.h"
 #include "graphic/playercolor.h"
@@ -70,6 +70,15 @@ struct Field {
 		Buildhelp_Port = 5,
 		Buildhelp_None = 6
 	};
+
+	Field() : bobs_queue(new std::list<Bob*>()) {}
+
+	~Field() {
+		if (bobs_queue) {
+			bobs_queue->clear();
+			delete bobs_queue;
+		}
+	}
 
 	using Height = uint8_t;
 	using ResourceAmount = uint8_t;
@@ -133,7 +142,7 @@ struct Field {
 
 	// NOCOM document
 	void clear_bobs();
-	const std::deque<Bob*>& bobs() const;
+	const std::list<Bob*>& bobs() const;
 	Bob* remove_first_bob();
 	void add_bob(Bob* bob, bool front);
 	void remove_bob(Bob* bob);
@@ -260,7 +269,7 @@ private:
 
 	// Data Members. Initialize everything to make cppcheck happy.
 	// NOCOM const?
-	std::deque<Bob*> bobs_queue = std::deque<Bob*>();
+	std::list<Bob*>* bobs_queue;
 	BaseImmovable* immovable = nullptr;
 
 	uint8_t caps = 0U;
