@@ -1,11 +1,11 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_productionsite_type {
-   msgctxt = "frisians_building",
    name = "frisians_goldmine_deep",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("frisians_building", "Deep Gold Mine"),
-   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "mine",
 
@@ -59,7 +59,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      mines = "gold",
+      mines = "resource_gold",
    },
 
    working_positions = {
@@ -72,13 +72,13 @@ tribes:new_productionsite_type {
    },
 
    programs = {
-      work = {
+      main = {
          -- TRANSLATORS: Completed/Skipped/Did not start mining gold because ...
          descname = _"mining gold",
          actions = {
             "return=skipped unless economy needs gold_ore",
             "consume=meal",
-            "sleep=39800",
+            "sleep=duration:39s800ms",
             "call=mine_produce",
             "call=mine_produce",
             "call=mine_produce",
@@ -89,8 +89,8 @@ tribes:new_productionsite_type {
       mine_produce = {
          descname = _"mining gold",
          actions = {
-            "animate=working 12200",
-            "mine=gold 3 100 10 5",
+            "animate=working duration:12s200ms",
+            "mine=resource_gold radius:3 yield:100% when_empty:10% experience_on_fail:5%",
             "produce=gold_ore",
          }
       },
@@ -111,3 +111,5 @@ tribes:new_productionsite_type {
          pgettext("frisians_building", "This gold mine’s main vein is exhausted. Expect strongly diminished returns on investment. This mine can’t be enhanced any further, so you should consider dismantling or destroying it."),
    },
 }
+
+pop_textdomain()

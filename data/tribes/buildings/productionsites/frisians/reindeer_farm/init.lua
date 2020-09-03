@@ -1,11 +1,11 @@
+push_textdomain("tribes")
+
 dirname = path.dirname (__file__)
 
 tribes:new_productionsite_type {
-   msgctxt = "frisians_building",
    name = "frisians_reindeer_farm",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext ("frisians_building", "Reindeer Farm"),
-   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "big",
 
@@ -64,7 +64,7 @@ tribes:new_productionsite_type {
    },
 
    programs = {
-      work = {
+      main = {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
          descname = _"working",
          actions = {
@@ -82,8 +82,8 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs frisians_reindeer",
             "consume=barley water",
-            "sleep=15000",
-            "animate=working 15000",
+            "sleep=duration:15s",
+            "animate=working duration:15s",
             "recruit=frisians_reindeer"
          }
       },
@@ -93,8 +93,8 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs fur",
             "consume=barley water",
-            "sleep=15000",
-            "animate=working 20000",
+            "sleep=duration:15s",
+            "animate=working duration:20s",
             "produce=fur"
          }
       },
@@ -104,10 +104,12 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs fur",
             "consume=barley water",
-            "sleep=15000",
-            "animate=working 20000",
+            "sleep=duration:15s",
+            "animate=working duration:20s",
             "produce=fur meat"
          }
       },
    },
 }
+
+pop_textdomain()

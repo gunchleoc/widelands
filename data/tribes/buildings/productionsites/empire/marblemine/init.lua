@@ -1,11 +1,11 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_productionsite_type {
-   msgctxt = "empire_building",
    name = "empire_marblemine",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Marble Mine"),
-   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "mine",
    enhancement = "empire_marblemine_deep",
@@ -36,7 +36,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      mines = "stones",
+      mines = "resource_stones",
       mines_percent = 50,
       prohibited_till = 600,
       basic_amount = 1
@@ -52,7 +52,7 @@ tribes:new_productionsite_type {
    },
 
    programs = {
-      work = {
+      main = {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
          descname = _"working",
          actions = {
@@ -66,7 +66,7 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs marble or economy needs granite",
             "consume=ration wine",
-            "sleep=18000",
+            "sleep=duration:18s",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_marble",
@@ -79,7 +79,7 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs marble or economy needs granite",
             "consume=wine ration",
-            "sleep=18000",
+            "sleep=duration:18s",
             "call=a_mine_produce_marble",
             "call=a_mine_produce_marble",
             "call=a_mine_produce_granite",
@@ -89,16 +89,16 @@ tribes:new_productionsite_type {
       a_mine_produce_granite = {
          descname = _"mining granite",
          actions = {
-            "animate=working 10500",
-            "mine=stones 2 50 5 17",
+            "animate=working duration:10s500ms",
+            "mine=resource_stones radius:2 yield:50% when_empty:5% experience_on_fail:17%",
             "produce=granite",
          }
       },
       a_mine_produce_marble = {
          descname = _"mining marble",
          actions = {
-            "animate=working 10500",
-            "mine=stones 2 50 5 17",
+            "animate=working duration:10s500ms",
+            "mine=resource_stones radius:2 yield:50% when_empty:5% experience_on_fail:17%",
             "produce=marble",
          }
       },
@@ -127,3 +127,5 @@ tribes:new_productionsite_type {
          pgettext("empire_building", "This marble mine’s main vein is exhausted. Expect strongly diminished returns on investment. You should consider enhancing, dismantling or destroying it."),
    },
 }
+
+pop_textdomain()

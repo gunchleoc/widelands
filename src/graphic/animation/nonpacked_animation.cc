@@ -24,11 +24,11 @@
 
 #include <boost/algorithm/string/replace.hpp>
 
+#include "base/log.h"
 #include "base/macros.h"
-#include "graphic/graphic.h"
 #include "graphic/image.h"
+#include "graphic/image_cache.h"
 #include "graphic/playercolor.h"
-#include "graphic/texture.h"
 #include "io/filesystem/filesystem.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
@@ -84,7 +84,7 @@ void NonPackedAnimation::NonPackedMipMapEntry::load_graphics() {
 	}
 
 	for (const std::string& filename : image_files) {
-		const Image* image = g_gr->images().get(filename);
+		const Image* image = g_image_cache->get(filename);
 		if (frames.size() && (frames.front()->width() != image->width() ||
 		                      frames.front()->height() != image->height())) {
 			throw Widelands::GameDataError(
@@ -98,7 +98,7 @@ void NonPackedAnimation::NonPackedMipMapEntry::load_graphics() {
 	for (const std::string& filename : playercolor_mask_image_files) {
 		// TODO(unknown): Do not load playercolor mask as opengl texture or use it as
 		//     opengl texture.
-		const Image* pc_image = g_gr->images().get(filename);
+		const Image* pc_image = g_image_cache->get(filename);
 		if (frames.front()->width() != pc_image->width() ||
 		    frames.front()->height() != pc_image->height()) {
 			throw Widelands::GameDataError("playercolor mask %s has wrong size: (%u, %u), should "
@@ -126,6 +126,22 @@ void NonPackedAnimation::NonPackedMipMapEntry::blit(uint32_t idx,
 		target->blit_blended(
 		   destination_rect, *frames.at(idx), *playercolor_mask_frames.at(idx), source_rect, *clr);
 	}
+}
+
+std::vector<std::unique_ptr<const Texture>>
+NonPackedAnimation::NonPackedMipMapEntry::frame_textures(bool return_playercolor_masks) const {
+	ensure_graphics_are_loaded();
+
+	std::vector<std::unique_ptr<const Texture>> result;
+	const Rectf rect(Vector2f::zero(), width(), height());
+	for (const std::string& filename :
+	     return_playercolor_masks ? playercolor_mask_image_files : image_files) {
+		std::unique_ptr<Texture> texture(new Texture(width(), height()));
+		texture->fill_rect(rect, RGBAColor(0, 0, 0, 0));
+		texture->blit(rect, *g_image_cache->get(filename), rect, 1., BlendMode::Copy);
+		result.push_back(std::move(texture));
+	}
+	return result;
 }
 
 int NonPackedAnimation::NonPackedMipMapEntry::width() const {
@@ -156,8 +172,8 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 			                           table.get_table("pictures")->array_entries<std::string>()))));
 			if (g_verbose) {
 				assert(!table.get_table("pictures")->array_entries<std::string>().empty());
-				log("Found deprecated 'pictures' parameter in animation with file\n   %s\n",
-				    table.get_table("pictures")->array_entries<std::string>().front().c_str());
+				log_dbg("Found deprecated 'pictures' parameter in animation with file\n   %s\n",
+				        table.get_table("pictures")->array_entries<std::string>().front().c_str());
 			}
 		} else {
 			// TODO(GunChleoc): When all animations have been converted, require that
@@ -169,7 +185,7 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 
 		// Frames
 		const NonPackedMipMapEntry& first =
-		   dynamic_cast<const NonPackedMipMapEntry&>(*mipmaps_.begin()->second.get());
+		   dynamic_cast<const NonPackedMipMapEntry&>(*mipmaps_.begin()->second);
 		nr_frames_ = first.image_files.size();
 		if (table.has_key("fps") && nr_frames_ == 1) {
 			throw Widelands::GameDataError(
@@ -186,7 +202,7 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 		const bool should_have_playercolor = mipmaps_.begin()->second->has_playercolor_masks;
 		for (const auto& mipmap : mipmaps_) {
 			const NonPackedMipMapEntry& nonpacked_mipmap =
-			   dynamic_cast<const NonPackedMipMapEntry&>(*mipmap.second.get());
+			   dynamic_cast<const NonPackedMipMapEntry&>(*mipmap.second);
 			if (nonpacked_mipmap.image_files.size() != nr_frames_) {
 				throw Widelands::GameDataError(
 				   "Mismatched number of images for different scales in animation table: %" PRIuS
@@ -208,18 +224,6 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 	}
 }
 
-std::vector<const Image*> NonPackedAnimation::images(float scale) const {
-	const NonPackedMipMapEntry& mipmap =
-	   dynamic_cast<const NonPackedMipMapEntry&>(mipmap_entry(scale));
-	return mipmap.frames;
-}
-
-std::vector<const Image*> NonPackedAnimation::pc_masks(float scale) const {
-	const NonPackedMipMapEntry& mipmap =
-	   dynamic_cast<const NonPackedMipMapEntry&>(mipmap_entry(scale));
-	return mipmap.playercolor_mask_frames;
-}
-
 const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const {
 	const NonPackedMipMapEntry& mipmap =
 	   dynamic_cast<const NonPackedMipMapEntry&>(mipmap_entry(1.0f));
@@ -227,7 +231,7 @@ const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const
 	const std::string& image_filename = mipmap.image_files[representative_frame()];
 	const Image* image = (mipmap.has_playercolor_masks && clr) ?
 	                        playercolor_image(*clr, image_filename) :
-	                        g_gr->images().get(image_filename);
+	                        g_image_cache->get(image_filename);
 
 	const int w = image->width();
 	const int h = image->height();

@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "base/log.h"
-#include "graphic/graphic.h"
+#include "graphic/image_cache.h"
 #include "io/filesystem/filesystem.h"
 #include "io/profile.h"
 #include "logic/filesystem_constants.h"
@@ -30,7 +30,7 @@
 #include "scripting/lua_interface.h"
 
 namespace {
-const std::string kCampVisFileLegacy = "save/campvis";
+constexpr const char* const kCampVisFileLegacy = "save/campvis";
 }
 
 Campaigns::Campaigns() {
@@ -64,7 +64,7 @@ Campaigns::Campaigns() {
 	     difficulties_table->array_entries<std::unique_ptr<LuaTable>>()) {
 		difficulty_levels.push_back(
 		   std::make_pair(_(difficulty_level_table->get_string("descname")),
-		                  g_gr->images().get(difficulty_level_table->get_string("image"))));
+		                  g_image_cache->get(difficulty_level_table->get_string("image"))));
 	}
 
 	// Read the campaigns themselves
@@ -181,14 +181,14 @@ void Campaigns::update_visibility_info() {
 /**
  * Handle legacy campvis file
  */
-// TODO(GunChleoc): Remove after Build 22
+// TODO(GunChleoc): Savegame compatibility, remove after v1.0
 void Campaigns::update_legacy_campvis() {
-	Profile legacy_campvis(kCampVisFileLegacy.c_str());
+	Profile legacy_campvis(kCampVisFileLegacy);
 	if (legacy_campvis.get_section("campmaps") == nullptr) {
 		return;
 	}
 
-	log("Converting legacy campvis\n");
+	log_info("Converting legacy campvis\n");
 
 	using LegacyList = std::vector<std::pair<std::string, std::string>>;
 

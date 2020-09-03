@@ -1,11 +1,11 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_productionsite_type {
-   msgctxt = "atlanteans_building",
    name = "atlanteans_crystalmine",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("atlanteans_building", "Crystal Mine"),
-   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "mine",
 
@@ -35,7 +35,7 @@ tribes:new_productionsite_type {
    },
 
    aihints = {
-      mines = "stones",
+      mines = "resource_stones",
       prohibited_till = 600
    },
 
@@ -50,7 +50,7 @@ tribes:new_productionsite_type {
    },
 
    programs = {
-      work = {
+      main = {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
          descname = _"working",
          actions = {
@@ -65,7 +65,7 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs granite",
             "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
-            "sleep=40000",
+            "sleep=duration:40s",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_granite",
@@ -80,7 +80,7 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs quartz",
             "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
-            "sleep=30000",
+            "sleep=duration:30s",
             "call=a_mine_produce_quartz",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_granite",
@@ -95,7 +95,7 @@ tribes:new_productionsite_type {
          actions = {
             "return=skipped unless economy needs diamond",
             "consume=smoked_fish,smoked_meat:2 atlanteans_bread:2",
-            "sleep=40000",
+            "sleep=duration:40s",
             "call=a_mine_produce_diamond",
             "call=a_mine_produce_granite",
             "call=a_mine_produce_diamond",
@@ -104,24 +104,24 @@ tribes:new_productionsite_type {
       a_mine_produce_granite = {
          descname = _"mining granite",
          actions = {
-            "animate=working 15000",
-            "mine=stones 4 100 5 2",
+            "animate=working duration:15s",
+            "mine=resource_stones radius:4 yield:100% when_empty:5%",
             "produce=granite",
          }
       },
       a_mine_produce_quartz = {
          descname = _"mining quartz",
          actions = {
-            "animate=working 10000",
-            "mine=stones 4 100 5 2",
+            "animate=working duration:10s",
+            "mine=resource_stones radius:4 yield:100% when_empty:5%",
             "produce=quartz",
          }
       },
       a_mine_produce_diamond = {
          descname = _"mining diamonds",
          actions = {
-            "animate=working 25000",
-            "mine=stones 4 100 5 2",
+            "animate=working duration:25s",
+            "mine=resource_stones radius:4 yield:100% when_empty:5%",
             "produce=diamond",
          }
       },
@@ -158,3 +158,5 @@ tribes:new_productionsite_type {
          pgettext("atlanteans_building", "This crystal mine’s main vein is exhausted. Expect strongly diminished returns on investment. You should consider dismantling or destroying it."),
    },
 }
+
+pop_textdomain()

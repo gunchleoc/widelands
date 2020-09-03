@@ -75,6 +75,14 @@ void SinglePlayerGameSettingsProvider::set_peaceful_mode(bool peace) {
 	s.peaceful = peace;
 }
 
+bool SinglePlayerGameSettingsProvider::get_custom_starting_positions() {
+	return s.custom_starting_positions;
+}
+
+void SinglePlayerGameSettingsProvider::set_custom_starting_positions(bool c) {
+	s.custom_starting_positions = c;
+}
+
 void SinglePlayerGameSettingsProvider::set_map(const std::string& mapname,
                                                const std::string& mapfilename,
                                                uint32_t const maxplayers,
@@ -153,7 +161,8 @@ void SinglePlayerGameSettingsProvider::next_player_state(uint8_t const number) {
 		} else if (it == impls.end()) {
 			s.players[number].random_ai = true;
 			do {
-				uint8_t random = (std::rand() % impls.size());  // Choose a random AI
+				// Choose a random AI
+				uint8_t random = (std::rand() % impls.size());  // NOLINT
 				it = impls.begin() + random;
 			} while ((*it)->type == ComputerPlayer::Implementation::Type::kEmpty);
 		}
@@ -176,7 +185,7 @@ void SinglePlayerGameSettingsProvider::set_player_tribe(uint8_t const number,
 
 	if (random_tribe) {
 		uint8_t num_tribes = s.tribes.size();
-		uint8_t random = (std::rand() % num_tribes);
+		uint8_t random = (std::rand() % num_tribes);  // NOLINT
 		actual_tribe = s.tribes.at(random).name;
 	}
 

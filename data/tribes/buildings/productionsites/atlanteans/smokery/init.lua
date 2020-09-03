@@ -1,11 +1,11 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_productionsite_type {
-   msgctxt = "atlanteans_building",
    name = "atlanteans_smokery",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("atlanteans_building", "Smokery"),
-   helptext_script = dirname .. "helptexts.lua",
    icon = dirname .. "menu.png",
    size = "medium",
 
@@ -49,7 +49,7 @@ tribes:new_productionsite_type {
    },
 
    programs = {
-      work = {
+      main = {
          -- TRANSLATORS: Completed/Skipped/Did not start working because ...
          descname = _"working",
          actions = {
@@ -65,8 +65,8 @@ tribes:new_productionsite_type {
             -- time total: 60
             "return=skipped unless economy needs smoked_meat",
             "consume=meat:2 log",
-            "animate=working 30000",
-            "sleep=30000",
+            "animate=working duration:30s",
+            "sleep=duration:30s",
             "produce=smoked_meat:2"
          }
       },
@@ -78,8 +78,8 @@ tribes:new_productionsite_type {
             -- time total: 60
             "return=skipped unless economy needs smoked_fish",
             "consume=fish:2 log",
-            "animate=working 30000",
-            "sleep=30000",
+            "animate=working duration:30s",
+            "sleep=duration:30s",
             "produce=smoked_fish:2"
          }
       },
@@ -90,10 +90,12 @@ tribes:new_productionsite_type {
             -- time total: 60
             "return=skipped unless economy needs smoked_fish",
             "consume=fish:2 log",
-            "animate=working 30000",
-            "sleep=30000",
+            "animate=working duration:30s",
+            "sleep=duration:30s",
             "produce=smoked_fish:2"
          }
       },
    },
 }
+
+pop_textdomain()

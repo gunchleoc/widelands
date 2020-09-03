@@ -20,7 +20,10 @@
 #ifndef WL_LOGIC_MAP_H
 #define WL_LOGIC_MAP_H
 
+#include <map>
 #include <memory>
+#include <set>
+#include <string>
 
 #include "base/i18n.h"
 #include "economy/itransport_cost_calculator.h"
@@ -41,6 +44,7 @@ struct S2MapLoader;
 namespace Widelands {
 
 class CritterDescr;
+class EditorGameBase;
 class MapLoader;
 struct MapGenerator;
 struct PathfieldManager;
@@ -106,6 +110,11 @@ struct FindBobByName : public FindBob {
 private:
 	std::string name_;
 };
+struct FindCritter : public FindBob {
+	bool accept(Bob* b) const override;
+	~FindCritter() override {
+	}
+};
 struct FindCarnivores : public FindBob {
 	bool accept(Bob* b) const override;
 	explicit FindCarnivores() {
@@ -147,6 +156,9 @@ struct ResizeHistory {
 	std::set<Coords> port_spaces;
 	std::vector<Coords> starting_positions;
 };
+
+// Minimum distance between two starting positions
+constexpr uint16_t kMinSpaceAroundPlayers = 24;
 
 /** class Map
  *
@@ -302,6 +314,9 @@ public:
 	}
 
 	const std::vector<SuggestedTeamLineup>& get_suggested_teams() const {
+		return suggested_teams_;
+	}
+	std::vector<SuggestedTeamLineup>& get_suggested_teams() {
 		return suggested_teams_;
 	}
 
@@ -595,7 +610,7 @@ private:
 	                   bool* ismine = nullptr,
 	                   bool consider_mobs = true,
 	                   NodeCaps initcaps = CAPS_NONE) const;
-	bool is_cycle_connected(const FCoords& start, uint32_t length, const WalkingDir* dirs) const;
+	bool is_cycle_connected(const FCoords& start, const std::vector<WalkingDir>&) const;
 	template <typename functorT>
 	void
 	find_reachable(const EditorGameBase&, const Area<FCoords>&, const CheckStep&, functorT&) const;

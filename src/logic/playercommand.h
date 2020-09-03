@@ -888,6 +888,53 @@ private:
 	Trade trade_;
 };
 
+struct CmdToggleMuteMessages : PlayerCommand {
+	CmdToggleMuteMessages(uint32_t t, PlayerNumber p, const Building& b, bool a)
+	   : PlayerCommand(t, p), building_(b.serial()), all_(a) {
+	}
+
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kToggleMuteMessages;
+	}
+
+	void execute(Game& game) override;
+
+	explicit CmdToggleMuteMessages(StreamRead& des);
+	void serialize(StreamWrite& ser) override;
+
+	CmdToggleMuteMessages() : PlayerCommand() {
+	}
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
+
+private:
+	Serial building_;
+	bool all_;
+};
+
+struct CmdPickCustomStartingPosition : PlayerCommand {
+	CmdPickCustomStartingPosition(uint32_t t, PlayerNumber p, const Coords& c)
+	   : PlayerCommand(t, p), coords_(c) {
+	}
+
+	QueueCommandTypes id() const override {
+		return QueueCommandTypes::kPickCustomStartingPosition;
+	}
+
+	void execute(Game& game) override;
+
+	explicit CmdPickCustomStartingPosition(StreamRead& des);
+	void serialize(StreamWrite& ser) override;
+
+	CmdPickCustomStartingPosition() : PlayerCommand() {
+	}
+	void write(FileWrite&, EditorGameBase&, MapObjectSaver&) override;
+	void read(FileRead&, EditorGameBase&, MapObjectLoader&) override;
+
+private:
+	Coords coords_;
+};
+
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_PLAYERCOMMAND_H
