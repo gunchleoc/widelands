@@ -51,7 +51,6 @@
 
 namespace Widelands {
 
-// NOCOM can we refactor this too and avoid all the copying, so that the field has FieldData?
 FieldData::FieldData(const Field& field)
    : height(field.get_height()),
      resources(field.get_resources()),
@@ -686,8 +685,8 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 				if (upcast(Immovable, i, f.get_immovable())) {
 					i->remove(egbase);
 				}
-				while (Bob* bob = f.remove_first_bob()) {
-					bob->remove(egbase);
+				while (!f.get_bobs().empty()) {
+					f.get_bobs().front()->remove(egbase);
 				}
 			}
 		}
@@ -745,8 +744,8 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 			if (upcast(Immovable, i, f.get_immovable())) {
 				i->remove(egbase);
 			}
-			while (Bob* bob = f.remove_first_bob()) {
-				bob->remove(egbase);
+			while (!f.get_bobs().empty()) {
+				f.get_bobs().front()->remove(egbase);
 			}
 		}
 	}
@@ -786,6 +785,7 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 			egbase.create_immovable_with_name(
 			   fc, fd.immovable, Widelands::MapObjectDescr::OwnerType::kWorld, nullptr, nullptr);
 		}
+		// NOCOM keep the bob object
 		for (const std::string& bob : fd.bobs) {
 			egbase.create_critter(fc, bob);
 		}

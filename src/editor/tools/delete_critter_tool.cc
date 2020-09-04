@@ -38,7 +38,7 @@ int32_t EditorDeleteCritterTool::handle_click_impl(
 
 	do {
 		if (!mr.location().field->get_bobs().empty()) {
-			Widelands::Bob* bob = mr.location().field->remove_first_bob();
+			Widelands::Bob* bob = mr.location().field->get_bobs().back();
 			args->old_bob_type.push_back(&bob->descr());
 			bob->remove(eia.egbase());
 		} else {

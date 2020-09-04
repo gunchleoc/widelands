@@ -35,12 +35,6 @@ const std::list<Bob*>& Field::get_bobs() const {
 	assert(bobs);
 	return *bobs;
 }
-Bob* Field::remove_first_bob() {
-	assert(bobs && !bobs->empty());
-	Bob* result = bobs->front();
-	bobs->pop_front();
-	return result;
-}
 void Field::add_bob(Bob* bob, bool show_on_top) {
 	if (show_on_top) {
 		bobs->push_back(bob);

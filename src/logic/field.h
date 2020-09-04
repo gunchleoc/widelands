@@ -143,7 +143,6 @@ struct Field {
 	// NOCOM document
 	void clear_bobs();
 	const std::list<Bob*>& get_bobs() const;
-	Bob* remove_first_bob();
 	void add_bob(Bob* bob, bool show_on_top);
 	void remove_bob(Bob* bob);
 
