@@ -142,7 +142,6 @@ private:
  */
 class Bob : public MapObject {
 public:
-	friend class Map;
 	friend struct MapBobdataPacket;
 	friend struct MapBobPacket;
 

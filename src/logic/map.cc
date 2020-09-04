@@ -509,7 +509,7 @@ static inline void clear_array(std::unique_ptr<T[]>* array, uint32_t size) {
 	memset(array->get(), 0, sizeof(T) * size);
 }
 
-void Map::set_origin(const Coords& new_origin) {
+void Map::set_origin(EditorGameBase& egbase, const Coords& new_origin) {
 	assert(0 <= new_origin.x);
 	assert(new_origin.x < width_);
 	assert(0 <= new_origin.y);
@@ -554,9 +554,8 @@ void Map::set_origin(const Coords& new_origin) {
 				immovable->position_ = c;
 			}
 			for (Widelands::Bob* bob : c.field->get_bobs()) {
-				bob->position_.x = c.x;
-				bob->position_.y = c.y;
-				bob->position_.field = c.field;
+				log_dbg("NOCOM found bob");
+				bob->set_position(egbase, c);
 			}
 		}
 	}
@@ -636,6 +635,7 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 				was_created[new_index] = true;
 
 				new_fields[new_index] = (*this)[old_coords];
+				new_fields[new_index].init_bobs();
 			}
 		}
 	}
@@ -713,8 +713,10 @@ void Map::resize(EditorGameBase& egbase, const Coords split, const int32_t w, co
 			if (upcast(Immovable, imm, f.get_immovable())) {
 				imm->position_ = fc;
 			}
+			// NOCOM crash here
+			f.init_bobs();
 			for (Widelands::Bob* bob : f.get_bobs()) {
-				bob->position_ = fc;
+				bob->set_position(egbase, fc);
 			}
 		}
 	}
@@ -785,7 +787,7 @@ void Map::set_to(EditorGameBase& egbase, ResizeHistory rh) {
 			egbase.create_immovable_with_name(
 			   fc, fd.immovable, Widelands::MapObjectDescr::OwnerType::kWorld, nullptr, nullptr);
 		}
-		// NOCOM keep the bob object
+		// NOCOM keep the bob object?
 		for (const std::string& bob : fd.bobs) {
 			egbase.create_critter(fc, bob);
 		}

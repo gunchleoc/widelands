@@ -536,7 +536,7 @@ public:
 	MilitaryInfluence calc_influence(Coords, Area<>) const;
 
 	/// Translate the whole map so that the given point becomes the new origin.
-	void set_origin(const Coords&);
+	void set_origin(EditorGameBase& egbase, const Coords&);
 
 	// Port space specific functions
 

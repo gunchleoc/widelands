@@ -731,35 +731,35 @@ Vector2f Bob::calc_drawpos(const EditorGameBase& game,
 		map.get_brn(end, &start);
 		spos.x += triangle_w / 2.f;
 		spos.y += triangle_h;
-		bridge = is_bridge_segment(end.field->road_southeast);
+		bridge = is_bridge_segment(end.field->get_road(WalkingDir::WALK_SE));
 		break;
 	case WALK_NE:
 		map.get_bln(end, &start);
 		spos.x -= triangle_w / 2.f;
 		spos.y += triangle_h;
-		bridge = is_bridge_segment(end.field->road_southwest);
+		bridge = is_bridge_segment(end.field->get_road(WalkingDir::WALK_SW));
 		break;
 	case WALK_W:
 		map.get_rn(end, &start);
 		spos.x += triangle_w;
-		bridge = is_bridge_segment(end.field->road_east);
+		bridge = is_bridge_segment(end.field->get_road(WalkingDir::WALK_E));
 		break;
 	case WALK_E:
 		map.get_ln(end, &start);
 		spos.x -= triangle_w;
-		bridge = is_bridge_segment(start.field->road_east);
+		bridge = is_bridge_segment(start.field->get_road(WalkingDir::WALK_E));
 		break;
 	case WALK_SW:
 		map.get_trn(end, &start);
 		spos.x += triangle_w / 2.f;
 		spos.y -= triangle_h;
-		bridge = is_bridge_segment(start.field->road_southwest);
+		bridge = is_bridge_segment(start.field->get_road(WalkingDir::WALK_SW));
 		break;
 	case WALK_SE:
 		map.get_tln(end, &start);
 		spos.x -= triangle_w / 2.f;
 		spos.y -= triangle_h;
-		bridge = is_bridge_segment(start.field->road_southeast);
+		bridge = is_bridge_segment(start.field->get_road(WalkingDir::WALK_SE));
 		break;
 
 	case IDLE:

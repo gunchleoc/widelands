@@ -25,7 +25,8 @@ int32_t EditorSetOriginTool::handle_click_impl(const Widelands::NodeAndTriangle<
                                                EditorInteractive& eia,
                                                EditorActionArgs* /* args */,
                                                Widelands::Map* map) {
-	map->set_origin(center.node);
+	// NOCOM all bobs disappear
+	map->set_origin(eia.egbase(), center.node);
 	eia.map_changed(EditorInteractive::MapWas::kGloballyMutated);
 	eia.map_view()->scroll_to_field(Widelands::Coords(0, 0), MapView::Transition::Jump);
 	return 0;
@@ -45,7 +46,7 @@ EditorSetOriginTool::handle_undo_impl(const Widelands::NodeAndTriangle<Widelands
 		nc.x = nc.x - 1;
 	}
 	map->normalize_coords(nc);
-	map->set_origin(nc);
+	map->set_origin(eia.egbase(), nc);
 	eia.map_changed(EditorInteractive::MapWas::kGloballyMutated);
 	eia.map_view()->scroll_to_field(Widelands::Coords(0, 0), MapView::Transition::Jump);
 	return 0;

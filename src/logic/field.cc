@@ -23,10 +23,25 @@
 
 namespace Widelands {
 
+Field::Field() : bobs(new std::list<Bob*>()) {}
+
+Field::~Field() {
+	if (bobs) {
+		bobs->clear();
+		// NOCOM delete bobs;
+	}
+}
+
 void Field::clear_bobs() {
 	if (bobs) {
 		bobs->clear();
 	} else {
+		// NOCOM why is it not there in spite of being initialized in the constructor?!
+		bobs = new std::list<Bob*>();
+	}
+}
+void Field::init_bobs() {
+	if (!bobs) {
 		// NOCOM why is it not there in spite of being initialized in the constructor?!
 		bobs = new std::list<Bob*>();
 	}
@@ -36,6 +51,7 @@ const std::list<Bob*>& Field::get_bobs() const {
 	return *bobs;
 }
 void Field::add_bob(Bob* bob, bool show_on_top) {
+	assert(bobs);
 	if (show_on_top) {
 		bobs->push_back(bob);
 	} else {
@@ -43,7 +59,7 @@ void Field::add_bob(Bob* bob, bool show_on_top) {
 	}
 }
 void Field::remove_bob(Bob* bob) {
-	assert(bobs && !bobs->empty());
+	assert(bobs);
 	bobs->remove(bob);
 }
 

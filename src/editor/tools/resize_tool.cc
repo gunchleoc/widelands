@@ -42,6 +42,7 @@ int32_t EditorResizeTool::handle_undo_impl(const Widelands::NodeAndTriangle<Wide
                                            EditorInteractive& eia,
                                            EditorActionArgs* args,
                                            Widelands::Map* map) {
+	// NOCOM crash
 	map->set_to(eia.egbase(), args->resized);
 
 	// fix for issue #3754 (same as above)

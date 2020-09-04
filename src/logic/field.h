@@ -58,7 +58,6 @@ struct BaseImmovable;
 // TODO(unknown): This is all one evil hack :(
 struct Field {
 	friend class Map;
-	friend class Bob;
 	friend struct BaseImmovable;
 
 	enum BuildhelpIndex {
@@ -71,14 +70,8 @@ struct Field {
 		Buildhelp_None = 6
 	};
 
-	Field() : bobs(new std::list<Bob*>()) {}
-
-	~Field() {
-		if (bobs) {
-			bobs->clear();
-			delete bobs;
-		}
-	}
+	Field();
+	~Field();
 
 	using Height = uint8_t;
 	using ResourceAmount = uint8_t;
@@ -142,6 +135,7 @@ struct Field {
 
 	// NOCOM document
 	void clear_bobs();
+	void init_bobs();
 	const std::list<Bob*>& get_bobs() const;
 	void add_bob(Bob* bob, bool show_on_top);
 	void remove_bob(Bob* bob);
