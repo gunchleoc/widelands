@@ -291,6 +291,11 @@ private:
 };
 #pragma pack(pop)
 
+// Check that Field is tightly packed.
+static_assert(sizeof(Field) == sizeof(void*) * 2 + sizeof(RoadSegment) * 3 +
+                                  sizeof(DescriptionIndex) * 3 + sizeof(uint8_t) * 7,
+              "Field is not tightly packed.");
+
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_FIELD_H

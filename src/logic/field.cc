@@ -19,8 +19,6 @@
 
 #include "logic/field.h"
 
-#include <algorithm>
-
 #include "wui/mapviewpixelconstants.h"
 
 namespace Widelands {

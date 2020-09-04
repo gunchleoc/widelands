@@ -140,7 +140,7 @@ void Ferry::unemployed_update(Game& game, State&) {
 		molog(game.get_gametime(), "[unemployed]: we are on shore\n");
 	} else if (pos.field->get_immovable()) {
 		molog(game.get_gametime(), "[unemployed]: we are on location\n");
-	} else if (pos.field->get_first_bob()->get_next_bob()) {
+	} else if (!pos.field->get_bobs().empty()) {
 		molog(game.get_gametime(), "[unemployed]: we are on another bob\n");
 	} else {
 		move = false;
