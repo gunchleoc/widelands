@@ -15,30 +15,32 @@ tribes:new_worker_type {
       hammer = 1
    },
 
-   animations = {
+   spritesheets = {
       idle = {
-         basename = "waiting",
-         hotspot = { 13, 21 },
-         fps = 10
+         fps = 10,
+         frames = 150,
+         rows = 13,
+         columns = 12,
+         hotspot = { 13, 20 }
       },
       work = {
          sound_effect = {
             path = "sound/hammering/hammering",
             priority = 50
          },
-         hotspot = { 11, 21 },
-         fps = 10
+         fps = 10,
+         frames = 92,
+         rows = 11,
+         columns = 9,
+         hotspot = { 11, 22 }
       },
       walk = {
-         hotspot = { 11, 23 },
          fps = 10,
-         directional = true
-      },
-      walkload = {
-         basename = "walk",
-         hotspot = { 11, 23 },
-         fps = 10,
-         directional = true
+         frames = 10,
+         rows = 4,
+         columns = 3,
+         directional = true,
+         hotspot = { 11, 21 }
       }
    }
 }
