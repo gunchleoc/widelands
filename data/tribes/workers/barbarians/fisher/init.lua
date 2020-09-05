@@ -1,11 +1,12 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_worker_type {
-   msgctxt = "barbarians_worker",
    name = "barbarians_fisher",
    -- TRANSLATORS: This is a worker name used in lists of workers
    descname = pgettext("barbarians_worker", "Fisher"),
-   helptext_script = dirname .. "helptexts.lua",
+   animation_directory = dirname,
    icon = dirname .. "menu.png",
    vision_range = 2,
 
@@ -16,12 +17,12 @@ tribes:new_worker_type {
 
    programs = {
       fish = {
-         "findspace=size:any radius:7 resource:fish",
+         "findspace=size:any radius:7 resource:resource_fish",
          "walk=coords",
-         "playsound=sound/fisher/fisher_throw_net 192",
-         "mine=fish 1",
-         "animate=fish 10500",
-         "playsound=sound/fisher/fisher_pull_net 192",
+         "playsound=sound/fisher/fisher_throw_net priority:50% allow_multiple",
+         "mine=resource_fish radius:1",
+         "animate=fish duration:10s500ms",
+         "playsound=sound/fisher/fisher_pull_net priority:50% allow_multiple",
          "createware=fish",
          "return"
       }
@@ -29,13 +30,11 @@ tribes:new_worker_type {
 
    animations = {
       idle = {
-         directory = dirname,
          hotspot = { 7, 33 },
       },
    },
    spritesheets = {
       walk = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -45,7 +44,6 @@ tribes:new_worker_type {
       },
       -- TODO(GunChleoc): Needs walkload animation, or some ware hotspot/sizing magic.
       fish = {
-         directory = dirname,
          fps = 10,
          frames = 30,
          rows = 6,
@@ -54,3 +52,5 @@ tribes:new_worker_type {
       }
    }
 }
+
+pop_textdomain()

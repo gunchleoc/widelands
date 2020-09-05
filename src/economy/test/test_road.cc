@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2019 by the Widelands Development Team
+ * Copyright (C) 2007-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 #include "economy/road.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/editor_game_base.h"
-#include "logic/map_objects/map_object.h"
 #include "logic/player.h"
 
 // Triggered by BOOST_AUTO_TEST_CASE

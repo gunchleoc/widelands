@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 by the Widelands Development Team
+ * Copyright (C) 2016-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,9 @@
 
 #include "base/i18n.h"
 #include "graphic/font_handler.h"
+#include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
+#include "graphic/style_manager.h"
 #include "graphic/text_layout.h"
 #include "ui_basic/tabpanel.h"
 #include "ui_basic/window.h"
@@ -29,7 +31,7 @@
 namespace {
 int base_height(int button_dimension, UI::PanelStyle style) {
 	int result =
-	   std::max(button_dimension, text_height(g_gr->styles().table_style(style).enabled()) + 2);
+	   std::max(button_dimension, text_height(g_style_manager->table_style(style).enabled()) + 2);
 	return result;
 }
 }  // namespace
@@ -85,7 +87,7 @@ BaseDropdown::BaseDropdown(UI::Panel* parent,
                                     button_dimension,
                                     get_h(),
                                     button_style,
-                                    g_gr->images().get("images/ui_basic/scrollbar_down.png")) :
+                                    g_image_cache->get("images/ui_basic/scrollbar_down.png")) :
                      nullptr),
      display_button_(&button_box_,
                      "dropdown_label",
@@ -128,19 +130,27 @@ BaseDropdown::BaseDropdown(UI::Panel* parent,
 	}
 	list_ =
 	   new UI::Listselect<uintptr_t>(list_parent, 0, 0, w, 0, style, ListselectLayout::kDropdown);
+	list_->set_notify_on_delete(this);
 
 	list_->set_visible(false);
 	button_box_.add(&display_button_, UI::Box::Resizing::kExpandBoth);
-	display_button_.sigclicked.connect(boost::bind(&BaseDropdown::toggle_list, this));
+	display_button_.sigclicked.connect([this]() { toggle_list(); });
 	if (push_button_ != nullptr) {
 		display_button_.set_perm_pressed(true);
 		button_box_.add(push_button_, UI::Box::Resizing::kFullSize);
-		push_button_->sigclicked.connect(boost::bind(&BaseDropdown::toggle_list, this));
+		push_button_->sigclicked.connect([this]() { toggle_list(); });
 	}
 	button_box_.set_size(w, get_h());
-	list_->clicked.connect(boost::bind(&BaseDropdown::set_value, this));
-	list_->clicked.connect(boost::bind(&BaseDropdown::toggle_list, this));
+	list_->clicked.connect([this]() { set_value(); });
+	list_->clicked.connect([this]() { toggle_list(); });
+
+	if (push_button_) {
+		push_button_->set_can_focus(false);
+	}
+	display_button_.set_can_focus(false);
+	list_->set_can_focus(false);
 	set_can_focus(true);
+
 	set_value();
 
 	const int serial = id_;  // Not a member variable, because when the lambda below is triggered we
@@ -157,7 +167,10 @@ BaseDropdown::BaseDropdown(UI::Panel* parent,
 BaseDropdown::~BaseDropdown() {
 	// The list needs to be able to drop outside of windows, so it won't close with the window.
 	// So, we tell it to die.
-	list_->die();
+	if (list_) {
+		list_->set_notify_on_delete(nullptr);
+		list_->die();
+	}
 
 	// Unsubscribe from layouting hooks
 	assert(living_dropdowns_.find(id_) != living_dropdowns_.end());
@@ -189,7 +202,7 @@ void BaseDropdown::layout() {
 	}
 
 	// Drop up instead of down if it doesn't fit
-	if (new_list_y + list_->get_h() > g_gr->get_yres()) {
+	if (new_list_y + display_button_.get_h() + list_->get_h() > g_gr->get_yres()) {
 		list_offset_y_ = -list_->get_h();
 	} else {
 		list_offset_y_ = display_button_.get_h();
@@ -246,9 +259,7 @@ void BaseDropdown::add(const std::string& name,
 		const std::string fitme =
 		   label_.empty() ? name : (boost::format(_("%1%: %2%")) % label_ % name).str();
 		const int new_width =
-		   text_width(
-		      richtext_escape(fitme), g_gr->styles().button_style(button_style_).enabled().font()) +
-		   8;
+		   text_width(fitme, g_style_manager->button_style(button_style_).enabled().font()) + 8;
 		if (new_width > display_button_.get_w()) {
 			set_desired_size(get_w() + new_width - display_button_.get_w(), get_h());
 			set_size(get_w() + new_width - display_button_.get_w(), get_h());
@@ -297,7 +308,7 @@ void BaseDropdown::set_errored(const std::string& error_message) {
 	if (type_ != DropdownType::kPictorial && type_ != DropdownType::kPictorialMenu) {
 		set_label(_("Error"));
 	} else {
-		set_image(g_gr->images().get("images/ui_basic/different.png"));
+		set_image(g_image_cache->get("images/ui_basic/different.png"));
 	}
 }
 
@@ -326,12 +337,9 @@ void BaseDropdown::set_pos(Vector2i point) {
 }
 
 void BaseDropdown::clear() {
-	close();
 	list_->clear();
 	current_selection_ = list_->selection_index();
 	list_->set_size(list_->get_w(), 0);
-	list_->set_visible(false);
-	set_layout_toplevel(false);
 }
 
 void BaseDropdown::think() {
@@ -370,7 +378,7 @@ void BaseDropdown::update() {
 	} else {
 		display_button_.set_pic(list_->has_selection() ?
 		                           list_->get_selected_image() :
-		                           g_gr->images().get("images/ui_basic/different.png"));
+		                           g_image_cache->get("images/ui_basic/different.png"));
 		display_button_.set_tooltip((boost::format(_("%1%: %2%")) % label_ % name).str());
 	}
 }
@@ -386,6 +394,9 @@ void BaseDropdown::toggle() {
 }
 
 void BaseDropdown::set_list_visibility(bool open) {
+	if (!open) {
+		list_->select(current_selection_);
+	}
 	if (!is_enabled_) {
 		list_->set_visible(false);
 		return;
@@ -408,6 +419,9 @@ void BaseDropdown::set_list_visibility(bool open) {
 }
 
 void BaseDropdown::toggle_list() {
+	if (list_->is_visible()) {
+		list_->select(current_selection_);
+	}
 	if (!is_enabled_) {
 		list_->set_visible(false);
 		return;
@@ -443,14 +457,21 @@ bool BaseDropdown::handle_key(bool down, SDL_Keysym code) {
 		switch (code.sym) {
 		case SDLK_KP_ENTER:
 		case SDLK_RETURN:
+		case SDLK_SPACE:
 			if (list_->is_visible()) {
 				set_value();
-				return true;
+				if (code.sym != SDLK_SPACE) {
+					set_list_visibility(false);
+				}
+			} else if (code.sym == SDLK_SPACE) {
+				set_list_visibility(true);
+			} else {
+				// Handle Enter only if the list is open
+				return false;
 			}
-			break;
+			return true;
 		case SDLK_ESCAPE:
 			if (list_->is_visible()) {
-				list_->select(current_selection_);
 				toggle_list();
 				return true;
 			}

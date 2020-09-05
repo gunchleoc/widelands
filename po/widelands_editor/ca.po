@@ -1,14 +1,14 @@
 # Widelands PATH/TO/FILE.PO
-# Copyright (C) 2005-2019 Widelands Development Team
+# Copyright (C) 2005-2020 Widelands Development Team
 # 
 # Translators:
-# Juanjo, 2016-2017,2019
+# Juanjo, 2016-2017,2019-2020
 msgid ""
 msgstr ""
 "Project-Id-Version: Widelands\n"
-"Report-Msgid-Bugs-To: https://wl.widelands.org/wiki/ReportingBugs/\n"
-"POT-Creation-Date: 2019-10-09 07:57+0000\n"
-"PO-Revision-Date: 2019-11-01 16:00+0000\n"
+"Report-Msgid-Bugs-To: https://www.widelands.org/wiki/ReportingBugs/\n"
+"POT-Creation-Date: 2020-08-29 17:05+0000\n"
+"PO-Revision-Date: 2020-05-09 17:51+0000\n"
 "Last-Translator: Juanjo\n"
 "Language-Team: Catalan (http://www.transifex.com/widelands/widelands/language/ca/)\n"
 "MIME-Version: 1.0\n"
@@ -45,7 +45,7 @@ msgstr "Commuta el menú principal"
 #. TRANSLATORS: This is an access key combination. The hotkey is 't'
 #: ../../data/scripting/editor/editor_controls.lua:20
 msgid "Toggle tools menu"
-msgstr "Commuta el menú eines"
+msgstr "Commuta el menú d'eines"
 
 #. TRANSLATORS: This is an access key combination. The hotkey is 'p'
 #: ../../data/scripting/editor/editor_controls.lua:24
@@ -152,7 +152,7 @@ msgid "General"
 msgstr "General"
 
 #: ../../data/scripting/editor/editor_help.lua:59
-#: ../../data/scripting/editor/editor_introduction.lua:11
+#: ../../data/scripting/editor/editor_introduction.lua:10
 msgid "Introduction"
 msgstr "Introducció"
 
@@ -169,23 +169,23 @@ msgstr "Terrenys"
 msgid "Trees"
 msgstr "Arbres"
 
-#: ../../data/scripting/editor/editor_introduction.lua:9
+#: ../../data/scripting/editor/editor_introduction.lua:8
 msgid "The Widelands Editor"
 msgstr "L'editor del Widelands"
 
-#: ../../data/scripting/editor/editor_introduction.lua:13
+#: ../../data/scripting/editor/editor_introduction.lua:12
 msgid ""
 "This editor is intended for players who would like to design their own maps "
 "to use with Widelands."
 msgstr "L'editor és per als jugadors que volen dissenyar els seus propis mapes per a jugar al Widelands."
 
-#: ../../data/scripting/editor/editor_introduction.lua:14
+#: ../../data/scripting/editor/editor_introduction.lua:13
 msgid ""
 "As you can see, this editor is heavy work in progress and as the editor "
 "becomes better and better, this text will also get longer and more complete."
 msgstr "Tal com podeu veure, l'editor està encara en procés de construcció. A mesura que millori l'editor, aquests textos també s'aniran completant."
 
-#: ../../data/scripting/editor/editor_introduction.lua:17
+#: ../../data/scripting/editor/editor_introduction.lua:16
 msgid "The wiki also includes a short tutorial on how to build a map."
 msgstr "El wiki també inclou un petit tutorial sobre com crear un mapa."
 

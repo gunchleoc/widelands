@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -39,12 +39,16 @@ public:
 	 *
 	 * The 'basename' is the filename prefix for loading the images, e.g. "idle" or "walk_ne".
 	 */
-	uint32_t load(const LuaTable& table, const std::string& basename, Animation::Type type);
+	uint32_t load(const LuaTable& table,
+	              const std::string& basename,
+	              const std::string& animation_directory,
+	              Animation::Type type);
 	/// Same as above, but this animation will be used for getting a representative image by map
 	/// object name
 	uint32_t load(const std::string& map_object_name,
 	              const LuaTable& table,
 	              const std::string& basename,
+	              const std::string& animation_directory,
 	              Animation::Type type);
 
 	/// Returns the animation with the given ID or throws an exception if it is
@@ -71,5 +75,7 @@ private:
 	/// Maps map object names to the ID of the animations that contain their representative images
 	std::map<std::string, uint32_t> representative_animations_by_map_object_name_;
 };
+
+extern AnimationManager* g_animation_manager;
 
 #endif  // end of include guard: WL_GRAPHIC_ANIMATION_ANIMATION_MANAGER_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 #ifndef WL_LOGIC_WIDELANDS_GEOMETRY_H
 #define WL_LOGIC_WIDELANDS_GEOMETRY_H
 
+#include <cstdint>
 #include <tuple>
 
 namespace Widelands {
@@ -109,7 +110,10 @@ struct FCoords : public Coords {
 	Field* field;
 };
 
-enum class TriangleIndex { D, R };
+enum class TriangleIndex {
+	D,  // Downward
+	R   // Right
+};
 
 // This uniquely indexes a single Triangle on the map. A Triangle is identified
 // by its owning node and the triangle index (down or right).

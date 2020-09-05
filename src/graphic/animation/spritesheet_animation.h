@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by the Widelands Development Team
+ * Copyright (C) 2019-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,6 +20,8 @@
 #ifndef WL_GRAPHIC_ANIMATION_SPRITESHEET_ANIMATION_H
 #define WL_GRAPHIC_ANIMATION_SPRITESHEET_ANIMATION_H
 
+#include <memory>
+
 #include "base/rect.h"
 #include "graphic/animation/animation.h"
 #include "graphic/color.h"
@@ -33,12 +35,11 @@
 class SpriteSheetAnimation : public Animation {
 public:
 	~SpriteSheetAnimation() override = default;
-	explicit SpriteSheetAnimation(const LuaTable& table, const std::string& basename);
+	explicit SpriteSheetAnimation(const LuaTable& table,
+	                              const std::string& basename,
+	                              const std::string& animation_directory);
 
 	const Image* representative_image(const RGBColor* clr) const override;
-
-	std::vector<const Image*> images(float scale) const override;
-	std::vector<const Image*> pc_masks(float scale) const override;
 
 private:
 	void add_scale_if_files_present(const std::string& basename,
@@ -56,7 +57,8 @@ private:
 		          const Rectf& source_rect,
 		          const Rectf& destination_rect,
 		          const RGBColor* clr,
-		          Surface* target) const override;
+		          Surface* target,
+		          float opacity) const override;
 
 		int width() const override;
 		int height() const override;
@@ -75,6 +77,9 @@ private:
 		int w;
 		/// Texture height
 		int h;
+
+		std::vector<std::unique_ptr<const Texture>>
+		frame_textures(bool return_playercolor_masks) const override;
 
 	private:
 		/// Sprite sheet file name on disk

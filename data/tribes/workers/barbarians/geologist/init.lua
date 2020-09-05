@@ -1,11 +1,12 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_worker_type {
-   msgctxt = "barbarians_worker",
    name = "barbarians_geologist",
    -- TRANSLATORS: This is a worker name used in lists of workers
    descname = pgettext("barbarians_worker", "Geologist"),
-   helptext_script = dirname .. "helptexts.lua",
+   animation_directory = dirname,
    icon = dirname .. "menu.png",
    vision_range = 2,
 
@@ -19,21 +20,20 @@ tribes:new_worker_type {
       -- The specialized geologist command walks the geologist around his starting
       -- location, executing the search program from time to time.
       expedition = {
-         "repeatsearch=15 5 search"
+         "repeatsearch=search repetitions:15 radius:5"
       },
       -- Search program, executed when we have found a place to hack on
       search = {
-         "animate=hack 5000",
-         "animate=idle 2000",
-         "playsound=sound/hammering/geologist_hammer 192",
-         "animate=hack 3000",
+         "animate=hack duration:5s",
+         "animate=idle duration:2s",
+         "playsound=sound/hammering/geologist_hammer priority:50% allow_multiple",
+         "animate=hack duration:3s",
          "findresources"
       }
    },
 
    spritesheets = {
       idle = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -41,7 +41,6 @@ tribes:new_worker_type {
          hotspot = { 9, 21 }
       },
       walk = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -50,7 +49,6 @@ tribes:new_worker_type {
          hotspot = { 9, 21 }
       },
       hack = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -59,3 +57,5 @@ tribes:new_worker_type {
       }
    }
 }
+
+pop_textdomain()

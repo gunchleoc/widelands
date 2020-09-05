@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -46,6 +46,7 @@ public:
 		bool fullscreen;
 		bool inputgrab;
 		uint32_t maxfps;
+		bool sdl_cursor;
 
 		// Windows options
 		bool snap_win_overlap_only;
@@ -66,6 +67,7 @@ public:
 		bool single_watchwin;
 		bool ctrl_zoom;
 		bool game_clock;
+		bool numpad_diagonalscrolling;
 
 		// Language options
 		std::string language;
@@ -98,7 +100,7 @@ private:
 
 	// Fills the language selection list
 	void add_languages_to_list(const std::string& current_locale);
-	void update_language_stats(bool include_system_lang);
+	void update_language_stats();
 
 	// Saves the options and reloads the active tab
 	void clicked_apply();
@@ -129,6 +131,7 @@ private:
 	UI::Dropdown<uintptr_t> resolution_dropdown_;
 	UI::Checkbox fullscreen_;
 	UI::Checkbox inputgrab_;
+	UI::Checkbox sdl_cursor_;
 	UI::SpinBox sb_maxfps_;
 	UI::MultilineTextarea translation_info_;
 
@@ -154,6 +157,7 @@ private:
 	UI::Checkbox single_watchwin_;
 	UI::Checkbox ctrl_zoom_;
 	UI::Checkbox game_clock_;
+	UI::Checkbox numpad_diagonalscrolling_;
 
 	OptionsCtrl::OptionsStruct os_;
 

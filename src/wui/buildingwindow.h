@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -85,6 +85,7 @@ protected:
 	void act_start_or_cancel_expedition();
 	void act_enhance(Widelands::DescriptionIndex, bool is_csite);
 	void clicked_goto();
+	void act_mute(bool all);
 
 	void create_input_queue_panel(UI::Box*,
 	                              Widelands::Building&,
@@ -135,6 +136,8 @@ private:
 	bool avoid_fastclick_;
 
 	UI::Button* expeditionbtn_;
+	UI::Button* mute_this_;
+	UI::Button* mute_all_;
 	std::unique_ptr<Notifications::Subscriber<Widelands::NoteExpeditionCanceled>>
 	   expedition_canceled_subscriber_;
 	std::unique_ptr<Notifications::Subscriber<Widelands::NoteBuilding>> buildingnotes_subscriber_;

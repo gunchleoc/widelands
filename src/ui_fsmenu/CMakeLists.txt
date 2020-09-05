@@ -8,6 +8,7 @@ wl_library(ui_fsmenu_options
     base_log
     graphic
     graphic_fonthandler
+    graphic_mouse_cursor
     graphic_text
     graphic_text_layout
     io_filesystem
@@ -34,6 +35,7 @@ wl_library(ui_fsmenu_helpwindow
   SRCS
     helpwindow.cc
     helpwindow.h
+  USES_SDL2
   DEPENDS
     base_i18n
     graphic
@@ -51,8 +53,11 @@ wl_library(ui_fsmenu_main
   DEPENDS
     base_i18n
     build_info
+    logic
+    logic_filesystem_constants
     ui_basic
     ui_fsmenu_main_menu
+    wui_common_gamedetails
 )
 
 wl_library(ui_fsmenu_main_menu
@@ -75,7 +80,6 @@ wl_library(ui_fsmenu_loading_common
   DEPENDS
     base_i18n
     base_random
-    graphic
     io_filesystem
     network
     ui_basic
@@ -98,7 +102,7 @@ wl_library(ui_fsmenu_gameloading
   DEPENDS
     base_exceptions
     base_i18n
-    graphic
+    base_log
     graphic_playercolor
     io_filesystem
     io_profile
@@ -107,7 +111,6 @@ wl_library(ui_fsmenu_gameloading
     logic_game_controller
     logic_game_settings
     logic_map
-    logic_map_objects
     logic_tribe_basic_info
     map_io_map_loader
     scripting_lua_interface
@@ -142,7 +145,7 @@ wl_library(ui_fsmenu_maploading
     base_exceptions
     base_i18n
     base_log
-    graphic
+    graphic_image_cache
     graphic_fonthandler
     graphic_surface
     graphic_text_layout
@@ -168,15 +171,13 @@ wl_library(ui_fsmenu_network
     netsetup_lan.h
   DEPENDS
     base_i18n
-    base_log
     base_random
     build_info
-    graphic
+    graphic_image_cache
     graphic_text_layout
     network
     sound
     ui_basic
-    ui_fsmenu_base
     ui_fsmenu_loading_common
     widelands_options
     wui_chat_ui
@@ -190,6 +191,9 @@ wl_library(ui_fsmenu_misc
     intro.h
   DEPENDS
     base_i18n
+    base_log
+    scripting_lua_interface
+    scripting_lua_table
     ui_basic
     ui_fsmenu_base
 )

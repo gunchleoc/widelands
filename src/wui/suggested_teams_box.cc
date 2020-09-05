@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 by the Widelands Development Team
+ * Copyright (C) 2015-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 #include "wui/suggested_teams_box.h"
 
 #include "base/i18n.h"
-#include "graphic/graphic.h"
+#include "graphic/image_cache.h"
 #include "graphic/playercolor.h"
 
 namespace UI {
@@ -39,14 +39,13 @@ SuggestedTeamsBox::SuggestedTeamsBox(Panel* parent,
              orientation,
              max_x,
              max_y,
-             g_gr->images().get("images/players/player_position_menu.png")->height()),
+             g_image_cache->get("images/players/player_position_menu.png")->height()),
      padding_(padding),
      indent_(indent),
-     label_height_(g_gr->images().get("images/players/player_position_menu.png")->height() +
+     label_height_(g_image_cache->get("images/players/player_position_menu.png")->height() +
                    padding),
      suggested_teams_box_label_(new UI::Textarea(this)),
      lineup_box_(nullptr) {
-	set_size(max_x, max_y);
 	add(suggested_teams_box_label_);
 }
 SuggestedTeamsBox::~SuggestedTeamsBox() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2019 by the Widelands Development Team
+ * Copyright (C) 2012-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -50,9 +50,14 @@ void show_usage(const std::string& build_id, const std::string& build_type) {
 	          << _(" --homedir=DIRNAME    Use specified directory for widelands config\n"
 	               "                      files, savegames and replays")
 	          << endl
-#ifdef __linux__
+#ifndef _WIN32
 	          << _("                      Default is ~/.widelands") << endl
+#else
+	          << _("                      Default is %USERPROFILE%\\.widelands") << endl
 #endif
+	          << _(" --localedir=DIRNAME  Use specified directory for the widelands\n"
+	               "                      locale files")
+	          << endl
 	          << endl
 	          /** TRANSLATORS: You may translate true/false, also as on/off or yes/no, but */
 	          /** TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the widelands
@@ -117,7 +122,8 @@ void show_usage(const std::string& build_id, const std::string& build_type) {
 	               "                      not connected to a road.")
 	          << endl
 	          << endl
-	          << _("Graphic options:") << endl
+	          << _("Graphic options:")
+	          << endl
 	          /** TRANSLATORS: You may translate true/false, also as on/off or yes/no, but */
 	          /** TRANSLATORS: it HAS TO BE CONSISTENT with the translation in the widelands
 	             textdomain */

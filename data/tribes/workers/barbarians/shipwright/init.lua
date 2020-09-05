@@ -1,11 +1,12 @@
+push_textdomain("tribes")
+
 dirname = path.dirname(__file__)
 
 tribes:new_worker_type {
-   msgctxt = "barbarians_worker",
    name = "barbarians_shipwright",
    -- TRANSLATORS: This is a worker name used in lists of workers
    descname = pgettext("barbarians_worker", "Shipwright"),
-   helptext_script = dirname .. "helptexts.lua",
+   animation_directory = dirname,
    icon = dirname .. "menu.png",
    vision_range = 2,
 
@@ -18,10 +19,10 @@ tribes:new_worker_type {
       buildship = {
          "walk=object-or-coords",
          "plant=attrib:shipconstruction unless object",
-         "playsound=sound/sawmill/sawmill 230",
-         "animate=work 500",
+         "playsound=sound/sawmill/sawmill priority:80% allow_multiple",
+         "animate=work duration:500ms",
          "construct",
-         "animate=work 5000",
+         "animate=work duration:5s",
          "return"
       },
       buildferry_1 = {
@@ -30,21 +31,19 @@ tribes:new_worker_type {
       buildferry_2 = {
          "findspace=size:swim radius:5",
          "walk=coords",
-         "animate=work 10000",
-         "buildferry",
+         "animate=work duration:10s",
+         "createbob=barbarians_ferry",
          "return"
       },
    },
 
    animations = {
       idle = {
-         directory = dirname,
          hotspot = { 4, 18 }
       },
    },
    spritesheets = {
       walk = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -53,7 +52,6 @@ tribes:new_worker_type {
          hotspot = { 6, 18 }
       },
       walkload = {
-         directory = dirname,
          fps = 10,
          frames = 10,
          rows = 4,
@@ -62,7 +60,6 @@ tribes:new_worker_type {
          hotspot = { 10, 20 }
       },
       work = {
-         directory = dirname,
          fps = 10,
          frames = 20,
          rows = 5,
@@ -70,8 +67,10 @@ tribes:new_worker_type {
          hotspot = { 12, 22 },
          sound_effect = {
             path = "sound/hammering/hammering",
-            priority = 64
+            priority = 50
          }
       },
    }
 }
+
+pop_textdomain()
