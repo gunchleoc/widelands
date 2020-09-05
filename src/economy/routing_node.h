@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +19,6 @@
 
 #ifndef WL_ECONOMY_ROUTING_NODE_H
 #define WL_ECONOMY_ROUTING_NODE_H
-
-#include <vector>
 
 #include "logic/cookie_priority_queue.h"
 #include "logic/map_objects/tribes/wareworker.h"

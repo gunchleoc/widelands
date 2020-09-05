@@ -20,9 +20,6 @@
 #ifndef WL_GRAPHIC_SURFACE_H
 #define WL_GRAPHIC_SURFACE_H
 
-#include <memory>
-#include <vector>
-
 #include "base/macros.h"
 #include "base/rect.h"
 #include "graphic/blend_mode.h"
@@ -65,7 +62,7 @@ public:
 
 	// Draw a 'width' pixel wide line to the destination. 'points' are taken by
 	// value on purpose.
-	void draw_line_strip(std::vector<Vector2f> points, const RGBColor& color, float width);
+	void draw_line_strip(const std::vector<Vector2f>& points, const RGBColor& color, float width);
 
 	/// makes a rectangle on the destination brighter (or darker).
 	void brighten_rect(const Rectf&, int factor);

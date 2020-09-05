@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,6 +19,7 @@
 
 #include "map_io/world_legacy_lookup_table.h"
 
+#include <map>
 #include <memory>
 
 namespace {
@@ -80,7 +81,13 @@ immovables_
 },
 resources_
 {
-	{"granite", "stones"},
+	{"granite", "resource_stones"},
+	{"stones", "resource_stones"},
+	{"gold", "resource_gold"},
+	{"iron", "resource_iron"},
+	{"coal", "resource_coal"},
+	{"water", "resource_water"},
+	{"fish", "resource_fish"}
 },
 
 // Renamed German spelled terrains into English
@@ -101,6 +108,7 @@ terrains_
 	{"strand", "summer_beach"},
 	{"schnee", "summer_snow"},
 	{"wasser", "summer_water"},
+	{"ashes", "ashes1"},
 }
 {
 }
@@ -163,9 +171,10 @@ private:
 OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_world_name)
    : old_world_name_(old_world_name),
      // RESOURCES - They were all the same for all worlds.
-     resources_{
-        {"granit", "stones"},
-     },
+     resources_{{"granit", "resource_stones"}, {"stones", "resource_stones"},
+                {"gold", "resource_gold"},     {"iron", "resource_iron"},
+                {"coal", "resource_coal"},     {"water", "resource_water"},
+                {"fish", "resource_fish"}},
 
      // TERRAINS
      terrains_{
@@ -173,6 +182,7 @@ OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_worl
                        std::map<std::string, std::string>{
                           // Renamed German spelled terrains into English
                           // This has to be here to get scenarios work
+                          {"ashes", "ashes1"},
                           {"wiese1", "summer_meadow1"},
                           {"wiese2", "summer_meadow2"},
                           {"wiese3", "summer_meadow3"},
@@ -191,6 +201,7 @@ OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_worl
                        }),
         std::make_pair("blackland",
                        std::map<std::string, std::string>{
+                          {"ashes", "ashes1"},
                           {"mountain1", "wasteland_mountain1"},
                           {"mountain2", "wasteland_mountain2"},
                           {"mountain3", "wasteland_mountain3"},
@@ -200,6 +211,7 @@ OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_worl
                        }),
         std::make_pair("winterland",
                        std::map<std::string, std::string>{
+                          {"ashes", "ashes1"},
                           {"ice_flows", "ice_floes"},
                           {"ice_flows2", "ice_floes2"},
                           {"mountain1", "winter_mountain1"},
@@ -209,18 +221,21 @@ OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_worl
                           {"strand", "winter_beach"},
                           {"water", "winter_water"},
                        }),
-        std::make_pair(
-           "desert",
-           std::map<std::string, std::string>{
-              {"beach", "desert_beach"}, {"steppe", "desert_steppe"}, {"wasser", "desert_water"},
-           }),
+        std::make_pair("desert",
+                       std::map<std::string, std::string>{
+                          {"ashes", "ashes1"},
+                          {"beach", "desert_beach"},
+                          {"steppe", "desert_steppe"},
+                          {"wasser", "desert_water"},
+                       }),
      },
 
      // CRITTERS
      critters_{
         std::make_pair("greenland",
                        std::map<std::string, std::string>{
-                          {"deer", "stag"}, {"elk", "moose"},
+                          {"deer", "stag"},
+                          {"elk", "moose"},
                        }),
         std::make_pair("blackland",
                        std::map<std::string, std::string>{
@@ -228,7 +243,8 @@ OneWorldLegacyLookupTable::OneWorldLegacyLookupTable(const std::string& old_worl
                        }),
         std::make_pair("winterland",
                        std::map<std::string, std::string>{
-                          {"deer", "stag"}, {"elk", "moose"},
+                          {"deer", "stag"},
+                          {"elk", "moose"},
                        }),
         std::make_pair("desert",
                        std::map<std::string, std::string>{

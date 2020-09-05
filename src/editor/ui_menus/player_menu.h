@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,8 +21,6 @@
 #define WL_EDITOR_UI_MENUS_PLAYER_MENU_H
 
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "editor/ui_menus/tool_options_menu.h"
 #include "ui_basic/box.h"

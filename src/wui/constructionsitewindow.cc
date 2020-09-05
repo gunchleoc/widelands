@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,9 +19,6 @@
 
 #include "wui/constructionsitewindow.h"
 
-#include <boost/format.hpp>
-
-#include "graphic/graphic.h"
 #include "logic/map_objects/tribes/militarysite.h"
 #include "wui/actionconfirm.h"
 #include "wui/inputqueuedisplay.h"
@@ -52,7 +49,22 @@ ConstructionSiteWindow::FakeWaresDisplay::FakeWaresDisplay(UI::Panel* parent,
                                                            Widelands::WareWorker type)
    : WaresDisplay(parent, 0, 0, cs.owner().tribe(), type, can_act),
      settings_(*dynamic_cast<Widelands::WarehouseSettings*>(cs.get_settings())),
-     tribe_(cs.owner().tribe()) {
+     tribe_(cs.owner().tribe()),
+     warelist_(new Widelands::WareList()) {
+	if (type == Widelands::wwWARE) {
+		for (const auto& pair : cs.get_additional_wares()) {
+			warelist_->add(pair.first, pair.second);
+		}
+	} else {
+		for (const Widelands::Worker* w : cs.get_additional_workers()) {
+			warelist_->add(w->descr().worker_index(), 1);
+		}
+	}
+	add_warelist(*warelist_);
+}
+
+ConstructionSiteWindow::FakeWaresDisplay::~FakeWaresDisplay() {
+	warelist_->clear();  // Avoid annoying warnings
 }
 
 void ConstructionSiteWindow::FakeWaresDisplay::draw_ware(RenderTarget& dst,
@@ -74,13 +86,13 @@ void ConstructionSiteWindow::FakeWaresDisplay::draw_ware(RenderTarget& dst,
 	const Image* pic = nullptr;
 	switch (it->second) {
 	case Widelands::StockPolicy::kPrefer:
-		pic = g_gr->images().get(pic_stock_policy_prefer);
+		pic = g_image_cache->get(pic_stock_policy_prefer);
 		break;
 	case Widelands::StockPolicy::kDontStock:
-		pic = g_gr->images().get(pic_stock_policy_dontstock);
+		pic = g_image_cache->get(pic_stock_policy_dontstock);
 		break;
 	case Widelands::StockPolicy::kRemove:
-		pic = g_gr->images().get(pic_stock_policy_remove);
+		pic = g_image_cache->get(pic_stock_policy_remove);
 		break;
 	case Widelands::StockPolicy::kNormal:
 		// No icon for the normal policy
@@ -126,11 +138,16 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 	box.add_space(8);
 
 	// Add the wares queue
-	for (uint32_t i = 0; i < construction_site->get_nrwaresqueues(); ++i)
+	for (uint32_t i = 0; i < construction_site->nr_dropout_waresqueues(); ++i) {
+		box.add(new InputQueueDisplay(&box, 0, 0, *igbase(), *construction_site,
+		                              *construction_site->get_dropout_waresqueue(i), true, true));
+	}
+	for (uint32_t i = 0; i < construction_site->nr_consume_waresqueues(); ++i) {
 		box.add(new InputQueueDisplay(
-		   &box, 0, 0, *igbase(), *construction_site, *construction_site->get_waresqueue(i)));
+		   &box, 0, 0, *igbase(), *construction_site, *construction_site->get_consume_waresqueue(i)));
+	}
 
-	get_tabs()->add("wares", g_gr->images().get(pic_tab_wares), &box, _("Building materials"));
+	get_tabs()->add("wares", g_image_cache->get(pic_tab_wares), &box, _("Building materials"));
 
 	if (construction_site->get_settings()) {
 		const bool can_act = igbase()->can_act(construction_site->owner().player_number());
@@ -165,11 +182,11 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 				settings_box.add(&soldier_capacity_box, UI::Box::Resizing::kAlign, UI::Align::kCenter);
 				cs_soldier_capacity_decrease_ = new UI::Button(
 				   &soldier_capacity_box, "decrease", 0, 0, 32, 32, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_decrease_capacity),
+				   g_image_cache->get(pic_decrease_capacity),
 				   _("Decrease capacity. Hold down Ctrl to set the capacity to the lowest value"));
 				cs_soldier_capacity_increase_ = new UI::Button(
 				   &soldier_capacity_box, "increase", 0, 0, 32, 32, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_increase_capacity),
+				   g_image_cache->get(pic_increase_capacity),
 				   _("Increase capacity. Hold down Ctrl to set the capacity to the highest value"));
 				cs_soldier_capacity_display_ =
 				   new UI::Textarea(&soldier_capacity_box, "", UI::Align::kCenter);
@@ -212,11 +229,11 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 			settings_box.add(&soldier_capacity_box, UI::Box::Resizing::kAlign, UI::Align::kCenter);
 			cs_soldier_capacity_decrease_ = new UI::Button(
 			   &soldier_capacity_box, "decrease", 0, 0, 32, 32, UI::ButtonStyle::kWuiMenu,
-			   g_gr->images().get(pic_decrease_capacity),
+			   g_image_cache->get(pic_decrease_capacity),
 			   _("Decrease capacity. Hold down Ctrl to set the capacity to the lowest value"));
 			cs_soldier_capacity_increase_ = new UI::Button(
 			   &soldier_capacity_box, "increase", 0, 0, 32, 32, UI::ButtonStyle::kWuiMenu,
-			   g_gr->images().get(pic_increase_capacity),
+			   g_image_cache->get(pic_increase_capacity),
 			   _("Increase capacity. Hold down Ctrl to set the capacity to the highest value"));
 			cs_soldier_capacity_display_ =
 			   new UI::Textarea(&soldier_capacity_box, "", UI::Align::kCenter);
@@ -249,10 +266,10 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 			cs_prefer_heroes_rookies_.reset(new UI::Radiogroup());
 			cs_prefer_heroes_rookies_->add_button(
 			   &soldier_preference_panel, Vector2i::zero(),
-			   g_gr->images().get("images/wui/buildings/prefer_heroes.png"), _("Prefer heroes"));
+			   g_image_cache->get("images/wui/buildings/prefer_heroes.png"), _("Prefer heroes"));
 			cs_prefer_heroes_rookies_->add_button(
 			   &soldier_preference_panel, Vector2i(32, 0),
-			   g_gr->images().get("images/wui/buildings/prefer_rookies.png"), _("Prefer rookies"));
+			   g_image_cache->get("images/wui/buildings/prefer_rookies.png"), _("Prefer rookies"));
 			cs_prefer_heroes_rookies_->set_state(ms->prefer_heroes ? 0 : 1);
 			if (can_act) {
 				cs_prefer_heroes_rookies_->changedto.connect([this](int32_t state) {
@@ -267,7 +284,7 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 		case Widelands::MapObjectType::WAREHOUSE: {
 			upcast(Widelands::WarehouseSettings, ws, construction_site->get_settings());
 			auto add_tab = [this, construction_site, can_act](
-			   Widelands::WareWorker ww, FakeWaresDisplay** display) {
+			                  Widelands::WareWorker ww, FakeWaresDisplay** display) {
 				UI::Box& mainbox = *new UI::Box(get_tabs(), 0, 0, UI::Box::Vertical);
 				*display = new FakeWaresDisplay(&mainbox, can_act, *construction_site, ww);
 				mainbox.add(*display, UI::Box::Resizing::kFullSize);
@@ -276,27 +293,27 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 				mainbox.add_space(15);
 				UI::Button& sp_normal = *new UI::Button(
 				   &buttonsbox, "stock_policy_normal", 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_stock_policy_button_normal), _("Normal policy"));
+				   g_image_cache->get(pic_stock_policy_button_normal), _("Normal policy"));
 				UI::Button& sp_prefer = *new UI::Button(
 				   &buttonsbox, "stock_policy_prefer", 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_stock_policy_button_prefer),
+				   g_image_cache->get(pic_stock_policy_button_prefer),
 				   _("Preferably store selected wares here"));
 				UI::Button& sp_dont = *new UI::Button(
 				   &buttonsbox, "stock_policy_dontstock", 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_stock_policy_button_dontstock),
+				   g_image_cache->get(pic_stock_policy_button_dontstock),
 				   _("Do not store selected wares here"));
 				UI::Button& sp_remove = *new UI::Button(
 				   &buttonsbox, "stock_policy_remove", 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,
-				   g_gr->images().get(pic_stock_policy_button_remove),
+				   g_image_cache->get(pic_stock_policy_button_remove),
 				   _("Remove selected wares from here"));
-				sp_remove.sigclicked.connect(boost::bind(
-				   &ConstructionSiteWindow::change_policy, this, ww, Widelands::StockPolicy::kRemove));
-				sp_dont.sigclicked.connect(boost::bind(&ConstructionSiteWindow::change_policy, this, ww,
-				                                       Widelands::StockPolicy::kDontStock));
-				sp_prefer.sigclicked.connect(boost::bind(
-				   &ConstructionSiteWindow::change_policy, this, ww, Widelands::StockPolicy::kPrefer));
-				sp_normal.sigclicked.connect(boost::bind(
-				   &ConstructionSiteWindow::change_policy, this, ww, Widelands::StockPolicy::kNormal));
+				sp_remove.sigclicked.connect(
+				   [this, ww]() { change_policy(ww, Widelands::StockPolicy::kRemove); });
+				sp_dont.sigclicked.connect(
+				   [this, ww]() { change_policy(ww, Widelands::StockPolicy::kDontStock); });
+				sp_prefer.sigclicked.connect(
+				   [this, ww]() { change_policy(ww, Widelands::StockPolicy::kPrefer); });
+				sp_normal.sigclicked.connect(
+				   [this, ww]() { change_policy(ww, Widelands::StockPolicy::kNormal); });
 				sp_normal.set_enabled(can_act);
 				sp_dont.set_enabled(can_act);
 				sp_remove.set_enabled(can_act);
@@ -306,10 +323,10 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 				buttonsbox.add(&sp_dont);
 				buttonsbox.add(&sp_remove);
 				if (ww == Widelands::wwWARE) {
-					get_tabs()->add("warehouse_wares", g_gr->images().get(pic_tab_settings_wares),
+					get_tabs()->add("warehouse_wares", g_image_cache->get(pic_tab_settings_wares),
 					                &mainbox, _("Ware settings to apply after construction"));
 				} else {
-					get_tabs()->add("warehouse_workers", g_gr->images().get(pic_tab_settings_workers),
+					get_tabs()->add("warehouse_workers", g_image_cache->get(pic_tab_settings_workers),
 					                &mainbox, _("Worker settings to apply after construction"));
 				}
 			};
@@ -337,7 +354,7 @@ void ConstructionSiteWindow::init(bool avoid_fastclick, bool workarea_preview_wa
 		}
 
 		if (!nothing_added) {
-			get_tabs()->add("settings", g_gr->images().get(pic_tab_settings), &settings_box,
+			get_tabs()->add("settings", g_image_cache->get(pic_tab_settings), &settings_box,
 			                _("Settings to apply after construction"));
 		}
 	}

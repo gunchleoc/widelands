@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 by the Widelands Development Team
+ * Copyright (C) 2015-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,9 +19,6 @@
 
 #ifndef WL_WUI_SUGGESTED_TEAMS_BOX_H
 #define WL_WUI_SUGGESTED_TEAMS_BOX_H
-
-#include <set>
-#include <string>
 
 #include "logic/widelands.h"
 #include "ui_basic/box.h"

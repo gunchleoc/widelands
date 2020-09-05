@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,12 +20,8 @@
 #ifndef WL_ECONOMY_ECONOMY_H
 #define WL_ECONOMY_ECONOMY_H
 
+#include <functional>
 #include <memory>
-#include <set>
-#include <vector>
-
-#include <boost/function.hpp>
-#include <boost/utility.hpp>
 
 #include "base/macros.h"
 #include "economy/supply.h"
@@ -38,12 +34,12 @@
 
 namespace Widelands {
 
-class Soldier;
+class Economy;
 struct Flag;
 struct RSPairStruct;
 struct Route;
 struct Router;
-class Economy;
+class WorkerDescr;
 
 struct NoteEconomy {
 	CAN_BE_SENT_AS_NOTE(NoteId::Economy)
@@ -57,6 +53,8 @@ struct NoteEconomy {
 	enum class Action { kMerged, kDeleted };
 	const Action action;
 };
+
+constexpr Quantity kEconomyTargetInfinity = std::numeric_limits<Quantity>::max();
 
 /**
  * Each Economy represents all building and flags, which are connected over the same
@@ -90,8 +88,6 @@ struct NoteEconomy {
 class Economy {
 public:
 	friend class EconomyDataPacket;
-	// TODO(Nordfriese): This friend is for savegame compatibility
-	friend struct CmdCallEconomyBalance;
 
 	// Initialize the global serial on game start
 	static void initialize_serial();
@@ -133,7 +129,7 @@ public:
 
 	bool find_route(Flag& start, Flag& end, Route* route, int32_t cost_cutoff = -1);
 
-	using WarehouseAcceptFn = boost::function<bool(Warehouse&)>;
+	using WarehouseAcceptFn = std::function<bool(Warehouse&)>;
 	Warehouse* find_closest_warehouse(Flag& start,
 	                                  Route* route = nullptr,
 	                                  uint32_t cost_cutoff = 0,
@@ -149,7 +145,7 @@ public:
 	// (i.e. an Expedition ship).
 	Flag* get_arbitrary_flag();
 
-	void set_target_quantity(DescriptionIndex, Quantity, Time);
+	void set_target_quantity(WareWorker economy_type, DescriptionIndex, Quantity, Time);
 
 	void
 	add_wares_or_workers(DescriptionIndex, Quantity count = 1, Economy* other_economy = nullptr);
@@ -273,7 +269,8 @@ private:
 	 */
 	uint32_t request_timerid_;
 
-	static std::unique_ptr<Soldier> soldier_prototype_;
+	static std::unique_ptr<Worker> soldier_prototype_;
+	static Worker& soldier_prototype(const WorkerDescr* = nullptr);
 
 	// This is always an EconomyOptionsWindow* (or nullptr) but I don't want a wui dependency here.
 	// We cannot use UniqueWindow to make sure an economy never has two windows because the serial

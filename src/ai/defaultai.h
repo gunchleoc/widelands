@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,10 +21,7 @@
 #ifndef WL_AI_DEFAULTAI_H
 #define WL_AI_DEFAULTAI_H
 
-#include <map>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "ai/ai_help_structs.h"
 #include "ai/computer_player.h"

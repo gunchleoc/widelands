@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,8 +18,6 @@
  */
 
 #include "logic/map_objects/tribes/road_textures.h"
-
-#include <memory>
 
 const Image& RoadTextures::get_normal_texture(const Widelands::Coords& coords,
                                               int direction) const {

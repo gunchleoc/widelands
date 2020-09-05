@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2019 by the Widelands Development Team
+ * Copyright (C) 2007-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,14 +19,18 @@
 
 #include "ui_basic/progresswindow.h"
 
+#include <memory>
 #ifndef _MSC_VER
 #include <sys/time.h>
 #endif
+
+#include <SDL_events.h>
 
 #include "base/i18n.h"
 #include "graphic/font_handler.h"
 #include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
+#include "graphic/style_manager.h"
 #include "graphic/text/font_set.h"
 #include "graphic/text_layout.h"
 #include "io/filesystem/layered_filesystem.h"
@@ -44,7 +48,7 @@ namespace UI {
 ProgressWindow::ProgressWindow(const std::string& background)
    : UI::FullscreenWindow(),
      label_center_(Vector2i::zero()),
-     style_(g_gr->styles().progressbar_style(UI::PanelStyle::kFsMenu)) {
+     style_(g_style_manager->progressbar_style(UI::PanelStyle::kFsMenu)) {
 	set_background(background);
 	step(_("Loading…"));
 }

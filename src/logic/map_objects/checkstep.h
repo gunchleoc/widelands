@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +20,9 @@
 #ifndef WL_LOGIC_MAP_OBJECTS_CHECKSTEP_H
 #define WL_LOGIC_MAP_OBJECTS_CHECKSTEP_H
 
+#include <memory>
 #include <set>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "logic/widelands_geometry.h"
 
@@ -66,7 +65,7 @@ private:
 		const T op;
 	};
 
-	boost::shared_ptr<BaseCapsule> capsule;
+	std::shared_ptr<BaseCapsule> capsule;
 
 	static const CheckStep& always_false();
 

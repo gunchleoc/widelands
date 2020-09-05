@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,11 +19,6 @@
 
 #ifndef WL_MAP_IO_MAP_OBJECT_LOADER_H
 #define WL_MAP_IO_MAP_OBJECT_LOADER_H
-
-#include <map>
-#include <typeinfo>
-
-#include <stdint.h>
 
 #include "base/macros.h"
 #include "logic/game_data_error.h"
@@ -61,7 +56,7 @@ public:
 			throw GameDataError(
 			   "already loaded (%s)", to_string(existing->second->descr().type()).c_str());
 		}
-		objects_.insert(std::pair<Serial, MapObject*>(n, &object));
+		objects_.insert(std::make_pair(n, &object));
 		loaded_objects_[&object] = false;
 		return object;
 	}
@@ -88,9 +83,6 @@ public:
 	void schedule_act(Bob&);
 
 	void load_finish_game(Game& g);
-
-	// TODO(Nordfriese): This is one exceedingly ugly hack for savegame compatibiliy.
-	Serial get_economy_savegame_compatibility(Serial ware_economy) const;
 
 private:
 	using ReverseMapObjectMap = std::map<Serial, MapObject*>;

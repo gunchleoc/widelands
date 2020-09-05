@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2019 by the Widelands Development Team
+ * Copyright (C) 2003-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,9 +20,7 @@
 #ifndef WL_UI_BASIC_TABPANEL_H
 #define WL_UI_BASIC_TABPANEL_H
 
-#include <vector>
-
-#include <boost/signals2.hpp>
+#include <memory>
 
 #include "graphic/text/rendered_text.h"
 #include "ui_basic/panel.h"
@@ -123,11 +121,15 @@ struct TabPanel : public Panel {
 
 	boost::signals2::signal<void()> sigclicked;
 
+	bool handle_key(bool, SDL_Keysym) override;
+
 protected:
 	void layout() override;
 	void update_desired_size() override;
 
 	UI::TabPanelStyle style_;
+
+	std::vector<Recti> focus_overlay_rects() override;
 
 private:
 	// Common adding function for textual and pictorial tabs

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,10 +19,6 @@
 
 #ifndef WL_UI_BASIC_BUTTON_H
 #define WL_UI_BASIC_BUTTON_H
-
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/signals2.hpp>
 
 #include "graphic/styles/button_style.h"
 #include "ui_basic/panel.h"
@@ -129,6 +125,7 @@ public:
 	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y) override;
 	bool handle_mouserelease(uint8_t btn, int32_t x, int32_t y) override;
 	bool handle_mousemove(uint8_t, int32_t, int32_t, int32_t, int32_t) override;
+	bool handle_key(bool, SDL_Keysym) override;
 
 	/// Sets the visual style of the button
 	void set_visual_state(UI::Button::VisualState state);

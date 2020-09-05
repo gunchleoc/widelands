@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 #define WL_SOUND_CONSTANTS_H
 
 #include <limits>
-#include <stdint.h>
 
 /* How important is it to play the effect even when others are running
  * already?
@@ -38,13 +37,9 @@
  */
 
 /// Priorities lower than this one are illegal
-constexpr uint8_t kFxPriorityLowest = 1;
-/// 50% chance to play
-constexpr uint8_t kFxPriorityMedium = 64;
-/// Sounds with priority lower than this one are only allowed to play one instance at a time
-constexpr uint8_t kFxPriorityAllowMultiple = 128;
-/// Sound will always play
-constexpr uint8_t kFxPriorityAlwaysPlay = 255;
+constexpr uint16_t kFxPriorityLowest = 1;
+/// This priority corresponds to 100%
+constexpr uint16_t kFxMaximumPriority = 10000;
 
 constexpr int32_t kStereoLeft = 0;
 constexpr int32_t kStereoCenter = 128;

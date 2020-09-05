@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 by the Widelands Development Team
+ * Copyright (C) 2017-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,6 @@
 #ifndef WL_SOUND_NOTE_SOUND_H
 #define WL_SOUND_NOTE_SOUND_H
 
-#include <string>
-
 #include "logic/widelands_geometry.h"
 #include "notifications/note_ids.h"
 #include "notifications/notifications.h"
@@ -32,13 +30,19 @@ struct NoteSound {
 	const SoundType type;
 	const FxId fx;
 	const Widelands::Coords coords;
-	const uint8_t priority;
+	const uint16_t priority;
+	bool allow_multiple;
 
 	NoteSound(SoundType init_type,
 	          FxId init_fx,
 	          Widelands::Coords init_coords,
-	          uint8_t init_priority)
-	   : type(init_type), fx(init_fx), coords(init_coords), priority(init_priority) {
+	          uint16_t init_priority,
+	          bool init_allow_multiple)
+	   : type(init_type),
+	     fx(init_fx),
+	     coords(init_coords),
+	     priority(init_priority),
+	     allow_multiple(init_allow_multiple) {
 	}
 };
 

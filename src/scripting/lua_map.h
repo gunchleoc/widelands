@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +19,6 @@
 
 #ifndef WL_SCRIPTING_LUA_MAP_H
 #define WL_SCRIPTING_LUA_MAP_H
-
-#include <set>
 
 #include "economy/economy.h"
 #include "economy/flag.h"
@@ -102,7 +100,9 @@ public:
 	int recalculate(lua_State*);
 	int recalculate_seafaring(lua_State*);
 	int set_port_space(lua_State*);
+	int sea_route_exists(lua_State*);
 	int set_waterway_max_length(lua_State*);
+	int find_ocean_fields(lua_State*);
 
 	/*
 	 * C methods
@@ -195,13 +195,13 @@ public:
 	 */
 	int get_descname(lua_State*);
 	int get_icon_name(lua_State*);
-	int get_helptext_script(lua_State*);
 	int get_name(lua_State*);
 	int get_type_name(lua_State*);
 
 	/*
 	 * Lua methods
 	 */
+	int helptexts(lua_State*);
 
 	/*
 	 * C methods
@@ -248,7 +248,7 @@ public:
 	 */
 	int get_species(lua_State*);
 	int get_buildcost(lua_State*);
-	int get_editor_category(lua_State*);
+	int get_becomes(lua_State*);
 	int get_terrain_affinity(lua_State*);
 	int get_owner_type(lua_State*);
 	int get_size(lua_State*);
@@ -300,8 +300,8 @@ public:
 	int get_is_port(lua_State*);
 	int get_size(lua_State*);
 	int get_isproductionsite(lua_State*);
-	int get_returned_wares(lua_State*);
-	int get_returned_wares_enhanced(lua_State*);
+	int get_returns_on_dismantle(lua_State*);
+	int get_enhancement_returns_on_dismantle(lua_State*);
 	int get_vision_range(lua_State*);
 	int get_workarea_radius(lua_State*);
 
@@ -662,6 +662,40 @@ private:
 	CASTED_GET_DESCRIPTION(SoldierDescr)
 };
 
+class LuaShipDescription : public LuaMapObjectDescription {
+public:
+	LUNA_CLASS_HEAD(LuaShipDescription);
+
+	~LuaShipDescription() override {
+	}
+
+	LuaShipDescription() {
+	}
+	explicit LuaShipDescription(const Widelands::ShipDescr* const shipdescr)
+	   : LuaMapObjectDescription(shipdescr) {
+	}
+	explicit LuaShipDescription(lua_State* L) : LuaMapObjectDescription(L) {
+	}
+
+	void __persist(lua_State* L) override;
+	void __unpersist(lua_State* L) override;
+
+	/*
+	 * Properties
+	 */
+
+	/*
+	 * Lua methods
+	 */
+
+	/*
+	 * C methods
+	 */
+
+private:
+	CASTED_GET_DESCRIPTION(ShipDescr)
+};
+
 #undef CASTED_GET_DESCRIPTION
 
 class LuaResourceDescription : public LuaMapModuleClass {
@@ -741,7 +775,6 @@ public:
 	int get_descname(lua_State*);
 	int get_default_resource(lua_State*);
 	int get_default_resource_amount(lua_State*);
-	int get_editor_category(lua_State*);
 	int get_fertility(lua_State*);
 	int get_humidity(lua_State*);
 	int get_representative_image(lua_State*);
@@ -859,7 +892,8 @@ public:
 	/*
 	 * C Methods
 	 */
-	Widelands::MapObject* get(lua_State*, Widelands::EditorGameBase&, std::string = "MapObject");
+	Widelands::MapObject*
+	get(lua_State*, Widelands::EditorGameBase&, const std::string& = "MapObject");
 	Widelands::MapObject* get_or_zero(Widelands::EditorGameBase&);
 };
 
@@ -1040,9 +1074,10 @@ public:
 	 * C Methods
 	 */
 	CASTED_GET(RoadBase)
-	static int create_new_worker(Widelands::PlayerImmovable&,
-	                             Widelands::EditorGameBase&,
-	                             const Widelands::WorkerDescr*);
+	static bool create_new_worker(lua_State* L,
+	                              Widelands::RoadBase& r,
+	                              Widelands::EditorGameBase&,
+	                              const Widelands::WorkerDescr*);
 };
 
 class LuaConstructionSite : public LuaBuilding {
@@ -1173,9 +1208,10 @@ public:
 	 * C Methods
 	 */
 	CASTED_GET(ProductionSite)
-	static int create_new_worker(Widelands::PlayerImmovable&,
-	                             Widelands::EditorGameBase&,
-	                             const Widelands::WorkerDescr*);
+	static bool create_new_worker(lua_State* L,
+	                              Widelands::ProductionSite& ps,
+	                              Widelands::EditorGameBase&,
+	                              const Widelands::WorkerDescr*);
 };
 
 class LuaMilitarySite : public LuaBuilding {
@@ -1353,12 +1389,15 @@ public:
 	int get_island_explore_direction(lua_State* L);
 	int set_island_explore_direction(lua_State* L);
 	int get_shipname(lua_State* L);
+	int get_capacity(lua_State* L);
+	int set_capacity(lua_State* L);
 	/*
 	 * Lua methods
 	 */
 	int get_wares(lua_State* L);
 	int get_workers(lua_State* L);
 	int build_colonization_port(lua_State* L);
+	int make_expedition(lua_State* L);
 
 	/*
 	 * C methods

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,7 +20,6 @@
 #ifndef WL_NETWORK_NETHOSTPROXY_H
 #define WL_NETWORK_NETHOSTPROXY_H
 
-#include <map>
 #include <memory>
 
 #include "network/bufferedconnection.h"

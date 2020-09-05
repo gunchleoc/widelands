@@ -21,7 +21,9 @@ DEFINE_REGEX = re.compile(r'\#define\s+(\w+)')
 STRING_CONSTANT_REGEX = re.compile(
     r'.*const\sstd::string\s+(k\w+|\w+_\w+)\s+=\s+\"\S+\";')
 EXTERN_OR_TYPEDEF_REGEX = re.compile(r'(extern|typedef)\s+\S+\s+(\S+);')
-INLINE_FUNCTION_REGEX = re.compile(r'inline\s+\S+\s+(\S+)\(')
+INLINE_FUNCTION_OR_STATIC_CONST_REGEX = re.compile(
+    r'(inline|static const)\s+\S+\s+(\S+)\(')
+
 FORWARD_DECLARATION_REGEX = re.compile(r'(class|struct)\s+(\S+);')
 
 # Special regex for #include "graphic/text/rt_errors.h" and Map_Object_Packet
@@ -30,9 +32,6 @@ MACRO_CLASS_DEFINITION_REGEX = re.compile(r'^[A-Z_0-9]+\((\w+)\)$')
 # For .cc files and DIFFICULT_FILES
 FUNCTION_REGEX = re.compile(
     r'(^|.*\s+)([a-zA-Z_0-9][a-zA-Z_0-9]{2,})\(.*(\)|,).*')
-
-# Special regex for base/log.h
-HEADER_LOG_REGEX = re.compile(r'(void|bool)\s+(\w+)\(.*\);')
 
 # Header files with contents that are too hard to detect by regex
 FILE_EXCLUDES = {'graphic/gl/system_headers.h', 'scripting/lua.h',
@@ -88,9 +87,9 @@ def find_classes(file_to_check, include_functions, special_regex, special_regex_
             if match and len(match.groups()) == 1:
                 classes.add(match.groups()[0])
 
-            match = INLINE_FUNCTION_REGEX.match(line)
-            if match and len(match.groups()) == 1:
-                classes.add(match.groups()[0])
+            match = INLINE_FUNCTION_OR_STATIC_CONST_REGEX.match(line)
+            if match and len(match.groups()) == 2:
+                classes.add(match.groups()[1])
 
             match = FORWARD_DECLARATION_REGEX.match(line)
             if match and len(match.groups()) == 2:
@@ -101,11 +100,6 @@ def find_classes(file_to_check, include_functions, special_regex, special_regex_
                 if match and len(match.groups()) > 1:
                     if not match.groups()[1] in FUNCTION_EXCLUDES:
                         classes.add(match.groups()[1])
-
-            if special_regex:
-                match = HEADER_LOG_REGEX.match(line)
-                if match and len(match.groups()) > special_regex_group:
-                    classes.add(match.groups()[special_regex_group])
 
     return classes
 
@@ -149,10 +143,6 @@ def check_file(file_to_check, include_functions):
             elif header_file in DIFFICULT_FILES:
                 # Search with function regex switched on
                 header_classes = find_classes(header_file, True, None, 0)
-            elif header_file == 'base/log.h':
-                # Search with special regex switched on
-                header_classes = find_classes(
-                    header_file, False, HEADER_LOG_REGEX, 1)
             else:
                 # Search with function regex switched on/off according to include_functions
                 header_classes = find_classes(

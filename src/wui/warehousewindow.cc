@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,7 +19,6 @@
 
 #include "wui/warehousewindow.h"
 
-#include "graphic/graphic.h"
 #include "graphic/rendertarget.h"
 #include "logic/player.h"
 #include "logic/playercommand.h"
@@ -79,13 +78,13 @@ void WarehouseWaresDisplay::draw_ware(RenderTarget& dst, Widelands::DescriptionI
 	const Image* pic = nullptr;
 	switch (policy) {
 	case Widelands::StockPolicy::kPrefer:
-		pic = g_gr->images().get(pic_policy_prefer);
+		pic = g_image_cache->get(pic_policy_prefer);
 		break;
 	case Widelands::StockPolicy::kDontStock:
-		pic = g_gr->images().get(pic_policy_dontstock);
+		pic = g_image_cache->get(pic_policy_dontstock);
 		break;
 	case Widelands::StockPolicy::kRemove:
-		pic = g_gr->images().get(pic_policy_remove);
+		pic = g_image_cache->get(pic_policy_remove);
 		break;
 	case Widelands::StockPolicy::kNormal:
 		// don't draw anything for the normal policy
@@ -138,9 +137,8 @@ WarehouseWaresPanel::WarehouseWaresPanel(UI::Panel* parent,
 #define ADD_POLICY_BUTTON(policy, policyname, tooltip)                                             \
 	b = new UI::Button(                                                                             \
 	   buttons, #policy, 0, 0, 34, 34, UI::ButtonStyle::kWuiMenu,                                   \
-	   g_gr->images().get("images/wui/buildings/stock_policy_button_" #policy ".png"), tooltip),    \
-	b->sigclicked.connect(                                                                          \
-	   boost::bind(&WarehouseWaresPanel::set_policy, this, Widelands::StockPolicy::k##policyname)), \
+	   g_image_cache->get("images/wui/buildings/stock_policy_button_" #policy ".png"), tooltip),    \
+	b->sigclicked.connect([this]() { set_policy(Widelands::StockPolicy::k##policyname); }),         \
 	buttons->add(b);
 
 		ADD_POLICY_BUTTON(normal, Normal, _("Normal policy"))
@@ -156,7 +154,7 @@ WarehouseWaresPanel::WarehouseWaresPanel(UI::Panel* parent,
 void WarehouseWaresPanel::set_policy(Widelands::StockPolicy newpolicy) {
 	if (gb_.can_act(wh_.owner().player_number())) {
 		bool is_workers = type_ == Widelands::wwWORKER;
-		const std::set<Widelands::DescriptionIndex> indices =
+		const std::set<Widelands::DescriptionIndex>& indices =
 		   is_workers ? wh_.owner().tribe().workers() : wh_.owner().tribe().wares();
 
 		for (const Widelands::DescriptionIndex& index : indices) {
@@ -186,23 +184,23 @@ void WarehouseWindow::init(bool avoid_fastclick, bool workarea_preview_wanted) {
 	assert(warehouse != nullptr);
 	BuildingWindow::init(avoid_fastclick, workarea_preview_wanted);
 	get_tabs()->add(
-	   "wares", g_gr->images().get(pic_tab_wares),
+	   "wares", g_image_cache->get(pic_tab_wares),
 	   new WarehouseWaresPanel(get_tabs(), Width, *igbase(), *warehouse, Widelands::wwWARE),
 	   _("Wares"));
 	get_tabs()->add(
-	   "workers", g_gr->images().get(pic_tab_workers),
+	   "workers", g_image_cache->get(pic_tab_workers),
 	   new WarehouseWaresPanel(get_tabs(), Width, *igbase(), *warehouse, Widelands::wwWORKER),
 	   _("Workers"));
 
 	if (const Widelands::PortDock* pd = warehouse->get_portdock()) {
-		get_tabs()->add("dock_wares", g_gr->images().get(pic_tab_dock_wares),
+		get_tabs()->add("dock_wares", g_image_cache->get(pic_tab_dock_wares),
 		                create_portdock_wares_display(get_tabs(), Width, *pd, Widelands::wwWARE),
 		                _("Wares waiting to be shipped"));
-		get_tabs()->add("dock_workers", g_gr->images().get(pic_tab_dock_workers),
+		get_tabs()->add("dock_workers", g_image_cache->get(pic_tab_dock_workers),
 		                create_portdock_wares_display(get_tabs(), Width, *pd, Widelands::wwWORKER),
 		                _("Workers waiting to embark"));
 		if (pd->expedition_started()) {
-			get_tabs()->add("expedition_wares_queue", g_gr->images().get(pic_tab_expedition),
+			get_tabs()->add("expedition_wares_queue", g_image_cache->get(pic_tab_expedition),
 			                create_portdock_expedition_display(get_tabs(), *warehouse, *igbase()),
 			                _("Expedition"));
 		}

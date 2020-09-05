@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,14 +21,12 @@
 
 #include <cassert>
 #include <memory>
-#include <set>
-#include <string>
-
-#include <SDL.h>
 
 #include "graphic/image.h"
 #include "graphic/image_io.h"
 #include "graphic/texture.h"
+
+ImageCache* g_image_cache;
 
 ImageCache::ImageCache() {
 }

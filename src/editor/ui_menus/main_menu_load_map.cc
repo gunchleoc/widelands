@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,9 +19,6 @@
 
 #include "editor/ui_menus/main_menu_load_map.h"
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-
 #include "base/i18n.h"
 #include "editor/editorinteractive.h"
 #include "io/filesystem/layered_filesystem.h"
@@ -36,11 +33,14 @@ MainMenuLoadMap::MainMenuLoadMap(EditorInteractive& parent, UI::UniqueWindow::Re
    : MainMenuLoadOrSaveMap(parent, registry, "load_map_menu", _("Load Map")) {
 	set_current_directory(curdir_);
 
-	table_.selected.connect(boost::bind(&MainMenuLoadMap::entry_selected, this));
-	table_.double_clicked.connect(boost::bind(&MainMenuLoadMap::clicked_ok, boost::ref(*this)));
+	table_.selected.connect([this](unsigned) { entry_selected(); });
+	table_.double_clicked.connect([this](unsigned) { clicked_ok(); });
 
-	ok_.sigclicked.connect(boost::bind(&MainMenuLoadMap::clicked_ok, this));
-	cancel_.sigclicked.connect(boost::bind(&MainMenuLoadMap::die, this));
+	ok_.sigclicked.connect([this]() { clicked_ok(); });
+	cancel_.sigclicked.connect([this]() { die(); });
+
+	fill_table();
+	layout();
 }
 
 void MainMenuLoadMap::clicked_ok() {
@@ -71,6 +71,8 @@ void MainMenuLoadMap::set_current_directory(const std::string& filename) {
 		boost::replace_first(display_dir, "My_Maps", _("My Maps"));
 	} else if (boost::starts_with(display_dir, "MP_Scenarios")) {
 		boost::replace_first(display_dir, "MP_Scenarios", _("Multiplayer Scenarios"));
+	} else if (boost::starts_with(display_dir, "Downloaded")) {
+		boost::replace_first(display_dir, "Downloaded", _("Downloaded Maps"));
 	}
 	/** TRANSLATORS: The folder that a file will be saved to. */
 	directory_info_.set_text((boost::format(_("Current directory: %s")) % display_dir).str());
@@ -85,7 +87,7 @@ void MainMenuLoadMap::entry_selected() {
 	if (!has_selection) {
 		map_details_.clear();
 	} else {
-		map_details_.update(
-		   maps_data_[table_.get_selected()], !cb_dont_localize_mapnames_->get_state());
+		map_details_.update(maps_data_[table_.get_selected()],
+		                    display_mode_.get_selected() == MapData::DisplayType::kMapnamesLocalized);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,10 +22,6 @@
 
 #include <map>
 #include <memory>
-#include <string>
-#include <vector>
-
-#include <boost/utility.hpp>
 
 #include "base/macros.h"
 #include "graphic/image.h"
@@ -66,5 +62,7 @@ private:
 
 	DISALLOW_COPY_AND_ASSIGN(ImageCache);
 };
+
+extern ImageCache* g_image_cache;
 
 #endif  // end of include guard: WL_GRAPHIC_IMAGE_CACHE_H

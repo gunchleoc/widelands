@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,8 +21,6 @@
 #define WL_WUI_MINIMAP_H
 
 #include <memory>
-
-#include <boost/signals2.hpp>
 
 #include "graphic/minimap_renderer.h"
 #include "ui_basic/button.h"

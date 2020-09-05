@@ -1,17 +1,28 @@
-dirname = path.dirname(__file__)
+push_textdomain("world")
 
-world:new_critter_type{
+wl.World():new_critter_type{
    name = "marten",
    descname = _ "Marten",
-   editor_category = "critters_carnivores",
-   attributes = { "eatable" },
+   animation_directory = path.dirname(__file__),
+   size = 2,
+   reproduction_rate = 50,
+   appetite = 20,
+   carnivore = true,
+
    programs = {
       remove = { "remove" },
    },
+
    spritesheets = {
       idle = {
-         directory = dirname,
-         basename = "idle",
+         fps = 20,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         hotspot = { 11, 11 }
+      },
+      eating = {
+         basename = "idle", -- TODO(Nordfriese): Make animation
          fps = 20,
          frames = 20,
          rows = 5,
@@ -19,8 +30,6 @@ world:new_critter_type{
          hotspot = { 11, 11 }
       },
       walk = {
-         directory = dirname,
-         basename = "walk",
          fps = 50,
          frames = 20,
          rows = 5,
@@ -30,3 +39,5 @@ world:new_critter_type{
       }
    }
 }
+
+pop_textdomain()

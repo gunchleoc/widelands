@@ -21,12 +21,16 @@ except AttributeError:
         return iter(d.values())
     def iteritems(d):
         return iter(d.items())
+    def bytes_to_str(bytes):
+        return str(bytes, 'utf-8')
 else:
     # Python 2
     def itervalues(d):
         return d.itervalues()
     def iteritems(d):
         return d.iteritems()
+    def bytes_to_str(bytes):
+        return str(bytes)
 
 def datadir():
     return os.path.join(os.path.dirname(__file__), "data")
@@ -93,15 +97,22 @@ class WidelandsTestCase(unittest.TestCase):
                     '--language=en_US' ]
             args += [ "--{}={}".format(key, value) for key, value in iteritems(wlargs) ]
 
+            stdout_file.write("Running widelands binary: ")
+            for anarg in args:
+              stdout_file.write(anarg)
+              stdout_file.write(" ")
+            stdout_file.write("\n")
+
             widelands = subprocess.Popen(
                     args, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             while 1:
                 line = widelands.stdout.readline()
                 if not line:
                     break
-                stdout_file.write(str(line))
+                stdout_file.write(bytes_to_str(line))
                 stdout_file.flush()
             widelands.communicate()
+            stdout_file.write("\nReturned from Widelands, return code is %d\n" % widelands.returncode)
             self.widelands_returncode = widelands.returncode
         return stdout_filename
 

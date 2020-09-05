@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 by the Widelands Development Team
+ * Copyright (C) 2015-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -64,6 +64,9 @@ struct SinglePlayerGameSettingsProvider : public GameSettingsProvider {
 
 	void set_peaceful_mode(bool peace) override;
 	bool is_peaceful_mode() override;
+
+	void set_custom_starting_positions(bool) override;
+	bool get_custom_starting_positions() override;
 
 private:
 	GameSettings s;

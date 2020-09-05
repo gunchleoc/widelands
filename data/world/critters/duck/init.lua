@@ -1,29 +1,37 @@
+push_textdomain("world")
+
 dirname = path.dirname(__file__)
 
-animations = {}
-
-add_directional_animation(animations, "walk", dirname, "walk", {5, 10})
-
-world:new_critter_type{
+wl.World():new_critter_type{
    name = "duck",
    descname = _ "Duck",
-   editor_category = "critters_aquatic",
-   attributes = { "swimming" },
+   animation_directory = dirname,
+   size = 1,
+   reproduction_rate = 10,
+
    programs = {
       remove = { "remove" },
    },
-   animations = animations,
+
+   animations = {
+      walk = {
+         hotspot = { 5, 10 },
+         directional = true
+      }
+   },
+
    spritesheets = {
       idle = {
-         directory = dirname,
-         basename = "idle",
          frames = 8,
          rows = 4,
          columns = 2,
          hotspot = { 5, 7 },
          sound_effect = {
             path = dirname .. "duck",
+            priority = 0.01
          }
       }
    }
 }
+
+pop_textdomain()

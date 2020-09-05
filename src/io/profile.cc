@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,14 +19,8 @@
 
 #include "io/profile.h"
 
-#include <algorithm>
-#include <cctype>
 #include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <limits>
-#include <string>
 
 #include <boost/algorithm/string.hpp>
 
@@ -73,18 +67,18 @@ Section::Value::Value(const Section::Value& o) : used_(o.used_), name_(o.name_) 
 	set_string(o.value_.get());
 }
 
-Section::Value::Value(Section::Value&& o) : Value() {
+Section::Value::Value(Section::Value&& o) noexcept : Value() {
 	using std::swap;
 	swap(*this, o);
 }
 
-Section::Value& Section::Value::operator=(Section::Value other) {
+Section::Value& Section::Value::operator=(Section::Value other) noexcept {
 	using std::swap;
 	swap(*this, other);
 	return *this;
 }
 
-Section::Value& Section::Value::operator=(Section::Value&& other) {
+Section::Value& Section::Value::operator=(Section::Value&& other) noexcept {
 	using std::swap;
 	swap(*this, other);
 	return *this;
@@ -100,50 +94,66 @@ void Section::Value::mark_used() {
 
 int32_t Section::Value::get_int() const {
 	char* endp;
-	long int const i = strtol(value_.get(), &endp, 0);
-	if (*endp)
+	int64_t const i = strtol(value_.get(), &endp, 0);
+	if (*endp) {
 		throw wexception("%s: '%s' is not an integer", get_name(), get_string());
+	}
 	int32_t const result = i;
-	if (i != result)
+	if (i != result) {
 		throw wexception("%s: '%s' is out of range", get_name(), get_string());
+	}
 
 	return result;
 }
 
 uint32_t Section::Value::get_natural() const {
 	char* endp;
-	long long int i = strtoll(value_.get(), &endp, 0);
-	if (*endp || i < 0)
+	int64_t i = strtoll(value_.get(), &endp, 0);
+	if (*endp || i < 0) {
 		throw wexception("%s: '%s' is not natural", get_name(), get_string());
+	}
 	return i;
 }
 
 uint32_t Section::Value::get_positive() const {
 	char* endp;
-	long long int i = strtoll(value_.get(), &endp, 0);
-	if (*endp || i < 1)
+	int64_t i = strtoll(value_.get(), &endp, 0);
+	if (*endp || i < 1) {
 		throw wexception("%s: '%s' is not positive", get_name(), get_string());
+	}
 	return i;
 }
 
 bool Section::Value::get_bool() const {
-	for (int32_t i = 0; i < TRUE_WORDS; ++i)
-		if (boost::iequals(value_.get(), trueWords[i]))
+	for (int32_t i = 0; i < TRUE_WORDS; ++i) {
+		if (boost::iequals(value_.get(), trueWords[i])) {
 			return true;
-	for (int32_t i = 0; i < FALSE_WORDS; ++i)
-		if (boost::iequals(value_.get(), falseWords[i]))
+		}
+	}
+	for (int32_t i = 0; i < FALSE_WORDS; ++i) {
+		if (boost::iequals(value_.get(), falseWords[i])) {
 			return false;
+		}
+	}
 
 	throw wexception("%s: '%s' is not a boolean value", get_name(), get_string());
 }
 
 Vector2i Section::Value::get_point() const {
 	char* endp = value_.get();
-	long int const x = strtol(endp, &endp, 0);
-	long int const y = strtol(endp, &endp, 0);
-	if (*endp)
+	int64_t const x = strtol(endp, &endp, 0);
+	int64_t const y = strtol(endp, &endp, 0);
+	if (*endp) {
 		throw wexception("%s: '%s' is not a Vector2i", get_name(), get_string());
-
+	}
+	if (x > std::numeric_limits<int32_t>::max()) {
+		throw wexception("%s: '%s' x coordinate too large (> %d)", get_name(), get_string(),
+		                 std::numeric_limits<int32_t>::max());
+	}
+	if (y > std::numeric_limits<int32_t>::max()) {
+		throw wexception("%s: '%s' y coordinate too large (> %d)", get_name(), get_string(),
+		                 std::numeric_limits<int32_t>::max());
+	}
 	return Vector2i(x, y);
 }
 
@@ -276,25 +286,28 @@ Section::Value& Section::create_val_duplicate(char const* const name, char const
  */
 int32_t Section::get_safe_int(char const* const name) {
 	Value* const v = get_val(name);
-	if (!v)
+	if (!v) {
 		throw wexception("[%s]: missing integer key '%s'", get_name(), name);
+	}
 	return v->get_int();
 }
 
 /// Return the natural value of the given key or throw an exception.
 uint32_t Section::get_safe_natural(char const* const name) {
-	if (Value* const v = get_val(name))
+	if (Value* const v = get_val(name)) {
 		return v->get_natural();
-	else
+	} else {
 		throw wexception("[%s]: missing natural key '%s'", get_name(), name);
+	}
 }
 
 /// Return the positive value of the given key or throw an exception.
 uint32_t Section::get_safe_positive(char const* const name) {
-	if (Value* const v = get_val(name))
+	if (Value* const v = get_val(name)) {
 		return v->get_positive();
-	else
+	} else {
 		throw wexception("[%s]: missing positive key '%s'", get_name(), name);
+	}
 }
 
 /**
@@ -303,8 +316,9 @@ uint32_t Section::get_safe_positive(char const* const name) {
  */
 bool Section::get_safe_bool(char const* const name) {
 	Value* const v = get_val(name);
-	if (!v)
+	if (!v) {
 		throw wexception("[%s]: missing boolean key '%s'", get_name(), name);
+	}
 	return v->get_bool();
 }
 
@@ -314,8 +328,9 @@ bool Section::get_safe_bool(char const* const name) {
  */
 char const* Section::get_safe_string(char const* const name) {
 	Value* const v = get_val(name);
-	if (!v)
+	if (!v) {
 		throw wexception("[%s]: missing key '%s'", get_name(), name);
+	}
 	return v->get_string();
 }
 
@@ -338,8 +353,9 @@ const char* Section::get_safe_string(const std::string& name) {
  */
 int32_t Section::get_int(char const* const name, int32_t const def) {
 	Value* const v = get_val(name);
-	if (!v)
+	if (!v) {
 		return def;
+	}
 
 	try {
 		return v->get_int();
@@ -351,15 +367,16 @@ int32_t Section::get_int(char const* const name, int32_t const def) {
 }
 
 uint32_t Section::get_natural(char const* const name, uint32_t const def) {
-	if (Value* const v = get_val(name))
+	if (Value* const v = get_val(name)) {
 		try {
 			return v->get_natural();
 		} catch (const std::exception& e) {
 			profile_->error("%s", e.what());
 			return def;
 		}
-	else
+	} else {
 		return def;
+	}
 }
 
 uint32_t Section::get_positive(char const* const name, uint32_t const def) {
@@ -386,8 +403,9 @@ uint32_t Section::get_positive(char const* const name, uint32_t const def) {
  */
 bool Section::get_bool(char const* const name, bool const def) {
 	Value* const v = get_val(name);
-	if (!v)
+	if (!v) {
 		return def;
+	}
 
 	try {
 		return v->get_bool();
@@ -428,11 +446,13 @@ Vector2i Section::get_point(const char* const name, const Vector2i def) {
  */
 char const* Section::get_next_bool(char const* const name, bool* const value) {
 	Value* const v = get_next_val(name);
-	if (!v)
+	if (!v) {
 		return nullptr;
+	}
 
-	if (value)
+	if (value) {
 		*value = v->get_bool();
+	}
 	return v->get_name();
 }
 
@@ -499,8 +519,9 @@ Profile::Profile(char const* const filename,
  * ignored.
  */
 void Profile::error(char const* const fmt, ...) const {
-	if (error_level_ == err_ignore)
+	if (error_level_ == err_ignore) {
 		return;
+	}
 
 	char buffer[256];
 	va_list va;
@@ -509,10 +530,11 @@ void Profile::error(char const* const fmt, ...) const {
 	vsnprintf(buffer, sizeof(buffer), fmt, va);
 	va_end(va);
 
-	if (error_level_ == err_log)
-		log("[%s] %s\n", filename_.c_str(), buffer);
-	else
+	if (error_level_ == err_log) {
+		log_err("[%s] %s\n", filename_.c_str(), buffer);
+	} else {
 		throw wexception("[%s] %s", filename_.c_str(), buffer);
+	}
 }
 
 /** Profile::check_used()
@@ -552,10 +574,11 @@ Section* Profile::get_section(const std::string& name) {
  * If the section doesn't exist, an exception is thrown.
  */
 Section& Profile::get_safe_section(const std::string& name) {
-	if (Section* const s = get_section(name))
+	if (Section* const s = get_section(name)) {
 		return *s;
-	else
+	} else {
 		throw wexception("in \"%s\" section [%s] not found", filename_.c_str(), name.c_str());
+	}
 }
 
 /**
@@ -603,17 +626,19 @@ Section& Profile::create_section_duplicate(char const* const name) {
 }
 
 inline char* skipwhite(char* p) {
-	while (*p && isspace(*p))
+	while (*p && isspace(*p)) {
 		++p;
+	}
 	return p;
 }
 
 inline void rtrim(char* const str) {
-	for (char* p = strchr(str, '\0'); str < p; --p)
+	for (char* p = strchr(str, '\0'); str < p; --p) {
 		if (!isspace(p[-1])) {
 			*p = 0;
 			break;
 		}
+	}
 }
 
 inline void killcomments(char* p) {
@@ -648,19 +673,22 @@ void Profile::read(char const* const filename, char const* const global_section,
 		while (char* line = fr.read_line()) {
 			++linenr;
 
-			if (!reading_multiline)
+			if (!reading_multiline) {
 				p = line;
+			}
 
 			p = skipwhite(p);
-			if (!p[0] || p[0] == '#')
+			if (!p[0] || p[0] == '#') {
 				continue;
+			}
 
 			if (p[0] == '[') {
 				++p;
-				if (char* const closing = strchr(p, ']'))
+				if (char* const closing = strchr(p, ']')) {
 					*closing = '\0';
-				else
+				} else {
 					throw wexception("missing ']' after \"%s\"", p);
+				}
 				s = &create_section_duplicate(p);
 			} else {
 				char* tail = nullptr;
@@ -669,24 +697,28 @@ void Profile::read(char const* const filename, char const* const global_section,
 					// Note: comments are killed by walking backwards into the string
 					rtrim(p);
 					while (*line != '\'' && *line != '"') {
-						if (*line == 0)
+						if (*line == 0) {
 							throw wexception("runaway multiline string");
-						if (*line == '_')
+						}
+						if (*line == '_') {
 							translate_line = true;
+						}
 						++line;
 					}
 
 					// skip " or '
 					++line;
 
-					for (char* eot = line + strlen(line) - 1; *eot != '"' && *eot != '\''; --eot)
+					for (char* eot = line + strlen(line) - 1; *eot != '"' && *eot != '\''; --eot) {
 						*eot = 0;
+					}
 					// NOTE: we leave the last '"' and do not remove them
 					tail = line;
 				} else {
 					tail = strchr(p, '=');
-					if (!tail)
+					if (!tail) {
 						throw wexception("invalid syntax: %s", line);
+					}
 					*tail++ = '\0';
 					key = p;
 					if (*tail == '_') {
@@ -705,8 +737,9 @@ void Profile::read(char const* const filename, char const* const global_section,
 					}
 
 					// then remove surrounding '' or ""
-					if (tail[0] == '\'' || tail[0] == '"')
+					if (tail[0] == '\'' || tail[0] == '"') {
 						++tail;
+					}
 				}
 				if (tail) {
 					char* const eot = tail + strlen(tail) - 1;
@@ -723,10 +756,11 @@ void Profile::read(char const* const filename, char const* const global_section,
 
 					// ready to insert
 					if (!s) {
-						if (global_section)
+						if (global_section) {
 							s = &create_section_duplicate(global_section);
-						else
+						} else {
 							throw wexception("key %s outside section", p);
+						}
 					}
 
 					if (translate_line && *tail) {
@@ -738,21 +772,23 @@ void Profile::read(char const* const filename, char const* const global_section,
 						s->create_val_duplicate(key, data.c_str());
 						data.clear();
 					}
-				} else
+				} else {
 					throw wexception("syntax error");
+				}
 			}
 		}
 	} catch (const FileNotFoundError&) {
 		// It's no problem if the config file does not exist. (It'll get
 		// written on exit anyway)
-		log("There's no configuration file, using default values.\n");
+		log_warn("There's no configuration file, using default values.\n");
 	} catch (const std::exception& e) {
 		error("%s:%u: %s", filename, linenr, e.what());
 	}
 
 	//  Make sure that the requested global section exists, even if it is empty.
-	if (global_section && !get_section(global_section))
+	if (global_section && !get_section(global_section)) {
 		create_section_duplicate(global_section);
+	}
 }
 
 /**
@@ -774,14 +810,16 @@ void Profile::write(char const* const filename,
 	}
 
 	for (const Section& temp_section : sections_) {
-		if (used_only && !temp_section.is_used())
+		if (used_only && !temp_section.is_used()) {
 			continue;
+		}
 
 		fw.print_f("\n[%s]\n", temp_section.get_name());
 
 		for (const Section::Value& temp_value : temp_section.values_) {
-			if (used_only && !temp_value.is_used())
+			if (used_only && !temp_value.is_used()) {
 				continue;
+			}
 
 			char const* const str = temp_value.get_string();
 
@@ -799,11 +837,12 @@ void Profile::write(char const* const filename,
 				// getting inconsistent data
 				std::string tempstr("");
 
-				if (multiline)
+				if (multiline) {
 					// Show WL that a multilined text starts
 					tempstr += "\"";
+				}
 
-				for (char const* it = str; *it; ++it)
+				for (char const* it = str; *it; ++it) {
 					// No speach marks - they would break the format
 					switch (*it) {
 					case '"':
@@ -812,22 +851,26 @@ void Profile::write(char const* const filename,
 					case '\n':
 						// Convert the newlines to WL format.
 						tempstr += " \"\n";
-						for (uint32_t j = 0; j < spaces + 1; ++j)
+						for (uint32_t j = 0; j < spaces + 1; ++j) {
 							tempstr += ' ';
+						}
 						tempstr += " \"";
 						break;
 					default:
 						tempstr += *it;
 						break;
 					}
+				}
 
-				if (multiline)
+				if (multiline) {
 					// End of multilined text.
 					tempstr += '"';
+				}
 
 				fw.print_f("%s=\"%s\"\n", temp_value.get_name(), tempstr.c_str());
-			} else
+			} else {
 				fw.print_f("%s=\n", temp_value.get_name());
+			}
 		}
 	}
 

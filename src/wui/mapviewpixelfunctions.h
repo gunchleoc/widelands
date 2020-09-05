@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,8 +27,6 @@
 #include "wui/mapviewpixelconstants.h"
 
 namespace MapviewPixelFunctions {
-
-float calc_brightness(int32_t l, int32_t r, int32_t tl, int32_t tr, int32_t bl, int32_t br);
 
 Vector2f calc_pix_difference(const Widelands::Map&, Vector2f, Vector2f);
 float calc_pix_distance(const Widelands::Map&, Vector2f, Vector2f);

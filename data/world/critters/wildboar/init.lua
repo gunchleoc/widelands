@@ -1,17 +1,20 @@
-dirname = path.dirname(__file__)
+push_textdomain("world")
 
-world:new_critter_type{
+wl.World():new_critter_type{
    name = "wildboar",
    descname = _ "Wild boar",
-   editor_category = "critters_herbivores",
-   attributes = { "eatable" },
+   animation_directory = path.dirname(__file__),
+   size = 8,
+   reproduction_rate = 10,
+   appetite = 20,
+   herbivore = {"field"},
+
    programs = {
       remove = { "remove" },
    },
+
    spritesheets = {
       idle = {
-         directory = dirname,
-         basename = "idle",
          fps = 20,
          frames = 20,
          rows = 5,
@@ -19,11 +22,18 @@ world:new_critter_type{
          hotspot = { 10, 18 },
          sound_effect = {
             path = "sound/animals/boar",
+            priority = 0.01
          }
       },
+      eating = {
+         basename = "idle", -- TODO(Nordfriese): Make animation
+         fps = 20,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         hotspot = { 10, 18 }
+      },
       walk = {
-         directory = dirname,
-         basename = "walk",
          fps = 20,
          frames = 20,
          rows = 5,
@@ -33,3 +43,5 @@ world:new_critter_type{
       }
    }
 }
+
+pop_textdomain()

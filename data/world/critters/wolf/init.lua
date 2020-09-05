@@ -1,30 +1,39 @@
-dirname = path.dirname(__file__)
+push_textdomain("world")
 
-world:new_critter_type{
+wl.World():new_critter_type{
    name = "wolf",
    descname = _ "Wolf",
-   editor_category = "critters_carnivores",
-   attributes = { "eatable" },
+   animation_directory = path.dirname(__file__),
+   size = 5,
+   reproduction_rate = 80,
+   appetite = 100,
+   carnivore = true,
+
    programs = {
       remove = { "remove" },
    },
+
    spritesheets = {
       idle = {
-         directory = dirname,
-         basename = "idle",
          fps = 10,
          frames = 20,
          rows = 5,
          columns = 4,
          hotspot = { 8, 15 },
          sound_effect = {
-            -- Sound files with numbers starting from 10 are generating silence.
             path = "sound/animals/wolf",
+            priority = 3
          }
       },
+      eating = {
+         basename = "idle", -- TODO(Nordfriese): Make animation
+         fps = 10,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         hotspot = { 8, 15 },
+      },
       walk = {
-         directory = dirname,
-         basename = "walk",
          fps = 20,
          frames = 20,
          rows = 5,
@@ -34,3 +43,5 @@ world:new_critter_type{
       }
    }
 }
+
+pop_textdomain()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,9 +19,6 @@
 
 #ifndef WL_UI_FSMENU_MAPSELECT_H
 #define WL_UI_FSMENU_MAPSELECT_H
-
-#include <string>
-#include <vector>
 
 #include "ui_basic/box.h"
 #include "ui_basic/checkbox.h"
@@ -60,7 +57,7 @@ private:
 
 	/// Updates buttons and text labels and returns whether a table entry is selected.
 	bool set_has_selection();
-	UI::Checkbox* add_tag_checkbox(UI::Box*, std::string, std::string);
+	UI::Checkbox* add_tag_checkbox(UI::Box* box, const std::string& tag, const std::string&);
 	void tagbox_changed(int32_t, bool);
 	void clear_filter();
 	void rebuild_balancing_dropdown();

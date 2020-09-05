@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 #define WL_LOGIC_PATHFIELD_H
 
 #include <memory>
-#include <vector>
-
-#include <boost/shared_ptr.hpp>
-#include <stdint.h>
 
 #include "logic/cookie_priority_queue.h"
 #include "logic/map_objects/tribes/wareworker.h"
@@ -80,12 +76,12 @@ struct PathfieldManager {
 	PathfieldManager();
 
 	void set_size(uint32_t nrfields);
-	boost::shared_ptr<Pathfields> allocate();
+	std::shared_ptr<Pathfields> allocate();
 
 private:
-	void clear(const boost::shared_ptr<Pathfields>& pf);
+	void clear(const std::shared_ptr<Pathfields>& pf);
 
-	using List = std::vector<boost::shared_ptr<Pathfields>>;
+	using List = std::vector<std::shared_ptr<Pathfields>>;
 
 	uint32_t nrfields_;
 	List list_;

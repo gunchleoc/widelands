@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,10 +19,6 @@
 
 #ifndef WL_UI_FSMENU_NETSETUP_LAN_H
 #define WL_UI_FSMENU_NETSETUP_LAN_H
-
-#include <cstring>
-#include <list>
-#include <string>
 
 #include "network/network_lan_promotion.h"
 #include "ui_basic/box.h"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,7 +20,7 @@
 #ifndef WL_UI_BASIC_CHECKBOX_H
 #define WL_UI_BASIC_CHECKBOX_H
 
-#include <boost/signals2.hpp>
+#include <memory>
 
 #include "graphic/text/rendered_text.h"
 #include "ui_basic/panel.h"
@@ -71,6 +71,7 @@ struct Statebox : public Panel {
 	void handle_mousein(bool inside) override;
 	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y) override;
 	bool handle_mousemove(uint8_t, int32_t, int32_t, int32_t, int32_t) override;
+	bool handle_key(bool, SDL_Keysym) override;
 
 private:
 	void layout() override;
@@ -86,8 +87,9 @@ private:
 	uint8_t flags_;
 	void set_flags(uint8_t const flags, bool const enable) {
 		flags_ &= ~flags;
-		if (enable)
+		if (enable) {
 			flags_ |= flags;
+		}
 	}
 	const Image* pic_graphics_;
 	std::shared_ptr<const UI::RenderedText> rendered_text_;

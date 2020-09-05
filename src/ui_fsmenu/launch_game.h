@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 #define WL_UI_FSMENU_LAUNCH_GAME_H
 
 #include <memory>
-#include <string>
 
 #include "logic/widelands.h"
 #include "ui_basic/button.h"
@@ -57,6 +56,8 @@ protected:
 
 	/// Enables or disables the peaceful mode checkbox.
 	void update_peaceful_mode();
+	/// Enables or disables the custom_starting_positions checkbox.
+	void update_custom_starting_positions();
 
 	/// Loads all win conditions that can be played with the map into the selection dropdown.
 	/// Disables the dropdown if the map is a scenario.
@@ -71,15 +72,16 @@ protected:
 	/// parses the win condition and returns it as a std::unique_ptr<LuaTable>.
 	/// If this win condition can't be played with the map tags, returns a unique_ptr to nullptr.
 	std::unique_ptr<LuaTable> win_condition_if_valid(const std::string& win_condition_script,
-	                                                 std::set<std::string> tags) const;
+	                                                 const std::set<std::string>& tags) const;
 
 	void toggle_peaceful();
+	void toggle_custom_starting_positions();
 
 	uint32_t butw_;
 	uint32_t buth_;
 
 	UI::Dropdown<std::string> win_condition_dropdown_;
-	UI::Checkbox peaceful_;
+	UI::Checkbox peaceful_, custom_starting_positions_;
 	std::string last_win_condition_;
 	UI::Button ok_, back_;
 	UI::Textarea title_;

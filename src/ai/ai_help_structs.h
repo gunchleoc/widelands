@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 by the Widelands Development Team
+ * Copyright (C) 2009-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +20,7 @@
 #ifndef WL_AI_AI_HELP_STRUCTS_H
 #define WL_AI_AI_HELP_STRUCTS_H
 
-#include <algorithm>
-#include <list>
-#include <queue>
-#include <unordered_set>
+#include <bitset>
 
 #include "ai/ai_hints.h"
 #include "economy/flag.h"
@@ -33,7 +30,6 @@
 #include "logic/map.h"
 #include "logic/map_objects/checkstep.h"
 #include "logic/map_objects/findnode.h"
-#include "logic/map_objects/map_object.h"
 #include "logic/map_objects/tribes/ship.h"
 #include "logic/map_objects/world/terrain_description.h"
 #include "logic/map_objects/world/world.h"
@@ -77,8 +73,6 @@ enum class BuildingAttribute : uint8_t {
 	kBuildingMatProducer,
 	kUpgradeSubstitutes,
 	kUpgradeExtends,
-	kLogRefiner,
-	kIronMine,
 	// TODO(Nordfriese): Someone should update the AI code to handle buildings that need waterways
 	// enabled
 	kNeedsSeafaring,
@@ -567,8 +561,7 @@ struct ShipObserver {
 };
 
 struct WareObserver {
-	uint8_t producers;
-	uint8_t consumers;
+	bool refined_build_material = false;
 	uint8_t preciousness;
 };
 
@@ -590,6 +583,8 @@ struct EnemySiteObserver {
 	Widelands::ExtendedBool mines_nearby = Widelands::ExtendedBool::kUnset;
 	uint32_t last_time_attacked = 0U;
 	uint32_t attack_counter = 0U;
+	uint16_t enemy_military_presence_in_region = 0U;
+	uint16_t enemy_military_sites_in_region = 0U;
 };
 
 // as all mines have 3 levels, AI does not know total count of mines per mined material

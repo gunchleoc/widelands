@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,15 +19,11 @@
 
 #include "editor/ui_menus/main_menu_random_map.h"
 
-#include <cstring>
 #include <sstream>
-#include <string>
-#include <vector>
-
-#include <boost/format.hpp>
 
 #include "base/i18n.h"
 #include "base/log.h"
+#include "base/random.h"
 #include "base/wexception.h"
 #include "editor/editorinteractive.h"
 #include "editor/map_generator.h"
@@ -36,17 +32,13 @@
 #include "logic/editor_game_base.h"
 #include "logic/map.h"
 #include "logic/map_objects/world/world.h"
-#include "random/random.h"
 #include "ui_basic/messagebox.h"
-#include "ui_basic/progresswindow.h"
 #include "wlapplication_options.h"
 
 namespace {
 // The map generator can't find starting positions for too many players
 constexpr uint8_t kMaxMapgenPlayers = 8;
 }  // namespace
-
-using namespace Widelands;
 
 MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
                                            UI::UniqueWindow::Registry& registry)
@@ -217,8 +209,7 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	box_.add_space(margin_);
 	box_height += margin_;
 
-	players_.changed.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kPlayers));
+	players_.changed.connect([this]() { button_clicked(ButtonId::kPlayers); });
 
 	// ---------- Worlds ----------
 
@@ -227,8 +218,7 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 		world_box_.add_space(resources_label_.get_w() - world_label_.get_w() - margin_);
 	}
 
-	world_.sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kWorld));
+	world_.sigclicked.connect([this]() { button_clicked(ButtonId::kWorld); });
 	world_box_.add(&world_);
 	box_.add(&world_box_);
 	box_height += margin_ + world_box_.get_h();
@@ -242,8 +232,7 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 		resources_box_.add_space(world_label_.get_w() - resources_label_.get_w() - margin_);
 	}
 
-	resources_.sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kResources));
+	resources_.sigclicked.connect([this]() { button_clicked(ButtonId::kResources); });
 	resources_box_.add(&resources_);
 	box_.add(&resources_box_);
 	box_height += margin_ + resources_box_.get_h();
@@ -251,20 +240,16 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	box_height += margin_;
 
 	// ---------- Water -----------
-	water_.get_buttons()[0]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kWater));
-	water_.get_buttons()[1]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kWater));
+	water_.get_buttons()[0]->sigclicked.connect([this]() { button_clicked(ButtonId::kWater); });
+	water_.get_buttons()[1]->sigclicked.connect([this]() { button_clicked(ButtonId::kWater); });
 
 	box_.add(&water_);
 	box_height += margin_ + water_.get_h();
 
 	// ---------- Land -----------
 
-	land_.get_buttons()[0]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kLand));
-	land_.get_buttons()[1]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kLand));
+	land_.get_buttons()[0]->sigclicked.connect([this]() { button_clicked(ButtonId::kLand); });
+	land_.get_buttons()[1]->sigclicked.connect([this]() { button_clicked(ButtonId::kLand); });
 
 	box_.add(&land_);
 	box_height += margin_ + land_.get_h();
@@ -272,9 +257,9 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	// ---------- Wasteland -----------
 
 	wasteland_.get_buttons()[0]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kWasteland));
+	   [this]() { button_clicked(ButtonId::kWasteland); });
 	wasteland_.get_buttons()[1]->sigclicked.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kWasteland));
+	   [this]() { button_clicked(ButtonId::kWasteland); });
 
 	box_.add(&wasteland_);
 	box_height += margin_ + wasteland_.get_h();
@@ -303,14 +288,13 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	box_.add_space(margin_);
 	box_height += margin_;
 
-	island_mode_.changed.connect(
-	   boost::bind(&MainMenuNewRandomMap::button_clicked, this, ButtonId::kIslandMode));
+	island_mode_.changed.connect([this]() { button_clicked(ButtonId::kIslandMode); });
 
 	// ---------- Random map number edit ----------
 
 	map_number_box_.add(&map_number_label_);
 
-	map_number_edit_.changed.connect(boost::bind(&MainMenuNewRandomMap::nr_edit_box_changed, this));
+	map_number_edit_.changed.connect([this]() { nr_edit_box_changed(); });
 	RNG rng;
 	rng.seed(clock());
 	rng.rand();
@@ -328,7 +312,7 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	map_id_box_.add(&map_id_label_);
 
 	map_id_edit_.set_text("abcd-efgh-ijkl-mnop");
-	map_id_edit_.changed.connect(boost::bind(&MainMenuNewRandomMap::id_edit_box_changed, this));
+	map_id_edit_.changed.connect([this]() { id_edit_box_changed(); });
 	map_id_box_.add(&map_id_edit_);
 	box_.add(&map_id_box_);
 	box_height += margin_ + map_id_edit_.get_h();
@@ -336,8 +320,8 @@ MainMenuNewRandomMap::MainMenuNewRandomMap(EditorInteractive& parent,
 	box_height += margin_;
 
 	// ---------- "Generate Map" button ----------
-	cancel_button_.sigclicked.connect(boost::bind(&MainMenuNewRandomMap::clicked_cancel, this));
-	ok_button_.sigclicked.connect(boost::bind(&MainMenuNewRandomMap::clicked_create_map, this));
+	cancel_button_.sigclicked.connect([this]() { clicked_cancel(); });
+	ok_button_.sigclicked.connect([this]() { clicked_create_map(); });
 	if (UI::g_fh->fontset()->is_rtl()) {
 		button_box_.add(&ok_button_);
 		button_box_.add(&cancel_button_);
@@ -472,7 +456,7 @@ void MainMenuNewRandomMap::clicked_create_map() {
 	egbase.create_loader_ui({"editor"}, true, "images/loadscreens/editor.jpg");
 	eia.cleanup_for_load();
 
-	UniqueRandomMapInfo map_info;
+	Widelands::UniqueRandomMapInfo map_info;
 	set_map_info(map_info);
 
 	std::stringstream sstrm;
@@ -483,40 +467,39 @@ void MainMenuNewRandomMap::clicked_create_map() {
 	      << "Resources = " << resources_.get_title() << "\n"
 	      << "ID = " << map_id_edit_.text() << "\n";
 
-	MapGenerator gen(*map, map_info, egbase);
+	Widelands::MapGenerator gen(*map, map_info, egbase);
 	map->create_empty_map(egbase, map_info.w, map_info.h, 0, _("No Name"),
 	                      get_config_string("realname", pgettext("author_name", "Unknown")),
 	                      sstrm.str().c_str());
-	egbase.step_loader_ui(_("Generating random map…"));
+	Notifications::publish(UI::NoteLoadingMessage(_("Generating random map…")));
 
-	log("============== Generating Map ==============\n");
-	log("ID:            %s\n", map_id_edit_.text().c_str());
-	log("Random number: %u\n", map_info.mapNumber);
-	log("Dimensions:    %d x %d\n", map_info.w, map_info.h);
-	log("Players:       %d\n", map_info.numPlayers);
-	log("World:         %s\n", map_info.world_name.c_str());
+	log_info("============== Generating Map ==============\n");
+	log_info("ID:            %s\n", map_id_edit_.text().c_str());
+	log_info("Random number: %u\n", map_info.mapNumber);
+	log_info("Dimensions:    %d x %d\n", map_info.w, map_info.h);
+	log_info("Players:       %d\n", map_info.numPlayers);
+	log_info("World:         %s\n", map_info.world_name.c_str());
 	switch (map_info.resource_amount) {
-	case UniqueRandomMapInfo::ResourceAmount::raLow:
-		log("Resources:     low\n");
+	case Widelands::UniqueRandomMapInfo::ResourceAmount::raLow:
+		log_info("Resources:     low\n");
 		break;
-	case UniqueRandomMapInfo::ResourceAmount::raMedium:
-		log("Resources:     medium\n");
+	case Widelands::UniqueRandomMapInfo::ResourceAmount::raMedium:
+		log_info("Resources:     medium\n");
 		break;
-	case UniqueRandomMapInfo::ResourceAmount::raHigh:
-		log("Resources:     high\n");
+	case Widelands::UniqueRandomMapInfo::ResourceAmount::raHigh:
+		log_info("Resources:     high\n");
 		break;
 	}
-	log("Land: %0.2f  Water: %0.2f  Wasteland: %0.2f\n", map_info.landRatio, map_info.waterRatio,
-	    map_info.wastelandRatio);
+	log_info("Land: %0.2f  Water: %0.2f  Wasteland: %0.2f\n", map_info.landRatio,
+	         map_info.waterRatio, map_info.wastelandRatio);
 	if (map_info.islandMode) {
-		log("Using Island Mode\n");
+		log_info("Using Island Mode\n");
 	}
-	log("\n");
+	log_info("\n");
 
 	gen.create_random_map();
 
-	egbase.postload();
-	egbase.load_graphics();
+	egbase.create_tempfile_and_save_mapdata(FileSystem::ZIP);
 
 	map->recalc_whole_map(egbase);
 	eia.map_changed(EditorInteractive::MapWas::kReplaced);
@@ -544,7 +527,7 @@ void MainMenuNewRandomMap::clicked_cancel() {
 }
 
 void MainMenuNewRandomMap::id_edit_box_changed() {
-	UniqueRandomMapInfo map_info;
+	Widelands::UniqueRandomMapInfo map_info;
 
 	std::string str = map_id_edit_.text();
 
@@ -554,9 +537,9 @@ void MainMenuNewRandomMap::id_edit_box_changed() {
 		world_names.push_back(descr.name);
 	}
 
-	if (!UniqueRandomMapInfo::set_from_id_string(map_info, str, world_names))
+	if (!Widelands::UniqueRandomMapInfo::set_from_id_string(map_info, str, world_names)) {
 		ok_button_.set_enabled(false);
-	else {
+	} else {
 		std::stringstream sstrm;
 		sstrm << map_info.mapNumber;
 		map_number_edit_.set_text(sstrm.str());
@@ -607,8 +590,9 @@ void MainMenuNewRandomMap::nr_edit_box_changed() {
 			map_id_edit_.set_text(id_string);
 
 			ok_button_.set_enabled(true);
-		} else
+		} else {
 			ok_button_.set_enabled(false);
+		}
 	} catch (...) {
 		ok_button_.set_enabled(false);
 	}

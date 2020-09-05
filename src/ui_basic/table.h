@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,12 +20,8 @@
 #ifndef WL_UI_BASIC_TABLE_H
 #define WL_UI_BASIC_TABLE_H
 
-#include <limits>
+#include <functional>
 #include <set>
-#include <vector>
-
-#include <boost/function.hpp>
-#include <boost/signals2.hpp>
 
 #include "graphic/align.h"
 #include "graphic/styles/font_style.h"
@@ -119,6 +115,8 @@ public:
 
 	uint32_t get_eff_w() const;
 
+	std::vector<Recti> focus_overlay_rects();
+
 	// Drawing and event handling
 	void draw(RenderTarget&);
 	bool handle_mousepress(uint8_t btn, int32_t x, int32_t y);
@@ -182,7 +180,7 @@ public:
 	 *
 	 * return true if the first item is strictly less than the second
 	 */
-	using CompareFn = boost::function<bool(uint32_t, uint32_t)>;
+	using CompareFn = std::function<bool(uint32_t, uint32_t)>;
 
 	boost::signals2::signal<void()> cancel;
 	boost::signals2::signal<void(uint32_t)> selected;
@@ -287,6 +285,8 @@ public:
 	void scroll_to_top();
 
 	void layout() override;
+
+	std::vector<Recti> focus_overlay_rects() override;
 
 	// Drawing and event handling
 	void draw(RenderTarget&) override;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 #define WL_UI_FSMENU_LOAD_MAP_OR_GAME_H
 
 #include "ui_fsmenu/base.h"
-
-#include <memory>
-
-#include <boost/algorithm/string.hpp>
 
 #include "base/i18n.h"
 #include "ui_basic/button.h"

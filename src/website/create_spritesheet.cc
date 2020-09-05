@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 by the Widelands Development Team
+ * Copyright (C) 2018-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,12 +18,10 @@
  */
 
 #include <cassert>
+#include <iostream>
 #include <memory>
-#include <vector>
 
-#include <SDL.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
 
 #include "base/log.h"
 #include "base/macros.h"
@@ -45,64 +43,64 @@
 namespace {
 char const* const animation_direction_names[6] = {"_ne", "_e", "_se", "_sw", "_w", "_nw"};
 
-// Find trimmed rect for a teaxture according to transparent pixels, searching from the outside in.
+// Find trimmed rect for a texture according to transparent pixels, searching from the outside in.
 // Lock texture before you call this function.
 Recti find_trim_rect(Texture* texture) {
-    Recti result(Vector2i::zero(), texture->width(), texture->height());
+	Recti result(Vector2i::zero(), texture->width(), texture->height());
 
-    // Left margin
-    bool loop_done = false;
-    for (int x = 0; x < texture->width() && !loop_done; ++x) {
-        for (int y = 0; y < texture->height(); ++y) {
+	// Left margin
+	bool loop_done = false;
+	for (int x = 0; x < texture->width() && !loop_done; ++x) {
+		for (int y = 0; y < texture->height(); ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.x = x;
-                loop_done = true;
-                break;
+				result.x = x;
+				loop_done = true;
+				break;
 			}
 		}
-    }
+	}
 
-    // Right margin
-    loop_done = false;
-    for (int x = texture->width() - 1; x > 0 && !loop_done; --x) {
-        for (int y = 0; y < texture->height(); ++y) {
+	// Right margin
+	loop_done = false;
+	for (int x = texture->width() - 1; x > 0 && !loop_done; --x) {
+		for (int y = 0; y < texture->height(); ++y) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.w = x + 1;
-                loop_done = true;
-                break;
+				result.w = x + 1;
+				loop_done = true;
+				break;
 			}
 		}
-    }
+	}
 
-    // Top margin
-    loop_done = false;
-    for (int y = 0; y < texture->height() && !loop_done; ++y) {
-        for (int x = 0; x < texture->width(); ++x) {
+	// Top margin
+	loop_done = false;
+	for (int y = 0; y < texture->height() && !loop_done; ++y) {
+		for (int x = 0; x < texture->width(); ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.y = y;
-                loop_done = true;
-                break;
+				result.y = y;
+				loop_done = true;
+				break;
 			}
 		}
-    }
+	}
 
-    // Bottom margin
-    loop_done = false;
-    for (int y = texture->height() - 1; y >= 0 && !loop_done; --y) {
-        for (int x = 0; x < texture->width(); ++x) {
+	// Bottom margin
+	loop_done = false;
+	for (int y = texture->height() - 1; y >= 0 && !loop_done; --y) {
+		for (int x = 0; x < texture->width(); ++x) {
 			RGBAColor pixel = texture->get_pixel(x, y);
 			if (pixel.a != 0) {
-                result.h = y + 1;
-                loop_done = true;
-                break;
+				result.h = y + 1;
+				loop_done = true;
+				break;
 			}
 		}
-    }
+	}
 
-    return result;
+	return result;
 }
 
 // Finds margins so that we can crop the animation to save space
@@ -113,11 +111,11 @@ void find_margins(const std::vector<std::unique_ptr<const Texture>>& images, Rec
 		temp_texture->blit(image_dimensions, *image, image_dimensions, 1., BlendMode::Copy);
 		temp_texture->lock();
 
-        const Recti new_rect = find_trim_rect(temp_texture.get());
-        margins->x = std::min(margins->x, new_rect.x);
-        margins->w = std::max(margins->w, new_rect.w);
-        margins->y = std::min(margins->y, new_rect.y);
-        margins->h = std::max(margins->h, new_rect.h);
+		const Recti new_rect = find_trim_rect(temp_texture.get());
+		margins->x = std::min(margins->x, new_rect.x);
+		margins->w = std::max(margins->w, new_rect.w);
+		margins->y = std::min(margins->y, new_rect.y);
+		margins->h = std::max(margins->h, new_rect.h);
 	}
 }
 
@@ -129,8 +127,9 @@ void write_spritesheet(const std::vector<std::unique_ptr<const Texture>>& imgs,
                        int spritesheet_width,
                        int spritesheet_height,
                        FileSystem* out_filesystem) {
-	log("CREATING %d x %d spritesheet with %d columns, %" PRIuS " frames. Image size: %d x %d.\n",
-	    spritesheet_width, spritesheet_height, columns, imgs.size(), rect.w, rect.h);
+	log_info("CREATING %d x %d spritesheet with %d columns, %" PRIuS
+	         " frames. Image size: %d x %d.\n",
+	         spritesheet_width, spritesheet_height, columns, imgs.size(), rect.w, rect.h);
 	std::unique_ptr<Texture> spritesheet(new Texture(spritesheet_width, spritesheet_height));
 	spritesheet->fill_rect(
 	   Rectf(Vector2f::zero(), spritesheet_width, spritesheet_height), RGBAColor(0, 0, 0, 0));
@@ -144,23 +143,22 @@ void write_spritesheet(const std::vector<std::unique_ptr<const Texture>>& imgs,
 		const Texture* image = imgs[i].get();
 		const int x = col * rect.w;
 		const int y = row * rect.h;
-		log("Frame %" PRIuS " at: %d, %d, %d, %d\n", i, x, y, x + rect.w, y + rect.h);
+		log_info("Frame %" PRIuS " at: %d, %d, %d, %d\n", i, x, y, x + rect.w, y + rect.h);
 		spritesheet->blit(Rectf(x, y, rect.w, rect.h), *image, Rectf(rect.x, rect.y, rect.w, rect.h),
 		                  1., BlendMode::Copy);
 	}
 	std::unique_ptr<::StreamWrite> sw(out_filesystem->open_stream_write(filename));
 	save_to_png(spritesheet.get(), sw.get(), ColorType::RGBA);
-	log("Wrote spritesheet to %s/%s\n", out_filesystem->get_basename().c_str(), filename.c_str());
+	log_info(
+	   "Wrote spritesheet to %s/%s\n", out_filesystem->get_basename().c_str(), filename.c_str());
 }
 
 // Container for writing spritesheet files
 struct SpritesheetData {
-	explicit SpritesheetData(const std::string& fb,
-                             const Animation& animation,
-                             const float scale)
+	explicit SpritesheetData(const std::string& fb, const Animation& animation, const float scale)
 	   : filename_base(fb),
-         images(animation.frame_textures(scale, false)),
-         pc_masks(animation.frame_textures(scale, true)) {
+	     images(animation.frame_textures(scale, false)),
+	     pc_masks(animation.frame_textures(scale, true)) {
 	}
 
 	const std::string filename_base;
@@ -175,7 +173,7 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
                                   FileSystem* out_filesystem) {
 	const Widelands::Tribes& tribes = egbase.tribes();
 	const Widelands::World& world = egbase.world();
-	log("==========================================\n");
+	log_info("==========================================\n");
 
 	bool is_fontier_or_flag_animation = false;
 	uint32_t frontier_or_flag_animation_id = 0;
@@ -213,7 +211,7 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		}
 	}
 	if (!is_fontier_or_flag_animation && descr == nullptr) {
-		log("ABORTING. Unable to find map object for '%s'!\n", map_object_name.c_str());
+		log_err("ABORTING. Unable to find map object for '%s'!\n", map_object_name.c_str());
 		return;
 	}
 	assert(is_fontier_or_flag_animation || (descr->name() == map_object_name));
@@ -226,33 +224,23 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 	if (!is_fontier_or_flag_animation) {
 		if (!descr->is_animation_known(animation_name) &&
 		    !descr->is_animation_known(animation_name + "_ne")) {
-			log("ABORTING. Unknown animation '%s' for '%s'\n", animation_name.c_str(),
-			    map_object_name.c_str());
+			log_err("ABORTING. Unknown animation '%s' for '%s'\n", animation_name.c_str(),
+			        map_object_name.c_str());
 			return;
 		}
 	}
 
 	// Representative animation for collecting global paramaters for the animation set
-	const Animation& representative_animation = g_gr->animations().get_animation(
+	const Animation& representative_animation = g_animation_manager->get_animation(
 	   is_fontier_or_flag_animation ?
 	      frontier_or_flag_animation_id :
 	      descr->get_animation(is_directional ? animation_name + "_ne" : animation_name, nullptr));
 
 	const int nr_frames = representative_animation.nr_frames();
 
-	// Only create spritesheet if animation has more than 1 frame.
-	if (nr_frames < 2) {
-		log("ABORTING. Animation '%s' for '%s' has less than 2 images and doesn't need a "
-		    "spritesheet.\n",
-		    animation_name.c_str(), map_object_name.c_str());
-		return;
-	}
-
 	// Add global paramaters for this animation to Lua
 	std::unique_ptr<LuaTree::Element> lua_object(new LuaTree::Element());
 	LuaTree::Object* lua_animation = lua_object->add_object(animation_name);
-	lua_animation->add_raw("directory", "path.dirname(__file__)");
-	lua_animation->add_string("basename", animation_name);
 
 	// We only write FPS if the animation is not a build animation and does not use the default FPS.
 	if (animation_name != "build") {
@@ -264,9 +252,9 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		}
 	}
 
-	log("WRITING '%s' animation for '%s'. It has %d pictures and %" PRIuS " scales.\n",
-	    animation_name.c_str(), map_object_name.c_str(), nr_frames,
-	    representative_animation.available_scales().size());
+	log_info("WRITING '%s' animation for '%s'. It has %d pictures and %" PRIuS " scales.\n",
+	         animation_name.c_str(), map_object_name.c_str(), nr_frames,
+	         representative_animation.available_scales().size());
 
 	const int columns = floor(sqrt(nr_frames));
 	int rows = 1;
@@ -274,9 +262,15 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		++rows;
 	}
 
-	lua_animation->add_int("frames", nr_frames);
-	lua_animation->add_int("rows", rows);
-	lua_animation->add_int("columns", columns);
+	if (nr_frames > 1) {
+		lua_animation->add_int("frames", nr_frames);
+		lua_animation->add_int("rows", rows);
+		lua_animation->add_int("columns", columns);
+	} else {
+		log_warn("NOTE: Animation '%s' for '%s' has less than 2 images and doesn't need a "
+		         "spritesheet. Add it to the \"animations\" table.\n",
+		         animation_name.c_str(), map_object_name.c_str());
+	}
 
 	const int representative_frame = representative_animation.representative_frame();
 	if (representative_frame > 0) {
@@ -302,36 +296,38 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 				const std::string filename_base = (boost::format("%s%s_%d") % animation_name %
 				                                   animation_direction_names[dir - 1] % scale)
 				                                     .str();
-				const Animation& directional_animation = g_gr->animations().get_animation(
+				const Animation& directional_animation = g_animation_manager->get_animation(
 				   descr->get_animation(directional_animname, nullptr));
-				spritesheets_to_write.emplace_back(new SpritesheetData(filename_base, directional_animation, scale));
+				spritesheets_to_write.emplace_back(
+				   new SpritesheetData(filename_base, directional_animation, scale));
 			}
 
 		} else {
-			spritesheets_to_write.emplace_back(new SpritesheetData(
-			   (boost::format("%s_%d") % animation_name % scale).str(), representative_animation, scale));
+			spritesheets_to_write.emplace_back(
+			   new SpritesheetData((boost::format("%s_%d") % animation_name % scale).str(),
+			                       representative_animation, scale));
 		}
 
 		// Find margins for trimming
-        const int max_width = spritesheets_to_write.front()->images.front()->width();
-        const int max_height = spritesheets_to_write.front()->images.front()->height();
+		const int max_width = spritesheets_to_write.front()->images.front()->width();
+		const int max_height = spritesheets_to_write.front()->images.front()->height();
 		Recti margins(max_width, max_height, 0, 0);
 		for (const auto& animation_data : spritesheets_to_write) {
 			find_margins(animation_data->images, &margins);
 		}
 
-        // Turn right and bottom edges from absolute coordinates to relative
-        margins.w -= margins.x;
-        margins.h -= margins.y;
-        margins.w = std::min(margins.w, max_width);
-        margins.h = std::min(margins.h, max_height);
+		// Turn right and bottom edges from absolute coordinates to relative
+		margins.w -= margins.x;
+		margins.h -= margins.y;
+		margins.w = std::min(margins.w, max_width);
+		margins.h = std::min(margins.h, max_height);
 
-        assert(margins.x >= 0);
-        assert(margins.y >= 0);
-        assert(margins.w <= max_width);
-        assert(margins.h <= max_height);
-        assert(margins.w > 1);
-        assert(margins.h > 1);
+		assert(margins.x >= 0);
+		assert(margins.y >= 0);
+		assert(margins.w <= max_width);
+		assert(margins.h <= max_height);
+		assert(margins.w > 1);
+		assert(margins.h > 1);
 
 		// Write the spritesheet(s)
 		const int spritesheet_width = columns * margins.w;
@@ -350,9 +346,9 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 			write_spritesheet(spritesheet_data->images, spritesheet_data->filename_base + ".png",
 			                  margins, columns, spritesheet_width, spritesheet_height, out_filesystem);
 			if (!spritesheet_data->pc_masks.empty()) {
-				write_spritesheet(spritesheet_data->pc_masks, spritesheet_data->filename_base + "_pc.png",
-				                  margins, columns, spritesheet_width, spritesheet_height,
-				                  out_filesystem);
+				write_spritesheet(spritesheet_data->pc_masks,
+				                  spritesheet_data->filename_base + "_pc.png", margins, columns,
+				                  spritesheet_width, spritesheet_height, out_filesystem);
 			}
 		}
 
@@ -365,8 +361,9 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 		}
 	}
 
-	log("LUA CODE:\n%s\n", lua_animation->as_string().c_str());
-	log("Done!\n");
+	log_info("LUA CODE:");
+	std::cout << lua_animation->as_string() << std::endl;
+	log_info("Done!\n");
 }
 
 }  // namespace
@@ -379,7 +376,7 @@ void write_animation_spritesheets(Widelands::EditorGameBase& egbase,
 
 int main(int argc, char** argv) {
 	if (argc != 4) {
-		log("Usage: %s <mapobject_name> <animation_name> <existing-output-path>\n", argv[0]);
+		log_err("Usage: %s <mapobject_name> <animation_name> <existing-output-path>\n", argv[0]);
 		return 1;
 	}
 
@@ -391,10 +388,20 @@ int main(int argc, char** argv) {
 		initialize();
 		std::unique_ptr<FileSystem> out_filesystem(&FileSystem::create(output_path));
 		Widelands::EditorGameBase egbase(nullptr);
+		// Load tribe info
+		egbase.tribes();
+		// Load a tribe to create the global 'tribes' Lua variable
+		Notifications::publish(Widelands::NoteMapObjectDescription(
+		   "barbarians", Widelands::NoteMapObjectDescription::LoadType::kObject));
+		// Load the object for the animation
+		Notifications::publish(Widelands::NoteMapObjectDescription(
+		   map_object_name, Widelands::NoteMapObjectDescription::LoadType::kObject));
+		// Write spritesheet
 		write_animation_spritesheets(egbase, map_object_name, animation_name, out_filesystem.get());
+		// Cleanup
 		egbase.cleanup_objects();
 	} catch (std::exception& e) {
-		log("Exception: %s.\n", e.what());
+		log_err("Exception: %s.\n", e.what());
 		cleanup();
 		return 1;
 	}

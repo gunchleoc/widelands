@@ -8,10 +8,7 @@
 --
 -- Critters are defined in
 -- ``data/world/critters/<critter_name>/init.lua``.
-
-dirname = path.dirname(__file__)
-
--- RST
+--
 -- .. function:: new_critter_type{table}
 --
 --    This function adds the definition of a critter to the engine.
@@ -28,8 +25,11 @@ dirname = path.dirname(__file__)
 --
 --            descname = _"Badger",
 --
+--    **animation_directory**
+--        *Mandatory*. The location of the animation png files.
+--
 --    **editor_category**
---        *Mandatory*. The category that is used in the editor tools for placing a critter of this type on the map, e.g.::
+--        *Deprecated*. The category that is used in the editor tools for placing a critter of this type on the map, e.g.::
 --
 --            editor_category = "critters_carnivores",
 --
@@ -37,6 +37,31 @@ dirname = path.dirname(__file__)
 --        *Mandatory*. Attributes can be used by other programs to identify a class of critters, e.g.::
 --
 --            attributes = { "eatable" }, -- This animal can be hunted
+--
+--    **size**
+--        *Mandatory*. This critter's size in relative units (bigger values mean larger and stronger), within range 1..10, e.g.::
+--
+--            size = 5,
+--
+--    **reproduction_rate**
+--        *Mandatory*. How likely this critter is to consider reproducing when it finds a mating partner, in %, e.g.::
+--
+--            reproduction_rate = 10,
+--
+--    **herbivore**
+--        *Optional*. An array of attribute names. If given, this critter considers any immovable with one of these attributes food. E.g.::
+--
+--            herbivore = { "field" },
+--
+--    **carnivore**
+--        *Optional*. Whether this critter considers all other critter types food. E.g.::
+--
+--            carnivore = true,
+--
+--    **appetite**
+--        *Mandatory* if ``herbivore`` or ``carnivore`` is given. How likely this critter is to eat when it finds food, in %, e.g.::
+--
+--            appetite = 20,
 --
 --    **programs**
 --        *Mandatory*. Every critter has an automatic default program, which is to move around the map at random. Additional programs can be defined that other map objects can then call in their programs, e.g.::
@@ -47,20 +72,74 @@ dirname = path.dirname(__file__)
 --
 --    **animations**
 --        *Mandatory*. A table containing all animations for this critter. Every critter
---        needs to have an ``idle`` and a directional ``walk`` animation.
+--        needs to have an ``idle`` and a directional ``walk`` animation. Herbivores and carnivores additionally need an ``eating`` animation.
 --        See :doc:`animations` for a detailed description of the animation format.
-world:new_critter_type{
+--
+-- For making the UI texts translateable, we also need to push/pop the correct textdomain.
+--
+-- Example:
+--
+-- .. code-block:: lua
+--
+--    push_textdomain("world")
+--
+--    wl.World():new_critter_type{
+--       name = "badger",
+--       descname = _ "Badger",
+--       animation_directory = path.dirname(__file__),
+--       programs = {
+--          remove = { "remove" },
+--       },
+--       size = 4,
+--       reproduction_rate = 70,
+--       appetite = 50,
+--       carnivore = true,
+--
+--       animations = {
+--          idle = {
+--             hotspot = { 9, 12 },
+--             fps = 20,
+--          },
+--          eating = {
+--             basename = "idle",
+--             hotspot = { 9, 12 },
+--             fps = 20,
+--          },
+--          walk = {
+--             hotspot = { 13, 15 },
+--             fps = 20,
+--             directional = true
+--          }
+--       }
+--    }
+--
+--    pop_textdomain()
+
+push_textdomain("world")
+
+wl.World():new_critter_type{
    name = "badger",
    descname = _ "Badger",
-   editor_category = "critters_carnivores",
-   attributes = { "eatable" },
+   animation_directory = path.dirname(__file__),
+   size = 4,
+   reproduction_rate = 70,
+   appetite = 50,
+   carnivore = true,
+
    programs = {
       remove = { "remove" },
    },
+
    spritesheets = {
       idle = {
-         directory = dirname,
-         basename = "idle",
+         fps = 20,
+         frames = 20,
+         rows = 5,
+         columns = 4,
+         hotspot = { 9, 11 }
+      },
+      eating = {
+         basename = "idle", -- TODO(Nordfriese): Make animation
          fps = 20,
          frames = 20,
          rows = 5,
@@ -68,8 +147,6 @@ world:new_critter_type{
          hotspot = { 9, 11 }
       },
       walk = {
-         directory = dirname,
-         basename = "walk",
          fps = 35,
          frames = 20,
          rows = 5,
@@ -79,3 +156,5 @@ world:new_critter_type{
       }
    }
 }
+
+pop_textdomain()

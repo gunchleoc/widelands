@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2019 by the Widelands Development Team
+ * Copyright (C) 2010-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,9 +20,8 @@
 #define WL_GRAPHIC_WORDWRAP_H
 
 #include <memory>
-#include <string>
+
 #include <unicode/uchar.h>
-#include <vector>
 
 #include "base/vector.h"
 #include "graphic/align.h"
@@ -56,7 +55,11 @@ struct WordWrap {
 	void draw(RenderTarget& dst,
 	          Vector2i where,
 	          Align align = UI::Align::kLeft,
-	          uint32_t caret = std::numeric_limits<uint32_t>::max());
+	          uint32_t caret = std::numeric_limits<uint32_t>::max(),
+	          bool with_selection = false,
+	          uint32_t selection_start = 0,
+	          uint32_t selection_end = 0,
+	          uint32_t scrollbar_position = 0);
 
 	void calc_wrapped_pos(uint32_t caret, uint32_t& line, uint32_t& pos) const;
 	uint32_t nrlines() const {
@@ -95,6 +98,15 @@ private:
 	std::unique_ptr<RT::IFont> font_;
 
 	std::vector<LineData> lines_;
+	void highlight_selection(RenderTarget& dst,
+	                         uint32_t scrollbar_position,
+	                         uint32_t selection_start_line,
+	                         uint32_t selection_start_x,
+	                         uint32_t selection_end_line,
+	                         uint32_t selection_end_x,
+	                         const int fontheight,
+	                         uint32_t line,
+	                         const Vector2i& point) const;
 };
 
 }  // namespace UI

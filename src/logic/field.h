@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 #define WL_LOGIC_FIELD_H
 
 #include <cassert>
-#include <limits>
 
 #include "base/wexception.h"
 #include "graphic/playercolor.h"
@@ -77,11 +76,13 @@ struct Field {
 	struct Terrains {
 		DescriptionIndex d, r;
 	};
-	static_assert(sizeof(Terrains) == 2, "assert(sizeof(Terrains) == 2) failed.");
+	static_assert(sizeof(Terrains) == sizeof(DescriptionIndex) * 2,
+	              "assert(sizeof(Terrains) == sizeof(DescriptionIndex) * 2) failed.");
 	struct Resources {
 		DescriptionIndex d : 4, r : 4;
 	};
-	static_assert(sizeof(Resources) == 1, "assert(sizeof(Resources) == 1) failed.");
+	static_assert(sizeof(Resources) <= sizeof(DescriptionIndex),
+	              "assert(sizeof(Resources) <= sizeof(DescriptionIndex)) failed.");
 	struct ResourceAmounts {
 		ResourceAmount d : 4, r : 4;
 	};
@@ -278,13 +279,9 @@ private:
 #pragma pack(pop)
 
 // Check that Field is tightly packed.
-#ifndef WIN32
-static_assert(sizeof(Field) == sizeof(void*) * 2 + sizeof(RoadSegment) * 3 + 10,
+static_assert(sizeof(Field) == sizeof(void*) * 2 + sizeof(RoadSegment) * 3 +
+                                  sizeof(DescriptionIndex) * 3 + sizeof(uint8_t) * 7,
               "Field is not tightly packed.");
-#else
-static_assert(sizeof(Field) <= sizeof(void*) * 2 + sizeof(RoadSegment) * 3 + 11,
-              "Field is not tightly packed.");
-#endif
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_FIELD_H

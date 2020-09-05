@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,8 +20,6 @@
 #include "scripting/lua_game.h"
 
 #include <memory>
-
-#include <boost/format.hpp>
 
 #include "economy/economy.h"
 #include "economy/flag.h"
@@ -211,8 +209,9 @@ int LuaPlayer::get_inbox(lua_State* L) {
 	lua_newtable(L);
 	uint32_t cidx = 1;
 	for (const auto& temp_message : p.messages()) {
-		if (temp_message.second->status() == Message::Status::kArchived)
+		if (temp_message.second->status() == Message::Status::kArchived) {
 			continue;
+		}
 
 		lua_pushuint32(L, cidx++);
 		to_lua<LuaMessage>(L, new LuaMessage(player_number(), temp_message.first));
@@ -340,27 +339,30 @@ int LuaPlayer::send_message(lua_State* L) {
 	if (n == 4) {
 		// Optional arguments
 		lua_getfield(L, 4, "field");
-		if (!lua_isnil(L, -1))
+		if (!lua_isnil(L, -1)) {
 			c = (*get_user_class<LuaField>(L, -1))->coords();
+		}
 		lua_pop(L, 1);
 
 		lua_getfield(L, 4, "status");
 		if (!lua_isnil(L, -1)) {
 			const std::string s = luaL_checkstring(L, -1);
-			if (s == "new")
+			if (s == "new") {
 				st = Message::Status::kNew;
-			else if (s == "read")
+			} else if (s == "read") {
 				st = Message::Status::kRead;
-			else if (s == "archived")
+			} else if (s == "archived") {
 				st = Message::Status::kArchived;
-			else
+			} else {
 				report_error(L, "Unknown message status: %s", s.c_str());
+			}
 		}
 		lua_pop(L, 1);
 
 		lua_getfield(L, 4, "popup");
-		if (!lua_isnil(L, -1))
+		if (!lua_isnil(L, -1)) {
 			popup = luaL_checkboolean(L, -1);
+		}
 		lua_pop(L, 1);
 
 		lua_getfield(L, 4, "icon");
@@ -387,8 +389,9 @@ int LuaPlayer::send_message(lua_State* L) {
 	}
 
 	MessageId const message = plr.add_message(
-	   game, std::unique_ptr<Message>(new Message(Message::Type::kScenario, game.get_gametime(),
-	                                              title, icon, heading, body, c, 0, sub_type, st)),
+	   game,
+	   std::unique_ptr<Message>(new Message(Message::Type::kScenario, game.get_gametime(), title,
+	                                        icon, heading, body, c, 0, sub_type, st)),
 	   popup);
 
 	return to_lua<LuaMessage>(L, new LuaMessage(player_number(), message));
@@ -482,7 +485,7 @@ int LuaPlayer::sees_field(lua_State* L) {
 	Widelands::MapIndex const i =
 	   (*get_user_class<LuaField>(L, 2))->fcoords(L).field - &egbase.map()[0];
 
-	lua_pushboolean(L, get(L, egbase).vision(i) > 1);
+	lua_pushboolean(L, get(L, egbase).is_seeing(i));
 	return 1;
 }
 
@@ -501,7 +504,7 @@ int LuaPlayer::seen_field(lua_State* L) {
 	Widelands::MapIndex const i =
 	   (*get_user_class<LuaField>(L, 2))->fcoords(L).field - &egbase.map()[0];
 
-	lua_pushboolean(L, get(L, egbase).vision(i) >= 1);
+	lua_pushboolean(L, get(L, egbase).get_vision(i) != Widelands::SeeUnseeNode::kUnexplored);
 	return 1;
 }
 
@@ -559,8 +562,9 @@ int LuaPlayer::add_objective(lua_State* L) {
 	Map::Objectives* objectives = game.mutable_map()->mutable_objectives();
 
 	const std::string name = luaL_checkstring(L, 2);
-	if (objectives->count(name))
+	if (objectives->count(name)) {
 		report_error(L, "An objective with the name '%s' already exists!", name.c_str());
+	}
 
 	Objective* o = new Objective(name);
 	o->set_done(false);
@@ -592,8 +596,7 @@ int LuaPlayer::reveal_fields(lua_State* L) {
 
 	lua_pushnil(L); /* first key */
 	while (lua_next(L, 2) != 0) {
-		p.hide_or_reveal_field(
-		   game.get_gametime(), (*get_user_class<LuaField>(L, -1))->coords(), SeeUnseeNode::kReveal);
+		p.hide_or_reveal_field((*get_user_class<LuaField>(L, -1))->coords(), SeeUnseeNode::kVisible);
 		lua_pop(L, 1);
 	}
 
@@ -601,7 +604,7 @@ int LuaPlayer::reveal_fields(lua_State* L) {
 }
 
 /* RST
-   .. method:: hide_fields(fields)
+   .. method:: hide_fields(fields[, unexplore = false])
 
       Make these fields hidden for the current player if they are not
       seen by a military building. See also :ref:`field_animations` for
@@ -621,13 +624,12 @@ int LuaPlayer::hide_fields(lua_State* L) {
 
 	luaL_checktype(L, 2, LUA_TTABLE);
 	const SeeUnseeNode mode = (!lua_isnone(L, 3) && luaL_checkboolean(L, 3)) ?
-	                             SeeUnseeNode::kUnexplore :
-	                             SeeUnseeNode::kUnsee;
+	                             SeeUnseeNode::kUnexplored :
+	                             SeeUnseeNode::kPreviouslySeen;
 
 	lua_pushnil(L); /* first key */
 	while (lua_next(L, 2) != 0) {
-		p.hide_or_reveal_field(
-		   game.get_gametime(), (*get_user_class<LuaField>(L, -1))->coords(), mode);
+		p.hide_or_reveal_field((*get_user_class<LuaField>(L, -1))->coords(), mode);
 		lua_pop(L, 1);
 	}
 
@@ -647,8 +649,9 @@ int LuaPlayer::hide_fields(lua_State* L) {
 */
 // UNTESTED
 int LuaPlayer::mark_scenario_as_solved(lua_State* L) {
-	if (get_game(L).get_ipl()->player_number() != player_number())
+	if (get_game(L).get_ipl()->player_number() != player_number()) {
 		report_error(L, "Can only be called for interactive player!");
+	}
 
 	Profile campvis(kCampVisFile.c_str());
 	campvis.pull_section("scenarios").set_bool(luaL_checkstring(L, 2), true);
@@ -724,17 +727,19 @@ int LuaPlayer::get_buildings(lua_State* L) {
 			cidx = 1;
 		}
 
-		for (uint32_t l = 0; l < vec.size(); ++l) {
-			if (vec[l].is_constructionsite)
+		for (const auto& stats : vec) {
+			if (stats.is_constructionsite) {
 				continue;
+			}
 
 			lua_pushuint32(L, cidx++);
-			upcasted_map_object_to_lua(L, egbase.map()[vec[l].pos].get_immovable());
+			upcasted_map_object_to_lua(L, egbase.map()[stats.pos].get_immovable());
 			lua_rawset(L, -3);
 		}
 
-		if (return_array)
+		if (return_array) {
 			lua_rawset(L, -3);
+		}
 	}
 	return 1;
 }
@@ -761,8 +766,9 @@ int LuaPlayer::get_suitability(lua_State* L) {
 
 	const char* name = luaL_checkstring(L, 2);
 	DescriptionIndex i = tribes.building_index(name);
-	if (!tribes.building_exists(i))
+	if (!tribes.building_exists(i)) {
 		report_error(L, "Unknown building type: <%s>", name);
+	}
 
 	lua_pushboolean(L, tribes.get_building_descr(i)->suitability(
 	                      game.map(), (*get_user_class<LuaField>(L, 3))->fcoords(L)));
@@ -779,8 +785,9 @@ int LuaPlayer::get_suitability(lua_State* L) {
 */
 int LuaPlayer::allow_workers(lua_State* L) {
 
-	if (luaL_checkstring(L, 2) != std::string("all"))
+	if (luaL_checkstring(L, 2) != std::string("all")) {
 		report_error(L, "Argument must be <all>!");
+	}
 
 	Game& game = get_game(L);
 	const TribeDescr& tribe = get(L, game).tribe();
@@ -935,8 +942,9 @@ void LuaPlayer::parse_building_list(lua_State* L,
 		while (lua_next(L, -2) != 0) {
 			const char* name = luaL_checkstring(L, -1);
 			DescriptionIndex i = tribe.building_index(name);
-			if (!tribes.building_exists(i))
+			if (!tribes.building_exists(i)) {
 				report_error(L, "Unknown building type: '%s'", name);
+			}
 
 			rv.push_back(i);
 
@@ -970,7 +978,9 @@ Objective
 */
 const char LuaObjective::className[] = "Objective";
 const MethodType<LuaObjective> LuaObjective::Methods[] = {
-   METHOD(LuaObjective, remove), METHOD(LuaObjective, __eq), {nullptr, nullptr},
+   METHOD(LuaObjective, remove),
+   METHOD(LuaObjective, __eq),
+   {nullptr, nullptr},
 };
 const PropertyType<LuaObjective> LuaObjective::Properties[] = {
    PROP_RO(LuaObjective, name),    PROP_RW(LuaObjective, title), PROP_RW(LuaObjective, body),
@@ -1132,7 +1142,8 @@ Message
 */
 const char LuaMessage::className[] = "Message";
 const MethodType<LuaMessage> LuaMessage::Methods[] = {
-   METHOD(LuaMessage, __eq), {nullptr, nullptr},
+   METHOD(LuaMessage, __eq),
+   {nullptr, nullptr},
 };
 const PropertyType<LuaMessage> LuaMessage::Properties[] = {
    PROP_RO(LuaMessage, title),     PROP_RO(LuaMessage, body),   PROP_RO(LuaMessage, sent),
@@ -1198,8 +1209,9 @@ int LuaMessage::get_sent(lua_State* L) {
 */
 int LuaMessage::get_field(lua_State* L) {
 	Coords c = get(L, get_game(L)).position();
-	if (c == Coords::null())
+	if (c == Coords::null()) {
 		return 0;
+	}
 	return to_lua<LuaField>(L, new LuaField(c));
 }
 
@@ -1229,14 +1241,15 @@ int LuaMessage::get_status(lua_State* L) {
 int LuaMessage::set_status(lua_State* L) {
 	Message::Status status = Message::Status::kNew;
 	std::string s = luaL_checkstring(L, -1);
-	if (s == "new")
+	if (s == "new") {
 		status = Message::Status::kNew;
-	else if (s == "read")
+	} else if (s == "read") {
 		status = Message::Status::kRead;
-	else if (s == "archived")
+	} else if (s == "archived") {
 		status = Message::Status::kArchived;
-	else
+	} else {
 		report_error(L, "Invalid message status <%s>!", s.c_str());
+	}
 
 	get_plr(L, get_game(L)).get_messages()->set_message_status(message_id_, status);
 
@@ -1279,17 +1292,20 @@ int LuaMessage::__eq(lua_State* L) {
  ==========================================================
  */
 Player& LuaMessage::get_plr(lua_State* L, Widelands::Game& game) {
-	if (player_number_ > kMaxPlayers)
+	if (player_number_ > kMaxPlayers) {
 		report_error(L, "Illegal player number %i", player_number_);
+	}
 	Player* rv = game.get_player(player_number_);
-	if (!rv)
+	if (!rv) {
 		report_error(L, "Player with the number %i does not exist", player_number_);
+	}
 	return *rv;
 }
 const Message& LuaMessage::get(lua_State* L, Widelands::Game& game) {
 	const Message* rv = get_plr(L, game).messages()[message_id_];
-	if (!rv)
+	if (!rv) {
 		report_error(L, "This message has been deleted!");
+	}
 	return *rv;
 }
 
@@ -1312,8 +1328,9 @@ const Message& LuaMessage::get(lua_State* L, Widelands::Game& game) {
 // TODO(sirver): this should be a method of wl.Game(). Fix for b19.
 static int L_report_result(lua_State* L) {
 	std::string info;
-	if (lua_gettop(L) >= 3)
+	if (lua_gettop(L) >= 3) {
 		info = luaL_checkstring(L, 3);
+	}
 
 	Widelands::PlayerEndResult result =
 	   static_cast<Widelands::PlayerEndResult>(luaL_checknumber(L, 2));

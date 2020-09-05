@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +20,7 @@
 #ifndef WL_GRAPHIC_ANIMATION_NONPACKED_ANIMATION_H
 #define WL_GRAPHIC_ANIMATION_NONPACKED_ANIMATION_H
 
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "base/rect.h"
 #include "graphic/animation/animation.h"
@@ -39,7 +36,9 @@
 class NonPackedAnimation : public Animation {
 public:
 	~NonPackedAnimation() override = default;
-	explicit NonPackedAnimation(const LuaTable& table, const std::string& basename);
+	explicit NonPackedAnimation(const LuaTable& table,
+	                            const std::string& basename,
+	                            const std::string& animation_directory);
 
 	const Image* representative_image(const RGBColor* clr) const override;
 
@@ -60,12 +59,14 @@ private:
 		          const Rectf& source_rect,
 		          const Rectf& destination_rect,
 		          const RGBColor* clr,
-		          Surface* target) const override;
+		          Surface* target,
+		          float opacity) const override;
 
 		int width() const override;
 		int height() const override;
 
-        std::vector<std::unique_ptr<const Texture>> frame_textures(bool return_playercolor_masks) const override;
+		std::vector<std::unique_ptr<const Texture>>
+		frame_textures(bool return_playercolor_masks) const override;
 
 		/// Image files on disk
 		std::vector<std::string> image_files;

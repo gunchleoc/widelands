@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,11 +19,7 @@
 
 #include "graphic/build_texture_atlas.h"
 
-#include <map>
 #include <memory>
-#include <string>
-#include <unordered_set>
-#include <vector>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -122,7 +118,7 @@ build_texture_atlas(const int max_size,
 	// For terrain textures.
 	find_images("world/terrains", &all_images, &first_atlas_images);
 	// For flags and roads.
-	find_images("tribes/images", &all_images, &first_atlas_images);
+	find_images("tribes/initialization", &all_images, &first_atlas_images);
 	// For UI elements mostly, but we get more than we need really.
 	find_images("images", &all_images, &first_atlas_images);
 

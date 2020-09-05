@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004-2019 by the Widelands Development Team
+ * Copyright (C) 2004-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,10 +20,7 @@
 #ifndef WL_NETWORK_NETWORK_H
 #define WL_NETWORK_NETWORK_H
 
-#include <exception>
 #include <functional>
-#include <string>
-#include <vector>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>

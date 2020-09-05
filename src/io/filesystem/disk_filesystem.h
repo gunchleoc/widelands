@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,9 +19,6 @@
 
 #ifndef WL_IO_FILESYSTEM_DISK_FILESYSTEM_H
 #define WL_IO_FILESYSTEM_DISK_FILESYSTEM_H
-
-#include <cstring>
-#include <string>
 
 #include "io/filesystem/filesystem.h"
 
@@ -56,7 +53,7 @@ public:
 	std::string get_basename() override {
 		return directory_;
 	}
-	unsigned long long disk_space() override;
+	unsigned long long disk_space() override;  // NOLINT
 
 private:
 	void unlink_directory(const std::string& file);

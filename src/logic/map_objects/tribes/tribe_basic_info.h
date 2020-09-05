@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,10 +21,6 @@
 #define WL_LOGIC_MAP_OBJECTS_TRIBES_TRIBE_BASIC_INFO_H
 
 #include <memory>
-#include <string>
-#include <vector>
-
-#include <stdint.h>
 
 #include "scripting/lua_table.h"
 
@@ -38,32 +34,36 @@ struct TribeBasicInfo {
 	struct Initialization {
 		Initialization(const std::string& init_script,
 		               const std::string& init_descname,
-		               const std::string& init_tooltip)
-		   : script(init_script), descname(init_descname), tooltip(init_tooltip) {
+		               const std::string& init_tooltip,
+		               const std::set<std::string>& tags)
+		   : script(init_script),
+		     descname(init_descname),
+		     tooltip(init_tooltip),
+		     required_map_tags(tags) {
 		}
 		std::string script;
 		std::string descname;
 		std::string tooltip;
+		std::set<std::string> required_map_tags;
 	};
 
 	explicit TribeBasicInfo(std::unique_ptr<LuaTable> table);
 
 	/// Internal name to reference this tribe
-	std::string name;
+	const std::string name;
+	/// Filepath of the tribe's icon
+	const std::string icon;
+	/// Filepath of the tribe's loading script
+	const std::string script;
 	/// Who designed this tribe
 	std::string author;
 	/// Name to present to the user
 	std::string descname;
 	/// Basic information about this tribe
 	std::string tooltip;
-	/// Filepath of the tribe's icon
-	std::string icon;
 
 	std::vector<Initialization> initializations;
 };
-
-/// Returns a string vector with the names of all tribes.
-std::vector<std::string> get_all_tribenames();
 
 /// Returns a vector with the basic info for all tribes.
 std::vector<TribeBasicInfo> get_all_tribeinfos();
@@ -71,7 +71,7 @@ std::vector<TribeBasicInfo> get_all_tribeinfos();
 /// Returns the basic preload info for a tribe.
 TribeBasicInfo get_tribeinfo(const std::string& tribename);
 
-/// Returns whether this tribe is listed in tribes/preload.lua.
+/// Returns whether this tribe is listed in tribes/initialization/<tribe>/init.lua.
 bool tribe_exists(const std::string& tribename);
 
 }  // namespace Widelands

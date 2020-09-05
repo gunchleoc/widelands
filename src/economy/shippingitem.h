@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2019 by the Widelands Development Team
+ * Copyright (C) 2011-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@ namespace Widelands {
 class Economy;
 class MapObjectLoader;
 struct MapObjectSaver;
-class PortDock;
 class WareInstance;
 class Worker;
 
@@ -70,6 +69,7 @@ private:
 	friend class PortDock;
 	friend struct Ship;
 	friend struct ShipFleet;
+	friend struct ShippingSchedule;
 
 	// Called when a port is reached. The item will act again on its own.
 	void end_shipping(Game&);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2002-2019 by the Widelands Development Team
+ * Copyright (C) 2002-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,9 +20,7 @@
 #ifndef WL_IO_FILESYSTEM_ZIP_FILESYSTEM_H
 #define WL_IO_FILESYSTEM_ZIP_FILESYSTEM_H
 
-#include <cstring>
 #include <memory>
-#include <string>
 
 #include "io/filesystem/filesystem.h"
 #include "io/streamread.h"
@@ -56,7 +54,7 @@ public:
 	void fs_unlink(const std::string& fs_filename) override;
 	void fs_rename(const std::string&, const std::string&) override;
 
-	unsigned long long disk_space() override;
+	unsigned long long disk_space() override;  // NOLINT
 
 	static FileSystem* create_from_directory(const std::string& directory);
 
@@ -141,6 +139,9 @@ private:
 	// Used for creating sub filesystems.
 	ZipFilesystem(const std::shared_ptr<ZipFile>& shared_data,
 	              const std::string& basedir_in_zip_file);
+
+	// Place current time in tm_zip struct
+	void set_time_info(tm_zip& time);
 
 	// The data shared between all zip filesystems with the same
 	// underlying zip file.

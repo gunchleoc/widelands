@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2019 by the Widelands Development Team
+ * Copyright (C) 2007-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,9 +17,6 @@
  *
  */
 
-#include <exception>
-
-#include <boost/bind.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "base/macros.h"
@@ -51,8 +48,9 @@ public:
 		neighbours_.push_back(nb);
 	}
 	TestingRoutingNode* get_neighbour(uint8_t idx) const {
-		if (idx >= neighbours_.size())
+		if (idx >= neighbours_.size()) {
 			throw BadAccess();
+		}
 		return neighbours_[idx];
 	}
 
@@ -140,8 +138,9 @@ public:
 					chain_begin_found = true;
 					++j;
 				}
-				if (j == n.end())
+				if (j == n.end()) {
 					return true;
+				}
 			} else {
 				if (*i != *j) {
 					j = n.begin();
@@ -231,7 +230,7 @@ BOOST_AUTO_TEST_CASE(RoutingNode_InitializeMemberVariables) {
 }
 
 struct SimpleRouterFixture {
-	SimpleRouterFixture() : r(boost::bind(&SimpleRouterFixture::reset, this)) {
+	SimpleRouterFixture() : r([this]() { reset(); }) {
 		d0 = new TestingRoutingNode();
 		d1 = new TestingRoutingNode(1, Coords(15, 0));
 		vec.push_back(d0);
@@ -384,7 +383,7 @@ BOOST_FIXTURE_TEST_CASE(router_findroute_connectedNodes_exceptSuccess, SimpleRou
 struct ComplexRouterFixture {
 	using Nodes = std::vector<RoutingNode*>;
 
-	ComplexRouterFixture() : r(boost::bind(&ComplexRouterFixture::reset, this)) {
+	ComplexRouterFixture() : r([this]() { reset(); }) {
 		d0 = new TestingRoutingNode();
 		nodes.push_back(d0);
 	}
@@ -511,9 +510,9 @@ BOOST_FIXTURE_TEST_CASE(find_long_route, ComplexRouterFixture) {
 
 	BOOST_CHECK_EQUAL(rval, true);
 
-	add_dead_end(static_cast<TestingRoutingNode*>(chain[0]));
-	add_dead_end(static_cast<TestingRoutingNode*>(chain[3]));
-	add_dead_end(static_cast<TestingRoutingNode*>(chain[5]));
+	add_dead_end(dynamic_cast<TestingRoutingNode*>(chain[0]));
+	add_dead_end(dynamic_cast<TestingRoutingNode*>(chain[3]));
+	add_dead_end(dynamic_cast<TestingRoutingNode*>(chain[5]));
 
 	BOOST_CHECK(route.has_chain(chain));
 

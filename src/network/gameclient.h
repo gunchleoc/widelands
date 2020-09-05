@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 by the Widelands Development Team
+ * Copyright (C) 2008-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +19,6 @@
 
 #ifndef WL_NETWORK_GAMECLIENT_H
 #define WL_NETWORK_GAMECLIENT_H
-
-#include <memory>
 
 #include "chat/chat.h"
 #include "logic/game_controller.h"
@@ -101,6 +99,9 @@ struct GameClient : public GameController, public GameSettingsProvider, public C
 
 	void set_peaceful_mode(bool peace) override;
 	bool is_peaceful_mode() override;
+
+	void set_custom_starting_positions(bool) override;
+	bool get_custom_starting_positions() override;
 
 	// ChatProvider interface
 	void send(const std::string& msg) override;

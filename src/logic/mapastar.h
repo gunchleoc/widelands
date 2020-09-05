@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2019 by the Widelands Development Team
+ * Copyright (C) 2011-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,7 +20,8 @@
 #ifndef WL_LOGIC_MAPASTAR_H
 #define WL_LOGIC_MAPASTAR_H
 
-#include "base/log.h"
+#include <memory>
+
 #include "logic/map.h"
 #include "logic/map_objects/tribes/wareworker.h"
 #include "logic/pathfield.h"
@@ -46,7 +47,7 @@ protected:
 	}
 
 	Map& map;
-	boost::shared_ptr<Pathfields> pathfields;
+	std::shared_ptr<Pathfields> pathfields;
 	Pathfield::Queue queue;
 };
 

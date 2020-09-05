@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2019 by the Widelands Development Team
+ * Copyright (C) 2006-2020 by the Widelands Development Team
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,8 +29,6 @@
 #endif
 #endif
 
-#include <cassert>
-#include <cstring>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -83,7 +81,7 @@ struct InputCallback {
 ///
 /// \par WLApplication is a singleton
 ///
-/// Because of it's special purpose, having more than one WLApplication is
+/// Because of its special purpose, having more than one WLApplication is
 /// useless. So we implement singleton semantics:
 /// \li A private(!) static class variable (--> unique for the whole program,
 ///     although nobody can get at it) the_singleton holds a pointer to the
@@ -107,20 +105,15 @@ struct InputCallback {
 /// For testing purposes, we can spawn a second process with widelands running
 /// in it (see init_double_game()). The fact that WLApplication is a singleton
 /// is not touched by this: the processes start out as a byte exact memory
-/// copy, so the two instances ca not know (except for fork()'s return value)
+/// copy, so the two instances cannot know (except for fork()'s return value)
 /// that they are (or are not) a primary thread. Each WLApplication singleton
-/// really *is* a singleton - inside it's own process.
+/// really *is* a singleton - inside its own process.
 ///
 /// Forking does not work on windows, but nobody cares enough to investigate.
 /// It is only a debugging convenience anyway.
 ///
 ///
 /// \par The mouse cursor
-///
-/// SDL can handle a mouse cursor on its own, but only in black and white. That
-/// is not sufficient.
-///
-/// So Widelands must paint its own cursor and hide the system cursor.
 ///
 /// Ordinarily, relative coordinates break down when the cursor leaves the
 /// window. This means we have to grab the mouse, then relative coords are
@@ -137,8 +130,6 @@ struct InputCallback {
 struct WLApplication {
 	static WLApplication* get(int const argc = 0, char const** argv = nullptr);
 	~WLApplication();
-
-	enum GameType { NONE, EDITOR, REPLAY, SCENARIO, LOADGAME, NETWORK };
 
 	void run();
 
@@ -173,9 +164,7 @@ struct WLApplication {
 	}
 
 	/// Lock the mouse cursor into place (e.g., for scrolling the map)
-	void set_mouse_lock(const bool locked) {
-		mouse_locked_ = locked;
-	}
+	void set_mouse_lock(bool locked);
 	// @}
 
 	// Refresh the graphics settings with the latest options.
@@ -191,7 +180,7 @@ struct WLApplication {
 	void mainmenu_editor();
 
 	bool new_game();
-	bool load_game();
+	bool load_game(std::string filename = "");
 	bool campaign_game();
 	void replay();
 	static void emergency_save(Widelands::Game&);
@@ -215,7 +204,7 @@ private:
 	void cleanup_replays();
 	void cleanup_ai_files();
 	void cleanup_temp_files();
-	void cleanup_temp_backups(std::string dir);
+	void cleanup_temp_backups(const std::string& dir);
 	void cleanup_temp_backups();
 
 	bool redirect_output(std::string path = "");
@@ -235,6 +224,7 @@ private:
 	/// --scenario or --loadgame.
 	std::string script_to_run_;
 
+	enum class GameType { kNone, kEditor, kReplay, kScenario, kLoadGame };
 	GameType game_type_;
 
 	/// True if left and right mouse button should be swapped
@@ -269,6 +259,9 @@ private:
 	/// Absolute path to the data directory.
 	std::string datadir_;
 	std::string datadir_for_testing_;
+
+	/// Absolute path to the locale directory.
+	std::string localedir_;
 
 	/// Prevent toggling fullscreen on and off from flickering
 	uint32_t last_resolution_change_;

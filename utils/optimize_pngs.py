@@ -85,12 +85,18 @@ class Tool(object):
             os.unlink(temp_out)
 
 
-def collect_pngs(d):
-    """Search for all pngs in the subdir."""
+def collect_pngs(d, prefix):
+    """Search for all pngs in the subdir.
+
+    Restrict to filename prefix if it is not empty.
+    """
     pngs = []
     for root, dirs, files in os.walk(d):
-        pngs.extend(os.path.join(root, f) for f in files
-                    if os.path.splitext(f)[-1].lower() == '.png')
+        dirs.sort()
+        pngs.extend(os.path.join(root, f)
+                    for f in sorted(files)
+                    if os.path.splitext(f)[-1].lower() == '.png'
+                    and (not prefix or f.startswith(prefix)))
 
     return pngs
 
@@ -103,6 +109,10 @@ def parse_args():
                  help="Recursively search this directory for PNG's [%default]",
                  default='.')
 
+    p.add_option('-p', '--prefix', metavar='PREFIX', dest='prefix',
+                 help='Only optimize the files where the filename starts with the given prefix',
+                 default='')
+
     o, a = p.parse_args()
 
     return o, a
@@ -112,13 +122,14 @@ def main():
     o, a = parse_args()
 
     tools = filter(lambda t: t.found,  [
-        Tool('pngrewrite', ''),
-        Tool('optipng', '-q -zc1-9 -zm1-9 -zs0-3 -f0-5', True),
+        # This tool is destroying deadtree5 after it was cropped
+        # Tool('optipng', '-q -zc1-9 -zm1-9 -zs0-3 -f0-5', True),
+        Tool('advdef', '-z4', True),
         Tool('advpng', '-z4', True),
         Tool('pngcrush', '-reduce -brute'),
     ])
 
-    pngs = collect_pngs(o.directory)
+    pngs = collect_pngs(o.directory, o.prefix)
 
     for pidx, p in enumerate(pngs):
         log('(%i/%i) Who improves %s? ' % (pidx + 1, len(pngs), p))
