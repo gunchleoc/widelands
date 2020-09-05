@@ -1,5 +1,3 @@
-push_textdomain("tribes")
-
 dirname = path.dirname(__file__)
 
 tribes:new_worker_type {
@@ -16,19 +14,25 @@ tribes:new_worker_type {
 
    animations = {
       idle = {
-         hotspot = { 8, 24 }
+         hotspot = { 6, 20 }
       },
+   },
+   spritesheets = {
       walk = {
-         hotspot = { 14, 24 },
          fps = 10,
-         directional = true
+         frames = 10,
+         rows = 4,
+         columns = 3,
+         directional = true,
+         hotspot = { 11, 20 }
       },
       walkload = {
-         hotspot = { 10, 22 },
          fps = 10,
-         directional = true
+         frames = 10,
+         rows = 4,
+         columns = 3,
+         directional = true,
+         hotspot = { 9, 22 }
       }
    }
 }
-
-pop_textdomain()
