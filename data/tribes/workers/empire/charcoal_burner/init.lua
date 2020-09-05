@@ -16,17 +16,25 @@ tribes:new_worker_type {
 
    animations = {
       idle = {
-         hotspot = { 11, 23 }
-      },
+         hotspot = { 17, 22 }
+      }
+   },
+   spritesheets = {
       walk = {
-         hotspot = { 21, 28 },
          fps = 10,
-         directional = true
+         frames = 10,
+         rows = 4,
+         columns = 3,
+         directional = true,
+         hotspot = { 18, 22 }
       },
       walkload = {
-         hotspot = { 17, 27 },
          fps = 10,
-         directional = true
+         frames = 10,
+         rows = 4,
+         columns = 3,
+         directional = true,
+         hotspot = { 9, 19 }
       }
    }
 }
