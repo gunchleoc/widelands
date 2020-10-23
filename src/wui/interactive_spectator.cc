@@ -87,7 +87,7 @@ void InteractiveSpectator::draw_map_view(MapView* given_map_view, RenderTarget* 
 	auto* fields_to_draw =
 	   given_map_view->draw_terrain(the_game, nullptr, get_workarea_overlays(map), false, dst);
 	const float scale = 1.f / given_map_view->view().zoom;
-	const uint32_t gametime = the_game.get_gametime();
+	const Time& gametime = the_game.get_gametime();
 
 	const auto info_to_draw = get_info_to_draw(!given_map_view->is_animating());
 	for (size_t idx = 0; idx < fields_to_draw->size(); ++idx) {
@@ -99,6 +99,13 @@ void InteractiveSpectator::draw_map_view(MapView* given_map_view, RenderTarget* 
 		Widelands::BaseImmovable* const imm = field.fcoords.field->get_immovable();
 		if (imm != nullptr && imm->get_positions(the_game).front() == field.fcoords) {
 			imm->draw(gametime, info_to_draw, field.rendertarget_pixel, field.fcoords, scale, dst);
+			if (upcast(const Widelands::Immovable, i, imm)) {
+				if (!i->get_marked_for_removal().empty()) {
+					const Image* img = g_image_cache->get("images/wui/overlays/targeted.png");
+					blit_field_overlay(
+					   dst, field, img, Vector2i(img->width() / 2, img->height()), scale);
+				}
+			}
 		}
 
 		for (Widelands::Bob* bob = field.fcoords.field->get_first_bob(); bob;
@@ -168,7 +175,8 @@ Widelands::PlayerNumber InteractiveSpectator::player_number() const {
  */
 void InteractiveSpectator::node_action(const Widelands::NodeAndTriangle<>& node_and_triangle) {
 	// Special case for buildings
-	if (is_a(Widelands::Building, egbase().map().get_immovable(node_and_triangle.node))) {
+	const Widelands::MapObject* mo = egbase().map().get_immovable(node_and_triangle.node);
+	if (mo && mo->descr().type() >= Widelands::MapObjectType::BUILDING) {
 		show_building_window(node_and_triangle.node, false, false);
 		return;
 	}

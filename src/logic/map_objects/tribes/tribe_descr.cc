@@ -29,6 +29,7 @@
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
 #include "logic/map_objects/immovable.h"
+#include "logic/map_objects/immovable_program.h"
 #include "logic/map_objects/tribes/carrier.h"
 #include "logic/map_objects/tribes/constructionsite.h"
 #include "logic/map_objects/tribes/dismantlesite.h"
@@ -200,8 +201,8 @@ TribeDescr::TribeDescr(const Widelands::TribeBasicInfo& info,
      ferry_(Widelands::INVALID_INDEX),
      port_(Widelands::INVALID_INDEX),
      initializations_(info.initializations) {
-	log_info("┏━ Loading %s:", name_.c_str());
-	ScopedTimer timer("┗━ took: %ums");
+	log_info("┏━ Loading %s", name_.c_str());
+	ScopedTimer timer("┗━ took %ums");
 
 	auto set_progress_message = [this](const std::string& str, int i) {
 		Notifications::publish(UI::NoteLoadingMessage(
@@ -210,52 +211,45 @@ TribeDescr::TribeDescr(const Widelands::TribeBasicInfo& info,
 	};
 
 	try {
-		log_info("┃    Ships: ");
+		log_info("┃    Ships");
 		set_progress_message(_("Ships"), 1);
 		load_ships(table, tribes);
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
-		log_info("┃    Immovables: ");
+		log_info("┃    Immovables");
 		set_progress_message(_("Immovables"), 2);
 		load_immovables(table, tribes, world);
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
-		log_info("┃    Wares: ");
+		log_info("┃    Wares");
 		set_progress_message(_("Wares"), 3);
 		load_wares(table, tribes);
 		if (scenario_table != nullptr && scenario_table->has_key("wares_order")) {
 			load_wares(*scenario_table, tribes);
 		}
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
-		log_info("┃    Workers: ");
+		log_info("┃    Workers");
 		set_progress_message(_("Workers"), 4);
 		load_workers(table, tribes);
 		if (scenario_table != nullptr && scenario_table->has_key("workers_order")) {
 			load_workers(*scenario_table, tribes);
 		}
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
-		log_info("┃    Buildings: ");
+		log_info("┃    Buildings");
 		set_progress_message(_("Buildings"), 5);
 		load_buildings(table, tribes);
 		if (scenario_table != nullptr && scenario_table->has_key("buildings")) {
 			load_buildings(*scenario_table, tribes);
 		}
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
 		set_progress_message(_("Finishing"), 6);
 
-		log_info("┃    Frontiers, flags and roads: ");
+		log_info("┃    Frontiers, flags and roads");
 		load_frontiers_flags_roads(table);
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 
-		log_info("┃    Finalizing: ");
+		log_info("┃    Finalizing");
 		if (table.has_key<std::string>("toolbar")) {
 			toolbar_image_set_.reset(new ToolbarImageset(*table.get_table("toolbar")));
 		}
 		finalize_loading(tribes, world);
-		log_info("┃    → took %ums\n", timer.ms_since_last_query());
 	} catch (const GameDataError& e) {
 		throw GameDataError("tribe %s: %s", name_.c_str(), e.what());
 	}
@@ -303,8 +297,9 @@ void TribeDescr::load_frontiers_flags_roads(const LuaTable& table) {
 
 	const auto load_bridge_if_present = [this](const LuaTable& animations_table,
 	                                           const std::string& animation_directory,
-	                                           Animation::Type animation_type, std::string s_dir,
-	                                           std::string s_type, uint32_t* id) {
+	                                           Animation::Type animation_type,
+	                                           const std::string& s_dir, const std::string& s_type,
+	                                           uint32_t* id) {
 		const std::string directional_name("bridge_" + s_type + "_" + s_dir);
 		if (animations_table.has_key(directional_name)) {
 			std::unique_ptr<LuaTable> animation_table = animations_table.get_table(directional_name);
@@ -432,7 +427,7 @@ void TribeDescr::load_immovables(const LuaTable& table, Tribes& tribes, const Wo
 			throw GameDataError("Tribe has no indicators for resource %s.", resource.c_str());
 		}
 		resource_indicators_[resource] = resis;
-	};
+	}
 
 	// Verify the resource indicators
 	for (DescriptionIndex resource_index = 0; resource_index < world.get_nr_resources();
@@ -827,7 +822,7 @@ void TribeDescr::finalize_loading(Tribes& tribes, const World& world) {
 }
 
 // Set default trainingsites proportions for AI. Make sure that we get a sum of ca. 100
-void TribeDescr::calculate_trainingsites_proportions(Tribes& tribes) {
+void TribeDescr::calculate_trainingsites_proportions(const Tribes& tribes) {
 	unsigned int trainingsites_without_percent = 0;
 	int used_percent = 0;
 	std::vector<BuildingDescr*> traingsites_with_percent;
@@ -920,6 +915,8 @@ void TribeDescr::process_productionsites(Tribes& tribes, const World& world) {
 
 	const DescriptionMaintainer<ImmovableDescr>& world_immovables = world.immovables();
 
+	ImmovableProgram::postload_immovable_relations(tribes, world);
+
 	// Find all attributes that we need to collect from map
 	std::set<MapObjectDescr::AttributeIndex> needed_attributes;
 	for (ProductionSiteDescr* prod : productionsites) {
@@ -935,12 +932,16 @@ void TribeDescr::process_productionsites(Tribes& tribes, const World& world) {
 					const ImmovableDescr& immovable_descr = world_immovables.get(i);
 					if (immovable_descr.has_attribute(attribute_id)) {
 						prod->add_collected_immovable(immovable_descr.name());
+						const_cast<ImmovableDescr&>(immovable_descr)
+						   .add_collected_by(world, tribes, prod->name());
 					}
 				}
 				for (const DescriptionIndex i : immovables()) {
 					const ImmovableDescr& immovable_descr = *get_immovable_descr(i);
 					if (immovable_descr.has_attribute(attribute_id)) {
 						prod->add_collected_immovable(immovable_descr.name());
+						const_cast<ImmovableDescr&>(immovable_descr)
+						   .add_collected_by(world, tribes, prod->name());
 					}
 				}
 			} break;

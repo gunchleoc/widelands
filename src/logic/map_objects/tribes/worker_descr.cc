@@ -49,7 +49,7 @@ WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& fi
      becomes_(table.has_key("experience") ? tribes.load_worker(table.get_string("becomes")) :
                                             INVALID_INDEX),
      needed_experience_(table.has_key("becomes") ? table.get_int("experience") : INVALID_INDEX),
-     ai_hints_(new WareWorkerHints()),
+     ai_hints_(new AI::WareWorkerHints()),
      tribes_(tribes) {
 	if (icon_filename().empty()) {
 		throw GameDataError("Worker %s has no menu icon", name().c_str());
@@ -103,10 +103,6 @@ WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& fi
 				                    program_name.c_str(), name().c_str());
 			}
 			try {
-				if (programs_.count(program_name)) {
-					throw wexception("this program has already been declared");
-				}
-
 				programs_[program_name] = std::unique_ptr<WorkerProgram>(new WorkerProgram(
 				   program_name, *programs_table->get_table(program_name), *this, tribes));
 			} catch (const std::exception& e) {

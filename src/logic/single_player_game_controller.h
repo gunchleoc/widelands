@@ -22,7 +22,6 @@
 
 #include "ai/computer_player.h"
 #include "logic/game_controller.h"
-#include "logic/player_end_result.h"
 
 class SinglePlayerGameController : public GameController {
 public:
@@ -31,7 +30,7 @@ public:
 
 	void think() override;
 	void send_player_command(Widelands::PlayerCommand*) override;
-	int32_t get_frametime() override;
+	Duration get_frametime() override;
 	GameController::GameType get_game_type() override;
 	uint32_t real_speed() override;
 	uint32_t desired_speed() override;
@@ -45,13 +44,13 @@ public:
 private:
 	Widelands::Game& game_;
 	bool use_ai_;
-	int32_t lastframe_;
-	int32_t time_;
+	uint32_t lastframe_;
+	Time time_;
 	uint32_t speed_;  ///< current game speed, in milliseconds per second
 	bool paused_;
 	uint32_t player_cmdserial_;
 	Widelands::PlayerNumber local_;
-	std::vector<ComputerPlayer*> computerplayers_;
+	std::vector<AI::ComputerPlayer*> computerplayers_;
 };
 
 #endif  // end of include guard: WL_LOGIC_SINGLE_PLAYER_GAME_CONTROLLER_H

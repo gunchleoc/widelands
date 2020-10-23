@@ -146,8 +146,7 @@ GameMessageMenu::GameMessageMenu(InteractivePlayer& plr, UI::UniqueWindow::Regis
 	list->set_sort_column(ColTimeSent);
 	list->layout();
 
-	set_can_focus(true);
-	focus();
+	list->focus();
 }
 
 /**
@@ -318,8 +317,7 @@ void GameMessageMenu::update_record(UI::Table<uintptr_t>::EntryRecord& er,
 	   ColStatus, g_image_cache->get(status_picture_filename[static_cast<int>(message.status())]));
 	er.set_picture(ColTitle, message.icon(), message.title());
 
-	const uint32_t time = message.sent();
-	er.set_string(ColTimeSent, gametimestring(time));
+	er.set_string(ColTimeSent, gametimestring(message.sent().get()));
 }
 
 /*
@@ -337,7 +335,7 @@ void GameMessageMenu::selected(uint32_t const t) {
 				game.send_player_command(new Widelands::CmdMessageSetStatusRead(
 				   game.get_gametime(), player.player_number(), id));
 			}
-			centerviewbtn_->set_enabled(message->position());
+			centerviewbtn_->set_enabled(bool(message->position()));
 			message_body.set_text(as_message(message->heading(), message->body()));
 			update_archive_button_tooltip();
 			return;

@@ -21,6 +21,7 @@
 #define WL_UI_BASIC_PANEL_H
 
 #include <deque>
+#include <vector>
 
 #include <SDL_keyboard.h>
 #include <boost/signals2/signal.hpp>
@@ -328,9 +329,11 @@ protected:
 	void draw_background(RenderTarget& dst, const UI::PanelStyleInfo&);
 	void draw_background(RenderTarget& dst, Recti rect, const UI::PanelStyleInfo&);
 
+	virtual Panel* get_open_dropdown();
+
 	virtual bool is_focus_toplevel() const;
 
-	virtual Recti focus_overlay_rect();
+	virtual std::vector<Recti> focus_overlay_rects();
 
 private:
 	bool handles_mouse() const {

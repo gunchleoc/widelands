@@ -98,7 +98,6 @@ wl_library(graphic_gl_utils
     gl/system_headers.h
     gl/utils.cc
     gl/utils.h
-  USES_BOOST_REGEX
   USES_SDL2
   USES_OPENGL
   DEPENDS
@@ -201,8 +200,10 @@ wl_library(graphic_minimap_renderer
     base_geometry
     base_macros
     economy
+    graphic_playercolor
     graphic_surface
     logic
+    logic_constants
     logic_map
     logic_map_objects
     wui_mapview_pixelfunctions
@@ -218,6 +219,7 @@ wl_library(graphic_fields_to_draw
     graphic
     graphic_gl_utils
     logic
+    logic_constants
     logic_map_objects
     logic_widelands_geometry
     wui_mapview_pixelfunctions
@@ -331,6 +333,7 @@ wl_library(graphic
     base_i18n
     base_log
     base_scoped_timer
+    base_times
     build_info
     graphic_align
     graphic_animation

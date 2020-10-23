@@ -39,23 +39,28 @@ public:
 
 		// Main menu
 		kTutorial,
-		kSinglePlayer,
 		kContinueLastsave,
-		kMultiplayer,
 		kReplay,
-		kEditor,
 		kOptions,
 		kAbout,
 		kExit,
 
 		// Single player
 		kNewGame,
+		kRandomGame,
 		kCampaign,
 		kLoadGame,
 
 		// Multiplayer
 		kMetaserver,
+		kOnlineGameSettings,
 		kLan,
+
+		// Editor
+		kEditorNew,
+		kEditorRandom,
+		kEditorContinue,
+		kEditorLoad,
 
 		// Launch game
 		kNormalGame,

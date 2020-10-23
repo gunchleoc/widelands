@@ -132,7 +132,6 @@ wl_library(logic_map_objects
     world/terrain_description.h
     world/world.cc
     world/world.h
-  USES_BOOST_REGEX
   USES_SDL2
   DEPENDS
     ai_hints
@@ -143,6 +142,7 @@ wl_library(logic_map_objects
     base_macros
     base_math
     base_scoped_timer
+    base_times
     economy
     graphic
     graphic_animation

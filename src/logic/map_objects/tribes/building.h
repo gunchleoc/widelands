@@ -161,7 +161,7 @@ public:
 	WorkareaInfo workarea_info_;
 
 	bool suitability(const Map&, const FCoords&) const;
-	const BuildingHints& hints() const;
+	const AI::BuildingHints& hints() const;
 	void set_hints_trainingsites_max_percent(int percent);
 
 	uint32_t get_unoccupied_animation() const;
@@ -194,9 +194,9 @@ private:
 	                        // enabled
 	DescriptionIndex enhancement_;
 	DescriptionIndex
-	   enhanced_from_;        // The building this building was enhanced from, or INVALID_INDEX
-	bool enhanced_building_;  // if it is one, it is bulldozable
-	BuildingHints hints_;     // hints (knowledge) for computer players
+	   enhanced_from_;         // The building this building was enhanced from, or INVALID_INDEX
+	bool enhanced_building_;   // if it is one, it is bulldozable
+	AI::BuildingHints hints_;  // hints (knowledge) for computer players
 	DescriptionIndex built_over_immovable_;  // can be built only on nodes where an immovable with
 	                                         // this attribute stands
 
@@ -341,7 +341,7 @@ public:
 	                  const std::string& heading,
 	                  const std::string& description,
 	                  bool link_to_building_lifetime = true,
-	                  uint32_t throttle_time = 0,
+	                  const Duration& throttle_time = Duration(0),
 	                  uint32_t throttle_radius = 0);
 
 	bool mute_messages() const {
@@ -351,7 +351,7 @@ public:
 		mute_messages_ = m;
 	}
 
-	void start_animation(EditorGameBase&, uint32_t anim);
+	void start_animation(const EditorGameBase&, uint32_t anim);
 
 	bool is_seeing() const {
 		return seeing_;
@@ -367,7 +367,7 @@ protected:
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
 
-	void draw(uint32_t gametime,
+	void draw(const Time& gametime,
 	          InfoToDraw info_to_draw,
 	          const Vector2f& point_on_dst,
 	          const Coords& coords,
@@ -384,11 +384,11 @@ protected:
 	Flag* flag_;
 
 	uint32_t anim_;
-	int32_t animstart_;
+	Time animstart_;
 
 	using LeaveQueue = std::vector<OPtr<Worker>>;
 	LeaveQueue leave_queue_;     //  FIFO queue of workers leaving the building
-	uint32_t leave_time_;        //  when to wake the next one from leave queue
+	Time leave_time_;            //  when to wake the next one from leave queue
 	ObjectPointer leave_allow_;  //  worker that is allowed to leave now
 
 	//  The player who has defeated this building.

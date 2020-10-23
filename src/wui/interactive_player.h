@@ -68,7 +68,8 @@ public:
 	void think() override;
 	void draw(RenderTarget& dst) override;
 
-	std::map<Widelands::Ship*, Widelands::Coords>& get_expedition_port_spaces() {
+	std::map<const Widelands::OPtr<Widelands::Ship>, Widelands::Coords>&
+	get_expedition_port_spaces() {
 		return expedition_port_spaces_;
 	}
 	bool has_expedition_port_space(const Widelands::Coords&) const;
@@ -109,7 +110,15 @@ private:
 
 	const Image* grid_marker_pic_;
 
-	std::map<Widelands::Ship*, Widelands::Coords> expedition_port_spaces_;
+	void draw_immovables_for_visible_field(const Widelands::EditorGameBase&,
+	                                       const FieldsToDraw::Field&,
+	                                       float scale,
+	                                       InfoToDraw,
+	                                       const Widelands::Player&,
+	                                       RenderTarget*,
+	                                       std::set<Widelands::Coords>&);
+
+	std::map<const Widelands::OPtr<Widelands::Ship>, Widelands::Coords> expedition_port_spaces_;
 
 	std::unique_ptr<Notifications::Subscriber<NoteMapOptions>> map_options_subscriber_;
 	std::unique_ptr<Notifications::Subscriber<Widelands::NoteShip>> shipnotes_subscriber_;

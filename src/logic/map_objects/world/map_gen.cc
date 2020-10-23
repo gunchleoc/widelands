@@ -89,6 +89,9 @@ MapGenAreaInfo::MapGenAreaInfo(const LuaTable& table, const World& world, Area c
 
 		for (const std::string& terrain : terrains) {
 			const DescriptionIndex tix = world.terrains().get_index(terrain);
+			if (tix == INVALID_INDEX) {
+				throw GameDataError("Random Map Generator: Unknown terrain '%s'", terrain.c_str());
+			}
 			list->push_back(tix);
 		}
 	};
@@ -208,8 +211,8 @@ uint32_t MapGenInfo::get_sum_land_resource_weight() const {
 	}
 
 	uint32_t sum = 0;
-	for (uint32_t ix = 0; ix < land_resources_.size(); ++ix) {
-		sum += land_resources_[ix].get_weight();
+	for (const MapGenLandResource& land_resource : land_resources_) {
+		sum += land_resource.get_weight();
 	}
 	sum_bob_area_weights_ = sum;
 	sum_bob_area_weights_valid_ = true;

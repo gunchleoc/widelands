@@ -33,7 +33,7 @@ namespace Widelands {
  */
 WareDescr::WareDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& table)
    : MapObjectDescr(MapObjectType::WARE, table.get_string("name"), init_descname, files_directory, table),
-     ai_hints_(new WareWorkerHints()) {
+     ai_hints_(new AI::WareWorkerHints()) {
 	if (!is_animation_known("idle")) {
 		throw GameDataError("Ware %s has no idle animation", name().c_str());
 	}

@@ -102,12 +102,26 @@ TabPanel::TabPanel(Panel* const parent, UI::TabPanelStyle style)
 	set_can_focus(true);
 }
 
-Recti TabPanel::focus_overlay_rect() {
-	if (active_ < tabs_.size()) {
-		const Tab& tab = *tabs_[active_];
-		return Recti(tab.get_x(), tab.get_y(), tab.get_w(), tab.get_h());
+std::vector<Recti> TabPanel::focus_overlay_rects() {
+	const int f = g_style_manager->focus_border_thickness();
+	const Tab* tab = active_ < tabs_.size() ? tabs_[active_] : nullptr;
+	const int16_t w = tab ? tab->get_w() : get_w();
+	const int16_t h = tab ? tab->get_h() : kTabPanelButtonHeight;
+	if (w < 2 * f || h < 2 * f) {
+		return {Recti(0, 0, get_w(), kTabPanelButtonHeight)};
 	}
-	return Recti(0, 0, get_w(), kTabPanelButtonHeight);
+
+	const int16_t x = tab ? tab->get_x() : 0;
+	const int16_t y = tab ? tab->get_y() : 0;
+	return {Recti(x, y, w, f), Recti(x, y + f, f, h - f), Recti(x + w - f, y + f, f, h - f)};
+}
+
+bool TabPanel::handle_mousewheel(uint32_t which, int32_t x, int32_t y) {
+	if (y != 0) {
+		activate(std::max<int>(0, std::min<int>(active() - y, tabs_.size() - 1)));
+		return true;
+	}
+	return Panel::handle_mousewheel(which, x, y);
 }
 
 bool TabPanel::handle_key(bool down, SDL_Keysym code) {
@@ -134,22 +148,26 @@ bool TabPanel::handle_key(bool down, SDL_Keysym code) {
 			}
 		} else {
 			switch (code.sym) {
-			case SDLK_KP_6:
-			case SDLK_RIGHT:
-				if (selected_idx < max) {
-					++selected_idx;
-				} else if (selected_idx > max) {
-					selected_idx = 0;
+			case SDLK_TAB:
+				if (code.mod & KMOD_CTRL) {
+					if (code.mod & KMOD_SHIFT) {
+						if (selected_idx > max) {
+							selected_idx = max;
+						} else if (selected_idx > 0) {
+							--selected_idx;
+						}
+					} else {
+						if (selected_idx < max) {
+							++selected_idx;
+						} else if (selected_idx > max) {
+							selected_idx = 0;
+						}
+					}
+				} else {
+					handle = false;
 				}
 				break;
-			case SDLK_KP_4:
-			case SDLK_LEFT:
-				if (selected_idx > max) {
-					selected_idx = max;
-				} else if (selected_idx > 0) {
-					--selected_idx;
-				}
-				break;
+
 			case SDLK_KP_7:
 			case SDLK_HOME:
 				selected_idx = 0;

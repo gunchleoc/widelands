@@ -251,6 +251,25 @@ void ImmovableDescr::make_sure_default_program_is_there() {
 	}
 }
 
+void ImmovableDescr::add_collected_by(const World& world,
+                                      const Tribes& tribes,
+                                      const std::string& prodsite) {
+	if (collected_by_.count(prodsite)) {
+		return;  // recursion break
+	}
+	collected_by_.insert(prodsite);
+	for (const std::string& immo : became_from_) {
+		DescriptionIndex di = world.get_immovable_index(immo);
+		if (di != Widelands::INVALID_INDEX) {
+			const_cast<ImmovableDescr&>(*world.get_immovable_descr(di))
+			   .add_collected_by(world, tribes, prodsite);
+		} else {
+			tribes.get_mutable_immovable_descr(tribes.safe_immovable_index(immo))
+			   ->add_collected_by(world, tribes, prodsite);
+		}
+	}
+}
+
 /**
  * Cleanup
  */
@@ -352,6 +371,18 @@ void Immovable::increment_program_pointer() {
 	action_data_.reset(nullptr);
 }
 
+bool Immovable::is_marked_for_removal(PlayerNumber p) const {
+	return marked_for_removal_.count(p) > 0;
+}
+
+void Immovable::set_marked_for_removal(PlayerNumber p, bool mark) {
+	if (mark) {
+		marked_for_removal_.insert(p);
+	} else {
+		marked_for_removal_.erase(p);
+	}
+}
+
 /**
  * Actually initialize the immovable.
  */
@@ -393,9 +424,9 @@ void Immovable::switch_program(Game& game, const std::string& program_name) {
 	program_ = descr().get_program(program_name);
 	assert(program_ != nullptr);
 	program_ptr_ = 0;
-	program_step_ = 0;
+	program_step_ = Time(0);
 	action_data_.reset(nullptr);
-	schedule_act(game, 1);
+	schedule_act(game, Duration(1));
 }
 
 /**
@@ -410,7 +441,7 @@ void Immovable::act(Game& game, uint32_t const data) {
 	}
 }
 
-void Immovable::draw(uint32_t gametime,
+void Immovable::draw(const Time& gametime,
                      const InfoToDraw info_to_draw,
                      const Vector2f& point_on_dst,
                      const Widelands::Coords& coords,
@@ -420,7 +451,8 @@ void Immovable::draw(uint32_t gametime,
 		return;
 	}
 	if (!anim_construction_total_) {
-		dst->blit_animation(point_on_dst, coords, scale, anim_, gametime - animstart_);
+		dst->blit_animation(
+		   point_on_dst, coords, scale, anim_, Time(gametime.get() - animstart_.get()));
 		if (former_building_descr_) {
 			do_draw_info(
 			   info_to_draw, former_building_descr_->descname(), "", point_on_dst, scale, dst);
@@ -430,7 +462,7 @@ void Immovable::draw(uint32_t gametime,
 	}
 }
 
-void Immovable::draw_construction(const uint32_t gametime,
+void Immovable::draw_construction(const Time& gametime,
                                   const InfoToDraw info_to_draw,
                                   const Vector2f& point_on_dst,
                                   const Widelands::Coords& coords,
@@ -442,44 +474,44 @@ void Immovable::draw_construction(const uint32_t gametime,
 		   dynamic_cast<const ImmovableProgram::ActConstruct*>(&(*program_)[program_ptr_]);
 	}
 
-	const uint32_t steptime = constructionact ? constructionact->buildtime() : 5000;
+	const Duration steptime = constructionact ? constructionact->buildtime() : Duration(5000);
 
-	uint32_t done = 0;
+	Duration done(0);
 	if (anim_construction_done_ > 0) {
 		done = steptime * (anim_construction_done_ - 1);
 		done += std::min(steptime, gametime - animstart_);
 	}
 
-	uint32_t total = anim_construction_total_ * steptime;
+	Duration total = steptime * anim_construction_total_;
 	if (done > total) {
 		done = total;
 	}
 
 	const Animation& anim = g_animation_manager->get_animation(anim_);
 	const size_t nr_frames = anim.nr_frames();
-	uint32_t frametime = g_animation_manager->get_animation(anim_).frametime();
-	uint32_t units_per_frame = (total + nr_frames - 1) / nr_frames;
-	const size_t current_frame = done / units_per_frame;
+	Duration frametime(g_animation_manager->get_animation(anim_).frametime());
+	Duration units_per_frame = (total + Duration(nr_frames - 1)) / nr_frames;
+	const size_t current_frame = done.get() / units_per_frame.get();
 
 	assert(get_owner() != nullptr);  // Who would build something they do not own?
 	const RGBColor& player_color = get_owner()->get_playercolor();
 	if (current_frame > 0) {
 		// Not the first pic, so draw the previous one in the back
 		dst->blit_animation(point_on_dst, Widelands::Coords::null(), scale, anim_,
-		                    (current_frame - 1) * frametime, &player_color);
+		                    Time(frametime.get() * (current_frame - 1)), &player_color);
 	}
 
-	const int percent = ((done % units_per_frame) * 100) / units_per_frame;
+	const int percent = ((done.get() % units_per_frame.get()) * 100) / units_per_frame.get();
 
-	dst->blit_animation(
-	   point_on_dst, coords, scale, anim_, current_frame * frametime, &player_color, percent);
+	dst->blit_animation(point_on_dst, coords, scale, anim_, Time((frametime * current_frame).get()),
+	                    &player_color, percent);
 
 	// Additionally, if statistics are enabled, draw a progression string
-	do_draw_info(
-	   info_to_draw, descr().descname(),
-	   g_style_manager->color_tag((boost::format(_("%i%% built")) % (100 * done / total)).str(),
-	                              g_style_manager->building_statistics_style().construction_color()),
-	   point_on_dst, scale, dst);
+	do_draw_info(info_to_draw, descr().descname(),
+	             g_style_manager->color_tag(
+	                (boost::format(_("%i%% built")) % (done.get() * 100 / total.get())).str(),
+	                g_style_manager->building_statistics_style().construction_color()),
+	             point_on_dst, scale, dst);
 }
 
 /**
@@ -499,12 +531,13 @@ Load/save support
 ==============================
 */
 
-// We neeed 2 packet versions for map loading: Packet version 7 will load in older versions of
+// We need 2 packet versions for map loading: Packet version 7 will load in older versions of
 // Widelands, so we have a dynamic version number - it is only set higher than
 // kCurrentPacketVersionImmovableNoFormerBuildings during saving if we have an immovable with
 // a former building assigned to it.
-constexpr uint8_t kCurrentPacketVersionImmovableNoFormerBuildings = 8;
-constexpr uint8_t kCurrentPacketVersionImmovable = 9;
+// TODO(Nordfriese): This is an awful design that should be refactored on occasion.
+constexpr uint8_t kCurrentPacketVersionImmovableNoFormerBuildings = 9;
+constexpr uint8_t kCurrentPacketVersionImmovable = 10;
 
 // Supporting older versions for map loading
 void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
@@ -548,7 +581,7 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 		imm.anim_ = imm.descr().main_animation();
 	}
 
-	imm.animstart_ = fr.signed_32();
+	imm.animstart_ = Time(fr);
 	if (packet_version >= 4) {
 		imm.anim_construction_total_ = fr.unsigned_32();
 		if (imm.anim_construction_total_) {
@@ -587,14 +620,14 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 	}
 
 	if (packet_version > 6) {
-		imm.program_step_ = fr.unsigned_32();
+		imm.program_step_ = Time(fr);
 	} else {
-		imm.program_step_ = fr.signed_32();
+		imm.program_step_ = Time(fr.signed_32());
 	}
 	imm.growth_delay_ =
 	   packet_version >= (packet_version > kCurrentPacketVersionImmovableNoFormerBuildings ? 9 : 8) ?
-	      fr.unsigned_32() :
-	      0;
+	      Duration(fr) :
+	      Duration(0);
 
 	if (packet_version >= 3 && packet_version <= 5) {
 		imm.reserved_by_worker_ = fr.unsigned_8();
@@ -603,6 +636,12 @@ void Immovable::Loader::load(FileRead& fr, uint8_t const packet_version) {
 		std::string dataname = fr.c_string();
 		if (!dataname.empty()) {
 			imm.set_action_data(ImmovableActionData::load(fr, imm, dataname));
+		}
+	}
+	if (packet_version >=
+	    (packet_version > kCurrentPacketVersionImmovableNoFormerBuildings ? 10 : 9)) {
+		for (uint8_t i = fr.unsigned_8(); i; --i) {
+			imm.marked_for_removal_.insert(fr.unsigned_8());
 		}
 	}
 }
@@ -616,7 +655,7 @@ void Immovable::Loader::load_finish() {
 
 	Immovable& imm = dynamic_cast<Immovable&>(*get_object());
 	if (upcast(Game, game, &egbase())) {
-		imm.schedule_act(*game, 1);
+		imm.schedule_act(*game, Duration(1));
 	}
 
 	egbase().inform_players_about_immovable(
@@ -658,7 +697,7 @@ void Immovable::save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw)
 
 	// Animations
 	fw.string(descr().get_animation_name(anim_));
-	fw.signed_32(animstart_);
+	animstart_.save(fw);
 	fw.unsigned_32(anim_construction_total_);
 	if (anim_construction_total_) {
 		fw.unsigned_32(anim_construction_done_);
@@ -668,14 +707,19 @@ void Immovable::save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw)
 	fw.string(program_ ? program_->name() : "");
 
 	fw.unsigned_32(program_ptr_);
-	fw.unsigned_32(program_step_);
-	fw.unsigned_32(growth_delay_);
+	program_step_.save(fw);
+	growth_delay_.save(fw);
 
 	if (action_data_) {
 		fw.c_string(action_data_->name());
 		action_data_->save(fw, *this);
 	} else {
 		fw.c_string("");
+	}
+
+	fw.unsigned_8(marked_for_removal_.size());
+	for (const PlayerNumber& p : marked_for_removal_) {
+		fw.unsigned_8(p);
 	}
 }
 
@@ -741,11 +785,11 @@ bool Immovable::construct_remaining_buildcost(Game& /* game */, Buildcost* build
 }
 
 bool Immovable::apply_growth_delay(Game& game) {
-	if (growth_delay_ == 0) {
+	if (growth_delay_.get() == 0) {
 		return false;
 	}
 	schedule_act(game, growth_delay_);
-	growth_delay_ = 0;
+	growth_delay_ = Duration(0);
 	return true;
 }
 
@@ -826,8 +870,8 @@ void PlayerImmovable::set_economy(Economy* const e, WareWorker type) {
 
 	(type == wwWARE ? ware_economy_ : worker_economy_) = e;
 
-	for (uint32_t i = 0; i < workers_.size(); ++i) {
-		workers_[i]->set_economy(e, type);
+	for (Worker* worker : workers_) {
+		worker->set_economy(e, type);
 	}
 }
 
@@ -852,7 +896,8 @@ void PlayerImmovable::remove_worker(Worker& w) {
 	     ++worker_iter) {
 		if (*worker_iter == &w) {
 			*worker_iter = *(workers_.end() - 1);
-			return workers_.pop_back();
+			workers_.pop_back();
+			return;
 		}
 	}
 

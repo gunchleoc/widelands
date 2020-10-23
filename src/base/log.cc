@@ -29,12 +29,11 @@
 #include <vector>
 
 #include <SDL_log.h>
+#include <SDL_timer.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-#include "base/macros.h"
-#include "base/wexception.h"
 #ifdef _WIN32
 #include "build_info.h"
 #endif
@@ -120,6 +119,17 @@ void sdl_logging_func(void* userdata,
 	static_cast<Logger*>(userdata)->log_cstring(message);
 }
 #endif
+
+std::vector<std::string> split(const std::string& s) {
+	std::vector<std::string> result;
+	for (std::string::size_type pos = 0, endpos;
+	     (pos = s.find_first_not_of('\n', pos)) != std::string::npos; pos = endpos) {
+		endpos = s.find('\n', pos);
+		result.push_back(s.substr(pos, endpos - pos));
+	}
+	return result;
+}
+
 }  // namespace
 
 // Default to stdout for logging.
@@ -164,33 +174,21 @@ static const char* to_string(const LogType& type) {
 	}
 }
 
-std::vector<std::string> split(const std::string& s) {
-	std::vector<std::string> result;
-	for (std::string::size_type pos = 0, endpos;
-	     (pos = s.find_first_not_of('\n', pos)) != std::string::npos; pos = endpos) {
-		endpos = s.find('\n', pos);
-		result.push_back(s.substr(pos, endpos - pos));
-	}
-	return result;
-}
-
-void log_to_stdout(const LogType type, uint32_t gametime, const char* const fmt, ...) {
+void do_log(const LogType type, const Time& gametime, const char* const fmt, ...) {
 	assert(logger != nullptr);
 
-	// message type
-	char buffer_prefix[8];
-	snprintf(buffer_prefix, sizeof(buffer_prefix), "%s", to_string(type));
-	char buffer_timestamp[32] = "\0";
-	if (gametime != kNoTimestamp && gametime > 0) {  // timestamp
-		const uint32_t hours = gametime / (1000 * 60 * 60);
-		gametime -= hours * 1000 * 60 * 60;
-		const uint32_t minutes = gametime / (1000 * 60);
-		gametime -= minutes * 1000 * 60;
-		const uint32_t seconds = gametime / 1000;
-		gametime -= seconds * 1000;
-
-		snprintf(buffer_timestamp, sizeof(buffer_timestamp), "%u:%02u:%02u.%03u ", hours, minutes,
-		         seconds, gametime);
+	// message type and timestamp
+	char buffer_prefix[32];
+	{
+		uint32_t t = gametime.is_valid() ? gametime.get() : SDL_GetTicks();
+		const uint32_t hours = t / (1000 * 60 * 60);
+		t -= hours * 1000 * 60 * 60;
+		const uint32_t minutes = t / (1000 * 60);
+		t -= minutes * 1000 * 60;
+		const uint32_t seconds = t / 1000;
+		t -= seconds * 1000;
+		snprintf(buffer_prefix, sizeof(buffer_prefix), "[%02u:%02u:%02u.%03u %s] %s: ", hours,
+		         minutes, seconds, t, gametime.is_invalid() ? "real" : "game", to_string(type));
 	}
 
 	// actual log output
@@ -205,11 +203,7 @@ void log_to_stdout(const LogType type, uint32_t gametime, const char* const fmt,
 		if (str.find_first_not_of(' ') == std::string::npos) {
 			continue;
 		}
-		if (buffer_timestamp[0]) {
-			logger->log_cstring(buffer_timestamp);
-		}
 		logger->log_cstring(buffer_prefix);
-		str.insert(0, ": ");
 		str.push_back('\n');
 		logger->log_cstring(str.c_str());
 	}

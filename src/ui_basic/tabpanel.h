@@ -122,6 +122,7 @@ struct TabPanel : public Panel {
 	boost::signals2::signal<void()> sigclicked;
 
 	bool handle_key(bool, SDL_Keysym) override;
+	bool handle_mousewheel(uint32_t which, int32_t x, int32_t y) override;
 
 protected:
 	void layout() override;
@@ -129,7 +130,7 @@ protected:
 
 	UI::TabPanelStyle style_;
 
-	Recti focus_overlay_rect() override;
+	std::vector<Recti> focus_overlay_rects() override;
 
 private:
 	// Common adding function for textual and pictorial tabs

@@ -122,7 +122,7 @@ public:
 	}
 
 	/// AI hints for this worker type. Can be nullptr.
-	const WareWorkerHints* ai_hints() const {
+	const AI::WareWorkerHints* ai_hints() const {
 		return ai_hints_.get();
 	}
 
@@ -156,7 +156,7 @@ private:
 
 private:
 	// Hints for the AI
-	std::unique_ptr<WareWorkerHints> ai_hints_;
+	std::unique_ptr<AI::WareWorkerHints> ai_hints_;
 
 	const Tribes& tribes_;
 	DISALLOW_COPY_AND_ASSIGN(WorkerDescr);

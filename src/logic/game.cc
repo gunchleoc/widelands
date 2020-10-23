@@ -19,6 +19,7 @@
 
 #include "logic/game.h"
 
+#include <cstdlib>
 #include <memory>
 #include <string>
 
@@ -217,11 +218,12 @@ bool Game::run_splayer_scenario_direct(const std::string& mapname,
 		throw wexception("could not load \"%s\"", mapname.c_str());
 	}
 
-	create_loader_ui({"general_game"}, false);
+	// Need to do this first so we can set the theme and background.
+	maploader->preload_map(true);
+
+	create_loader_ui({"general_game"}, false, map().get_background_theme(), map().get_background());
 
 	Notifications::publish(UI::NoteLoadingMessage(_("Preloading map…")));
-	maploader->preload_map(true);
-	change_loader_ui_background(map().get_background());
 
 	world();
 	tribes();
@@ -273,11 +275,14 @@ void Game::init_newgame(const GameSettings& settings) {
 
 	Notifications::publish(UI::NoteLoadingMessage(_("Preloading map…")));
 
-	std::unique_ptr<MapLoader> maploader(mutable_map()->get_correct_loader(settings.mapfilename));
-	assert(maploader != nullptr);
-	maploader->preload_map(settings.scenario);
-	change_loader_ui_background(map().get_background());
+	std::unique_ptr<MapLoader> maploader;
+	if (!settings.mapfilename.empty()) {
+		maploader = mutable_map()->get_correct_loader(settings.mapfilename);
+		assert(maploader);
+		maploader->preload_map(settings.scenario);
+	}
 
+	// Load world and tribes, if they were not loaded already
 	world();
 	tribes();
 
@@ -307,9 +312,16 @@ void Game::init_newgame(const GameSettings& settings) {
 		   ->add_further_starting_position(shared_num.at(n), shared.at(n).initialization_index);
 	}
 
-	maploader->load_map_complete(*this, settings.scenario ?
-	                                       Widelands::MapLoader::LoadType::kScenario :
-	                                       Widelands::MapLoader::LoadType::kGame);
+	if (!settings.mapfilename.empty()) {
+		assert(maploader);
+		maploader->load_map_complete(*this, settings.scenario ?
+		                                       Widelands::MapLoader::LoadType::kScenario :
+		                                       Widelands::MapLoader::LoadType::kGame);
+	} else {
+		// Normally the map loader takes care of this, but if the map was
+		// previously created for us we need to call this manually
+		allocate_player_maps();
+	}
 
 	// Check for win_conditions
 	if (!settings.scenario) {
@@ -340,7 +352,7 @@ void Game::init_newgame(const GameSettings& settings) {
 			cr->resume();
 		}
 		std::unique_ptr<LuaCoroutine> cr = table->get_coroutine("func");
-		enqueue_command(new CmdLuaCoroutine(get_gametime() + 100, std::move(cr)));
+		enqueue_command(new CmdLuaCoroutine(get_gametime() + Duration(100), std::move(cr)));
 	} else {
 		win_condition_displayname_ = "Scenario";
 	}
@@ -361,7 +373,6 @@ void Game::init_savegame(const GameSettings& settings) {
 		GameLoader gl(settings.mapfilename, *this);
 		Widelands::GamePreloadPacket gpdp;
 		gl.preload_game(gpdp);
-		change_loader_ui_background(gpdp.get_background());
 
 		win_condition_displayname_ = gpdp.get_win_condition();
 		if (win_condition_displayname_ == "Scenario") {
@@ -383,17 +394,18 @@ void Game::init_savegame(const GameSettings& settings) {
 }
 
 bool Game::run_load_game(const std::string& filename, const std::string& script_to_run) {
-	create_loader_ui({"general_game", "singleplayer"}, false);
 	int8_t player_nr;
-
-	Notifications::publish(UI::NoteLoadingMessage(_("Preloading map…")));
 
 	{
 		GameLoader gl(filename, *this);
 
 		Widelands::GamePreloadPacket gpdp;
+		// Need to do this first so we can set the theme and background
 		gl.preload_game(gpdp);
-		change_loader_ui_background(gpdp.get_background());
+
+		create_loader_ui({"general_game", "singleplayer"}, false, gpdp.get_background_theme(),
+		                 gpdp.get_background());
+		Notifications::publish(UI::NoteLoadingMessage(_("Preloading map…")));
 
 		win_condition_displayname_ = gpdp.get_win_condition();
 		if (win_condition_displayname_ == "Scenario") {
@@ -518,12 +530,12 @@ bool Game::run(StartGameType const start_game_type,
 		}
 
 		// Queue first statistics calculation
-		enqueue_command(new CmdCalculateStatistics(get_gametime() + 1));
+		enqueue_command(new CmdCalculateStatistics(get_gametime() + Duration(1)));
 	}
 
 	if (!script_to_run.empty() && (start_game_type == StartGameType::kSinglePlayerScenario ||
 	                               start_game_type == StartGameType::kSaveGame)) {
-		enqueue_command(new CmdLuaScript(get_gametime() + 1, script_to_run));
+		enqueue_command(new CmdLuaScript(get_gametime() + Duration(1), script_to_run));
 	}
 
 	if (writereplay_ || writesyncstream_) {
@@ -590,7 +602,7 @@ void Game::think() {
 		// computer and the fps if and when the game is saved - this is very bad
 		// for scenarios and even worse for the regression suite (which relies on
 		// the timings of savings.
-		cmdqueue().run_queue(ctrl_->get_frametime(), get_gametime_pointer());
+		cmdqueue().run_queue(Duration(ctrl_->get_frametime()), get_gametime_pointer());
 
 		// check if autosave is needed
 		savehandler_.think(*this);
@@ -832,27 +844,27 @@ void Game::send_player_enemyflagaction(const Flag& flag,
 	}
 }
 
-void Game::send_player_ship_scouting_direction(Ship& ship, WalkingDir direction) {
+void Game::send_player_ship_scouting_direction(const Ship& ship, WalkingDir direction) {
 	send_player_command(new CmdShipScoutDirection(
 	   get_gametime(), ship.get_owner()->player_number(), ship.serial(), direction));
 }
 
-void Game::send_player_ship_construct_port(Ship& ship, Coords coords) {
+void Game::send_player_ship_construct_port(const Ship& ship, Coords coords) {
 	send_player_command(new CmdShipConstructPort(
 	   get_gametime(), ship.get_owner()->player_number(), ship.serial(), coords));
 }
 
-void Game::send_player_ship_explore_island(Ship& ship, IslandExploreDirection direction) {
+void Game::send_player_ship_explore_island(const Ship& ship, IslandExploreDirection direction) {
 	send_player_command(new CmdShipExploreIsland(
 	   get_gametime(), ship.get_owner()->player_number(), ship.serial(), direction));
 }
 
-void Game::send_player_sink_ship(Ship& ship) {
+void Game::send_player_sink_ship(const Ship& ship) {
 	send_player_command(
 	   new CmdShipSink(get_gametime(), ship.get_owner()->player_number(), ship.serial()));
 }
 
-void Game::send_player_cancel_expedition_ship(Ship& ship) {
+void Game::send_player_cancel_expedition_ship(const Ship& ship) {
 	send_player_command(new CmdShipCancelExpedition(
 	   get_gametime(), ship.get_owner()->player_number(), ship.serial()));
 }
@@ -883,6 +895,10 @@ void Game::send_player_set_stock_policy(Building& imm,
 void Game::send_player_toggle_mute(const Building& b, bool all) {
 	send_player_command(
 	   new CmdToggleMuteMessages(get_gametime(), b.owner().player_number(), b, all));
+}
+
+void Game::send_player_mark_object_for_removal(PlayerNumber p, Immovable& mo, bool mark) {
+	send_player_command(new CmdMarkMapObjectForRemoval(get_gametime(), p, mo, mark));
 }
 
 int Game::propose_trade(const Trade& trade) {

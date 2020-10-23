@@ -37,7 +37,7 @@ namespace Widelands {
 /// scenario-specific map object descriptions.
 class DescriptionManager {
 public:
-	DescriptionManager(LuaInterface* lua);
+	explicit DescriptionManager(LuaInterface* lua);
 	~DescriptionManager();
 
 	static std::string description_path(const std::string& description_name, FileSystem* map_filesystem);

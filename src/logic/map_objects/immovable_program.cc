@@ -139,17 +139,18 @@ animate
 Runs an animation. See :ref:`map_object_programs_animate`.
 */
 ImmovableProgram::ActAnimate::ActAnimate(const std::vector<std::string>& arguments,
-                                         const ImmovableDescr& descr) {
-	parameters = MapObjectProgram::parse_act_animate(arguments, descr, true);
+                                         const ImmovableDescr& descr)
+   : parameters(MapObjectProgram::parse_act_animate(arguments, descr, true)) {
 }
 
 /// Use convolution to make the animation time a random variable with binomial
 /// distribution and the configured time as the expected value.
 void ImmovableProgram::ActAnimate::execute(Game& game, Immovable& immovable) const {
 	immovable.start_animation(game, parameters.animation);
-	immovable.program_step(game, parameters.duration ? 1 + game.logic_rand() % parameters.duration +
-	                                                      game.logic_rand() % parameters.duration :
-	                                                   0);
+	immovable.program_step(
+	   game, Duration(parameters.duration.get() ? 1 + game.logic_rand() % parameters.duration.get() +
+	                                                 game.logic_rand() % parameters.duration.get() :
+	                                              0));
 }
 
 /* RST
@@ -159,8 +160,8 @@ playsound
 Plays a sound effect. See :ref:`map_object_programs_playsound`.
 */
 ImmovableProgram::ActPlaySound::ActPlaySound(const std::vector<std::string>& arguments,
-                                             const ImmovableDescr& descr) {
-	parameters = MapObjectProgram::parse_act_play_sound(arguments, descr);
+                                             const ImmovableDescr& descr)
+   : parameters(MapObjectProgram::parse_act_play_sound(arguments, descr)) {
 }
 
 /**
@@ -171,6 +172,21 @@ void ImmovableProgram::ActPlaySound::execute(Game& game, Immovable& immovable) c
 	Notifications::publish(NoteSound(SoundType::kAmbient, parameters.fx, immovable.get_position(),
 	                                 parameters.priority, parameters.allow_multiple));
 	immovable.program_step(game);
+}
+
+static std::vector<std::pair<std::string /* immo */, std::string /* becomes */>>
+   immovable_relations_;
+void ImmovableProgram::postload_immovable_relations(const Tribes& tribes, const World& world) {
+	for (const auto& pair : immovable_relations_) {
+		DescriptionIndex di = world.get_immovable_index(pair.second);
+		if (di != Widelands::INVALID_INDEX) {
+			const_cast<ImmovableDescr&>(*world.get_immovable_descr(di)).add_became_from(pair.first);
+		} else {
+			tribes.get_mutable_immovable_descr(tribes.safe_immovable_index(pair.second))
+			   ->add_became_from(pair.first);
+		}
+	}
+	immovable_relations_.clear();
 }
 
 /* RST
@@ -251,6 +267,9 @@ ImmovableProgram::ActTransform::ActTransform(std::vector<std::string>& arguments
 		// Register target at ImmovableDescr
 		descr.becomes_.insert(
 		   std::make_pair(bob_ ? MapObjectType::BOB : MapObjectType::IMMOVABLE, type_name_));
+		if (!bob_) {
+			immovable_relations_.push_back(std::make_pair(descr.name(), type_name_));
+		}
 	} catch (const WException& e) {
 		throw GameDataError("transform: %s", e.what());
 	}
@@ -264,13 +283,18 @@ void ImmovableProgram::ActTransform::execute(Game& game, Immovable& immovable) c
 		Player* player = immovable.get_owner();
 		Coords const c = immovable.get_position();
 		MapObjectDescr::OwnerType owner_type = immovable.descr().owner_type();
+		std::set<PlayerNumber> mfr = immovable.get_marked_for_removal();
+
 		immovable.remove(game);  //  Now immovable is a dangling reference!
 
 		if (bob_) {
 			game.create_ship(c, type_name_, player);
 		} else {
-			game.create_immovable_with_name(
+			Immovable& i = game.create_immovable_with_name(
 			   c, type_name_, owner_type, player, nullptr /* former_building_descr */);
+			for (const PlayerNumber& p : mfr) {
+				i.set_marked_for_removal(p, true);
+			}
 		}
 	} else {
 		immovable.program_step(game);
@@ -318,6 +342,7 @@ ImmovableProgram::ActGrow::ActGrow(std::vector<std::string>& arguments, Immovabl
 
 	// Register target at ImmovableDescr
 	descr.becomes_.insert(std::make_pair(MapObjectType::IMMOVABLE, type_name_));
+	immovable_relations_.push_back(std::make_pair(descr.name(), type_name_));
 }
 
 void ImmovableProgram::ActGrow::execute(Game& game, Immovable& immovable) const {
@@ -333,9 +358,15 @@ void ImmovableProgram::ActGrow::execute(Game& game, Immovable& immovable) const 
 	    probability_to_grow(descr.terrain_affinity(), f, map, game.world().terrains())) {
 		MapObjectDescr::OwnerType owner_type = descr.owner_type();
 		Player* owner = immovable.get_owner();
+		std::set<PlayerNumber> mfr = immovable.get_marked_for_removal();
+
 		immovable.remove(game);  //  Now immovable is a dangling reference!
-		game.create_immovable_with_name(
+
+		Immovable& i = game.create_immovable_with_name(
 		   f, type_name_, owner_type, owner, nullptr /* former_building_descr */);
+		for (const PlayerNumber& p : mfr) {
+			i.set_marked_for_removal(p, true);
+		}
 	} else {
 		immovable.program_step(game);
 	}
@@ -546,8 +577,8 @@ ImmovableProgram::ActConstruct::ActConstruct(std::vector<std::string>& arguments
 		         descr.name().c_str());
 		animation_name_ = arguments[0];
 
-		buildtime_ = read_positive(arguments[1]);
-		decaytime_ = read_positive(arguments[2]);
+		buildtime_ = Duration(read_positive(arguments[1]));
+		decaytime_ = Duration(read_positive(arguments[2]));
 	} else {
 		for (const std::string& argument : arguments) {
 			const std::pair<std::string, std::string> item = read_key_value_pair(argument, ':');
@@ -581,7 +612,7 @@ void ActConstructData::save(FileWrite& fw, Immovable& imm) const {
 	delivered.save(fw, imm.get_owner()->tribe());
 }
 
-ActConstructData* ActConstructData::load(FileRead& fr, Immovable& imm) {
+ActConstructData* ActConstructData::load(FileRead& fr, const Immovable& imm) {
 	ActConstructData* d = new ActConstructData;
 
 	try {
@@ -647,7 +678,7 @@ void ImmovableProgram::ActConstruct::execute(Game& g, Immovable& imm) const {
 }
 
 ImmovableActionData*
-ImmovableActionData::load(FileRead& fr, Immovable& imm, const std::string& name) {
+ImmovableActionData::load(FileRead& fr, const Immovable& imm, const std::string& name) {
 	if (name == "construct") {
 		return ActConstructData::load(fr, imm);
 	} else {

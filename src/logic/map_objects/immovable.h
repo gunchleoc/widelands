@@ -102,7 +102,7 @@ struct BaseImmovable : public MapObject {
 	// fields a way to only draw themselves once. The 'point_on_dst' determines
 	// the point for the hotspot of the animation and 'scale' determines how big
 	// the immovable will be plotted.
-	virtual void draw(uint32_t gametime,
+	virtual void draw(const Time& gametime,
 	                  InfoToDraw info_to_draw,
 	                  const Vector2f& point_on_dst,
 	                  const Coords& coords,
@@ -175,6 +175,16 @@ public:
 		return becomes_;
 	}
 
+	// A set of all productionsites that gather this immovable or any of its future types
+	const std::set<std::string> collected_by() const {
+		return collected_by_;
+	}
+	void add_collected_by(const World&, const Tribes&, const std::string& prodsite);
+
+	void add_became_from(const std::string& s) {
+		became_from_.insert(s);
+	}
+
 protected:
 	int32_t size_;
 	Programs programs_;
@@ -188,6 +198,8 @@ protected:
 
 	std::string species_;
 	std::set<std::pair<MapObjectType, std::string>> becomes_;
+	std::set<std::string> became_from_;  // immovables that turn into this one
+	std::set<std::string> collected_by_;
 
 private:
 	// Adds a default program if none was defined.
@@ -207,8 +219,8 @@ class Immovable : public BaseImmovable {
 public:
 	/// If this immovable was created by a building, 'former_building_descr' can be set in order to
 	/// display information about it.
-	Immovable(const ImmovableDescr&,
-	          const Widelands::BuildingDescr* former_building_descr = nullptr);
+	explicit Immovable(const ImmovableDescr&,
+	                   const Widelands::BuildingDescr* former_building_descr = nullptr);
 	~Immovable() override;
 
 	Coords get_position() const {
@@ -220,16 +232,18 @@ public:
 	bool get_passable() const override;
 	void start_animation(const EditorGameBase&, uint32_t anim);
 
-	void program_step(Game& game, uint32_t const delay = 1) {
-		if (delay)
+	void program_step(Game& game, const Duration& delay = Duration(1)) {
+		assert(delay.is_valid());
+		if (delay.get() > 0) {
 			program_step_ = schedule_act(game, delay);
+		}
 		increment_program_pointer();
 	}
 
 	bool init(EditorGameBase&) override;
 	void cleanup(EditorGameBase&) override;
 	void act(Game&, uint32_t data) override;
-	void draw(uint32_t gametime,
+	void draw(const Time& gametime,
 	          InfoToDraw info_to_draw,
 	          const Vector2f& point_on_dst,
 	          const Coords& coords,
@@ -250,10 +264,16 @@ public:
 		return nullptr;
 	}
 
-	void delay_growth(uint32_t ms) {
+	void delay_growth(Duration ms) {
 		growth_delay_ += ms;
 	}
 	bool apply_growth_delay(Game&);
+
+	bool is_marked_for_removal(PlayerNumber) const;
+	void set_marked_for_removal(PlayerNumber, bool mark);
+	const std::set<PlayerNumber>& get_marked_for_removal() const {
+		return marked_for_removal_;
+	}
 
 protected:
 	// The building type that created this immovable, if any.
@@ -262,10 +282,14 @@ protected:
 	Coords position_;
 
 	uint32_t anim_;
-	int32_t animstart_;
+	Time animstart_;
 
 	const ImmovableProgram* program_;
 	uint32_t program_ptr_;  ///< index of next instruction to execute
+
+	// Whether a worker was told to remove this object ASAP.
+	// A set of all players who want this object gone.
+	std::set<PlayerNumber> marked_for_removal_;
 
 /* GCC 4.0 has problems with friend declarations: It doesn't allow
  * substructures of friend classes private access but we rely on this behaviour
@@ -278,13 +302,13 @@ protected:
 public:
 	uint32_t anim_construction_total_;
 	uint32_t anim_construction_done_;
-	uint32_t program_step_;
+	Time program_step_;
 
 protected:
 #else
 	uint32_t anim_construction_total_;
 	uint32_t anim_construction_done_;
-	uint32_t program_step_;  ///< time of next step
+	Time program_step_;  ///< time of next step
 #endif
 
 	/**
@@ -295,7 +319,7 @@ protected:
 	std::unique_ptr<ImmovableActionData> action_data_;
 
 private:
-	uint32_t growth_delay_;
+	Duration growth_delay_;
 
 	// Load/save support
 protected:
@@ -324,7 +348,7 @@ private:
 	void set_former_building(const BuildingDescr& building);
 
 	void increment_program_pointer();
-	void draw_construction(uint32_t gametime,
+	void draw_construction(const Time& gametime,
 	                       InfoToDraw info_to_draw,
 	                       const Vector2f& point_on_dst,
 	                       const Widelands::Coords& coords,

@@ -277,11 +277,7 @@ void ShipFleet::cleanup(EditorGameBase& egbase) {
 
 	while (!ships_.empty()) {
 		Ship* ship = ships_.back();
-		// Check if the ship still exists to avoid heap-use-after-free when ship has already been
-		// deleted while processing EditorGameBase::cleanup_objects()
-		if (egbase.objects().object_still_available(ship)) {
-			ship->set_fleet(nullptr);
-		}
+		ship->set_fleet(nullptr);
 		ships_.pop_back();
 	}
 
@@ -335,6 +331,7 @@ bool ShipFleet::get_path(const PortDock& start, const PortDock& end, Path& path)
 	const PortPath& pp(portpath_bidir(startidx, endidx, reverse));
 
 	if (pp.cost < 0) {
+		// try filling in pp's data
 		connect_port(get_owner()->egbase(), startidx);
 	}
 
@@ -388,7 +385,10 @@ void ShipFleet::add_neighbours(PortDock& pd, std::vector<RoutingNodeNeighbour>& 
 
 void ShipFleet::add_ship(EditorGameBase& egbase, Ship* ship) {
 	ships_.push_back(ship);
+	assert(std::count(ships_.begin(), ships_.end(), ship) == 1);
+
 	ship->set_fleet(this);
+
 	if (upcast(Game, game, &get_owner()->egbase())) {
 		if (ports_.empty()) {
 			ship->set_economy(*game, nullptr, wwWARE);
@@ -408,11 +408,19 @@ void ShipFleet::add_ship(EditorGameBase& egbase, Ship* ship) {
 
 void ShipFleet::remove_ship(EditorGameBase& egbase, Ship* ship) {
 	std::vector<Ship*>::iterator it = std::find(ships_.begin(), ships_.end(), ship);
-	if (it != ships_.end()) {
+	while (it != ships_.end()) {
 		*it = ships_.back();
 		ships_.pop_back();
+		it = std::find(ships_.begin(), ships_.end(), ship);
+		if (it != ships_.end()) {
+			log_err_time(
+			   egbase.get_gametime(), "Multiple instances of the same ship were in the ship fleet\n");
+		}
 	}
+	assert(std::count(ships_.begin(), ships_.end(), ship) == 0);
+
 	ship->set_fleet(nullptr);
+
 	if (upcast(Game, game, &egbase)) {
 		ship->set_economy(*game, nullptr, wwWARE);
 		ship->set_economy(*game, nullptr, wwWORKER);
@@ -457,8 +465,8 @@ struct StepEvalFindPorts {
 		return std::max(0, est - 5 * map.calc_cost(0));
 	}
 
-	int32_t
-	stepcost(Map& map, FCoords from, int32_t /* fromcost */, WalkingDir dir, FCoords to) const {
+	int32_t stepcost(
+	   const Map& map, FCoords from, int32_t /* fromcost */, WalkingDir dir, FCoords to) const {
 		if (!(to.field->nodecaps() & MOVECAPS_SWIM)) {
 			return -1;
 		}
@@ -643,7 +651,7 @@ PortDock* ShipFleet::get_dock(Flag& flag) const {
  *
  * @return the dock, or 0 if not found.
  */
-PortDock* ShipFleet::get_dock(EditorGameBase& egbase, Coords field_coords) const {
+PortDock* ShipFleet::get_dock(const EditorGameBase& egbase, Coords field_coords) const {
 	for (PortDock* temp_port : ports_) {
 		for (Coords tmp_coords : temp_port->get_positions(egbase)) {
 			if (tmp_coords == field_coords) {
@@ -674,7 +682,7 @@ void ShipFleet::update(EditorGameBase& egbase) {
 	}
 
 	if (upcast(Game, game, &egbase)) {
-		schedule_act(*game, 100);
+		schedule_act(*game, Duration(100));
 		act_pending_ = true;
 	}
 }
@@ -698,7 +706,7 @@ void ShipFleet::act(Game& game, uint32_t) {
 
 	// All the work is done by the schedule
 	const Duration next = schedule_.update(game);
-	if (next < endless()) {
+	if (next.is_valid()) {
 		schedule_act(game, next);
 		act_pending_ = true;
 	}
