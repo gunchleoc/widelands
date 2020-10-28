@@ -13,7 +13,6 @@ SUPPRESSED_CHECKS = {
     '[boost-use-to-string]',
     '[bugprone-integer-division]',
     '[cert-dcl50-cpp]',  # We need this for our logger
-    '[cert-err58-cpp]',
     '[clang-analyzer-core.NonNullParamChecker]',
     '[clang-analyzer-core.UndefinedBinaryOperatorResult]',
     '[clang-analyzer-cplusplus.NewDelete]',

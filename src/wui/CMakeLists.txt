@@ -180,6 +180,7 @@ wl_library(wui_waresdisplay
   DEPENDS
     base_exceptions
     base_i18n
+    base_log
     graphic
     graphic_fonthandler
     graphic_text_layout

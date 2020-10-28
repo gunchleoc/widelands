@@ -24,6 +24,7 @@
 #include <SDL_mouse.h>
 
 #include "base/i18n.h"
+#include "base/log.h"
 #include "base/wexception.h"
 #include "graphic/font_handler.h"
 #include "graphic/graphic.h"
@@ -504,24 +505,35 @@ WaresDisplay::~WaresDisplay() {
 	remove_all_warelists();
 }
 
-static const char* unit_suffixes[] = {
-   "%1%",
-   /** TRANSLATORS: This is a large number with a suffix (e.g. 50k = 50,000). */
-   /** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
-   _("%1%k"),
-   /** TRANSLATORS: This is a large number with a suffix (e.g. 5M = 5,000,000). */
-   /** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
-   _("%1%M"),
-   /** TRANSLATORS: This is a large number with a suffix (e.g. 5G = 5,000,000,000). */
-   /** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
-   _("%1%G")};
 std::string get_amount_string(uint32_t amount, bool cutoff1k) {
 	uint8_t size = 0;
 	while (amount >= (size || cutoff1k ? 1000 : 10000)) {
 		amount /= 1000;
-		size++;
+		++size;
 	}
-	return (boost::format(unit_suffixes[size]) % amount).str();
+	std::string format_string = "%1%";
+	switch (size) {
+	case 0:
+		break;
+	case 1:
+		/** TRANSLATORS: This is a large number with a suffix (e.g. 50k = 50,000). */
+		/** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
+		format_string = _("%1%k");
+	break;
+	case 2:
+		/** TRANSLATORS: This is a large number with a suffix (e.g. 5M = 5,000,000). */
+		/** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
+		format_string = _("%1%M");
+		break;
+	case 3:
+		/** TRANSLATORS: This is a large number with a suffix (e.g. 5G = 5,000,000,000). */
+		/** TRANSLATORS: Space is limited, use only 1 letter for the suffix and no whitespace. */
+		format_string = _("%1%G");
+		break;
+	default:
+		log_err("Number out of G range in wares display, we need to add size-range %d.", size);
+	}
+	return (boost::format(format_string) % amount).str();
 }
 
 std::string WaresDisplay::info_for_ware(Widelands::DescriptionIndex ware) {
