@@ -11,7 +11,6 @@ import sys
 SUPPRESSED_CHECKS = {
     '[android-cloexec-fopen]',
     '[boost-use-to-string]',
-    '[bugprone-integer-division]',
     '[cert-dcl50-cpp]',  # We need this for our logger
     '[cert-err58-cpp]',
     '[clang-analyzer-core.NonNullParamChecker]',

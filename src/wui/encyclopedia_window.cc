@@ -33,11 +33,9 @@
 
 namespace {
 
-#define WINDOW_WIDTH std::min(700, g_gr->get_xres() - 40)
-#define WINDOW_HEIGHT std::min(550, g_gr->get_yres() - 40)
-
 constexpr int kPadding = 5;
-constexpr int kTabHeight = 35;
+constexpr int kContentsHeight = 500;
+constexpr int kContentsWidth = 350;
 
 }  // namespace
 
@@ -47,15 +45,13 @@ EncyclopediaWindow::EncyclopediaWindow(InteractiveBase& parent,
                                        UI::UniqueWindow::Registry& registry,
                                        LuaInterface* const lua)
    : UI::UniqueWindow(
-        &parent, UI::WindowStyle::kWui, "encyclopedia", &registry, WINDOW_WIDTH, WINDOW_HEIGHT, ""),
+        &parent, UI::WindowStyle::kWui, "encyclopedia", &registry, 0, 0, ""),
      lua_(lua),
      tabs_(this, UI::TabPanelStyle::kWuiLight) {
 }
 
 void EncyclopediaWindow::init(InteractiveBase& parent, std::unique_ptr<LuaTable> table) {
 
-	const int contents_height = WINDOW_HEIGHT - kTabHeight - 2 * kPadding;
-	const int contents_width = WINDOW_WIDTH / 2 - 1.5 * kPadding;
 
 	try {
 		set_title(table->get_string("title"));
@@ -78,15 +74,15 @@ void EncyclopediaWindow::init(InteractiveBase& parent, std::unique_ptr<LuaTable>
 			lists_.insert(std::make_pair(
 			   tab_name, std::unique_ptr<UI::Listselect<EncyclopediaEntry>>(
 			                new UI::Listselect<EncyclopediaEntry>(boxes_.at(tab_name).get(), 0, 0,
-			                                                      contents_width, contents_height,
+			                                                      kContentsWidth, kContentsHeight,
 			                                                      UI::PanelStyle::kWui))));
 			lists_.at(tab_name)->selected.connect(
 			   [this, tab_name](unsigned) { entry_selected(tab_name); });
 
 			contents_.insert(std::make_pair(
 			   tab_name, std::unique_ptr<UI::MultilineTextarea>(
-			                new UI::MultilineTextarea(boxes_.at(tab_name).get(), 0, 0, contents_width,
-			                                          contents_height, UI::PanelStyle::kWui))));
+			                new UI::MultilineTextarea(boxes_.at(tab_name).get(), 0, 0, kContentsWidth,
+			                                          kContentsHeight, UI::PanelStyle::kWui))));
 
 			boxes_.at(tab_name)->add(lists_.at(tab_name).get());
 			boxes_.at(tab_name)->add_space(kPadding);
@@ -150,7 +146,7 @@ void EncyclopediaWindow::init(InteractiveBase& parent, std::unique_ptr<LuaTable>
 		}
 	}
 
-	tabs_.set_size(WINDOW_WIDTH, WINDOW_HEIGHT);
+	set_center_panel(&tabs_);
 
 	if (get_usedefaultpos()) {
 		center_to_parent();

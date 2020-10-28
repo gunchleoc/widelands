@@ -379,9 +379,10 @@ void TabPanel::draw(RenderTarget& dst) {
 
 			uint16_t picture_width = image_scale * tabs_[idx]->pic->width();
 			uint16_t picture_height = image_scale * tabs_[idx]->pic->height();
+			// Use Recti to avoid fuzzy rendering
 			dst.blitrect_scale(
-			   Rectf(x + (kTabPanelButtonHeight - picture_width) / 2,
-			         (kTabPanelButtonHeight - picture_height) / 2, picture_width, picture_height),
+			   Recti(x + (kTabPanelButtonHeight - picture_width) / 2,
+			         (kTabPanelButtonHeight - picture_height) / 2, picture_width, picture_height).cast<float>(),
 			   tabs_[idx]->pic, Recti(0, 0, tabs_[idx]->pic->width(), tabs_[idx]->pic->height()), 1,
 			   BlendMode::UseAlpha);
 		} else if (tabs_[idx]->rendered_title != nullptr) {

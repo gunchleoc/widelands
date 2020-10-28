@@ -751,11 +751,12 @@ void MilitarySite::act(Game& game, uint32_t const data) {
 					// The healing algorithm for present soldiers is:
 					// * heal soldier with highest total level
 					// * heal healthiest if multiple of same total level exist
+					const float max_health_candidate = soldier->get_current_health() / static_cast<float>(soldier->get_max_health());
 					if (soldier_to_heal == nullptr || soldier->get_total_level() > max_total_level ||
 					    (soldier->get_total_level() == max_total_level &&
-					     soldier->get_current_health() / soldier->get_max_health() > max_health)) {
+					     max_health_candidate > max_health)) {
 						max_total_level = soldier->get_total_level();
-						max_health = soldier->get_current_health() / soldier->get_max_health();
+						max_health = max_health_candidate;
 						soldier_to_heal = soldier;
 					}
 				} else if ((soldier->get_battle() == nullptr ||
