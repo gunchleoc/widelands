@@ -19,50 +19,42 @@
 
 #include "wui/map_tags.h"
 
-#include <map>
-
 #include "base/i18n.h"
 
-namespace {
-
-const std::map<std::string, std::string> kMapTags = {
-   /** TRANSLATORS: This is a map tag */
-   {"official", _("Official")},
-   /** TRANSLATORS: This is a map tag */
-   {"unofficial", _("Unofficial")},
-   /** TRANSLATORS: This is a map tag */
-   {"balanced", _("Balanced")},
-   /** TRANSLATORS: This is a map tag */
-   {"unbalanced", _("Unbalanced")},
-   /** TRANSLATORS: This is a map tag */
-   {"seafaring", _("Seafaring")},
-   /** TRANSLATORS: This is a map tag */
-   {"ferries", _("Ferries")},
-   /** TRANSLATORS: This is a map tag */
-   {"artifacts", _("Artifacts")},
-   /** TRANSLATORS: This is a map tag */
-   {"scenario", _("Scenario")},
-   /** TRANSLATORS: This is a map tag */
-   {"ffa", _("Free for all")},
-   /** TRANSLATORS: This is a map tag. One versus one. */
-   {"1v1", _("1v1")},
-   /** TRANSLATORS: This is a map tag */
-   {"2teams", _("Teams of 2")},
-   /** TRANSLATORS: This is a map tag */
-   {"3teams", _("Teams of 3")},
-   /** TRANSLATORS: This is a map tag */
-   {"4teams", _("Teams of 4")},
-};
-
-}  // namespace
-
-bool tag_exists(const std::string& tag) {
-	return kMapTags.count(tag) == 1;
+MapTags::MapTags() : tags_{
+						 /** TRANSLATORS: This is a map tag */
+						 {"official", _("Official")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"unofficial", _("Unofficial")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"balanced", _("Balanced")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"unbalanced", _("Unbalanced")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"seafaring", _("Seafaring")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"ferries", _("Ferries")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"artifacts", _("Artifacts")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"scenario", _("Scenario")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"ffa", _("Free for all")},
+						 /** TRANSLATORS: This is a map tag. One versus one. */
+						 {"1v1", _("1v1")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"2teams", _("Teams of 2")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"3teams", _("Teams of 3")},
+						 /** TRANSLATORS: This is a map tag */
+						 {"4teams", _("Teams of 4")},
+					  } {
 }
 
-const std::string localize_tag(const std::string& tag) {
-	if (tag_exists(tag)) {
-		return _((*kMapTags.find(tag)).second);
+const std::string& MapTags::localize_tag(const std::string& tag) {
+	auto it = tags_.find(tag);
+	if (it != tags_.end()) {
+		return it->second;
 	}
 	return tag;
 }

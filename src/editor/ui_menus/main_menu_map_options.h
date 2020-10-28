@@ -32,6 +32,7 @@
 #include "ui_basic/tabpanel.h"
 #include "ui_basic/textarea.h"
 #include "ui_basic/unique_window.h"
+#include "wui/map_tags.h"
 
 class EditorInteractive;
 struct SuggestedTeamsEntry;
@@ -83,6 +84,7 @@ private:
 	UI::Button new_suggested_team_;
 
 	UI::UniqueWindow::Registry& registry_;
+	MapTags map_tags_;
 };
 
 struct SuggestedTeamsEntry : public UI::Panel {

@@ -27,6 +27,7 @@
 #include "ui_basic/multilinetextarea.h"
 #include "ui_basic/panel.h"
 #include "wui/mapdata.h"
+#include "wui/map_tags.h"
 #include "wui/suggested_teams_box.h"
 
 /**
@@ -65,6 +66,7 @@ private:
 	std::string last_map_;
 	std::unordered_map<std::string, std::unique_ptr<const Texture>> minimap_cache_;
 	Widelands::EditorGameBase& egbase_;  // Not owned
+	MapTags map_tags_;
 };
 
 #endif  // end of include guard: WL_WUI_MAPDETAILS_H

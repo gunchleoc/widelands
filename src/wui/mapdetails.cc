@@ -31,7 +31,6 @@
 #include "map_io/map_loader.h"
 #include "ui_basic/box.h"
 #include "ui_basic/scrollbar.h"
-#include "wui/map_tags.h"
 
 MapDetails::MapDetails(Panel* parent,
                        int32_t x,
@@ -174,7 +173,7 @@ bool MapDetails::update(const MapData& mapdata, bool localize_mapname, bool rend
 
 		std::vector<std::string> tags;
 		for (const auto& tag : mapdata.tags) {
-			tags.push_back(localize_tag(tag));
+			tags.push_back(map_tags_.localize_tag(tag));
 		}
 		std::sort(tags.begin(), tags.end());
 		description = (boost::format("%s%s") % description % as_heading(_("Tags"), style_)).str();

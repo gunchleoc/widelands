@@ -20,15 +20,20 @@
 #ifndef WL_WUI_MAP_TAGS_H
 #define WL_WUI_MAP_TAGS_H
 
+#include <map>
 #include <string>
 
 /// Functions for localizing the known map tags.
+class MapTags {
+public:
+	MapTags();
 
-/// Returns true if this tag is known.
-bool tag_exists(const std::string& tag);
+	/// If tag_exists, returns the localized tag.
+	/// Otherwise, returns 'tag'
+	const std::string& localize_tag(const std::string& tag);
 
-/// If tag_exists, returns the localized tag.
-/// Otherwise, returns 'tag'
-const std::string localize_tag(const std::string& tag);
+private:
+	const std::map<std::string, std::string> tags_;
+};
 
 #endif  // end of include guard: WL_WUI_MAP_TAGS_H

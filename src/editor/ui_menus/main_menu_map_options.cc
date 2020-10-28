@@ -29,7 +29,6 @@
 #include "ui_basic/multilineeditbox.h"
 #include "ui_basic/textarea.h"
 #include "wlapplication_options.h"
-#include "wui/map_tags.h"
 
 inline EditorInteractive& MainMenuMapOptions::eia() {
 	return dynamic_cast<EditorInteractive&>(*get_parent());
@@ -326,14 +325,14 @@ MainMenuMapOptions::MainMenuMapOptions(EditorInteractive& parent, Registry& regi
 	main_box_.add_space(indent_);
 
 	tags_box_.add(new UI::Textarea(&tags_box_, 0, 0, max_w_, labelh_, _("Tags:")));
-	add_tag_checkbox(&tags_box_, "ffa", localize_tag("ffa"));
-	add_tag_checkbox(&tags_box_, "1v1", localize_tag("1v1"));
-	add_tag_checkbox(&tags_box_, "2teams", localize_tag("2teams"));
-	add_tag_checkbox(&tags_box_, "3teams", localize_tag("3teams"));
-	add_tag_checkbox(&tags_box_, "4teams", localize_tag("4teams"));
+	add_tag_checkbox(&tags_box_, "ffa", map_tags_.localize_tag("ffa"));
+	add_tag_checkbox(&tags_box_, "1v1", map_tags_.localize_tag("1v1"));
+	add_tag_checkbox(&tags_box_, "2teams", map_tags_.localize_tag("2teams"));
+	add_tag_checkbox(&tags_box_, "3teams", map_tags_.localize_tag("3teams"));
+	add_tag_checkbox(&tags_box_, "4teams", map_tags_.localize_tag("4teams"));
 
-	balancing_dropdown_.add(localize_tag("balanced"), "balanced");
-	balancing_dropdown_.add(localize_tag("unbalanced"), "unbalanced");
+	balancing_dropdown_.add(map_tags_.localize_tag("balanced"), "balanced");
+	balancing_dropdown_.add(map_tags_.localize_tag("unbalanced"), "unbalanced");
 	tags_box_.add(&balancing_dropdown_, UI::Box::Resizing::kFullSize);
 	tags_box_.add_space(padding_);
 
