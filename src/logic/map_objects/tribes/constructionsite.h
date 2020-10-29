@@ -34,7 +34,8 @@ enum class StockPolicy;
 
 /// Per-player and per-field constructionsite information
 struct ConstructionsiteInformation {
-	ConstructionsiteInformation() : becomes(nullptr), was(nullptr), totaltime(0), completedtime(0) {
+	ConstructionsiteInformation()
+	   : becomes(nullptr), was(nullptr), intermediates(), totaltime(0), completedtime(0) {
 	}
 
 	/// Draw the partly finished constructionsite
@@ -74,7 +75,10 @@ The ConstructionSite's idling animation is the basic construction site marker.
 */
 class ConstructionSiteDescr : public BuildingDescr {
 public:
-	ConstructionSiteDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t, Tribes& tribes);
+	ConstructionSiteDescr(const std::string& init_descname,
+						  const std::string& files_directory,
+	                      const LuaTable& t,
+	                      Descriptions& descriptions);
 	~ConstructionSiteDescr() override {
 	}
 

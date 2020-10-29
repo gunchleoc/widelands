@@ -43,7 +43,6 @@ class Immovable;
 class Map;
 class TerrainAffinity;
 class Worker;
-class World;
 struct Flag;
 struct ImmovableAction;
 struct ImmovableActionData;
@@ -126,18 +125,12 @@ class ImmovableDescr : public MapObjectDescr {
 public:
 	using Programs = std::map<std::string, ImmovableProgram*>;
 
-	/// Common constructor functions for tribes and world.
-	ImmovableDescr(const std::string& init_descname,
-				   const std::string& files_directory,
-	               const LuaTable&,
-	               MapObjectDescr::OwnerType type,
-	               const std::vector<std::string>& attribs);
-	/// Tribes immovable
+	/// Common constructor for tribes and world.
 	ImmovableDescr(const std::string& init_descname,
 				   const std::string& files_directory,
 	               const LuaTable&,
 	               const std::vector<std::string>& attribs,
-	               Tribes& tribes);
+	               Descriptions& descriptions);
 	~ImmovableDescr() override;
 
 	int32_t get_size() const {
@@ -148,10 +141,6 @@ public:
 	Immovable& create(EditorGameBase&,
 	                  const Coords&,
 	                  const Widelands::BuildingDescr* former_building_descr) const;
-
-	MapObjectDescr::OwnerType owner_type() const {
-		return owner_type_;
-	}
 
 	const Buildcost& buildcost() const {
 		return buildcost_;
@@ -179,7 +168,7 @@ public:
 	const std::set<std::string> collected_by() const {
 		return collected_by_;
 	}
-	void add_collected_by(const World&, const Tribes&, const std::string& prodsite);
+	void add_collected_by(const Descriptions& descriptions, const std::string& prodsite);
 
 	void add_became_from(const std::string& s) {
 		became_from_.insert(s);
@@ -188,9 +177,6 @@ public:
 protected:
 	int32_t size_;
 	Programs programs_;
-
-	/// Whether this ImmovableDescr belongs to a tribe or the world
-	const MapObjectDescr::OwnerType owner_type_;
 
 	/// Buildcost for externally constructible immovables (for ship construction)
 	/// \see ActConstruct

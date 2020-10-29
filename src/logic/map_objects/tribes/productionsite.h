@@ -55,13 +55,11 @@ public:
 						const std::string& files_directory,
 	                    MapObjectType type,
 	                    const LuaTable& t,
-	                    Tribes& tribes,
-	                    World& world);
+	                    Descriptions& descriptions);
 	ProductionSiteDescr(const std::string& init_descname,
 						const std::string& files_directory,
 	                    const LuaTable& t,
-	                    Tribes& tribes,
-	                    World& world);
+	                    Descriptions& descriptions);
 
 	Building& create_object() const override;
 
@@ -349,7 +347,7 @@ public:
 	void act(Game&, uint32_t data) override;
 
 	void remove_worker(Worker&) override;
-	bool warp_worker(EditorGameBase&, const WorkerDescr& wd);
+	bool warp_worker(EditorGameBase&, const WorkerDescr& wd, int32_t slot = -1);
 
 	bool fetch_from_flag(Game&) override;
 	bool get_building_work(Game&, Worker&, bool success) override;

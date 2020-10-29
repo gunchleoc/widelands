@@ -31,7 +31,7 @@ namespace Widelands {
 
 class MarketDescr : public BuildingDescr {
 public:
-	MarketDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t, Tribes& tribes);
+	MarketDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t, Descriptions& descriptions);
 	~MarketDescr() override {
 	}
 

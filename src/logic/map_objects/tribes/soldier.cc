@@ -93,8 +93,11 @@ bool SoldierLevelRange::matches(const Soldier* soldier) const {
 	               soldier->get_defense_level(), soldier->get_evade_level());
 }
 
-SoldierDescr::SoldierDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& table, Tribes& tribes)
-   : WorkerDescr(init_descname, files_directory, MapObjectType::SOLDIER, table, tribes),
+SoldierDescr::SoldierDescr(const std::string& init_descname,
+						   const std::string& files_directory,
+                           const LuaTable& table,
+                           Descriptions& descriptions)
+   : WorkerDescr(init_descname, files_directory, MapObjectType::SOLDIER, table, descriptions),
      health_(table.get_table("health")),
      attack_(table.get_table("attack")),
      defense_(table.get_table("defense")),

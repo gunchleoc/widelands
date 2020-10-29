@@ -152,7 +152,7 @@ bool DefaultAI::check_enemy_sites(const Time& gametime) {
 
 		++count;
 		// we test max 12 sites and prefer ones tested more then 1 min ago
-		if (((observer.second.last_tested + Duration(enemysites_check_delay_ * 1000)) > gametime &&
+		if (((observer.second.last_tested + enemysites_check_delay_ * 1000) > gametime &&
 		     count > 4) ||
 		    count > 12) {
 			continue;
@@ -315,10 +315,8 @@ bool DefaultAI::check_enemy_sites(const Time& gametime) {
 				observer.second.enemy_military_sites_in_region = enemy_military_sites_in_region_;
 
 				static int16_t inputs[4 * kFNeuronBitSize] = {0};
-				// Reseting values as the variable is static
-				for (int j = 0; j < 4 * kFNeuronBitSize; j++) {
-					inputs[j] = 0;
-				}
+				// Resetting values as the variable is static
+				std::fill(std::begin(inputs), std::end(inputs), 0);
 				inputs[0] =
 				   (observer.second.attack_soldiers_strength - observer.second.defenders_strength) *
 				   std::abs(management_data.get_military_number_at(114)) / 10;
@@ -360,14 +358,12 @@ bool DefaultAI::check_enemy_sites(const Time& gametime) {
 				              player_statistics.get_old60_player_power(pn)) ?
 				                3 :
 				                -3;
-				// TODO(Nordfriese): Passing a PlayerNumber to a function that expects
-				// a Time is a very bad idea, no idea what was intended here…
-				inputs[18] = (player_statistics.get_visible_enemies_power(Time(pn)) >
-				              player_statistics.get_old_visible_enemies_power(Time(pn))) ?
+				inputs[18] = (player_statistics.get_visible_enemies_power(gametime) >
+				              player_statistics.get_old_visible_enemies_power(gametime)) ?
 				                -1 :
 				                1;
-				inputs[19] = (player_statistics.get_visible_enemies_power(Time(pn)) >
-				              player_statistics.get_old_visible_enemies_power(Time(pn))) ?
+				inputs[19] = (player_statistics.get_visible_enemies_power(gametime) >
+				              player_statistics.get_old_visible_enemies_power(gametime)) ?
 				                -3 :
 				                3;
 				inputs[20] = (player_statistics.get_player_power(owner_number) >
@@ -562,11 +558,11 @@ bool DefaultAI::check_enemy_sites(const Time& gametime) {
 
 	// modifying enemysites_check_delay_,this depends on the count
 	// of enemysites in observer
-	if (enemy_sites.size() >= 13 && enemysites_check_delay_ < 180) {
-		enemysites_check_delay_ += 3;
+	if (enemy_sites.size() >= 13 && enemysites_check_delay_ < Duration(180)) {
+		enemysites_check_delay_ += Duration(3);
 	}
-	if (enemy_sites.size() < 10 && enemysites_check_delay_ > 30) {
-		enemysites_check_delay_ -= 2;
+	if (enemy_sites.size() < 10 && enemysites_check_delay_ > Duration(30)) {
+		enemysites_check_delay_ -= Duration(2);
 	}
 
 	// if coordinates hash is not set
@@ -1125,10 +1121,8 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo, cons
 	const uint16_t total_score = scores[0] + scores[1] + scores[2];
 
 	static int32_t inputs[4 * kFNeuronBitSize] = {0};
-	// Reseting values as the variable is static
-	for (int i = 0; i < 4 * kFNeuronBitSize; i++) {
-		inputs[i] = 0;
-	}
+	// Resetting values as the variable is static
+	std::fill(std::begin(inputs), std::end(inputs), 0);
 	inputs[0] = (msites_total < 1) ? 1 : 0;
 	inputs[1] = (msites_total < 2) ? 1 : 0;
 	inputs[2] = (msites_total < 3) ? 1 : 0;

@@ -30,7 +30,7 @@ public:
 	CarrierDescr(const std::string& init_descname,
 				 const std::string& files_directory,
 	             const LuaTable& table,
-	             Tribes& tribes,
+	             Descriptions& descriptions,
 	             MapObjectType t = MapObjectType::CARRIER);
 	~CarrierDescr() override {
 	}

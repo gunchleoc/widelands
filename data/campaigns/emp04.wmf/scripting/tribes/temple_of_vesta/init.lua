@@ -2,7 +2,7 @@ dirname = "map:scripting/tribes/temple_of_vesta/"
 
 push_textdomain("scenario_emp04.wmf")
 
-tribes:new_warehouse_type {
+descriptions:new_warehouse_type {
    name = "empire_temple_of_vesta",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("empire_building", "Temple of Vesta"),

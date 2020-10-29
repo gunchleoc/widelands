@@ -44,6 +44,7 @@ Statebox::Statebox(Panel* const parent,
                    const Image* pic,
                    const std::string& tooltip_text)
    : Panel(parent, p.x, p.y, kStateboxSize, kStateboxSize, tooltip_text),
+     style_(PanelStyle::kWui),  // unused for pictorial stateboxes
      flags_(Is_Enabled),
      pic_graphics_(pic),
      rendered_text_(nullptr) {
@@ -55,14 +56,21 @@ Statebox::Statebox(Panel* const parent,
 	set_can_focus(true);
 }
 
+static inline std::string get_checkbox_graphics(const PanelStyle& s) {
+	return s == PanelStyle::kWui ? "images/ui_basic/checkbox_light.png" :
+	                               "images/ui_basic/checkbox_dark.png";
+}
+
 Statebox::Statebox(Panel* const parent,
+                   PanelStyle s,
                    Vector2i const p,
                    const std::string& label_text,
                    const std::string& tooltip_text,
                    int width)
    : Panel(parent, p.x, p.y, std::max(width, kStateboxSize), kStateboxSize, tooltip_text),
+     style_(s),
      flags_(Is_Enabled),
-     pic_graphics_(g_image_cache->get("images/ui_basic/checkbox_light.png")),
+     pic_graphics_(g_image_cache->get(get_checkbox_graphics(style_))),
      rendered_text_(nullptr),
      label_text_(label_text) {
 	set_flags(Has_Text, !label_text_.empty());
@@ -109,7 +117,7 @@ void Statebox::set_enabled(bool const enabled) {
 	set_can_focus(enabled);
 
 	if (!(flags_ & Has_Custom_Picture)) {
-		pic_graphics_ = g_image_cache->get(enabled ? "images/ui_basic/checkbox_light.png" :
+		pic_graphics_ = g_image_cache->get(enabled ? get_checkbox_graphics(style_) :
 		                                             "images/ui_basic/checkbox.png");
 		set_flags(Is_Highlighted, (flags_ & Is_Highlighted) && (flags_ & Is_Enabled));
 	}
@@ -128,6 +136,11 @@ void Statebox::set_state(bool const on) {
 	}
 }
 
+std::vector<Recti> Statebox::focus_overlay_rects() {
+	return (flags_ & Has_Custom_Picture) ? Panel::focus_overlay_rects(1, 1, -1) :
+	                                       Panel::focus_overlay_rects();
+}
+
 /**
  * Redraw the entire checkbox
  */
@@ -136,7 +149,7 @@ void Statebox::draw_overlay(RenderTarget& dst) {
 	if (flags_ & Has_Custom_Picture) {
 		// TODO(Nordfriese): Move colours to style manager
 		if (flags_ & Is_Checked) {
-			dst.draw_rect(Recti(0, 0, get_w(), get_h()), RGBColor(229, 116, 2));
+			dst.draw_rect(Recti(0, 0, get_w(), get_h()), RGBColor(226, 200, 6));
 		} else if (flags_ & Is_Highlighted) {
 			dst.draw_rect(Recti(0, 0, get_w(), get_h()), RGBColor(100, 100, 80));
 		}
@@ -144,6 +157,10 @@ void Statebox::draw_overlay(RenderTarget& dst) {
 }
 void Statebox::draw(RenderTarget& dst) {
 	if (flags_ & Has_Custom_Picture) {
+		if (flags_ & Is_Checked) {
+			dst.brighten_rect(Recti(0, 0, get_w(), get_h()), -24);
+		}
+
 		// center picture
 		const uint16_t w = pic_graphics_->width();
 		const uint16_t h = pic_graphics_->height();

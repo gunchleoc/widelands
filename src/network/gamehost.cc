@@ -506,8 +506,11 @@ struct GameHostImpl {
 	}
 };
 
-GameHost::GameHost(const std::string& playername, bool internet)
-   : d(new GameHostImpl(this)), internet_(internet), forced_pause_(false) {
+GameHost::GameHost(FullscreenMenuMain& f,
+                   const std::string& playername,
+                   std::vector<Widelands::TribeBasicInfo> tribeinfos,
+                   bool internet)
+   : fsmm_(f), d(new GameHostImpl(this)), internet_(internet), forced_pause_(false) {
 	log_info("[Host]: starting up.\n");
 
 	d->localplayername = playername;
@@ -543,7 +546,9 @@ GameHost::GameHost(const std::string& playername, bool internet)
 	d->syncreport_pending = false;
 	d->syncreport_time = Time(0);
 
-	d->settings.tribes = Widelands::get_all_tribeinfos();
+	assert(!tribeinfos.empty());
+	d->settings.tribes = std::move(tribeinfos);
+
 	set_multiplayer_game_settings();
 	d->settings.playernum = UserSettings::none();
 	d->settings.usernum = 0;
@@ -629,11 +634,12 @@ void GameHost::init_computer_players() {
 
 // TODO(k.halfmann): refactor into smaller functions
 void GameHost::run() {
+	Widelands::Game game;
 	// Fill the list of possible system messages
 	NetworkGamingMessages::fill_map();
-	FullscreenMenuLaunchMPG lm(&d->hp, this, d->chat);
-	const FullscreenMenuBase::MenuTarget code = lm.run<FullscreenMenuBase::MenuTarget>();
-	if (code == FullscreenMenuBase::MenuTarget::kBack) {
+	FullscreenMenuLaunchMPG lm(fsmm_, &d->hp, this, d->chat, game);
+	const MenuTarget code = lm.run<MenuTarget>();
+	if (code == MenuTarget::kBack) {
 		// if this is an internet game, tell the metaserver that client is back in the lobby.
 		if (internet_) {
 			InternetGaming::ref().set_game_done();
@@ -660,7 +666,6 @@ void GameHost::run() {
 	packet.unsigned_8(NETCMD_LAUNCH);
 	broadcast(packet);
 
-	Widelands::Game game;
 	game.set_ai_training_mode(get_config_bool("ai_training", false));
 	game.set_auto_speed(get_config_bool("auto_speed", false));
 	game.set_write_syncstream(get_config_bool("write_syncstreams", true));
@@ -1124,6 +1129,8 @@ void GameHost::set_map(const std::string& mapname,
 	packet.unsigned_8(NETCMD_SETTING_ALLPLAYERS);
 	write_setting_all_players(packet);
 	broadcast(packet);
+	// Map changes are finished here
+	Notifications::publish(NoteGameSettings(NoteGameSettings::Action::kMap));
 
 	// If possible, offer the map / saved game as transfer
 	// TODO(unknown): not yet able to handle directory type maps / savegames, would involve zipping
@@ -1574,8 +1581,6 @@ void GameHost::write_setting_all_players(SendPacket& packet) {
 	for (uint8_t i = 0; i < d->settings.players.size(); ++i) {
 		write_setting_player(packet, i);
 	}
-	// Map changes are finished here
-	Notifications::publish(NoteGameSettings(NoteGameSettings::Action::kMap));
 }
 
 void GameHost::write_setting_user(SendPacket& packet, uint32_t const number) {
@@ -1755,6 +1760,8 @@ void GameHost::welcome_client(uint32_t const number, std::string& playername) {
 	packet.unsigned_8(NETCMD_SETTING_ALLPLAYERS);
 	write_setting_all_players(packet);
 	d->net->send(client.sock_id, packet);
+	// Map changes are finished here
+	Notifications::publish(NoteGameSettings(NoteGameSettings::Action::kMap));
 
 	packet.reset();
 	packet.unsigned_8(NETCMD_SETTING_ALLUSERS);

@@ -63,9 +63,8 @@ const uint32_t TrainingSite::training_state_multiplier_ = 12;
 TrainingSiteDescr::TrainingSiteDescr(const std::string& init_descname,
                                      const std::string& files_directory,
                                      const LuaTable& table,
-                                     Tribes& tribes,
-                                     World& world)
-   : ProductionSiteDescr(init_descname, files_directory, MapObjectType::TRAININGSITE, table, tribes, world),
+                                     Descriptions& descriptions)
+   : ProductionSiteDescr(init_descname, files_directory, MapObjectType::TRAININGSITE, table, descriptions),
      num_soldiers_(table.get_int("soldier_capacity")),
      max_stall_(table.get_int("trainer_patience")),
 

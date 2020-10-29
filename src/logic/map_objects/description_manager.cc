@@ -24,7 +24,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-#include "base/log.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
 #include "scripting/lua_table.h"
@@ -41,7 +40,7 @@ std::string DescriptionManager::description_path(const std::string& directory, F
 	if (boost::ends_with(result, ".lua")) {
 		result = FileSystem::fs_dirname(result);
 	}
-	result = fs->canonicalize_name(fs->get_basename() + fs->file_separator() + result);
+	result = fs->canonicalize_name(fs->get_basename() + FileSystem::file_separator() + result);
 	return result;
 }
 
@@ -49,6 +48,7 @@ DescriptionManager::DescriptionManager(LuaInterface* lua) : lua_(lua) {
 
 	map_objecttype_subscriber_ = Notifications::subscribe<NoteMapObjectDescription>(
 	   [this](const NoteMapObjectDescription& note) {
+		   assert(!registered_descriptions_.empty());
 		   switch (note.type) {
 		   case NoteMapObjectDescription::LoadType::kObject:
 			   load_description_on_demand(note.name);
@@ -170,7 +170,7 @@ void DescriptionManager::load_description(const std::string& description_name) {
 		   description_name.c_str());
 	}
 
-	std::string object_script = "";
+	std::string object_script;
 
 	// Load it - scenario descriptions take precedence
 	if (registered_scenario_descriptions_.count(description_name) == 1) {
@@ -239,8 +239,7 @@ void DescriptionManager::load_description_on_demand(const std::string& descripti
 			load_description(description_name);
 		}
 	} else {
-		// TODO(GunChleoc): throw GameDataError once we use this for the world too
-		log_err("Unknown map object type '%s'\n", description_name.c_str());
+		throw GameDataError("Unknown map object type '%s'", description_name.c_str());
 	}
 }
 
