@@ -345,6 +345,8 @@ void Descriptions::add_object_description(const LuaTable& table, FileSystem* map
 
 	description_manager_->mark_loading_in_progress(type_name);
 
+	log_dbg("%s => %s", description_manager_->get_object_directory(type_name).c_str(), files_directory.c_str());
+
 	// Add
 	switch (type) {
 	case MapObjectType::CRITTER:

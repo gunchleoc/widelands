@@ -1,12 +1,7 @@
-dirname = "test/maps/market_trading.wmf/" .. path.dirname(__file__)
-
 descriptions:new_productionsite_type {
    name = "barbarians_custom_building",
    -- TRANSLATORS: This is a building name used in lists of buildings
    descname = pgettext("custom_building", "Custom Building"),
-   helptext_script = dirname .. "helptexts.lua",
-   animation_directory = dirname,
-   icon = dirname .. "menu.png",
    size = "small",
 
    buildcost = {

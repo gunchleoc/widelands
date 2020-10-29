@@ -293,11 +293,18 @@ MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
 		}
 		assert(g_animation_manager->get_representative_image(name())->width() > 0);
 	}
-	// TODO(GunChleoc): Fix these for scenarios
+
+	// The menu icon can be specified explicitly by Lua, or deduced from the file system
+	// NOCOM document
 	if (table.has_key("icon")) {
 		icon_filename_ = table.get_string("icon");
 		if (icon_filename_.empty()) {
 			throw GameDataError("Map object %s has a menu icon, but it is empty", init_name.c_str());
+		}
+	} else {
+		std::string candidate_icon_filename = files_directory + FileSystem::file_separator() + "menu.png";
+		if (g_fs->file_exists(candidate_icon_filename)) {
+			icon_filename_ = candidate_icon_filename;
 		}
 	}
 	check_representative_image();
