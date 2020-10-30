@@ -28,7 +28,7 @@ namespace Widelands {
 class CarrierDescr : public WorkerDescr {
 public:
 	CarrierDescr(const std::string& init_descname,
-				 const std::string& files_directory,
+				 const Animation::AnimationFilesystem& files_directory,
 	             const LuaTable& table,
 	             Descriptions& descriptions,
 	             MapObjectType t = MapObjectType::CARRIER);

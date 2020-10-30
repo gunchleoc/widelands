@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "graphic/animation/animation.h"
 #include "io/filesystem/filesystem.h"
 #include "logic/map_objects/map_object_type.h"
 #include "scripting/lua_interface.h"
@@ -40,7 +41,7 @@ public:
 	explicit DescriptionManager(LuaInterface* lua);
 	~DescriptionManager();
 
-	static std::string description_path(const std::string& description_name, FileSystem* map_filesystem);
+	static Animation::AnimationFilesystem description_path(const std::string& description_name, FileSystem* map_filesystem);
 
 	/// Search a directory for 'register.lua' files and register their 'init.lua' scripts
 	void register_directory(const std::string& dirname, FileSystem* filesystem, bool is_scenario);

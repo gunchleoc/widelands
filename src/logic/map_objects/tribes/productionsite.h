@@ -52,12 +52,12 @@ public:
 	friend struct ProductionProgram;  // To add animations, outputs etc.
 
 	ProductionSiteDescr(const std::string& init_descname,
-						const std::string& files_directory,
+						const Animation::AnimationFilesystem& files_directory,
 	                    MapObjectType type,
 	                    const LuaTable& t,
 	                    Descriptions& descriptions);
 	ProductionSiteDescr(const std::string& init_descname,
-						const std::string& files_directory,
+						const Animation::AnimationFilesystem& files_directory,
 	                    const LuaTable& t,
 	                    Descriptions& descriptions);
 

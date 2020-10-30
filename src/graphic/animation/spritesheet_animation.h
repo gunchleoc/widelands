@@ -36,14 +36,13 @@ class SpriteSheetAnimation : public Animation {
 public:
 	~SpriteSheetAnimation() override = default;
 	explicit SpriteSheetAnimation(const LuaTable& table,
-	                              const std::string& basename,
-	                              const std::string& animation_directory);
+	                              const std::string& basename, AnimationFilesystem filesystem);
 
 	const Image* representative_image(const RGBColor* clr) const override;
 
 private:
 	void add_scale_if_files_present(const std::string& basename,
-	                                const std::string& directory,
+	                                const AnimationFilesystem& filesystem,
 	                                float scale_as_float,
 	                                const std::string& scale_as_string) override;
 

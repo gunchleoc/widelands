@@ -47,7 +47,7 @@
 
 namespace Widelands {
 
-BobDescr::BobDescr(const std::string& init_descname, const std::string& files_directory,
+BobDescr::BobDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                    const MapObjectType init_type,
                    MapObjectDescr::OwnerType owner_type,
                    const LuaTable& table)

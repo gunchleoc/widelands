@@ -135,7 +135,7 @@ ImmovableDescr IMPLEMENTATION
 /**
  * Parse a common immovable functions from init file.
  */
-ImmovableDescr::ImmovableDescr(const std::string& init_descname, const std::string& files_directory,
+ImmovableDescr::ImmovableDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                                const LuaTable& table,
                                const std::vector<std::string>& attribs,
                                Descriptions& descriptions)

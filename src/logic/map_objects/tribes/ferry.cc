@@ -30,7 +30,7 @@
 namespace Widelands {
 
 FerryDescr::FerryDescr(const std::string& init_descname,
-					   const std::string& files_directory,
+					   const Animation::AnimationFilesystem& files_directory,
                        const LuaTable& table,
                        Descriptions& descriptions)
    : CarrierDescr(init_descname, files_directory, table, descriptions, MapObjectType::FERRY) {

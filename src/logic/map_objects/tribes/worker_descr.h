@@ -44,11 +44,11 @@ public:
 	using Buildcost = std::map<std::string, Quantity>;
 
 	WorkerDescr(const std::string& init_descname,
-				const std::string& files_directory,
+				const Animation::AnimationFilesystem& files_directory,
 	            MapObjectType type,
 	            const LuaTable& table,
 	            Descriptions& descriptions);
-	WorkerDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t, Descriptions& descriptions);
+	WorkerDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory, const LuaTable& t, Descriptions& descriptions);
 	~WorkerDescr() override;
 
 	Bob& create_object() const override;

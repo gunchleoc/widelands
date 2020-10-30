@@ -33,6 +33,8 @@
 #include "scripting/lua_table.h"
 #include "sound/constants.h"
 
+class FileSystem;
+
 /// The default animation speed
 constexpr int kFrameLength = 250;
 
@@ -49,6 +51,12 @@ class Animation {
 public:
 	/// Whether we have an animation consisting of multiple files or of 1 single spritesheet file
 	enum class Type { kFiles, kSpritesheet };
+
+	// NOCOM make directory const
+	struct AnimationFilesystem {
+		std::string directory;
+		FileSystem* filesystem; // Not owned
+	};
 
 	/// The mipmap scales supported by the engine as float and filename suffix.
 	/// Ensure that this always matches supported_scales in data/scripting/mapobjects.lua.
@@ -154,7 +162,7 @@ protected:
 
 	/// Register animations for the scales listed in kSupportedScales if available. The scale of 1.0
 	/// is mandatory.
-	void add_available_scales(const std::string& basename, const std::string& directory);
+	void add_available_scales(const std::string& basename, const AnimationFilesystem& filesystem);
 
 	/// Play the sound effect associated with this animation at the given time.
 	/// Any sound effects are played with stereo position according to 'coords'.
@@ -182,7 +190,7 @@ private:
 	/// Look for a file or files for the given scale, and if we have any, add a mipmap entry for
 	/// them.
 	virtual void add_scale_if_files_present(const std::string& basename,
-	                                        const std::string& directory,
+	                                        const AnimationFilesystem& filesystem,
 	                                        float scale_as_float,
 	                                        const std::string& scale_as_string) = 0;
 

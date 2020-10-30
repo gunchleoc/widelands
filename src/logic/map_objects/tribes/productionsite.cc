@@ -89,7 +89,7 @@ ProductionSite BUILDING
  * /data/tribes/buildings/productionsites/atlanteans/armorsmithy/init.lua
  */
 ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
-                                         const std::string& files_directory,
+                                         const Animation::AnimationFilesystem& files_directory,
                                          MapObjectType init_type,
                                          const LuaTable& table,
                                          Descriptions& descriptions)
@@ -222,7 +222,7 @@ ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
 }
 
 ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
-                                         const std::string& files_directory,
+                                         const Animation::AnimationFilesystem& files_directory,
                                          const LuaTable& table,
                                          Descriptions& descriptions)
    : ProductionSiteDescr(init_descname, files_directory, MapObjectType::PRODUCTIONSITE, table, descriptions) {

@@ -54,7 +54,7 @@ struct NoteShip {
 
 class ShipDescr : public BobDescr {
 public:
-	ShipDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t);
+	ShipDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory, const LuaTable& t);
 	~ShipDescr() override {
 	}
 

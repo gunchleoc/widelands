@@ -327,7 +327,7 @@ Warehouse Building
  * The contents of 'table' are documented in
  * /data/tribes/buildings/warehouses/atlanteans/headquarters/init.lua
  */
-WarehouseDescr::WarehouseDescr(const std::string& init_descname, const std::string& files_directory,
+WarehouseDescr::WarehouseDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                                const LuaTable& table,
                                Descriptions& descriptions)
    : BuildingDescr(init_descname, files_directory, MapObjectType::WAREHOUSE, table, descriptions),

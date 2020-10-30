@@ -29,7 +29,7 @@
 namespace Widelands {
 
 MarketDescr::MarketDescr(const std::string& init_descname,
-						 const std::string& files_directory,
+						 const Animation::AnimationFilesystem& files_directory,
                          const LuaTable& table,
                          Descriptions& descriptions)
    : BuildingDescr(init_descname, files_directory, MapObjectType::MARKET, table, descriptions) {

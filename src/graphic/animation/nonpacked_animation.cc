@@ -161,7 +161,7 @@ NonPackedAnimation IMPLEMENTATION
 
 NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
                                        const std::string& basename,
-                                       const std::string& animation_directory)
+                                       AnimationFilesystem filesystem)
    : Animation(table) {
 	try {
 		// Get image files
@@ -178,7 +178,8 @@ NonPackedAnimation::NonPackedAnimation(const LuaTable& table,
 		} else {
 			// TODO(GunChleoc): When all animations have been converted, require that
 			// animation_directory is not empty.
-			add_available_scales(basename, animation_directory);
+			// NOCOM use filesystem
+			add_available_scales(basename, filesystem);
 		}
 
 		// Frames
@@ -240,11 +241,23 @@ const Image* NonPackedAnimation::representative_image(const RGBColor* clr) const
 }
 
 void NonPackedAnimation::add_scale_if_files_present(const std::string& basename,
-                                                    const std::string& directory,
+                                                    const AnimationFilesystem& filesystem,
                                                     float scale_as_float,
                                                     const std::string& scale_as_string) {
+	// NOCOM
+	log_dbg("Searching for %s in %s", (basename + scale_as_string).c_str(), filesystem.directory.c_str());
+	if (!filesystem.filesystem->is_directory(filesystem.directory)) {
+		// NOCOM the problem is here
+		// ./regression_test.py -i -b ./widelands -r custom_units
+		// map/ prefix in savegames!
+		log_dbg("%s not a directory for basedir %s", filesystem.directory.c_str(), filesystem.filesystem->get_basename().c_str());
+		for (const std::string& testdir : filesystem.filesystem->list_directory(filesystem.directory)) {
+			 log_dbg("- %s", testdir.c_str());
+		}
+	}
 	std::vector<std::string> filenames =
-	   g_fs->get_sequential_files(directory, basename + scale_as_string, "png");
+	   filesystem.filesystem->get_sequential_files(filesystem.directory, basename + scale_as_string, "png");
+	log_dbg("Found %lu results", filenames.size());
 	if (!filenames.empty()) {
 		mipmaps_.insert(std::make_pair(
 		   scale_as_float,

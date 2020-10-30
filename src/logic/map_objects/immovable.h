@@ -127,7 +127,7 @@ public:
 
 	/// Common constructor for tribes and world.
 	ImmovableDescr(const std::string& init_descname,
-				   const std::string& files_directory,
+				   const Animation::AnimationFilesystem& files_directory,
 	               const LuaTable&,
 	               const std::vector<std::string>& attribs,
 	               Descriptions& descriptions);

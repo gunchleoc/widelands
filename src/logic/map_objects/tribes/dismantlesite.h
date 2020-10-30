@@ -44,7 +44,7 @@ class DismantleSite;
 class DismantleSiteDescr : public BuildingDescr {
 public:
 	DismantleSiteDescr(const std::string& init_descname,
-					   const std::string& files_directory,
+					   const Animation::AnimationFilesystem& files_directory,
 	                   const LuaTable& t,
 	                   Descriptions& descriptions);
 	~DismantleSiteDescr() override {

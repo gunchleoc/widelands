@@ -137,7 +137,7 @@ void ConstructionsiteInformation::draw(const Vector2f& point_on_dst,
  * The contents of 'table' are documented in
  * /data/tribes/buildings/partially_finished/constructionsite/init.lua
  */
-ConstructionSiteDescr::ConstructionSiteDescr(const std::string& init_descname, const std::string& files_directory,
+ConstructionSiteDescr::ConstructionSiteDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                                              const LuaTable& table,
                                              Descriptions& descriptions)
    : BuildingDescr(init_descname, files_directory, MapObjectType::CONSTRUCTIONSITE, table, descriptions),

@@ -38,7 +38,7 @@ namespace Widelands {
 class CritterDescr : public BobDescr {
 public:
 	CritterDescr(const std::string& init_descname,
-				 const std::string& files_directory,
+				 const Animation::AnimationFilesystem& files_directory,
 	             const LuaTable& table,
 	             const std::vector<std::string>& attribs);
 	~CritterDescr() override;

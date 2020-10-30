@@ -24,24 +24,31 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "base/log.h" // NOCOM
+#include "graphic/animation/animation.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
 #include "scripting/lua_table.h"
 
 namespace Widelands {
 
-std::string DescriptionManager::description_path(const std::string& directory, FileSystem* map_filesystem) {
+Animation::AnimationFilesystem DescriptionManager::description_path(const std::string& directory, FileSystem* map_filesystem) {
 	std::string result = directory;
 	FileSystem* fs = g_fs;
 	if (boost::starts_with(result, "map:")) {
+		log_dbg("Map filesystem");
 		fs = map_filesystem;
 		result = result.substr(4);
+		// NOCOM *g_fs->make_sub_file_system(path)
 	}
 	if (boost::ends_with(result, ".lua")) {
+		log_dbg("Lua file");
 		result = FileSystem::fs_dirname(result);
 	}
-	result = fs->canonicalize_name(fs->get_basename() + FileSystem::file_separator() + result);
-	return result;
+	// NOCOM result = fs->canonicalize_name(fs->get_basename() + FileSystem::file_separator() + result);
+	result = fs->canonicalize_name(FileSystem::file_separator() + result);
+
+	return Animation::AnimationFilesystem{result, fs};
 }
 
 DescriptionManager::DescriptionManager(LuaInterface* lua) : lua_(lua) {

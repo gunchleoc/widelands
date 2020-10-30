@@ -423,6 +423,7 @@ std::vector<std::string> FileSystem::get_sequential_files(const std::string& dir
 		std::vector<std::string> files;
 		const std::string filename_template =
 		   directory + file_separator() + basename + number_template + "." + extension;
+		log_dbg("filename_template : %s", filename_template.c_str());
 
 		NumberGlob glob(filename_template);
 		std::string filename;

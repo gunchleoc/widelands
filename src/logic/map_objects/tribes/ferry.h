@@ -33,7 +33,7 @@ struct Coords;
 
 class FerryDescr : public CarrierDescr {
 public:
-	FerryDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& table, Descriptions& descriptions);
+	FerryDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory, const LuaTable& table, Descriptions& descriptions);
 	~FerryDescr() override {
 	}
 

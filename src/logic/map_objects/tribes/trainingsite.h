@@ -32,7 +32,7 @@ namespace Widelands {
 class TrainingSiteDescr : public ProductionSiteDescr {
 public:
 	TrainingSiteDescr(const std::string& init_descname,
-					  const std::string& files_directory,
+					  const Animation::AnimationFilesystem& files_directory,
 	                  const LuaTable& table,
 	                  Descriptions& descriptions);
 	~TrainingSiteDescr() override {

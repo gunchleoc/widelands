@@ -33,7 +33,7 @@
 
 namespace Widelands {
 
-WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& files_directory,
+WorkerDescr::WorkerDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                          MapObjectType init_type,
                          const LuaTable& table,
                          Descriptions& descriptions)
@@ -114,7 +114,7 @@ WorkerDescr::WorkerDescr(const std::string& init_descname, const std::string& fi
 }
 
 WorkerDescr::WorkerDescr(const std::string& init_descname,
-						 const std::string& files_directory,
+						 const Animation::AnimationFilesystem& files_directory,
                          const LuaTable& table,
                          Descriptions& descriptions)
    : WorkerDescr(init_descname, files_directory, MapObjectType::WORKER, table, descriptions) {

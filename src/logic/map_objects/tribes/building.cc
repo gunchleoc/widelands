@@ -51,7 +51,7 @@ static const Duration kBuildingLeaveInterval = Duration(1000);
  * The contents of 'table' are documented in doc/sphinx/source/lua_tribes_buildings.rst.org
  */
 BuildingDescr::BuildingDescr(const std::string& init_descname,
-							 const std::string& files_directory,
+							 const Animation::AnimationFilesystem& files_directory,
                              const MapObjectType init_type,
                              const LuaTable& table,
                              Descriptions& descriptions)

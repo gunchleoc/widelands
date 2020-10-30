@@ -61,7 +61,7 @@ const uint32_t TrainingSite::training_state_multiplier_ = 12;
  * /data/tribes/buildings/trainingsites/atlanteans/dungeon/init.lua
  */
 TrainingSiteDescr::TrainingSiteDescr(const std::string& init_descname,
-                                     const std::string& files_directory,
+                                     const Animation::AnimationFilesystem& files_directory,
                                      const LuaTable& table,
                                      Descriptions& descriptions)
    : ProductionSiteDescr(init_descname, files_directory, MapObjectType::TRAININGSITE, table, descriptions),

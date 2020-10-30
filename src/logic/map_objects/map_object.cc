@@ -253,22 +253,31 @@ MapObjectDescr IMPLEMENTATION
 */
 MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
                                const std::string& init_name,
+                               const std::string& init_descname)
+   : type_(init_type),
+     name_(init_name),
+     descname_(init_descname),
+	 files_directory_(Animation::AnimationFilesystem{"", g_fs}) {
+}
+/*
+MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
+                               const std::string& init_name,
                                const std::string& init_descname,
-							   const std::string& files_directory)
+							   const Animation::AnimationFilesystem& files_directory)
    : type_(init_type),
      name_(init_name),
      descname_(init_descname),
 	 files_directory_(files_directory) {
-}
+} */
 MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
                                const std::string& init_name,
                                const std::string& init_descname,
-							   const std::string& files_directory,
+							   const Animation::AnimationFilesystem& files_directory,
                                const LuaTable& table)
-   : MapObjectDescr(init_type,
-                    init_name,
-                    init_descname,
-					files_directory) {
+   : type_(init_type),
+	 name_(init_name),
+     descname_(init_descname),
+	 files_directory_(files_directory) {
 	if (table.has_key("helptext_script")) {
 		// TODO(GunChleoc): Compatibility - remove after v1.0
 		log_warn("Helptexts script for %s is obsolete - please move strings to "
@@ -302,8 +311,8 @@ MapObjectDescr::MapObjectDescr(const MapObjectType init_type,
 			throw GameDataError("Map object %s has a menu icon, but it is empty", init_name.c_str());
 		}
 	} else {
-		std::string candidate_icon_filename = files_directory + FileSystem::file_separator() + "menu.png";
-		if (g_fs->file_exists(candidate_icon_filename)) {
+		std::string candidate_icon_filename = files_directory.directory + FileSystem::file_separator() + "menu.png";
+		if (files_directory.filesystem->file_exists(candidate_icon_filename)) {
 			icon_filename_ = candidate_icon_filename;
 		}
 	}
@@ -330,11 +339,10 @@ bool MapObjectDescr::is_animation_known(const std::string& animname) const {
 void MapObjectDescr::add_animations(const LuaTable& table,
                                     Animation::Type anim_type) {
 	for (const std::string& animname : table.keys<std::string>()) {
-		// NOCOM
 		try {
 			std::unique_ptr<LuaTable> anim = table.get_table(animname);
-			const std::string& animation_directory =
-					anim->has_key<std::string>("directory") ? anim->get_string("directory") : files_directory_;
+			files_directory_.directory =
+					anim->has_key<std::string>("directory") ? anim->get_string("directory") : files_directory_.directory;
 
 			const std::string basename =
 			   anim->has_key<std::string>("basename") ? anim->get_string("basename") : animname;
@@ -352,7 +360,7 @@ void MapObjectDescr::add_animations(const LuaTable& table,
 					uint32_t anim_id = 0;
 					try {
 						anim_id = g_animation_manager->load(
-						   *anim, directional_basename, animation_directory, anim_type);
+						   *anim, directional_basename, files_directory_, anim_type);
 						anims_.insert(std::make_pair(directional_animname, anim_id));
 					} catch (const std::exception& e) {
 						throw GameDataError(
@@ -377,11 +385,11 @@ void MapObjectDescr::add_animations(const LuaTable& table,
 				if (animname == "idle") {
 					anims_.insert(std::make_pair(
 					   animname,
-					   g_animation_manager->load(name_, *anim, basename, animation_directory, anim_type)));
+					   g_animation_manager->load(name_, *anim, basename, files_directory_, anim_type)));
 				} else {
 					anims_.insert(std::make_pair(
 					   animname,
-					   g_animation_manager->load(*anim, basename, animation_directory, anim_type)));
+					   g_animation_manager->load(*anim, basename, files_directory_, anim_type)));
 				}
 			}
 		} catch (const std::exception& e) {

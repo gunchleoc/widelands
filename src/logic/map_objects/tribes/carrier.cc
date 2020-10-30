@@ -588,7 +588,7 @@ void Carrier::do_save(EditorGameBase& egbase, MapObjectSaver& mos, FileWrite& fw
 	fw.signed_32(promised_pickup_to_);
 }
 
-CarrierDescr::CarrierDescr(const std::string& init_descname, const std::string& files_directory,
+CarrierDescr::CarrierDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                            const LuaTable& table,
                            Descriptions& descriptions,
                            MapObjectType t)

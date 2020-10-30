@@ -293,7 +293,7 @@ AttackTarget::AttackResult MilitarySite::AttackTarget::attack(Soldier* enemy) co
  * The contents of 'table' are documented in
  * /data/tribes/buildings/militarysites/atlanteans/castle/init.lua
  */
-MilitarySiteDescr::MilitarySiteDescr(const std::string& init_descname, const std::string& files_directory,
+MilitarySiteDescr::MilitarySiteDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                                      const LuaTable& table,
                                      Descriptions& descriptions)
    : BuildingDescr(init_descname, files_directory, MapObjectType::MILITARYSITE, table, descriptions),

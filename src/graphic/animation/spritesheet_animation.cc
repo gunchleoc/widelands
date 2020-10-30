@@ -170,7 +170,7 @@ SpriteSheetAnimation IMPLEMENTATION
 
 SpriteSheetAnimation::SpriteSheetAnimation(const LuaTable& table,
                                            const std::string& basename,
-                                           const std::string& animation_directory)
+                                           AnimationFilesystem filesystem)
    : Animation(table) {
 	try {
 		// Get image files
@@ -180,7 +180,8 @@ SpriteSheetAnimation::SpriteSheetAnimation(const LuaTable& table,
 		rows_ = table.get_int("rows");
 		columns_ = table.get_int("columns");
 
-		add_available_scales(basename, animation_directory);
+		// NOCOM use filesystm info
+		add_available_scales(basename, filesystem);
 
 		// Perform some checks to make sure that the data is complete and consistent
 		const SpriteSheetMipMapEntry& first =
@@ -246,12 +247,13 @@ const Image* SpriteSheetAnimation::representative_image(const RGBColor* clr) con
 }
 
 void SpriteSheetAnimation::add_scale_if_files_present(const std::string& basename,
-                                                      const std::string& directory,
+                                                      const AnimationFilesystem& filesystem,
                                                       float scale_as_float,
                                                       const std::string& scale_as_string) {
+	// NOCOM handle filesystem
 	const std::string path =
-	   directory + g_fs->file_separator() + basename + scale_as_string + ".png";
-	if (g_fs->file_exists(path)) {
+	   filesystem.directory + FileSystem::file_separator() + basename + scale_as_string + ".png";
+	if (filesystem.filesystem->file_exists(path)) {
 		mipmaps_.insert(
 		   std::make_pair(scale_as_float, std::unique_ptr<SpriteSheetMipMapEntry>(
 		                                     new SpriteSheetMipMapEntry(path, rows_, columns_))));

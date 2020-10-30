@@ -94,7 +94,7 @@ bool SoldierLevelRange::matches(const Soldier* soldier) const {
 }
 
 SoldierDescr::SoldierDescr(const std::string& init_descname,
-						   const std::string& files_directory,
+						   const Animation::AnimationFilesystem& files_directory,
                            const LuaTable& table,
                            Descriptions& descriptions)
    : WorkerDescr(init_descname, files_directory, MapObjectType::SOLDIER, table, descriptions),

@@ -39,7 +39,7 @@ struct WarehouseSupply;
 
 class WarehouseDescr : public BuildingDescr {
 public:
-	WarehouseDescr(const std::string& init_descname, const std::string& files_directory, const LuaTable& t, Descriptions& descriptions);
+	WarehouseDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory, const LuaTable& t, Descriptions& descriptions);
 	~WarehouseDescr() override {
 	}
 

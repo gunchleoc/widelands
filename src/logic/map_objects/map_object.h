@@ -52,13 +52,19 @@ public:
 
 	enum class OwnerType { kWorld, kTribe };
 
+	// Constructor for animation-less map objects
+	MapObjectDescr(const MapObjectType init_type,
+				   const std::string& init_name,
+				   const std::string& init_descname);
+	/* NOCOM
 	MapObjectDescr(const MapObjectType init_type,
 	               const std::string& init_name,
-	               const std::string& init_descname, const std::string& files_directory);
+	               const std::string& init_descname, const Animation::AnimationFilesystem& files_directory);
+				   */
 	MapObjectDescr(const MapObjectType init_type,
 	               const std::string& init_name,
 	               const std::string& init_descname,
-				   const std::string& files_directory,
+				   const Animation::AnimationFilesystem& files_directory,
 	               const LuaTable& table);
 	virtual ~MapObjectDescr();
 
@@ -130,7 +136,8 @@ private:
 	const MapObjectType type_;    /// Subclasses pick from the enum above
 	std::string const name_;      /// The name for internal reference
 	std::string const descname_;  /// A localized Descriptive name
-	const std::string files_directory_; /// Base path for animation files etc.
+	// NOCOM const?
+	Animation::AnimationFilesystem files_directory_; /// Base path for animation files etc.
 
 	/// Tribe-specific helptexts. Format: <tribename, <category, localized_text>>
 	std::map<std::string, std::map<std::string, std::string>> helptexts_;

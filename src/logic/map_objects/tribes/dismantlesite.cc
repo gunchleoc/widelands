@@ -40,7 +40,7 @@ constexpr Duration DismantleSite::kDismantlesiteStepTime;
  * /data/tribes/buildings/partially_finished/dismantlesite/init.lua
  */
 
-DismantleSiteDescr::DismantleSiteDescr(const std::string& init_descname, const std::string& files_directory,
+DismantleSiteDescr::DismantleSiteDescr(const std::string& init_descname, const Animation::AnimationFilesystem& files_directory,
                                        const LuaTable& table,
                                        Descriptions& descriptions)
    : BuildingDescr(init_descname, files_directory, MapObjectType::DISMANTLESITE, table, descriptions),

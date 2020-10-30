@@ -258,9 +258,10 @@ void TribeDescr::load_frontiers_flags_roads(const LuaTable& table) {
 		const std::string directional_name("bridge_" + s_type + "_" + s_dir);
 		if (animations_table.has_key(directional_name)) {
 			std::unique_ptr<LuaTable> animation_table = animations_table.get_table(directional_name);
+			// NOCOM directory handling here too?
 			*id =
 			   g_animation_manager->load(name_ + std::string("_") + directional_name, *animation_table,
-			                             directional_name, animation_directory, animation_type);
+										 directional_name, Animation::AnimationFilesystem{animation_directory, g_fs}, animation_type);
 		}
 	};
 	// Frontier and flag animations can be a mix of file and spritesheet animations
@@ -270,15 +271,17 @@ void TribeDescr::load_frontiers_flags_roads(const LuaTable& table) {
 	                                Animation::Type animation_type) {
 		if (animations_table.has_key("frontier")) {
 			std::unique_ptr<LuaTable> animation_table = animations_table.get_table("frontier");
+			// NOCOM directory handling here too?
 			frontier_animation_id_ =
 			   g_animation_manager->load(name_ + std::string("_frontier"), *animation_table,
-			                             "frontier", animation_directory, animation_type);
+										 "frontier", Animation::AnimationFilesystem{animation_directory, g_fs}, animation_type);
 		}
 		if (animations_table.has_key("flag")) {
 			std::unique_ptr<LuaTable> animation_table = animations_table.get_table("flag");
+			// NOCOM directory handling here too?
 			flag_animation_id_ =
 			   g_animation_manager->load(name_ + std::string("_flag"), *animation_table, "flag",
-			                             animation_directory, animation_type);
+										 Animation::AnimationFilesystem{animation_directory, g_fs}, animation_type);
 		}
 		load_bridge_if_present(
 		   animations_table, animation_directory, animation_type, "e", "normal", &bridges_normal_.e);

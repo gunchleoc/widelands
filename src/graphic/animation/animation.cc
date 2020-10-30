@@ -22,6 +22,7 @@
 #include <cassert>
 #include <memory>
 
+#include "base/log.h" // NOCOM
 #include "base/vector.h"
 #include "io/filesystem/layered_filesystem.h"
 #include "logic/game_data_error.h"
@@ -123,20 +124,53 @@ uint32_t Animation::current_frame(uint32_t time) const {
 	return 0;
 }
 
-void Animation::add_available_scales(const std::string& basename, const std::string& directory) {
+void Animation::add_available_scales(const std::string& basename, const AnimationFilesystem& filesystem) {
 	for (const auto& scale : kSupportedScales) {
-		add_scale_if_files_present(basename, directory, scale.first, scale.second);
+		add_scale_if_files_present(basename, filesystem, scale.first, scale.second);
 	}
 
 	if (mipmaps_.count(1.0f) == 0) {
 		// There might be only 1 scale
-		add_scale_if_files_present(basename, directory, 1.0f, "");
+		add_scale_if_files_present(basename, filesystem, 1.0f, "");
 		if (mipmaps_.count(1.0f) == 0) {
-			// No files found at all
-			throw Widelands::GameDataError(
-			   "Animation in directory '%s' with basename '%s' has no images for mandatory "
-			   "scale '1' in mipmap - supported scales are: 0.5, 1, 2, 4",
-			   directory.c_str(), basename.c_str());
+			log_dbg("NOCOM *********************** nothing found");
+
+			for (const std::string& testdir : filesystem.filesystem->list_directory(filesystem.directory)) {
+				 log_dbg("%s", testdir.c_str());
+			}
+
+			log_dbg("NOCOM *********************** end listidr");
+			// Maybe we have a custom unit in a savegame, where the filename is prefixed with 'map/'
+			/*
+			std::string new_dir = filesystem.filesystem->get_basename() + FileSystem::file_separator() + std::string("map") + filesystem.directory + FileSystem::file_separator();
+
+			AnimationFilesystem test_filesystem{new_dir, g_fs};
+			for (const std::string& testfile : filesystem.filesystem->list_directory(filesystem.filesystem->get_basename())) {
+				 log_dbg("testfile %s", testfile.c_str());
+			} */
+
+			//std::string new_dir = filesystem.filesystem->get_basename() + FileSystem::file_separator();
+			// filesystem.directory.substr(1)
+
+			//AnimationFilesystem test_filesystem{filesystem.filesystem->get_basename() + filesystem.directory, g_fs->make_sub_file_system(filesystem.filesystem->get_basename())};
+			AnimationFilesystem test_filesystem{filesystem.filesystem->get_basename() + filesystem.directory, g_fs};
+
+			// NOCOM duplication
+			for (const auto& scale : kSupportedScales) {
+				add_scale_if_files_present(basename, test_filesystem, scale.first, scale.second);
+			}
+
+			if (mipmaps_.count(1.0f) == 0) {
+				// There might be only 1 scale
+				add_scale_if_files_present(basename, test_filesystem, 1.0f, "");
+				if (mipmaps_.count(1.0f) == 0) {
+					// No files found at all
+					throw Widelands::GameDataError(
+					   "Animation in directory '%s' with basename '%s' has no images for mandatory "
+					   "scale '1' in mipmap - supported scales are: 0.5, 1, 2, 4",
+					   test_filesystem.directory.c_str(), basename.c_str());
+				}
+			}
 		}
 	}
 }
