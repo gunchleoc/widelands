@@ -1789,7 +1789,8 @@ void DefaultAI::update_buildable_field(BuildableField& field) {
 					enemy_warehouses.insert(building->get_position().hash());
 				}
 				continue;
-			} else if (bpn != pn) {  // it is an ally
+			}
+			if (bpn != pn) {  // it is an ally
 				assert(!player_statistics.get_is_enemy(bpn));
 				if (upcast(Widelands::MilitarySite const, militarysite, building)) {
 					field.ally_military_presence +=
@@ -3840,7 +3841,8 @@ bool DefaultAI::dispensable_road_test(const Widelands::Road& road) {
 
 	if (spots_ > kSpotsEnough && wares_on_road > 5) {
 		return false;
-	} else if (wares_on_road > 8) {
+	}
+	if (wares_on_road > 8) {
 		return false;
 	}
 
@@ -4438,7 +4440,8 @@ bool DefaultAI::check_productionsites(const Time& gametime) {
 		assert(enhancement != Widelands::INVALID_INDEX);
 		game().send_player_enhance_building(*site.site, enhancement, true);
 		return true;
-	} else if (site.bo->cnt_upgrade_pending > 0) {
+	}
+	if (site.bo->cnt_upgrade_pending > 0) {
 		// some other site of this type is in pending for upgrade
 		assert(site.bo->cnt_upgrade_pending == 1);
 		return false;
@@ -4905,13 +4908,14 @@ bool DefaultAI::check_mines_(const Time& gametime) {
 			}
 
 			return true;
-		} else if (site.dismantle_pending_since + Duration(3 * 60 * 1000) < gametime) {
+		}
+		if (site.dismantle_pending_since + Duration(3 * 60 * 1000) < gametime) {
 			stop_site(site);
 			return false;
-		} else {
-			return false;
 		}
-	} else if (site.site->can_start_working()) {
+		return false;
+	}
+	if (site.site->can_start_working()) {
 		set_inputs_to_max(site);
 	} else {
 		set_inputs_to_zero(site);
@@ -5003,7 +5007,8 @@ bool DefaultAI::check_mines_(const Time& gametime) {
 		initiate_dismantling(site, gametime);
 		return true;
 		// if having an upgrade, after half hour
-	} else if (site.no_resources_since + Duration(30 * 60 * 1000) < gametime && !forcing_upgrade) {
+	}
+	if (site.no_resources_since + Duration(30 * 60 * 1000) < gametime && !forcing_upgrade) {
 		initiate_dismantling(site, gametime);
 		return true;
 	}
@@ -5187,16 +5192,21 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 
 		if (!basic_economy_established && management_data.f_neuron_pool[17].get_position(1)) {
 			return BuildingNecessity::kNotNeeded;
-		} else if (bo.aimode_limit_status() != AiModeBuildings::kAnotherAllowed) {
+		}
+		if (bo.aimode_limit_status() != AiModeBuildings::kAnotherAllowed) {
 			return BuildingNecessity::kNotNeeded;
-		} else if (ts_without_trainers_ > 0 || bo.cnt_under_construction > 0 ||
+		}
+		if (ts_without_trainers_ > 0 || bo.cnt_under_construction > 0 ||
 		           ts_in_const_count_ > 1) {
 			return BuildingNecessity::kNotNeeded;
-		} else if (bo.prohibited_till > gametime) {
+		}
+		if (bo.prohibited_till > gametime) {
 			return BuildingNecessity::kNotNeeded;
-		} else if (ts_without_trainers_ > 1) {
+		}
+		if (ts_without_trainers_ > 1) {
 			return BuildingNecessity::kNotNeeded;
-		} else if (bo.total_count() > 0) {
+		}
+		if (bo.total_count() > 0) {
 			if (soldier_trained_log.count(gametime, bo.id) / bo.total_count() < 5) {
 				return BuildingNecessity::kNotNeeded;
 			}
@@ -5249,9 +5259,8 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 
 		if (bo.primary_priority > 0) {
 			return BuildingNecessity::kNeeded;
-		} else {
-			return BuildingNecessity::kNotNeeded;
 		}
+		return BuildingNecessity::kNotNeeded;
 	}
 
 	if (bo.is(BuildingAttribute::kRecruitment)) {
@@ -5403,9 +5412,11 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 		if (bo.forced_after < gametime && bo.total_count() == 0 && !has_substitution_building) {
 			bo.max_needed_preciousness = bo.max_preciousness;
 			return BuildingNecessity::kForced;
-		} else if (bo.prohibited_till > gametime) {
+		}
+		if (bo.prohibited_till > gametime) {
 			return BuildingNecessity::kForbidden;
-		} else if (bo.is(BuildingAttribute::kHunter) || bo.is(BuildingAttribute::kFisher) ||
+		}
+		if (bo.is(BuildingAttribute::kHunter) || bo.is(BuildingAttribute::kFisher) ||
 		           bo.is(BuildingAttribute::kWell)) {
 
 			bo.cnt_target = 1 + static_cast<int32_t>(mines_.size() + productionsites.size()) / 25;
@@ -5472,15 +5483,15 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 
 			if (tmp_score < 0) {
 				return BuildingNecessity::kForbidden;
-			} else {
-				if (bo.max_needed_preciousness <= 0) {
-					bo.max_needed_preciousness = 1;
-				}
-				bo.primary_priority =
-				   1 + tmp_score * std::abs(management_data.get_military_number_at(137) / 2);
-				return BuildingNecessity::kNeeded;
 			}
-		} else if (bo.is(BuildingAttribute::kLumberjack)) {
+			if (bo.max_needed_preciousness <= 0) {
+				bo.max_needed_preciousness = 1;
+			}
+			bo.primary_priority =
+			   1 + tmp_score * std::abs(management_data.get_military_number_at(137) / 2);
+			return BuildingNecessity::kNeeded;
+		}
+		if (bo.is(BuildingAttribute::kLumberjack)) {
 			if (bo.total_count() > 1 && (bo.cnt_under_construction + bo.unoccupied_count > 0)) {
 				return BuildingNecessity::kForbidden;
 			}
@@ -5501,10 +5512,10 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 			}
 			if (bo.total_count() < bo.cnt_target) {
 				return BuildingNecessity::kNeeded;
-			} else {
-				return BuildingNecessity::kAllowed;
 			}
-		} else if (bo.is(BuildingAttribute::kRanger)) {
+			return BuildingNecessity::kAllowed;
+		}
+		if (bo.is(BuildingAttribute::kRanger)) {
 
 			// making sure we have one completed lumberjack
 			if (get_building_observer(BuildingAttribute::kLumberjack).cnt_built < 1) {
@@ -5643,15 +5654,18 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 			const bool parallel_construction = (bo.total_count() + 2 < bo.cnt_target);
 			if (parallel_construction && (bo.cnt_under_construction + bo.unoccupied_count <= 1)) {
 				return BuildingNecessity::kNeeded;
-			} else if (bo.cnt_under_construction + bo.unoccupied_count == 0) {
+			}
+			if (bo.cnt_under_construction + bo.unoccupied_count == 0) {
 				return BuildingNecessity::kNeeded;
 			}
 			return BuildingNecessity::kForbidden;
-		} else if (bo.is(BuildingAttribute::kNeedsRocks) &&
+		}
+		if (bo.is(BuildingAttribute::kNeedsRocks) &&
 		           bo.cnt_under_construction + bo.unoccupied_count == 0) {
 			bo.max_needed_preciousness = bo.max_preciousness;  // even when rocks are not needed
 			return BuildingNecessity::kAllowed;
-		} else if (!bo.production_hints.empty() && !bo.is(BuildingAttribute::kSupportingProducer)) {
+		}
+		if (!bo.production_hints.empty() && !bo.is(BuildingAttribute::kSupportingProducer)) {
 			// Pure supporting sites only
 
 			if (bo.cnt_under_construction + bo.unoccupied_count - bo.unconnected_count > 0) {
@@ -5699,8 +5713,8 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 				return BuildingNecessity::kAllowed;
 			}
 			return BuildingNecessity::kForbidden;
-
-		} else if (bo.is(BuildingAttribute::kBarracks)) {
+		}
+		if (bo.is(BuildingAttribute::kBarracks)) {
 			if (site_needed_for_economy == BasicEconomyBuildingStatus::kDiscouraged) {
 				return BuildingNecessity::kForbidden;
 			}
@@ -5715,19 +5729,20 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 				   1 + tmp_score * std::abs(management_data.get_military_number_at(134)) / 15;
 				bo.max_preciousness = bo.max_needed_preciousness;
 				return BuildingNecessity::kNeeded;
-			} else {
-				bo.max_needed_preciousness = 0;
-				bo.max_preciousness = 0;
-				return BuildingNecessity::kForbidden;
 			}
-		} else if (bo.type == BuildingObserver::Type::kMine) {
+			bo.max_needed_preciousness = 0;
+			bo.max_preciousness = 0;
+			return BuildingNecessity::kForbidden;
+		}
+		if (bo.type == BuildingObserver::Type::kMine) {
 			bo.primary_priority = bo.max_needed_preciousness;
 			if (mines_per_type[bo.mines].total_count() == 0 &&
 			    site_needed_for_economy != BasicEconomyBuildingStatus::kDiscouraged) {
 				// unless a mine is prohibited, we want to have at least one of the kind
 				bo.max_needed_preciousness = bo.max_preciousness;
 				return BuildingNecessity::kNeeded;
-			} else if (mines_per_type[bo.mines].finished == mines_per_type[bo.mines].total_count() &&
+			}
+			if (mines_per_type[bo.mines].finished == mines_per_type[bo.mines].total_count() &&
 			           bo.current_stats >
 			              static_cast<uint32_t>(
 			                 85 + std::abs(management_data.get_military_number_at(129)) / 10) &&
@@ -5810,11 +5825,10 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 			}
 			if (tmp_score < 0) {
 				return BuildingNecessity::kNeededPending;
-			} else {
-				bo.primary_priority +=
-				   tmp_score * std::abs(management_data.get_military_number_at(127) / 5);
-				return BuildingNecessity::kNeeded;
 			}
+			bo.primary_priority +=
+			   tmp_score * std::abs(management_data.get_military_number_at(127) / 5);
+			return BuildingNecessity::kNeeded;
 
 		} else if (bo.max_needed_preciousness > 0) {
 
@@ -6081,13 +6095,13 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 				// Productionsite is needed
 				bo.primary_priority += (tmp_score - bottom_limit) / 2;
 				return BuildingNecessity::kNeeded;
-			} else if (tmp_score > bottom_limit) {
+			}
+			if (tmp_score > bottom_limit) {
 				// Site is needed, but not right now
 				return BuildingNecessity::kNeededPending;
-			} else {
-				// Not allowed
-				return BuildingNecessity::kForbidden;
 			}
+			// Not allowed
+			return BuildingNecessity::kForbidden;
 
 		} else if (bo.is(BuildingAttribute::kShipyard)) {
 			if (bo.total_count() > 0 ||
@@ -6117,19 +6131,21 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 		assert(bo.total_count() > 0);
 		if (bo.total_count() == 1) {
 			return BuildingNecessity::kNeeded;
-		} else if (bo.max_preciousness >= 10 && bo.total_count() == 2) {
+		}
+		if (bo.max_preciousness >= 10 && bo.total_count() == 2) {
 			return BuildingNecessity::kNeeded;
-		} else if (!bo.ware_outputs.empty() &&
+		}
+		if (!bo.ware_outputs.empty() &&
 		           bo.current_stats > (10 + 60 / bo.ware_outputs.size()) / 2) {
 			return BuildingNecessity::kNeeded;
-		} else if (bo.inputs.size() == 1 &&
+		}
+		if (bo.inputs.size() == 1 &&
 		           calculate_stocklevel(static_cast<size_t>(bo.inputs.at(0))) >
 		              static_cast<unsigned int>(
 		                 std::abs(management_data.get_military_number_at(171)))) {
 			return BuildingNecessity::kNeeded;
-		} else {
-			return BuildingNecessity::kNotNeeded;
 		}
+		return BuildingNecessity::kNotNeeded;
 	}
 	NEVER_HERE();
 }

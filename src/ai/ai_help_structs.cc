@@ -302,15 +302,14 @@ uint32_t EventTimeQueue::count(const Time& current_time, const uint32_t addition
 	strip_old(current_time);
 	if (additional_id == std::numeric_limits<uint32_t>::max()) {
 		return queue.size();
-	} else {
-		uint32_t cnt = 0;
-		for (auto item : queue) {
-			if (item.second == additional_id) {
-				++cnt;
-			}
-		}
-		return cnt;
 	}
+	uint32_t cnt = 0;
+	for (auto item : queue) {
+		if (item.second == additional_id) {
+			++cnt;
+		}
+	}
+	return cnt;
 }
 
 void EventTimeQueue::strip_old(const Time& current_time) {
@@ -418,20 +417,19 @@ void BuildingObserver::set_collected_map_resource(const Widelands::TribeDescr& t
 Widelands::DescriptionIndex BuildingObserver::get_collected_map_resource() const {
 	if (has_collected_map_resource()) {
 		return collected_map_resource;
-	} else {
-		throw wexception("Building '%s' needs to define the AI hint \"collects_ware_from_map\"",
-		                 desc->name().c_str());
 	}
+	throw wexception("Building '%s' needs to define the AI hint \"collects_ware_from_map\"",
+					 desc->name().c_str());
 }
 
 AiModeBuildings BuildingObserver::aimode_limit_status() const {
 	if (total_count() > cnt_limit_by_aimode) {
 		return AiModeBuildings::kLimitExceeded;
-	} else if (total_count() == cnt_limit_by_aimode) {
-		return AiModeBuildings::kOnLimit;
-	} else {
-		return AiModeBuildings::kAnotherAllowed;
 	}
+	if (total_count() == cnt_limit_by_aimode) {
+		return AiModeBuildings::kOnLimit;
+	}
+	return AiModeBuildings::kAnotherAllowed;
 }
 bool BuildingObserver::buildable(const Widelands::Player& p) {
 	return is(BuildingAttribute::kBuildable) && p.is_building_type_allowed(id);
@@ -1322,13 +1320,13 @@ bool PlayersStrengths::players_in_same_team(Widelands::PlayerNumber pl1,
 	assert(all_stats.count(pl2) > 0);
 	if (pl1 == pl2) {
 		return false;
-	} else if (all_stats[pl1].team_number > 0 &&
+	}
+	if (all_stats[pl1].team_number > 0 &&
 	           all_stats[pl1].team_number == all_stats[pl2].team_number) {
 		// team number 0 = no team
 		return true;
-	} else {
-		return false;
 	}
+	return false;
 }
 
 bool PlayersStrengths::strong_enough(Widelands::PlayerNumber pl) {
@@ -1386,7 +1384,8 @@ bool FlagWarehouseDistances::FlagInfo::update(const Time& gametime,
 		soft_expiry_time = gametime + kFlagDistanceExpirationPeriod / 2;
 		nearest_warehouse = nearest_wh;
 		return true;
-	} else if (new_distance < distance ||
+	}
+	if (new_distance < distance ||
 	           (new_distance == distance && expiry_time < new_expiry_time)) {
 		distance = new_distance;
 		expiry_time = new_expiry_time;
@@ -1435,9 +1434,8 @@ int16_t FlagWarehouseDistances::get_distance(const uint32_t flag_coords,
 	if (flags_map.count(flag_coords) == 0) {
 		*nw = 0;
 		return kFarButReachable;  // this is to discourage to build second road from brand new flag...
-	} else {
-		return flags_map[flag_coords].get(gametime, nw);
 	}
+	return flags_map[flag_coords].get(gametime, nw);
 }
 
 void FlagWarehouseDistances::set_road_built(const uint32_t coords_hash, const Time& gametime) {
