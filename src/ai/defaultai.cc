@@ -683,7 +683,7 @@ void DefaultAI::late_initialization() {
 		bo.set_collected_map_resource(*tribe_, bh.collects_ware_from_map());
 		if (bo.requires_supporters) {
 			log_dbg_time(
-			   gametime, " AI %d: %s strictly requires supporters\n", player_number(), bo.name);
+			   gametime, "NOCOM AI %d: %s strictly requires supporters\n", player_number(), bo.name);
 		}
 		bo.prohibited_till = Time(bh.get_prohibited_till() * 1000);  // value in conf is in seconds
 		bo.forced_after = Time(bh.get_forced_after() * 1000);        // value in conf is in seconds
@@ -749,6 +749,7 @@ void DefaultAI::late_initialization() {
 
 			// If this is a producer, does it act also as supporter?
 			if (!bo.ware_outputs.empty() && !bo.production_hints.empty()) {
+				log_dbg("NOCOM supporting producer: %s", bo.name);
 				bo.set_is(BuildingAttribute::kSupportingProducer);
 			}
 
@@ -843,26 +844,32 @@ void DefaultAI::late_initialization() {
 
 			// some important buildings are identified first the woodcutter/lumberjack
 			if (bh.collects_ware_from_map() == "log") {
+				log_dbg("NOCOM lumberjack: %s", bo.name);
 				bo.set_is(BuildingAttribute::kLumberjack);
 			}
 			// quarries
 			if (bh.collects_ware_from_map() == "granite") {
+				log_dbg("NOCOM needs rocks: %s", bo.name);
 				bo.set_is(BuildingAttribute::kNeedsRocks);
 			}
 			// wells
 			if (bh.collects_ware_from_map() == "water") {
+				log_dbg("NOCOM well: %s", bo.name);
 				bo.set_is(BuildingAttribute::kWell);
 			}
 			// here we identify hunters
 			if (bh.collects_ware_from_map() == "meat") {
+				log_dbg("NOCOM hunter: %s", bo.name);
 				bo.set_is(BuildingAttribute::kHunter);
 			}
 			// and fishers
 			if (bh.collects_ware_from_map() == "fish" && bo.inputs.empty()) {
+				log_dbg("NOCOM fisher: %s", bo.name);
 				bo.set_is(BuildingAttribute::kFisher);
 			}
 			// and collectors
 			if (bh.collects_ware_from_map() == "fruit") {
+				log_dbg("NOCOM needs berry: %s", bo.name);
 				bo.set_is(BuildingAttribute::kNeedsBerry);
 			}
 
