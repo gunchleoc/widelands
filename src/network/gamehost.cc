@@ -85,7 +85,8 @@ struct HostGameSettingsProvider : public GameSettingsProvider {
 		}
 		if (settings().savegame) {
 			return settings().players.at(number).state != PlayerSettings::State::kClosed;
-		} else if (settings().scenario) {
+		}
+		if (settings().scenario) {
 			return ((settings().players.at(number).state == PlayerSettings::State::kOpen ||
 			         settings().players.at(number).state == PlayerSettings::State::kHuman) &&
 			        settings().players.at(number).closeable) ||
@@ -361,9 +362,8 @@ struct HostChatProvider : public ChatProvider {
 					if (arg1 == kickUser) {
 						h->kick_user(kickClient, kickReason);
 						return;
-					} else {
-						c.msg = _("Kick acknowledgement cancelled: Wrong name given!");
 					}
+					c.msg = _("Kick acknowledgement cancelled: Wrong name given!");
 				}
 				kickUser = "";
 				kickReason = "";
@@ -1007,9 +1007,8 @@ int32_t GameHost::check_client(const std::string& name) {
 			throw wexception("WARNING: user was found but no client is connected to it!\n");
 		}
 		return client;  // client found
-	} else {
-		return -1;  // no client found
 	}
+		return -1;  // no client found
 }
 
 /**
@@ -1382,11 +1381,10 @@ void GameHost::set_player_init(uint8_t const number, uint8_t const index) {
 				//  broadcast changes
 				broadcast_setting_player(number);
 				return;
-			} else {
-				log_warn("Attempted to change to out-of-range initialization index %u "
-				         "for player %u.\n",
-				         index, number);
 			}
+			log_warn("Attempted to change to out-of-range initialization index %u "
+					 "for player %u.\n",
+					 index, number);
 			return;
 		}
 	}

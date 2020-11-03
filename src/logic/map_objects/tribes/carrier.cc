@@ -236,11 +236,10 @@ void Carrier::deliver_to_building(Game& game, State& state) {
 		// No more deliverable wares. Walk out to the flag.
 		return start_task_move(
 		   game, WALK_SE, descr().get_right_walk_anims(does_carry_ware(), this), true);
-	} else {
-		//  tough luck, the building has disappeared
-		molog(game.get_gametime(), "[Carrier]: Building disappeared while in building.\n");
-		set_location(nullptr);
 	}
+	//  tough luck, the building has disappeared
+	molog(game.get_gametime(), "[Carrier]: Building disappeared while in building.\n");
+	set_location(nullptr);
 }
 
 /**

@@ -88,15 +88,14 @@ Units get_suggested_unit(uint32_t game_time, bool is_generic = false) {
 			return Units::kHourGeneric;
 		}
 		return Units::kMinutesGeneric;
-	} else {
-		if (game_time > 4 * kDays) {
-			return Units::kDayNarrow;
-		}
-		if (game_time > 4 * kHours) {
-			return Units::kHourNarrow;
-		}
-		return Units::kMinutesNarrow;
 	}
+	if (game_time > 4 * kDays) {
+		return Units::kDayNarrow;
+	}
+	if (game_time > 4 * kHours) {
+		return Units::kHourNarrow;
+	}
+	return Units::kMinutesNarrow;
 }
 
 std::string get_value_with_unit(Units unit, int value) {

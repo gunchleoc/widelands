@@ -181,7 +181,8 @@ bool InternetGaming::do_login(bool should_relogin) {
 				}
 
 				return true;
-			} else if (error()) {
+			}
+			if (error()) {
 				return false;
 			}
 		}
@@ -274,7 +275,8 @@ bool InternetGaming::check_password(const std::string& nick,
 				net->send(s);
 				reset();
 				return true;
-			} else if (error()) {
+			}
+			if (error()) {
 				reset();
 				return false;
 			}
@@ -405,7 +407,8 @@ void InternetGaming::handle_packet(RecvPacket& packet, bool relogin_on_error) {
 			}
 		}
 		return;
-	} else if (cmd == IGPCMD_PING) {
+	}
+	if (cmd == IGPCMD_PING) {
 		// Client received a PING and should immediately PONG as requested
 		SendPacket s;
 		s.string(IGPCMD_PONG);
@@ -425,7 +428,8 @@ void InternetGaming::handle_packet(RecvPacket& packet, bool relogin_on_error) {
 			net->send(s);
 			return;
 
-		} else if (cmd == IGPCMD_LOGIN) {
+		}
+		if (cmd == IGPCMD_LOGIN) {
 			// Clients request to login was granted
 			format_and_add_chat("", "", true, _("Welcome to the Widelands Metaserver!"));
 			const std::string assigned_name = packet.string();
@@ -455,15 +459,16 @@ void InternetGaming::handle_packet(RecvPacket& packet, bool relogin_on_error) {
 			format_time(time_str, kTimeFormatLength);
 			log_info("InternetGaming: Client %s logged in at UTC %s\n", clientname_.c_str(), time_str);
 			return;
-
-		} else if (cmd == IGPCMD_PWD_OK) {
+		}
+		if (cmd == IGPCMD_PWD_OK) {
 			char time_str[kTimeFormatLength];
 			format_time(time_str, kTimeFormatLength);
 			log_info("InternetGaming: Password check successful at UTC %s\n", time_str);
 			state_ = LOBBY;
 			return;
 
-		} else if (cmd == IGPCMD_ERROR) {
+		}
+		if (cmd == IGPCMD_ERROR) {
 			std::string errortype = packet.string();
 			if (errortype != IGPCMD_LOGIN && errortype != IGPCMD_PWD_CHALLENGE) {
 				log_err("InternetGaming: Strange ERROR in connecting state: %s\n", errortype.c_str());
@@ -475,19 +480,18 @@ void InternetGaming::handle_packet(RecvPacket& packet, bool relogin_on_error) {
 			set_error();
 			return;
 
-		} else {
-			logout();
-			set_error();
-			log_err(
-			   "InternetGaming: Expected a LOGIN, PWD_CHALLENGE or ERROR packet from server, but "
-			   "received command %s. Maybe the metaserver is using a different protocol version?\n",
-			   cmd.c_str());
-			throw WLWarning(
-			   _("Unexpected packet"),
-			   _("Received an unexpected network packet from the metaserver. The metaserver could be "
-			     "using a different protocol version. If the error persists, try updating your "
-			     "game."));
 		}
+		logout();
+		set_error();
+		log_err(
+		   "InternetGaming: Expected a LOGIN, PWD_CHALLENGE or ERROR packet from server, but "
+		   "received command %s. Maybe the metaserver is using a different protocol version?\n",
+		   cmd.c_str());
+		throw WLWarning(
+		   _("Unexpected packet"),
+		   _("Received an unexpected network packet from the metaserver. The metaserver could be "
+			 "using a different protocol version. If the error persists, try updating your "
+			 "game."));
 	}
 	try {
 		if (cmd == IGPCMD_LOGIN) {
@@ -971,14 +975,16 @@ void InternetGaming::send(const std::string& msg) {
 			m.string(arg);
 			net->send(m);
 			return;
-		} else if (!arg.empty() && cmd == "announce") {
+		}
+		if (!arg.empty() && cmd == "announce") {
 			// send the request to make an announcement
 			SendPacket m;
 			m.string(IGPCMD_ANNOUNCEMENT);
 			m.string(arg);
 			net->send(m);
 			return;
-		} else if (!arg.empty() && (cmd == "warn" || cmd == "kick" || cmd == "ban")) {
+		}
+		if (!arg.empty() && (cmd == "warn" || cmd == "kick" || cmd == "ban")) {
 			// warn a user by sending a private system message or
 			// kick a user (for 5 minutes) or a game from the metaserver or
 			// ban a user for 24 hours
@@ -988,10 +994,9 @@ void InternetGaming::send(const std::string& msg) {
 			m.string(arg);
 			net->send(m);
 			return;
-		} else {
-			// let everything else pass
-			goto normal;
 		}
+		// let everything else pass
+		goto normal;
 	} else {
 	normal:
 		s.string(msg);

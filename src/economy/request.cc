@@ -288,7 +288,8 @@ uint32_t Request::get_priority(const int32_t cost) const {
 		// Always serve requests with the highest priority first,
 		// even if other requests have to wait then.
 		return std::numeric_limits<uint32_t>::max();
-	} else if (priority <= WarePriority::kVeryLow) {
+	}
+	if (priority <= WarePriority::kVeryLow) {
 		// Requests with priority 0 are processed by the
 		// Economy only if there are no other requests.
 		return 0;
@@ -332,7 +333,8 @@ uint32_t Request::get_normalized_transfer_priority() const {
 	const WarePriority& priority = target_building_->get_priority(get_type(), get_index());
 	if (WarePriority::kVeryHigh <= priority) {
 		return Flag::kMaxTransferPriority;
-	} else if (priority <= WarePriority::kVeryLow) {
+	}
+	if (priority <= WarePriority::kVeryLow) {
 		return 0;
 	}
 

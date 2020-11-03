@@ -387,18 +387,17 @@ int BuildingStatisticsMenu::find_tab_for_building(const Widelands::BuildingDescr
 	}
 	if (descr.get_isport()) {
 		return BuildingTab::Ports;
-	} else {
-		switch (descr.get_size()) {
-		case Widelands::BaseImmovable::SMALL:
-			return BuildingTab::Small;
-		case Widelands::BaseImmovable::MEDIUM:
-			return BuildingTab::Medium;
-		case Widelands::BaseImmovable::BIG:
-			return BuildingTab::Big;
-		default:
-			throw wexception(
-			   "Building statictics: Found building without a size: %s", descr.name().c_str());
-		}
+	}
+	switch (descr.get_size()) {
+	case Widelands::BaseImmovable::SMALL:
+		return BuildingTab::Small;
+	case Widelands::BaseImmovable::MEDIUM:
+		return BuildingTab::Medium;
+	case Widelands::BaseImmovable::BIG:
+		return BuildingTab::Big;
+	default:
+		throw wexception(
+		   "Building statictics: Found building without a size: %s", descr.name().c_str());
 	}
 	NEVER_HERE();
 }

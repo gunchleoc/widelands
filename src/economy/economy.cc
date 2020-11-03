@@ -198,7 +198,8 @@ void Economy::check_splits() {
 			if (!current) {
 				split(reachable);
 				break;
-			} else if (current == f2) {
+			}
+			if (current == f2) {
 				break;
 			}
 			reachable.insert(&current->base_flag());
@@ -509,21 +510,20 @@ bool Economy::needs_ware_or_worker(DescriptionIndex const ware_or_worker_type) c
 			}
 		}
 		return true;
-	} else {
-		// Target quantity is set to 0, we need to check if there is an open request.
-		// For soldier requests, do not recruit new rookies if only heroes are needed.
-		const bool is_soldier = type_ == wwWORKER && ware_or_worker_type == owner().tribe().soldier();
-		for (const Request* req : requests_) {
-			if (req->get_type() == type_ && req->get_index() == ware_or_worker_type &&
-			    req->is_open() &&
-			    (!is_soldier ||
-			     req->get_requirements().check(soldier_prototype(
-			        owner().egbase().descriptions().get_worker_descr(ware_or_worker_type))))) {
-				return true;
-			}
-		}
-		return false;
 	}
+	// Target quantity is set to 0, we need to check if there is an open request.
+	// For soldier requests, do not recruit new rookies if only heroes are needed.
+	const bool is_soldier = type_ == wwWORKER && ware_or_worker_type == owner().tribe().soldier();
+	for (const Request* req : requests_) {
+		if (req->get_type() == type_ && req->get_index() == ware_or_worker_type &&
+			req->is_open() &&
+			(!is_soldier ||
+			 req->get_requirements().check(soldier_prototype(
+				owner().egbase().descriptions().get_worker_descr(ware_or_worker_type))))) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**

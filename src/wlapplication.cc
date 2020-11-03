@@ -981,9 +981,8 @@ void WLApplication::parse_commandline(int const argc, char const* const* const a
 		// Are we looking at an option at all?
 		if (opt.compare(0, 2, "--")) {
 			throw ParameterError();
-		} else {
-			opt.erase(0, 2);  //  yes. remove the leading "--", just for cosmetics
 		}
+		opt.erase(0, 2);  //  yes. remove the leading "--", just for cosmetics
 
 		// Look if this option has a value
 		std::string::size_type const pos = opt.find('=');

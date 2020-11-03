@@ -42,10 +42,9 @@ int get_ip_version(const boost::asio::ip::address& addr) {
 	assert(!addr.is_unspecified());
 	if (addr.is_v4()) {
 		return 4;
-	} else {
-		assert(addr.is_v6());
-		return 6;
 	}
+	assert(addr.is_v6());
+	return 6;
 }
 
 /**
@@ -56,10 +55,9 @@ int get_ip_version(const boost::asio::ip::address& addr) {
 int get_ip_version(const boost::asio::ip::udp& version) {
 	if (version == boost::asio::ip::udp::v4()) {
 		return 4;
-	} else {
-		assert(version == boost::asio::ip::udp::v6());
-		return 6;
 	}
+	assert(version == boost::asio::ip::udp::v6());
+	return 6;
 }
 }  // namespace
 

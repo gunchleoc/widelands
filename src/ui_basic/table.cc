@@ -665,10 +665,9 @@ uint32_t Table<void*>::toggle_entry(uint32_t row) {
 			return no_selection_index();
 		}
 		return *multiselect_.lower_bound(0);
-	} else {
-		multiselect_.insert(row);
-		return row;
 	}
+	multiselect_.insert(row);
+	return row;
 }
 
 /**

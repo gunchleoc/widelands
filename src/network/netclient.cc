@@ -7,12 +7,10 @@
 std::unique_ptr<NetClient> NetClient::connect(const NetAddress& host) {
 
 	std::unique_ptr<NetClient> ptr(new NetClient(host));
-	if (ptr->is_connected()) {
-		return ptr;
-	} else {
+	if (!ptr->is_connected()) {
 		ptr.reset();
-		return ptr;
 	}
+	return ptr;
 }
 
 NetClient::~NetClient() {

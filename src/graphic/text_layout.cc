@@ -141,13 +141,12 @@ std::string as_mapobject_message(const std::string& image,
 		f_color % player_color->hex_value();
 		f_color % g_style_manager->font_style(UI::FontStyle::kWuiMessageParagraph).as_font_tag(txt);
 		return f_color.str();
-	} else {
-		f_nocolor % width;
-		f_nocolor % image_type;
-		f_nocolor % image;
-		f_nocolor % g_style_manager->font_style(UI::FontStyle::kWuiMessageParagraph).as_font_tag(txt);
-		return f_nocolor.str();
 	}
+	f_nocolor % width;
+	f_nocolor % image_type;
+	f_nocolor % image;
+	f_nocolor % g_style_manager->font_style(UI::FontStyle::kWuiMessageParagraph).as_font_tag(txt);
+	return f_nocolor.str();
 }
 
 std::string as_message(const std::string& heading, const std::string& body) {

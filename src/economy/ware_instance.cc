@@ -359,13 +359,12 @@ void WareInstance::update(Game& game) {
 			if (success) {
 				t->has_finished();
 				return;
-			} else {
-				t->has_failed();
-
-				cancel_moving();
-				update(game);
-				return;
 			}
+			t->has_failed();
+
+			cancel_moving();
+			update(game);
+			return;
 		}
 
 		if (upcast(Flag, flag, location)) {
@@ -429,28 +428,26 @@ void WareInstance::enter_building(Game& game, Building& building) {
 			   serial(), descr_->name().c_str(), building.serial(), building.descr().name().c_str(),
 			   building.get_position().x, building.get_position().y, nextstep->serial(),
 			   nextstep->descr().name().c_str());
-		} else {
-			Transfer* t = transfer_;
-
-			transfer_ = nullptr;
-			transfer_nextstep_ = nullptr;
-
-			t->has_failed();
-			cancel_moving();
-
-			if (building.descr().type() == MapObjectType::WAREHOUSE) {
-				building.receive_ware(game, descr_index_);
-				remove(game);
-			} else {
-				update(game);
-			}
-			return;
 		}
-	} else {
-		// We don't have a transfer, so just enter the building
-		building.receive_ware(game, descr_index_);
-		remove(game);
+		Transfer* t = transfer_;
+
+		transfer_ = nullptr;
+		transfer_nextstep_ = nullptr;
+
+		t->has_failed();
+		cancel_moving();
+
+		if (building.descr().type() == MapObjectType::WAREHOUSE) {
+			building.receive_ware(game, descr_index_);
+			remove(game);
+		} else {
+			update(game);
+		}
+		return;
 	}
+	// We don't have a transfer, so just enter the building
+	building.receive_ware(game, descr_index_);
+	remove(game);
 }
 
 /**
@@ -610,9 +607,8 @@ MapObject::Loader* WareInstance::load(EditorGameBase& egbase, MapObjectLoader& m
 			loader->load(fr);
 
 			return loader.release();
-		} else {
-			throw UnhandledVersionError("WareInstance", packet_version, kCurrentPacketVersion);
 		}
+		throw UnhandledVersionError("WareInstance", packet_version, kCurrentPacketVersion);
 	} catch (const std::exception& e) {
 		throw wexception("WareInstance: %s", e.what());
 	}

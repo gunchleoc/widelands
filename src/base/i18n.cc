@@ -279,8 +279,6 @@ void set_locale(const std::string& name) {
 				log_info("using locale %s\n", try_locale.c_str());
 				leave_while = true;
 				break;
-			} else {
-				// log("locale is not working: %s\n", try_locale.c_str());
 			}
 		}
 		if (leave_while) {

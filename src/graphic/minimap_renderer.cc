@@ -351,11 +351,11 @@ int scale_map(const Widelands::Map& map, bool zoom) {
 	if (!(map_w > 300)) {
 		if (zoom) {
 			return (600 - (600 % map_w)) / map_w;
-		} else if (map_w > 150) {
-			return (400 - (400 % map_w)) / map_w;
-		} else {
-			return (300 - (300 % map_w)) / map_w;
 		}
+		if (map_w > 150) {
+			return (400 - (400 % map_w)) / map_w;
+		}
+		return (300 - (300 % map_w)) / map_w;
 	}
 	return 1;
 }

@@ -4727,9 +4727,8 @@ int LuaFlag::get_building(lua_State* L) {
 	Widelands::PlayerImmovable* building = f->get_building();
 	if (!building) {
 		return 0;
-	} else {
-		upcasted_map_object_to_lua(L, building);
 	}
+	upcasted_map_object_to_lua(L, building);
 	return 1;
 }
 /*
@@ -5347,15 +5346,17 @@ inline Widelands::StockPolicy string_to_wh_policy(lua_State* L, uint32_t index) 
 	std::string str = luaL_checkstring(L, index);
 	if (str == "normal") {
 		return Widelands::StockPolicy::kNormal;
-	} else if (str == "prefer") {
-		return Widelands::StockPolicy::kPrefer;
-	} else if (str == "dontstock") {
-		return Widelands::StockPolicy::kDontStock;
-	} else if (str == "remove") {
-		return Widelands::StockPolicy::kRemove;
-	} else {
-		report_error(L, "<%s> is no valid warehouse policy!", str.c_str());
 	}
+	if (str == "prefer") {
+		return Widelands::StockPolicy::kPrefer;
+	}
+	if (str == "dontstock") {
+		return Widelands::StockPolicy::kDontStock;
+	}
+	if (str == "remove") {
+		return Widelands::StockPolicy::kRemove;
+	}
+	report_error(L, "<%s> is no valid warehouse policy!", str.c_str());
 }
 
 inline bool do_set_ware_policy(Widelands::Warehouse* wh,
@@ -5799,13 +5800,12 @@ int LuaProductionSite::get_inputs(lua_State* L) {
 		if (return_number) {  // this is the only thing the customer wants to know
 			lua_pushuint32(L, cnt);
 			break;
-		} else {
-			lua_pushstring(L, input.second == Widelands::wwWARE ?
-			                     tribe.get_ware_descr(input.first)->name() :
-			                     tribe.get_worker_descr(input.first)->name());
-			lua_pushuint32(L, cnt);
-			lua_settable(L, -3);
 		}
+		lua_pushstring(L, input.second == Widelands::wwWARE ?
+							 tribe.get_ware_descr(input.first)->name() :
+							 tribe.get_worker_descr(input.first)->name());
+		lua_pushuint32(L, cnt);
+		lua_settable(L, -3);
 	}
 	return 1;
 }
@@ -7011,9 +7011,8 @@ int LuaField::get_immovable(lua_State* L) {
 
 	if (!bi) {
 		return 0;
-	} else {
-		upcasted_map_object_to_lua(L, bi);
 	}
+	upcasted_map_object_to_lua(L, bi);
 	return 1;
 }
 

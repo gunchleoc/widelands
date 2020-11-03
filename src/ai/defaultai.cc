@@ -5830,7 +5830,8 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 			   tmp_score * std::abs(management_data.get_military_number_at(127) / 5);
 			return BuildingNecessity::kNeeded;
 
-		} else if (bo.max_needed_preciousness > 0) {
+		}
+		if (bo.max_needed_preciousness > 0) {
 
 			static int16_t inputs[4 * kFNeuronBitSize] = {0};
 			// Resetting values as the variable is static
@@ -6103,7 +6104,8 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 			// Not allowed
 			return BuildingNecessity::kForbidden;
 
-		} else if (bo.is(BuildingAttribute::kShipyard)) {
+		}
+		if (bo.is(BuildingAttribute::kShipyard)) {
 			if (bo.total_count() > 0 ||
 			    (!basic_economy_established &&
 			     site_needed_for_economy == BasicEconomyBuildingStatus::kDiscouraged) ||
@@ -6121,12 +6123,13 @@ BuildingNecessity DefaultAI::check_building_necessity(BuildingObserver& bo,
 				return BuildingNecessity::kNeeded;
 			}
 			return BuildingNecessity::kAllowed;
-		} else if (bo.max_needed_preciousness == 0) {
-			return BuildingNecessity::kNotNeeded;
-		} else {
-			return BuildingNecessity::kForbidden;
 		}
-	} else if (purpose == PerfEvaluation::kForDismantle) {  // now for dismantling
+		if (bo.max_needed_preciousness == 0) {
+			return BuildingNecessity::kNotNeeded;
+		}
+		return BuildingNecessity::kForbidden;
+	}
+	if (purpose == PerfEvaluation::kForDismantle) {  // now for dismantling
 		// never dismantle last building (a care should be taken elsewhere)
 		assert(bo.total_count() > 0);
 		if (bo.total_count() == 1) {

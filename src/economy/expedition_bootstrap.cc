@@ -149,28 +149,27 @@ void ExpeditionBootstrap::demand_additional_item(Game& game,
 		wq->set_callback(input_callback, this);
 		queues_.push_back(std::make_pair(std::unique_ptr<InputQueue>(wq), true));
 		return check_is_ready(game);
-	} else {
-		// Remove the last matching additional queue
-		for (auto it = queues_.end(); it != queues_.begin();) {
-			--it;
-			if (it->second && it->first->get_type() == ww && it->first->get_index() == di) {
-				Warehouse* const warehouse = portdock_->get_warehouse();
-				if (it->first->get_type() == wwWARE) {
-					warehouse->insert_wares(it->first->get_index(), it->first->get_filled());
-				} else {
-					assert(it->first->get_type() == wwWORKER);
-					WorkersQueue* wq = dynamic_cast<WorkersQueue*>(it->first.get());
-					while (wq->get_filled() > 0) {
-						warehouse->incorporate_worker(game, wq->extract_worker());
-					}
-				}
-				it->first->cleanup();
-				queues_.erase(it);
-				return check_is_ready(game);
-			}
-		}
-		NEVER_HERE();
 	}
+	// Remove the last matching additional queue
+	for (auto it = queues_.end(); it != queues_.begin();) {
+		--it;
+		if (it->second && it->first->get_type() == ww && it->first->get_index() == di) {
+			Warehouse* const warehouse = portdock_->get_warehouse();
+			if (it->first->get_type() == wwWARE) {
+				warehouse->insert_wares(it->first->get_index(), it->first->get_filled());
+			} else {
+				assert(it->first->get_type() == wwWORKER);
+				WorkersQueue* wq = dynamic_cast<WorkersQueue*>(it->first.get());
+				while (wq->get_filled() > 0) {
+					warehouse->incorporate_worker(game, wq->extract_worker());
+				}
+			}
+			it->first->cleanup();
+			queues_.erase(it);
+			return check_is_ready(game);
+		}
+	}
+	NEVER_HERE();
 }
 
 void ExpeditionBootstrap::cleanup(EditorGameBase& /* egbase */) {
