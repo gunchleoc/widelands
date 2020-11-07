@@ -107,6 +107,8 @@ wl_library(logic_map_objects
     tribes/trainingsite.h
     tribes/tribe_descr.cc
     tribes/tribe_descr.h
+    tribes/ware_category.cc
+    tribes/ware_category.h
     tribes/ware_descr.cc
     tribes/ware_descr.h
     tribes/warehouse.cc

@@ -698,7 +698,7 @@ DescriptionIndex TribeDescr::get_resource_indicator(ResourceDescription const* c
 	return list->second.find(lowest)->second;
 }
 
-const std::set<WareDescr::Category>& TribeDescr::ware_categories(DescriptionIndex ware_index) {
+const std::set<WareCategory>& TribeDescr::ware_categories(DescriptionIndex ware_index) {
 	assert(ware_categories_.count(DescriptionIndex) == 1);
 	return ware_categories_.at(ware_index);
 }
@@ -829,7 +829,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM construction_materials_ is redundant now!
 	for (DescriptionIndex ware_idx : construction_materials_) {
-		ware_categories_[ware_idx].insert(WareDescr::Category::kConstruction);
+		ware_categories_[ware_idx].insert(WareCategory::kConstruction);
 	}
 
 	for (DescriptionIndex worker_index : workers_) {
@@ -838,7 +838,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			for (const auto& buildcost : worker->buildcost()) {
 				const DescriptionIndex ware_idx = ware_index(buildcost.first);
 				if (has_ware(ware_idx)) {
-					ware_categories_[ware_idx].insert(WareDescr::Category::kTool);
+					ware_categories_[ware_idx].insert(WareCategory::kTool);
 				}
 			}
 		}
@@ -1033,50 +1033,44 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		// Add ware input categories
 		if (prod->get_ismine()) {
 			for (const auto& input : prod->input_wares()) {
-				ware_categories_[input.first].insert(WareDescr::Category::kMiningSupply);
-			}
-			for (DescriptionIndex ware_idx : prod->output_ware_types()) {
-				ware_categories_[ware_idx].insert(WareDescr::Category::kMining);
+				ware_categories_[input.first].insert(WareCategory::kMining);
 			}
 		} else if (prod->type() == MapObjectType::TRAININGSITE) {
 			for (const auto& input : prod->input_wares()) {
-				ware_categories_[input.first].insert(WareDescr::Category::kTrainingSupply);
+				ware_categories_[input.first].insert(WareCategory::kTraining);
 			}
 		}
 	}
 
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
-		// Add ware supply categories. Mines were already processed.
+		// Add ware supply categories.
 		// NOCOM: This is too simple. We need to use the actual production programs for recursion.
-		if (!prod->get_ismine()) {
-			for (DescriptionIndex ware_idx : prod->output_ware_types()) {
-				const WareDescr* test = get_ware_descr(ware_idx);
-				auto category_it = ware_categories_.find(ware_idx);
-				if (category_it != ware_categories_.end()) {
-					log_dbg("Productionsite %s has %s as categorized output ware", prod->name().c_str(), test->name().c_str());
-					for (WareDescr::Category output_category : category_it->second) {
-						WareDescr::Category input_category = WareDescr::Category::kNone;
-						switch (output_category) {
-						case WareDescr::Category::kConstruction: {
-							input_category = WareDescr::Category::kConstructionSupply;
-						} break;
-						case WareDescr::Category::kMining: {
-							input_category = WareDescr::Category::kMiningSupply;
-						} break;
-						case WareDescr::Category::kTool: {
-							input_category = WareDescr::Category::kToolSupply;
-						} break;
-						default:
-						; // Do nothing
-						}
+		for (DescriptionIndex ware_idx : prod->output_ware_types()) {
+			auto category_it = ware_categories_.find(ware_idx);
+			if (category_it != ware_categories_.end()) {
+				for (WareCategory output_category : category_it->second) {
+					WareSupplyCategory input_category = WareSupplyCategory::kNone;
+					switch (output_category) {
+					case WareCategory::kConstruction: {
+						input_category = WareSupplyCategory::kConstruction;
+					} break;
+					case WareCategory::kMining: {
+						input_category = WareSupplyCategory::kMining;
+					} break;
+					case WareCategory::kTool: {
+						input_category = WareSupplyCategory::kTool;
+					} break;
+					case WareCategory::kTraining: {
+						input_category = WareSupplyCategory::kTraining;
+					} break;
+					default:
+					; // Do nothing
+					}
 
-						if (input_category != WareDescr::Category::kNone) {
-							for (const auto& input : prod->input_wares()) {
-								const WareDescr* test2 = get_ware_descr(input.first);
-								log_dbg(" -> input ware %s", test2->name().c_str());
-								ware_categories_[input.first].insert(input_category);
-							}
+					if (input_category != WareSupplyCategory::kNone) {
+						for (const auto& input : prod->input_wares()) {
+							ware_supply_categories_[input.first].insert(input_category);
 						}
 					}
 				}
@@ -1171,52 +1165,71 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		if (ware_categories_.count(ware_idx) != 1) {
 			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
 			log_dbg("NOCOM Ware without category: %s", ware_descr->name().c_str());
-			ware_categories_[ware_idx].insert(WareDescr::Category::kNone);
+			ware_categories_[ware_idx].insert(WareCategory::kNone);
+		}
+		if (ware_supply_categories_.count(ware_idx) != 1) {
+			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
+			log_dbg("NOCOM Ware without supply category: %s", ware_descr->name().c_str());
+			ware_supply_categories_[ware_idx].insert(WareSupplyCategory::kNone);
 		}
 	}
 
 	// NOCOM debug, remove this
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kMining)) {
+		for (WareCategory cat : ware.second) {
+			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		}
+	}
+	for (const auto& ware: ware_supply_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		for (WareSupplyCategory cat : ware.second) {
+			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		}
+	}
+
+	/*
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kMining)) {
 			log_dbg("NOCOM mining: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kMiningSupply)) {
-			log_dbg("NOCOM mining: %s", test->name().c_str());
+		if (ware_categories_.at(ware.first).count(WareCategory::kTraining)) {
+			log_dbg("NOCOM training: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kTrainingSupply)) {
+		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kTraining)) {
 			log_dbg("NOCOM training supply: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kConstructionSupply)) {
+		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kConstruction)) {
 			log_dbg("NOCOM construction supply: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kConstruction)) {
+		if (ware_categories_.at(ware.first).count(WareCategory::kConstruction)) {
 			log_dbg("NOCOM construction: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kToolSupply)) {
+		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kTool)) {
 			log_dbg("NOCOM tool supply: %s", test->name().c_str());
 		}
 	}
 	for (const auto& ware: ware_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareDescr::Category::kTool)) {
+		if (ware_categories_.at(ware.first).count(WareCategory::kTool)) {
 			log_dbg("NOCOM tool: %s", test->name().c_str());
 		}
-	}
+	} */
 }
 }  // namespace Widelands
