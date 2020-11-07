@@ -698,6 +698,11 @@ DescriptionIndex TribeDescr::get_resource_indicator(ResourceDescription const* c
 	return list->second.find(lowest)->second;
 }
 
+const std::set<WareDescr::Category>& TribeDescr::ware_categories(DescriptionIndex ware_index) {
+	assert(ware_categories_.count(DescriptionIndex) == 1);
+	return ware_categories_.at(ware_index);
+}
+
 ToolbarImageset* TribeDescr::toolbar_image_set() const {
 	return toolbar_image_set_.get();
 }
@@ -821,6 +826,24 @@ void TribeDescr::calculate_trainingsites_proportions(Descriptions& descriptions)
 
 // Calculate building properties that have circular dependencies
 void TribeDescr::process_productionsites(Descriptions& descriptions) {
+
+	// NOCOM construction_materials_ is redundant now!
+	for (DescriptionIndex ware_idx : construction_materials_) {
+		ware_categories_[ware_idx].insert(WareDescr::Category::kConstruction);
+	}
+
+	for (DescriptionIndex worker_index : workers_) {
+		const WorkerDescr* worker = get_worker_descr(worker_index);
+		if (worker->is_buildable()) {
+			for (const auto& buildcost : worker->buildcost()) {
+				const DescriptionIndex ware_idx = ware_index(buildcost.first);
+				if (has_ware(ware_idx)) {
+					ware_categories_[ware_idx].insert(WareDescr::Category::kTool);
+				}
+			}
+		}
+	}
+
 	// Get a list of productionsites - we will need to iterate them more than once
 	// The temporary use of pointers here is fine, because it doesn't affect the game state.
 	std::set<ProductionSiteDescr*> productionsites;
@@ -1005,10 +1028,61 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		for (const std::string& immovable : prod->collected_immovables()) {
 			add_collector(immovable, prod);
 		}
+
+
+		// Add ware input categories
+		if (prod->get_ismine()) {
+			for (const auto& input : prod->input_wares()) {
+				ware_categories_[input.first].insert(WareDescr::Category::kMiningSupply);
+			}
+			for (DescriptionIndex ware_idx : prod->output_ware_types()) {
+				ware_categories_[ware_idx].insert(WareDescr::Category::kMining);
+			}
+		} else if (prod->type() == MapObjectType::TRAININGSITE) {
+			for (const auto& input : prod->input_wares()) {
+				ware_categories_[input.first].insert(WareDescr::Category::kTrainingSupply);
+			}
+		}
 	}
 
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
+		// Add ware supply categories. Mines were already processed.
+		// NOCOM: This is too simple. We need to use the actual production programs for recursion.
+		if (!prod->get_ismine()) {
+			for (DescriptionIndex ware_idx : prod->output_ware_types()) {
+				const WareDescr* test = get_ware_descr(ware_idx);
+				auto category_it = ware_categories_.find(ware_idx);
+				if (category_it != ware_categories_.end()) {
+					log_dbg("Productionsite %s has %s as categorized output ware", prod->name().c_str(), test->name().c_str());
+					for (WareDescr::Category output_category : category_it->second) {
+						WareDescr::Category input_category = WareDescr::Category::kNone;
+						switch (output_category) {
+						case WareDescr::Category::kConstruction: {
+							input_category = WareDescr::Category::kConstructionSupply;
+						} break;
+						case WareDescr::Category::kMining: {
+							input_category = WareDescr::Category::kMiningSupply;
+						} break;
+						case WareDescr::Category::kTool: {
+							input_category = WareDescr::Category::kToolSupply;
+						} break;
+						default:
+						; // Do nothing
+						}
+
+						if (input_category != WareDescr::Category::kNone) {
+							for (const auto& input : prod->input_wares()) {
+								const WareDescr* test2 = get_ware_descr(input.first);
+								log_dbg(" -> input ware %s", test2->name().c_str());
+								ware_categories_[input.first].insert(input_category);
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// Sites that create any immovables should not overlap each other
 		if (!prod->created_immovables().empty()) {
 			for (const ProductionSiteDescr* other_prod : productionsites) {
@@ -1089,6 +1163,59 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 					prod->add_competing_productionsite(collector->name());
 				}
 			}
+		}
+	}
+
+	// Ensure all wares have at least 1 category to prevent crashes
+	for (DescriptionIndex ware_idx : wares_) {
+		if (ware_categories_.count(ware_idx) != 1) {
+			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
+			log_dbg("NOCOM Ware without category: %s", ware_descr->name().c_str());
+			ware_categories_[ware_idx].insert(WareDescr::Category::kNone);
+		}
+	}
+
+	// NOCOM debug, remove this
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kMining)) {
+			log_dbg("NOCOM mining: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kMiningSupply)) {
+			log_dbg("NOCOM mining: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kTrainingSupply)) {
+			log_dbg("NOCOM training supply: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kConstructionSupply)) {
+			log_dbg("NOCOM construction supply: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kConstruction)) {
+			log_dbg("NOCOM construction: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kToolSupply)) {
+			log_dbg("NOCOM tool supply: %s", test->name().c_str());
+		}
+	}
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		if (ware_categories_.at(ware.first).count(WareDescr::Category::kTool)) {
+			log_dbg("NOCOM tool: %s", test->name().c_str());
 		}
 	}
 }

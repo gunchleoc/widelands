@@ -140,6 +140,8 @@ public:
 		return workers_order_;
 	}
 
+	const std::set<WareDescr::Category>& ware_categories(DescriptionIndex ware_index);
+
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
 	}
@@ -214,6 +216,9 @@ private:
 	// Order and positioning of wares in the warehouse display
 	WaresOrder wares_order_;
 	WaresOrder workers_order_;
+	// Direct ware categories (e.g. ration is a Barbarian mining ware, but bread is not.
+	// The full production chain is available at each WareDescr
+	std::map<DescriptionIndex, std::set<WareDescr::Category>> ware_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

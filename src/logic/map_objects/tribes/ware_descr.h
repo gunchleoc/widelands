@@ -38,6 +38,21 @@ namespace Widelands {
  */
 class WareDescr : public MapObjectDescr {
 public:
+	// TODO(GunChleoc): Add more categories as needed, eg. seafaring, ...
+	// NOCOM update comment
+	// Direct construction materials are registered at the TribeDescr.
+	// The kConstruction class here includes all wares involved in creating a construction material too.
+	enum class Category {
+		kNone,
+		kConstructionSupply,
+		kConstruction,
+		kMiningSupply,
+		kMining,
+		kToolSupply,
+		kTool,
+		kTrainingSupply
+	};
+
 	WareDescr(const std::string& init_descname, const LuaTable& t);
 	~WareDescr() override {
 	}
