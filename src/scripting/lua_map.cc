@@ -2927,7 +2927,8 @@ int LuaProductionSiteDescription::consumed_wares_workers(lua_State* L) {
 				if (entry.type == Widelands::wwWARE) {
 					lua_pushstring(L, get_egbase(L).descriptions().get_ware_descr(entry.index)->name());
 				} else {
-					lua_pushstring(L, get_egbase(L).descriptions().get_worker_descr(entry.index)->name());
+					lua_pushstring(
+					   L, get_egbase(L).descriptions().get_worker_descr(entry.index)->name());
 				}
 				lua_pushuint32(L, group.second);
 				lua_settable(L, -3);

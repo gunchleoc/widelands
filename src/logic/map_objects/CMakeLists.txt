@@ -88,6 +88,8 @@ wl_library(logic_map_objects
     tribes/militarysite.h
     tribes/partially_finished_building.cc
     tribes/partially_finished_building.h
+    tribes/production_category.cc
+    tribes/production_category.h
     tribes/production_program.cc
     tribes/production_program.h
     tribes/productionsite.cc
@@ -107,8 +109,6 @@ wl_library(logic_map_objects
     tribes/trainingsite.h
     tribes/tribe_descr.cc
     tribes/tribe_descr.h
-    tribes/ware_category.cc
-    tribes/ware_category.h
     tribes/ware_descr.cc
     tribes/ware_descr.h
     tribes/warehouse.cc

@@ -28,9 +28,9 @@
 #include "logic/map_objects/descriptions.h"
 #include "logic/map_objects/immovable.h"
 #include "logic/map_objects/tribes/building.h"
+#include "logic/map_objects/tribes/production_category.h"
 #include "logic/map_objects/tribes/road_textures.h"
 #include "logic/map_objects/tribes/tribe_basic_info.h"
-#include "logic/map_objects/tribes/ware_category.h"
 #include "logic/map_objects/tribes/ware_descr.h"
 #include "logic/map_objects/tribes/worker.h"
 #include "logic/map_objects/world/resource_description.h"
@@ -142,8 +142,10 @@ public:
 	}
 
 	// NOCOM document
-	const std::set<WareCategory>& production_categories(DescriptionIndex index, WareWorker type) const;
-	const std::set<WareCategory>& production_supply_categories(DescriptionIndex index, WareWorker type) const;
+	const std::set<ProductionCategory>& production_categories(DescriptionIndex index,
+	                                                          WareWorker type) const;
+	const std::set<ProductionCategory>& production_supply_categories(DescriptionIndex index,
+	                                                                 WareWorker type) const;
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
@@ -166,7 +168,9 @@ private:
 	void load_buildings(const LuaTable& table, Descriptions& descriptions);
 
 	// Helper function for adding a special worker type (carriers etc.)
-	DescriptionIndex add_special_worker(const std::string& workername, WareCategory category, Descriptions& descriptions);
+	DescriptionIndex add_special_worker(const std::string& workername,
+	                                    ProductionCategory category,
+	                                    Descriptions& descriptions);
 	// Helper function for adding a special building type (port etc.)
 	DescriptionIndex add_special_building(const std::string& buildingname,
 	                                      Descriptions& descriptions);
@@ -222,8 +226,9 @@ private:
 	WaresOrder workers_order_;
 	// Direct ware categories (e.g. ration is a Barbarian mining ware, but bread is not.
 	// The full production chain is available at each WareDescr
-	std::map<ProductionProgram::WareWorkerId, std::set<WareCategory>> ware_worker_categories_;
-	std::map<ProductionProgram::WareWorkerId, std::set<WareCategory>> ware_worker_supply_categories_;
+	std::map<ProductionProgram::WareWorkerId, std::set<ProductionCategory>> ware_worker_categories_;
+	std::map<ProductionProgram::WareWorkerId, std::set<ProductionCategory>>
+	   ware_worker_supply_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

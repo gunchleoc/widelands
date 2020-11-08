@@ -13,7 +13,7 @@ error_msg = 'Illegal character after closing brace.'
 strip_macros = True
 strip_comments_and_strings = True
 regexp = r"""(?x)
-\}[^ ,;})\"\\\n] # Match the } and finally the illegal characters
+\}[^ ,;})\]\"\\\n] # Match the } and finally the illegal characters
 """
 
 forbidden = [
@@ -97,4 +97,5 @@ allowed = [
     r'''("illegal state \"%s\" (must be one of {init, running, done})",''',  # Spot the difference ;)
 
     'int* blah() {return "anything";}\n',
+    r'map[{some, initializer, list}];',
 ]

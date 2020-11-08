@@ -906,14 +906,19 @@ void DefaultAI::late_initialization() {
 					bo.substitute_inputs.insert(temp_input.first);
 				}
 
-				// At trainingsites, we will want to control wares that have training as their exclusive primary category and are not used in mining, and treat them as weapons and armor.
-				// We can't restrict this further due to circular dependencies in the Frisians recycling center, so we get mead and chocolate here too.
-				const std::set<Widelands::WareCategory>& production_categories =
-						tribe_->production_categories(temp_input.first, Widelands::WareWorker::wwWARE);
-				if (production_categories.size() == 1 && *production_categories.begin() == Widelands::WareCategory::kTraining) {
-					const std::set<Widelands::WareCategory>& production_supply_categories =
-							tribe_->production_supply_categories(temp_input.first, Widelands::WareWorker::wwWARE);
-					if (production_supply_categories.count(Widelands::WareCategory::kMining) == 0) {
+				// At trainingsites, we will want to control wares that have training as their exclusive
+				// primary category and are not used in mining, and treat them as weapons and armor. We
+				// can't restrict this further due to circular dependencies in the Frisians recycling
+				// center, so we get mead and chocolate here too.
+				const std::set<Widelands::ProductionCategory>& production_categories =
+				   tribe_->production_categories(temp_input.first, Widelands::WareWorker::wwWARE);
+				if (production_categories.size() == 1 &&
+				    *production_categories.begin() == Widelands::ProductionCategory::kTraining) {
+					const std::set<Widelands::ProductionCategory>& production_supply_categories =
+					   tribe_->production_supply_categories(
+					      temp_input.first, Widelands::WareWorker::wwWARE);
+					if (production_supply_categories.count(Widelands::ProductionCategory::kMining) ==
+					    0) {
 						weapons_and_armor_.insert(temp_input.first);
 					}
 				}

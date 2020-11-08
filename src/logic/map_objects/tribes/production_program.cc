@@ -508,8 +508,7 @@ bool ProductionProgram::ActReturn::SiteHas::evaluate(const ProductionSite& ps) c
 	uint8_t count = group.second;
 	for (InputQueue* ip_queue : ps.inputqueues()) {
 		for (const WareWorkerId& input_type : group.first) {
-			if (input_type.index == ip_queue->get_index() &&
-			    input_type.type == ip_queue->get_type()) {
+			if (input_type.index == ip_queue->get_index() && input_type.type == ip_queue->get_type()) {
 				uint8_t const filled = ip_queue->get_filled();
 				if (count <= filled) {
 					return true;

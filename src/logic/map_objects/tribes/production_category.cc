@@ -17,27 +17,29 @@
  *
  */
 
-#ifndef WL_LOGIC_MAP_OBJECTS_TRIBES_WARE_CATEGORY_H
-#define WL_LOGIC_MAP_OBJECTS_TRIBES_WARE_CATEGORY_H
+#include "logic/map_objects/tribes/production_category.h"
 
-#include <string>
+#include "base/wexception.h"
 
 namespace Widelands {
-// TODO(GunChleoc): Add more categories as needed, eg. seafaring, ...
-// NOCOM update comment
-// Direct construction materials are registered at the TribeDescr.
-// The kConstruction class here includes all wares involved in creating a construction material too.
-	enum class WareCategory {
-		kNone,
-		kConstruction,
-		kMining,
-		kRoad,
-		kWaterway,
-		kTool,
-		kTraining
-	};
 
-	const std::string to_string(WareCategory category);
+const std::string to_string(ProductionCategory category) {
+	switch (category) {
+	case ProductionCategory::kConstruction:
+		return "construction";
+	case ProductionCategory::kMining:
+		return "mining";
+	case ProductionCategory::kRoad:
+		return "road";
+	case ProductionCategory::kWaterway:
+		return "waterway";
+	case ProductionCategory::kTool:
+		return "tool";
+	case ProductionCategory::kTraining:
+		return "training";
+	case ProductionCategory::kNone:
+		return "none";
+	}
+	NEVER_HERE();
+}
 }  // namespace Widelands
-
-#endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_TRIBES_WARE_CATEGORY_H
