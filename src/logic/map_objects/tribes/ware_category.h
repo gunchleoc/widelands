@@ -31,6 +31,8 @@ namespace Widelands {
 		kNone,
 		kConstruction,
 		kMining,
+		kRoad,
+		kWaterway,
 		kTool,
 		kTraining
 	};

@@ -201,4 +201,10 @@ const std::set<DescriptionIndex>& WorkerDescr::employers() const {
 	return employers_;
 }
 
+void WorkerDescr::add_recruiter(const DescriptionIndex& building_index) {
+	recruiters_.insert(building_index);
+}
+const std::set<DescriptionIndex>& WorkerDescr::recruiters() const {
+	return recruiters_;
+}
 }  // namespace Widelands

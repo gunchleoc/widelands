@@ -101,7 +101,7 @@ public:
 
 	struct ProductionLink {
 		const ProductionProgram::Groups* inputs; // Not owned
-		const Buildcost* outputs; // Not owned
+		const std::pair<const Buildcost*, WareWorker> outputs; // Buildcost not owned
 	};
 
 	// NOCOM document

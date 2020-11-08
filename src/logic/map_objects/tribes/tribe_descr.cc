@@ -134,12 +134,18 @@ void load_helptexts(Widelands::MapObjectDescr* descr,
 // NOCOM process workers too
 void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 							std::set<Widelands::DescriptionIndex>& walked_productionsites,
-							std::set<Widelands::DescriptionIndex>& wares,
+							std::set<std::pair<Widelands::DescriptionIndex, Widelands::WareWorker>>& ware_workers,
 							const std::set<Widelands::WareCategory>& categories,
-							std::map<Widelands::DescriptionIndex, std::set<Widelands::WareCategory>>* target) {
-	for (Widelands::DescriptionIndex ware_index : wares) {
-		const Widelands::WareDescr* ware_descr = tribe->get_ware_descr(ware_index);
-		for (Widelands::DescriptionIndex producer_index : ware_descr->producers()) {
+							std::map<std::pair<Widelands::DescriptionIndex, Widelands::WareWorker>, std::set<Widelands::WareCategory>>* target) {
+
+	std::set<const Widelands::ProductionSiteDescr*> productionsites_to_process;
+	for (const auto& ware_worker : ware_workers) {
+		const std::set<Widelands::DescriptionIndex>& candidates =
+				ware_worker.second == Widelands::WareWorker::wwWARE ?
+					tribe->get_ware_descr(ware_worker.first)->producers() :
+										  tribe->get_worker_descr(ware_worker.first)->recruiters();
+
+		for (Widelands::DescriptionIndex producer_index : candidates) {
 			const Widelands::ProductionSiteDescr* prod = dynamic_cast<const Widelands::ProductionSiteDescr*>(tribe->get_building_descr(producer_index));
 			Widelands::DescriptionIndex building_index = tribe->building_index(prod->name());
 			if (walked_productionsites.count(building_index) == 1) {
@@ -149,22 +155,38 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 			if (!tribe->has_building(building_index)) {
 				return;
 			}
-			for (const Widelands::ProductionSiteDescr::ProductionLink& link : prod->production_links()) {
-				// Output: <DescriptionIndex, uint8_t>
-				// NOCOM ware or worker?
-				for (const auto& output_item : *link.outputs) {
-					if (tribe->has_ware(output_item.first)) {
-						if (wares.count(output_item.first)) {
-							// using WareTypeGroup = std::pair<std::set<std::pair<DescriptionIndex, WareWorker>>, uint8_t>;
-							for (const auto& input : *link.inputs) {
-								for (const auto& input_item : input.first) {
-									const Widelands::WareDescr* test = tribe->get_ware_descr(input_item.first);
-									for (Widelands::WareCategory ware_category : categories) {
-										assert(ware_category != Widelands::WareCategory::kNone);
-										(*target)[input_item.first].insert(ware_category);
-										log_dbg("%s: %s -> %s", prod->name().c_str(), test->name().c_str(), to_string(ware_category).c_str());
-									}
-								}
+			productionsites_to_process.insert(prod);
+		}
+	}
+	for (const Widelands::ProductionSiteDescr* prod : productionsites_to_process) {
+		for (const Widelands::ProductionSiteDescr::ProductionLink& link : prod->production_links()) {
+			// Output: <DescriptionIndex, uint8_t>
+			// NOCOM ware or worker?
+			for (const auto& output_item : *link.outputs.first) {
+				switch (link.outputs.second) {
+				case Widelands::WareWorker::wwWARE: {
+					if (!tribe->has_ware(output_item.first)) {
+						continue;
+					}
+				} break;
+				case Widelands::WareWorker::wwWORKER: {
+					if (!tribe->has_worker(output_item.first)) {
+						continue;
+					}
+				} break;
+				}
+				const auto key(std::make_pair(output_item.first, link.outputs.second));
+				if (ware_workers.count(key)) {
+					// using WareTypeGroup = std::pair<std::set<std::pair<DescriptionIndex, WareWorker>>, uint8_t>;
+					for (const auto& input : *link.inputs) {
+						for (const auto& input_item : input.first) {
+							const std::string test =
+									input_item.second == Widelands::WareWorker::wwWARE ?
+										tribe->get_ware_descr(input_item.first)->name() : tribe->get_worker_descr(input_item.first)->name();
+							for (Widelands::WareCategory ware_category : categories) {
+								assert(ware_category != Widelands::WareCategory::kNone);
+								(*target)[key].insert(ware_category);
+								log_dbg("%s: %s -> %s", prod->name().c_str(), test.c_str(), to_string(ware_category).c_str());
 							}
 						}
 					}
@@ -178,42 +200,58 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 namespace Widelands {
 
 void TribeDescr::process_ware_supply_chain() {
+	// NOCOMM walked_productionsites need to remember wareworker too for Frisian recycling
 	std::set<Widelands::DescriptionIndex> walked_productionsites;
 	for (const auto& category_info : ware_categories_) {
 		assert(!category_info.second.empty());
-		std::set<DescriptionIndex> wares{category_info.first};
+		std::set<std::pair<DescriptionIndex, WareWorker>> wares{category_info.first};
 		walk_ware_supply_chain(this, walked_productionsites, wares, category_info.second, &ware_supply_categories_);
 		walked_productionsites.clear();
 	}
 
 	// Ensure all wares have at least an empty category set to prevent crashes
-	for (DescriptionIndex ware_idx : wares_) {
-		if (ware_categories_.count(ware_idx) != 1 && ware_supply_categories_.count(ware_idx) != 1) {
-			const WareDescr* ware_descr = get_ware_descr(ware_idx);
+	for (DescriptionIndex ware_index : wares_) {
+		const auto key(std::make_pair(ware_index, WareWorker::wwWARE));
+		if (ware_categories_.count(key) != 1 && ware_supply_categories_.count(key) != 1) {
+			const WareDescr* ware_descr = get_ware_descr(key.first);
 			log_err("NOCOM Ware without category: %s", ware_descr->name().c_str());
 		}
 
-		if (ware_categories_.count(ware_idx) != 1) {
-			ware_categories_[ware_idx];
+		if (ware_categories_.count(key) != 1) {
+			ware_categories_[key];
 		}
-		if (ware_supply_categories_.count(ware_idx) != 1) {
-			ware_supply_categories_[ware_idx];
+		if (ware_supply_categories_.count(key) != 1) {
+			ware_supply_categories_[key];
 		}
 	}
 
 	// NOCOM debug, remove this
 	log_dbg("********* Direct categories *********");
 	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		for (WareCategory cat : ware.second) {
-			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		if (ware.first.second == WareWorker::wwWARE) {
+			const WareDescr* test = get_ware_descr(ware.first.first);
+			for (WareCategory cat : ware.second) {
+				log_dbg("NOCOM ware: %s -> %s", test->name().c_str(), to_string(cat).c_str());
+			}
+		} else {
+			const WorkerDescr* test = get_worker_descr(ware.first.first);
+			for (WareCategory cat : ware.second) {
+				log_dbg("NOCOM worker: %s -> %s", test->name().c_str(), to_string(cat).c_str());
+			}
 		}
 	}
 	log_dbg("********* Supply categories *********");
 	for (const auto& ware: ware_supply_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		for (WareCategory cat : ware.second) {
-			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		if (ware.first.second == WareWorker::wwWARE) {
+			const WareDescr* test = get_ware_descr(ware.first.first);
+			for (WareCategory cat : ware.second) {
+				log_dbg("NOCOM ware: %s -> %s", test->name().c_str(), to_string(cat).c_str());
+			}
+		} else {
+			const WorkerDescr* test = get_worker_descr(ware.first.first);
+			for (WareCategory cat : ware.second) {
+				log_dbg("NOCOM worker: %s -> %s", test->name().c_str(), to_string(cat).c_str());
+			}
 		}
 	}
 }
@@ -518,22 +556,22 @@ void TribeDescr::load_workers(const LuaTable& table, Descriptions& descriptions)
 	}
 
 	if (table.has_key("builder")) {
-		builder_ = add_special_worker(table.get_string("builder"), descriptions);
+		builder_ = add_special_worker(table.get_string("builder"), WareCategory::kConstruction, descriptions);
 	}
 	if (table.has_key("carrier")) {
-		carrier_ = add_special_worker(table.get_string("carrier"), descriptions);
+		carrier_ = add_special_worker(table.get_string("carrier"), WareCategory::kRoad, descriptions);
 	}
 	if (table.has_key("carrier2")) {
-		carrier2_ = add_special_worker(table.get_string("carrier2"), descriptions);
+		carrier2_ = add_special_worker(table.get_string("carrier2"), WareCategory::kRoad, descriptions);
 	}
 	if (table.has_key("geologist")) {
-		geologist_ = add_special_worker(table.get_string("geologist"), descriptions);
+		geologist_ = add_special_worker(table.get_string("geologist"), WareCategory::kMining, descriptions);
 	}
 	if (table.has_key("soldier")) {
-		soldier_ = add_special_worker(table.get_string("soldier"), descriptions);
+		soldier_ = add_special_worker(table.get_string("soldier"), WareCategory::kTraining, descriptions);
 	}
 	if (table.has_key("ferry")) {
-		ferry_ = add_special_worker(table.get_string("ferry"), descriptions);
+		ferry_ = add_special_worker(table.get_string("ferry"), WareCategory::kWaterway, descriptions);
 	}
 }
 
@@ -782,9 +820,10 @@ DescriptionIndex TribeDescr::get_resource_indicator(ResourceDescription const* c
 	return list->second.find(lowest)->second;
 }
 
-const std::set<WareCategory>& TribeDescr::ware_categories(DescriptionIndex ware_index) {
-	assert(ware_categories_.count(DescriptionIndex) == 1);
-	return ware_categories_.at(ware_index);
+const std::set<WareCategory>& TribeDescr::ware_categories(DescriptionIndex ware_index, WareWorker type) {
+	const auto key(std::make_pair(ware_index, type));
+	assert(ware_categories_.count(key) == 1);
+	return ware_categories_.at(key);
 }
 
 ToolbarImageset* TribeDescr::toolbar_image_set() const {
@@ -796,12 +835,16 @@ ToolbarImageset* TribeDescr::toolbar_image_set() const {
  */
 
 DescriptionIndex TribeDescr::add_special_worker(const std::string& workername,
+												WareCategory category,
                                                 Descriptions& descriptions) {
 	try {
 		DescriptionIndex worker = descriptions.load_worker(workername);
 		if (!has_worker(worker)) {
 			throw GameDataError("This tribe doesn't have the worker '%s'", workername.c_str());
 		}
+
+		ware_categories_[std::make_pair(worker, WareWorker::wwWORKER)].insert(category);
+
 		return worker;
 	} catch (const WException& e) {
 		throw GameDataError("Failed adding special worker '%s': %s", workername.c_str(), e.what());
@@ -913,7 +956,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM construction_materials_ is redundant now!
 	for (DescriptionIndex ware_idx : construction_materials_) {
-		ware_categories_[ware_idx].insert(WareCategory::kConstruction);
+		ware_categories_[std::make_pair(ware_idx, WareWorker::wwWARE)].insert(WareCategory::kConstruction);
 	}
 
 	for (DescriptionIndex worker_index : workers_) {
@@ -922,7 +965,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			for (const auto& buildcost : worker->buildcost()) {
 				const DescriptionIndex ware_idx = ware_index(buildcost.first);
 				if (has_ware(ware_idx)) {
-					ware_categories_[ware_idx].insert(WareCategory::kTool);
+					ware_categories_[std::make_pair(ware_idx, WareWorker::wwWARE)].insert(WareCategory::kTool);
 				}
 			}
 		}
@@ -963,6 +1006,9 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			for (const auto& job : productionsite->working_positions()) {
 				assert(has_worker(job.first));
 				descriptions.get_mutable_worker_descr(job.first)->add_employer(index);
+			}
+			for (const DescriptionIndex& workerindex : productionsite->output_worker_types()) {
+				descriptions.get_mutable_worker_descr(workerindex)->add_recruiter(index);
 			}
 			// Resource info
 			for (const std::string& r : productionsite->collected_resources()) {
@@ -1113,15 +1159,20 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			add_collector(immovable, prod);
 		}
 
-
 		// Add ware input categories
 		if (prod->get_ismine()) {
-			for (const auto& input : prod->input_wares()) {
-				ware_categories_[input.first].insert(WareCategory::kMining);
+			for (const auto& input : prod->input_workers()) {
+				ware_categories_[std::make_pair(input.first, WareWorker::wwWARE)].insert(WareCategory::kMining);
+			}
+			for (const auto& input : prod->input_workers()) {
+				ware_categories_[std::make_pair(input.first, WareWorker::wwWORKER)].insert(WareCategory::kMining);
 			}
 		} else if (prod->type() == MapObjectType::TRAININGSITE) {
 			for (const auto& input : prod->input_wares()) {
-				ware_categories_[input.first].insert(WareCategory::kTraining);
+				ware_categories_[std::make_pair(input.first, WareWorker::wwWARE)].insert(WareCategory::kTraining);
+			}
+			for (const auto& input : prod->input_workers()) {
+				ware_categories_[std::make_pair(input.first, WareWorker::wwWORKER)].insert(WareCategory::kTraining);
 			}
 		}
 	}

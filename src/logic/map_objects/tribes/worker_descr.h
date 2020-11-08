@@ -111,6 +111,10 @@ public:
 	// The buildings where this worker can work
 	const std::set<DescriptionIndex>& employers() const;
 
+	// Buildings that recruit this worker
+	void add_recruiter(const DescriptionIndex& building_index);
+	const std::set<DescriptionIndex>& recruiters() const;
+
 	Worker& create(EditorGameBase&, Player*, PlayerImmovable*, Coords) const;
 
 	uint32_t movecaps() const override;
@@ -152,6 +156,8 @@ private:
 
 	/// Buildings where this worker can work
 	std::set<DescriptionIndex> employers_;
+
+	std::set<DescriptionIndex> recruiters_;  // Buildings that recruit this worker
 
 private:
 	// Hints for the AI

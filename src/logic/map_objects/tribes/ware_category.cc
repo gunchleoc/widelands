@@ -17,8 +17,9 @@
  *
  */
 
-#include "base/wexception.h"
 #include "logic/map_objects/tribes/ware_category.h"
+
+#include "base/wexception.h"
 
 namespace Widelands {
 
@@ -28,6 +29,10 @@ const std::string to_string(WareCategory category) {
 		return "construction";
 	case WareCategory::kMining:
 		return "mining";
+	case WareCategory::kRoad:
+		return "road";
+	case WareCategory::kWaterway:
+		return "waterway";
 	case WareCategory::kTool:
 		return "tool";
 	case WareCategory::kTraining:

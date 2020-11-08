@@ -175,17 +175,21 @@ ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
 			std::unique_ptr<ProductionProgram> production_program(new ProductionProgram(
 			   MapObjectProgram::kMainProgram, *program_table, descriptions, this));
 
-			production_links_.push_back(ProductionLink{&production_program->consumed_wares_workers(), &production_program->produced_wares()});
+			if (!production_program->produced_wares().empty()) {
+				production_links_.push_back(ProductionLink{&production_program->consumed_wares_workers(), std::make_pair(&production_program->produced_wares(), WareWorker::wwWARE)});
+			}
+			if (!production_program->recruited_workers().empty()) {
+				production_links_.push_back(ProductionLink{&production_program->consumed_wares_workers(), std::make_pair(&production_program->recruited_workers(), WareWorker::wwWORKER)});
+			}
 
+			// TODO(GunChleoc): API compatibility, remove "work" check after v1.0
 			if (program_name == "work") {
 				log_warn("The main program for the building %s should be renamed from 'work' to "
 				         "'main'",
 				         name().c_str());
-				// TODO(GunChleoc): API compatibility, remove "work" check after v1.0
-				programs_.insert(std::make_pair(MapObjectProgram::kMainProgram, std::move(production_program)));
-			} else {
-				programs_.insert(std::make_pair(program_name, std::move(production_program)));
+				program_name = MapObjectProgram::kMainProgram;
 			}
+			programs_.insert(std::make_pair(program_name, std::move(production_program)));
 		} catch (const std::exception& e) {
 			throw GameDataError("%s: Error in productionsite program %s: %s", name().c_str(),
 			                    program_name.c_str(), e.what());
