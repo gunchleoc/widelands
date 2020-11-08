@@ -146,6 +146,7 @@ public:
 	                                                          WareWorker type) const;
 	const std::set<ProductionCategory>& production_supply_categories(DescriptionIndex index,
 	                                                                 WareWorker type) const;
+	const std::map<ProductionCategory, std::set<DescriptionIndex>>& productionsite_categories() const;
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
@@ -229,6 +230,7 @@ private:
 	std::map<ProductionProgram::WareWorkerId, std::set<ProductionCategory>> ware_worker_categories_;
 	std::map<ProductionProgram::WareWorkerId, std::set<ProductionCategory>>
 	   ware_worker_supply_categories_;
+	std::map<ProductionCategory, std::set<DescriptionIndex>> productionsite_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

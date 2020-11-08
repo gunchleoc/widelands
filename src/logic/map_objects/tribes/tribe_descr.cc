@@ -895,6 +895,10 @@ TribeDescr::production_supply_categories(DescriptionIndex index, WareWorker type
 	return ware_worker_supply_categories_.at(key);
 }
 
+const std::map<ProductionCategory, std::set<DescriptionIndex>>& TribeDescr::productionsite_categories() const {
+	return productionsite_categories_;
+}
+
 ToolbarImageset* TribeDescr::toolbar_image_set() const {
 	return toolbar_image_set_.get();
 }
@@ -1264,8 +1268,88 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
+	// Calculate ware supply chain
+	process_ware_supply_chain();
+
+	log_dbg("********* Buildings *********");
+
+	std::map<DescriptionIndex, ProductionSiteDescr*> uncategorized_productionsites;
+
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
+		// NOCOM fix ships & ferries & scouts
+		// NOCOM this over/undergenerates. We need a concept of ware distance.
+		bool category_found = false;
+		const DescriptionIndex prod_index = building_index(prod->name());
+		for (DescriptionIndex output : prod->output_ware_types()) {
+			for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWARE)) {
+				productionsite_categories_[cat].insert(prod_index);
+				log_dbg("%s -> %s (%s ware output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
+				category_found = true;
+			}
+		}
+		for (DescriptionIndex output : prod->output_worker_types()) {
+			for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWORKER)) {
+				productionsite_categories_[cat].insert(prod_index);
+				log_dbg("%s -> %s (%s worker output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
+				category_found = true;
+			}
+		}
+		// NOCOM if (!category_found) {
+			for (DescriptionIndex output : prod->output_ware_types()) {
+				for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWARE)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s ware 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
+					category_found = true;
+				}
+			}
+			for (DescriptionIndex output : prod->output_worker_types()) {
+				for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWORKER)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s worker 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
+					category_found = true;
+				}
+			}
+		// }
+
+		if (!category_found) {
+			for (const WareAmount& input : prod->input_wares()) {
+				for (const ProductionCategory& cat : production_categories(input.first, WareWorker::wwWARE)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s ware input)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(input.first)->name().c_str());
+					category_found = true;
+				}
+			}
+			for (const WareAmount& input : prod->input_workers()) {
+				for (const ProductionCategory& cat : production_categories(input.first, WareWorker::wwWORKER)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s worker input)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(input.first)->name().c_str());
+					category_found = true;
+				}
+			}
+		}
+		// NOCOM if (!category_found) {
+			for (const WareAmount& input : prod->input_wares()) {
+				for (const ProductionCategory& cat : production_supply_categories(input.first, WareWorker::wwWARE)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s ware 2nd input)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(input.first)->name().c_str());
+					category_found = true;
+				}
+			}
+			for (const WareAmount& input : prod->input_workers()) {
+				for (const ProductionCategory& cat : production_supply_categories(input.first, WareWorker::wwWORKER)) {
+					productionsite_categories_[cat].insert(prod_index);
+					log_dbg("%s -> %s (%s worker 2nd input)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(input.first)->name().c_str());
+					category_found = true;
+				}
+			}
+		// }
+
+		if (!category_found) {
+			// No ware in- or outputs on its own. Use the supported/supporting relationship below to categorize.
+			uncategorized_productionsites.insert(std::make_pair(prod_index, prod));
+		}
+
 		// Sites that create any immovables should not overlap each other
 		if (!prod->created_immovables().empty()) {
 			for (const ProductionSiteDescr* other_prod : productionsites) {
@@ -1349,7 +1433,35 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
-	// Calculate ware supply chain
-	process_ware_supply_chain();
+	// NOCOM document
+	for (const auto& uncategorized : uncategorized_productionsites) {
+		std::set<ProductionCategory> prod_cats;
+		for (const std::string& supported_name : uncategorized.second->supported_productionsites()) {
+			const DescriptionIndex supported_index = building_index(supported_name);
+			for (const auto& category : productionsite_categories_) {
+				if (category.second.count(supported_index)) {
+					prod_cats.insert(category.first);
+					log_dbg("%s -> %s (supported)", uncategorized.second->name().c_str(), to_string(category.first).c_str());
+				}
+			}
+		}
+		if (prod_cats.empty()) {
+			for (const std::string& supported_name : uncategorized.second->supported_by_productionsites()) {
+				const DescriptionIndex supported_index = building_index(supported_name);
+				for (const auto& category : productionsite_categories_) {
+					if (category.second.count(supported_index)) {
+						prod_cats.insert(category.first);
+						log_dbg("%s -> %s (supported by)", uncategorized.second->name().c_str(), to_string(category.first).c_str());
+					}
+				}
+			}
+		}
+		if (prod_cats.empty()) {
+			log_dbg("NOCOM ############# Missing: %s", uncategorized.second->name().c_str());
+		}
+		for (const ProductionCategory& cat : prod_cats) {
+			productionsite_categories_[cat].insert(uncategorized.first);
+		}
+	}
 }
 }  // namespace Widelands
