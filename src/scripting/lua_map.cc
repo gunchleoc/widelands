@@ -2923,12 +2923,11 @@ int LuaProductionSiteDescription::consumed_wares_workers(lua_State* L) {
 		for (const auto& group : program.consumed_wares_workers()) {
 			lua_pushuint32(L, ++counter);
 			lua_newtable(L);
-			for (const auto& entry : group.first) {
-				const Widelands::DescriptionIndex& index = entry.first;
-				if (entry.second == Widelands::wwWARE) {
-					lua_pushstring(L, get_egbase(L).descriptions().get_ware_descr(index)->name());
+			for (const Widelands::ProductionProgram::WareWorkerId& entry : group.first) {
+				if (entry.type == Widelands::wwWARE) {
+					lua_pushstring(L, get_egbase(L).descriptions().get_ware_descr(entry.index)->name());
 				} else {
-					lua_pushstring(L, get_egbase(L).descriptions().get_worker_descr(index)->name());
+					lua_pushstring(L, get_egbase(L).descriptions().get_worker_descr(entry.index)->name());
 				}
 				lua_pushuint32(L, group.second);
 				lua_settable(L, -3);

@@ -41,9 +41,16 @@ class Worker;
 
 /// Ordered sequence of actions (at least 1). Has a name.
 struct ProductionProgram : public MapObjectProgram {
+	struct WareWorkerId {
+		const Widelands::DescriptionIndex index;
+		const Widelands::WareWorker type;
 
+		inline bool operator<(const WareWorkerId& other) const {
+			return (index < other.index) || (index == other.index && type < other.type);
+		}
+	};
 	/// A group of ware types with a count.
-	using WareTypeGroup = std::pair<std::set<std::pair<DescriptionIndex, WareWorker>>, uint8_t>;
+	using WareTypeGroup = std::pair<std::set<WareWorkerId>, uint8_t>;
 	using Groups = std::vector<WareTypeGroup>;
 
 	/// Can be executed on a ProductionSite.

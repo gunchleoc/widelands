@@ -231,7 +231,7 @@ ProductionProgram::parse_ware_type_groups(std::vector<std::string>::const_iterat
 		   read_key_value_pair(*it, ':', "1");
 		const uint8_t amount = read_positive(names_to_amount.second);
 		uint8_t max_amount = 0;
-		std::set<std::pair<DescriptionIndex, WareWorker>> ware_worker_names;
+		std::set<WareWorkerId> ware_worker_names;
 		for (const std::string& item_name : split_string(names_to_amount.first, ",")) {
 			// Try as ware
 			WareWorker type = wwWARE;
@@ -271,7 +271,7 @@ ProductionProgram::parse_ware_type_groups(std::vector<std::string>::const_iterat
 				   static_cast<unsigned int>(amount), static_cast<unsigned int>(max_amount));
 			}
 			// Add item
-			ware_worker_names.insert(std::make_pair(item_index, type));
+			ware_worker_names.insert(WareWorkerId{item_index, type});
 		}
 		// Add set
 		result.push_back(std::make_pair(ware_worker_names, amount));
@@ -507,9 +507,9 @@ ProductionProgram::ActReturn::SiteHas::SiteHas(std::vector<std::string>::const_i
 bool ProductionProgram::ActReturn::SiteHas::evaluate(const ProductionSite& ps) const {
 	uint8_t count = group.second;
 	for (InputQueue* ip_queue : ps.inputqueues()) {
-		for (const auto& input_type : group.first) {
-			if (input_type.first == ip_queue->get_index() &&
-			    input_type.second == ip_queue->get_type()) {
+		for (const WareWorkerId& input_type : group.first) {
+			if (input_type.index == ip_queue->get_index() &&
+			    input_type.type == ip_queue->get_type()) {
 				uint8_t const filled = ip_queue->get_filled();
 				if (count <= filled) {
 					return true;
@@ -525,10 +525,10 @@ bool ProductionProgram::ActReturn::SiteHas::evaluate(const ProductionSite& ps) c
 std::string
 ProductionProgram::ActReturn::SiteHas::description(const Descriptions& descriptions) const {
 	std::vector<std::string> condition_list;
-	for (const auto& entry : group.first) {
-		condition_list.push_back(entry.second == wwWARE ?
-		                            descriptions.get_ware_descr(entry.first)->descname() :
-		                            descriptions.get_worker_descr(entry.first)->descname());
+	for (const WareWorkerId& entry : group.first) {
+		condition_list.push_back(entry.type == wwWARE ?
+		                            descriptions.get_ware_descr(entry.index)->descname() :
+		                            descriptions.get_worker_descr(entry.index)->descname());
 	}
 	std::string condition = i18n::localize_list(condition_list, i18n::ConcatenateWith::AND);
 	if (1 < group.second) {
@@ -549,10 +549,10 @@ ProductionProgram::ActReturn::SiteHas::description(const Descriptions& descripti
 std::string ProductionProgram::ActReturn::SiteHas::description_negation(
    const Descriptions& descriptions) const {
 	std::vector<std::string> condition_list;
-	for (const auto& entry : group.first) {
-		condition_list.push_back(entry.second == wwWARE ?
-		                            descriptions.get_ware_descr(entry.first)->descname() :
-		                            descriptions.get_worker_descr(entry.first)->descname());
+	for (const WareWorkerId& entry : group.first) {
+		condition_list.push_back(entry.type == wwWARE ?
+		                            descriptions.get_ware_descr(entry.index)->descname() :
+		                            descriptions.get_worker_descr(entry.index)->descname());
 	}
 	std::string condition = i18n::localize_list(condition_list, i18n::ConcatenateWith::AND);
 	if (1 < group.second) {
@@ -1153,7 +1153,7 @@ void ProductionProgram::ActConsume::execute(Game& game, ProductionSite& ps) cons
 		for (Groups::iterator it = l_groups.begin(); it != l_groups.end();) {
 			found = false;
 			for (auto input_it = it->first.begin(); input_it != it->first.end(); input_it++) {
-				if (input_it->first == input_index && input_it->second == input_type) {
+				if (input_it->index == input_index && input_it->type == input_type) {
 					found = true;
 					if (it->second <= nr_available) {
 						//  There are enough wares of the currently considered type
@@ -1188,10 +1188,10 @@ void ProductionProgram::ActConsume::execute(Game& game, ProductionSite& ps) cons
 			assert(!group.first.empty());
 
 			std::vector<std::string> ware_list;
-			for (const auto& entry : group.first) {
-				ware_list.push_back(entry.second == wwWARE ?
-				                       tribe.get_ware_descr(entry.first)->descname() :
-				                       tribe.get_worker_descr(entry.first)->descname());
+			for (const WareWorkerId& entry : group.first) {
+				ware_list.push_back(entry.type == wwWARE ?
+				                       tribe.get_ware_descr(entry.index)->descname() :
+				                       tribe.get_worker_descr(entry.index)->descname());
 			}
 			std::string ware_string = i18n::localize_list(ware_list, i18n::ConcatenateWith::OR);
 

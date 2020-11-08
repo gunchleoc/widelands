@@ -142,8 +142,8 @@ public:
 	}
 
 	// NOCOM document
-	const std::set<WareCategory>& production_categories(DescriptionIndex ware_index, WareWorker type);
-	const std::set<WareCategory>& production_supply_categories(DescriptionIndex ware_index, WareWorker type);
+	const std::set<WareCategory>& production_categories(DescriptionIndex index, WareWorker type);
+	const std::set<WareCategory>& production_supply_categories(DescriptionIndex index, WareWorker type);
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
@@ -222,8 +222,8 @@ private:
 	WaresOrder workers_order_;
 	// Direct ware categories (e.g. ration is a Barbarian mining ware, but bread is not.
 	// The full production chain is available at each WareDescr
-	std::map<std::pair<DescriptionIndex, WareWorker>, std::set<WareCategory>> ware_worker_categories_;
-	std::map<std::pair<DescriptionIndex, WareWorker>, std::set<WareCategory>> ware_worker_supply_categories_;
+	std::map<ProductionProgram::WareWorkerId, std::set<WareCategory>> ware_worker_categories_;
+	std::map<ProductionProgram::WareWorkerId, std::set<WareCategory>> ware_worker_supply_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;
