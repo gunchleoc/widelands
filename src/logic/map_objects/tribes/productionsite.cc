@@ -172,16 +172,19 @@ ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
 		try {
 			std::unique_ptr<LuaTable> program_table = items_table->get_table(program_name);
 
+			std::unique_ptr<ProductionProgram> production_program(new ProductionProgram(
+			   MapObjectProgram::kMainProgram, *program_table, descriptions, this));
+
+			production_links_.push_back(ProductionLink{&production_program->consumed_wares_workers(), &production_program->produced_wares()});
+
 			if (program_name == "work") {
 				log_warn("The main program for the building %s should be renamed from 'work' to "
 				         "'main'",
 				         name().c_str());
-				programs_[MapObjectProgram::kMainProgram] =
-				   std::unique_ptr<ProductionProgram>(new ProductionProgram(
-				      MapObjectProgram::kMainProgram, *program_table, descriptions, this));
+				// TODO(GunChleoc): API compatibility, remove "work" check after v1.0
+				programs_.insert(std::make_pair(MapObjectProgram::kMainProgram, std::move(production_program)));
 			} else {
-				programs_[program_name] = std::unique_ptr<ProductionProgram>(
-				   new ProductionProgram(program_name, *program_table, descriptions, this));
+				programs_.insert(std::make_pair(program_name, std::move(production_program)));
 			}
 		} catch (const std::exception& e) {
 			throw GameDataError("%s: Error in productionsite program %s: %s", name().c_str(),
