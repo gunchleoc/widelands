@@ -27,7 +27,7 @@ namespace Widelands {
 // NOCOM update comment
 // Direct construction materials are registered at the TribeDescr.
 // The kConstruction class here includes all wares involved in creating a construction material too.
-enum class ProductionCategory { kNone, kConstruction, kMining, kRoad, kWaterway, kTool, kTraining };
+enum class ProductionCategory { kNone, kConstruction, kMining, kRoads, kSeafaring, kTool, kTraining, kWaterways };
 
 const std::string to_string(ProductionCategory category);
 }  // namespace Widelands

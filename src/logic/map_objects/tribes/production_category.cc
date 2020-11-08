@@ -29,14 +29,16 @@ const std::string to_string(ProductionCategory category) {
 		return "construction";
 	case ProductionCategory::kMining:
 		return "mining";
-	case ProductionCategory::kRoad:
-		return "road";
-	case ProductionCategory::kWaterway:
-		return "waterway";
+	case ProductionCategory::kRoads:
+		return "roads";
+	case ProductionCategory::kSeafaring:
+		return "seafaring";
 	case ProductionCategory::kTool:
 		return "tool";
 	case ProductionCategory::kTraining:
 		return "training";
+	case ProductionCategory::kWaterways:
+		return "waterways";
 	case ProductionCategory::kNone:
 		return "none";
 	}

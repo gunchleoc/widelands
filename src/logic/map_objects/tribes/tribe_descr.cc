@@ -612,12 +612,12 @@ void TribeDescr::load_workers(const LuaTable& table, Descriptions& descriptions)
 	}
 	if (table.has_key("carrier")) {
 		carrier_ =
-		   add_special_worker(table.get_string("carrier"), ProductionCategory::kRoad, descriptions);
+		   add_special_worker(table.get_string("carrier"), ProductionCategory::kRoads, descriptions);
 		// log_dbg("NOCOM add special road worker %d", carrier_);
 	}
 	if (table.has_key("carrier2")) {
 		carrier2_ =
-		   add_special_worker(table.get_string("carrier2"), ProductionCategory::kRoad, descriptions);
+		   add_special_worker(table.get_string("carrier2"), ProductionCategory::kRoads, descriptions);
 		// log_dbg("NOCOM add special road worker %d", carrier2_);
 	}
 	if (table.has_key("geologist")) {
@@ -632,7 +632,7 @@ void TribeDescr::load_workers(const LuaTable& table, Descriptions& descriptions)
 	}
 	if (table.has_key("ferry")) {
 		ferry_ =
-		   add_special_worker(table.get_string("ferry"), ProductionCategory::kWaterway, descriptions);
+		   add_special_worker(table.get_string("ferry"), ProductionCategory::kWaterways, descriptions);
 		// log_dbg("NOCOM add special waterway worker %d", ferry_);
 	}
 }
@@ -1053,6 +1053,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	// Get a list of productionsites - we will need to iterate them more than once
 	// The temporary use of pointers here is fine, because it doesn't affect the game state.
 	std::set<ProductionSiteDescr*> productionsites;
+	std::set<DescriptionIndex> categorized_productionsites;
 
 	// Iterate buildings and update circular dependencies
 	for (const DescriptionIndex index : buildings()) {
@@ -1074,7 +1075,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			productionsites.insert(productionsite);
 
 			// Add consumers and producers to wares.
-			for (const auto& ware_amount : productionsite->input_wares()) {
+			for (const WareAmount& ware_amount : productionsite->input_wares()) {
 				assert(has_ware(ware_amount.first));
 				descriptions.get_mutable_ware_descr(ware_amount.first)->add_consumer(index);
 			}
@@ -1240,7 +1241,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 		// Add ware input categories
 		if (prod->get_ismine()) {
-			for (const auto& input : prod->input_wares()) {
+			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add mining ware %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWARE}]
@@ -1253,7 +1254,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				   .insert(ProductionCategory::kMining);
 			}
 		} else if (prod->type() == MapObjectType::TRAININGSITE) {
-			for (const auto& input : prod->input_wares()) {
+			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add training ware %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWARE}]
@@ -1264,6 +1265,42 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWORKER}]
 				   .insert(ProductionCategory::kTraining);
+			}
+			const DescriptionIndex prod_index = building_index(prod->name());
+			productionsite_categories_[ProductionCategory::kTraining].insert(prod_index);
+			categorized_productionsites.insert(prod_index);
+		} else {
+			for (const std::string& bobname : prod->created_bobs()) {
+				if (descriptions.ship_index(bobname) == ship_) {
+					for (const WareAmount& input : prod->input_wares()) {
+						ware_worker_categories_[ProductionProgram::WareWorkerId{
+												   input.first, WareWorker::wwWARE}]
+						   .insert(ProductionCategory::kSeafaring);
+					}
+					for (const WareAmount& input : prod->input_workers()) {
+						ware_worker_categories_[ProductionProgram::WareWorkerId{
+												   input.first, WareWorker::wwWORKER}]
+						   .insert(ProductionCategory::kSeafaring);
+					}
+					const DescriptionIndex prod_index = building_index(prod->name());
+					productionsite_categories_[ProductionCategory::kSeafaring].insert(prod_index);
+					categorized_productionsites.insert(prod_index);
+				} else if (descriptions.worker_index(bobname) == ferry_) {
+					for (const WareAmount& input : prod->input_wares()) {
+						ware_worker_categories_[ProductionProgram::WareWorkerId{
+												   input.first, WareWorker::wwWARE}]
+						   .insert(ProductionCategory::kWaterways);
+					}
+					for (const WareAmount& input : prod->input_workers()) {
+						ware_worker_categories_[ProductionProgram::WareWorkerId{
+												   input.first, WareWorker::wwWORKER}]
+						   .insert(ProductionCategory::kWaterways);
+					}
+					const DescriptionIndex prod_index = building_index(prod->name());
+					productionsite_categories_[ProductionCategory::kWaterways].insert(prod_index);
+					categorized_productionsites.insert(prod_index);
+				}
+				add_creator(bobname, prod);
 			}
 		}
 	}
@@ -1277,77 +1314,47 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
-		// NOCOM fix ships & ferries & scouts
+		// NOCOM fix Amazon ferries
+		// Make scouts uncategorized
 		// NOCOM this over/undergenerates. We need a concept of ware distance.
 		bool category_found = false;
 		const DescriptionIndex prod_index = building_index(prod->name());
-		for (DescriptionIndex output : prod->output_ware_types()) {
-			for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWARE)) {
-				productionsite_categories_[cat].insert(prod_index);
-				log_dbg("%s -> %s (%s ware output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
-				category_found = true;
-			}
-		}
-		for (DescriptionIndex output : prod->output_worker_types()) {
-			for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWORKER)) {
-				productionsite_categories_[cat].insert(prod_index);
-				log_dbg("%s -> %s (%s worker output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
-				category_found = true;
-			}
-		}
-		// NOCOM if (!category_found) {
+		if (categorized_productionsites.count(prod_index) == 0) {
 			for (DescriptionIndex output : prod->output_ware_types()) {
-				for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWARE)) {
+				for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWARE)) {
 					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s ware 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
+					log_dbg("%s -> %s (%s ware output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
 					category_found = true;
 				}
 			}
 			for (DescriptionIndex output : prod->output_worker_types()) {
-				for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWORKER)) {
+				for (const ProductionCategory& cat : production_categories(output, WareWorker::wwWORKER)) {
 					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s worker 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
+					log_dbg("%s -> %s (%s worker output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
 					category_found = true;
 				}
 			}
-		// }
+			// NOCOM if (!category_found) {
+				for (DescriptionIndex output : prod->output_ware_types()) {
+					for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWARE)) {
+						productionsite_categories_[cat].insert(prod_index);
+						log_dbg("%s -> %s (%s ware 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(output)->name().c_str());
+						category_found = true;
+					}
+				}
+				for (DescriptionIndex output : prod->output_worker_types()) {
+					for (const ProductionCategory& cat : production_supply_categories(output, WareWorker::wwWORKER)) {
+						productionsite_categories_[cat].insert(prod_index);
+						log_dbg("%s -> %s (%s worker 2nd output)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(output)->name().c_str());
+						category_found = true;
+					}
+				}
+			// }
 
-		if (!category_found) {
-			for (const WareAmount& input : prod->input_wares()) {
-				for (const ProductionCategory& cat : production_categories(input.first, WareWorker::wwWARE)) {
-					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s ware input)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(input.first)->name().c_str());
-					category_found = true;
-				}
+			if (!category_found) {
+				// No ware in- or outputs on its own. Use the supported/supporting relationship below to categorize.
+				uncategorized_productionsites.insert(std::make_pair(prod_index, prod));
 			}
-			for (const WareAmount& input : prod->input_workers()) {
-				for (const ProductionCategory& cat : production_categories(input.first, WareWorker::wwWORKER)) {
-					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s worker input)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(input.first)->name().c_str());
-					category_found = true;
-				}
-			}
-		}
-		// NOCOM if (!category_found) {
-			for (const WareAmount& input : prod->input_wares()) {
-				for (const ProductionCategory& cat : production_supply_categories(input.first, WareWorker::wwWARE)) {
-					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s ware 2nd input)", prod->name().c_str(), to_string(cat).c_str(), get_ware_descr(input.first)->name().c_str());
-					category_found = true;
-				}
-			}
-			for (const WareAmount& input : prod->input_workers()) {
-				for (const ProductionCategory& cat : production_supply_categories(input.first, WareWorker::wwWORKER)) {
-					productionsite_categories_[cat].insert(prod_index);
-					log_dbg("%s -> %s (%s worker 2nd input)", prod->name().c_str(), to_string(cat).c_str(), get_worker_descr(input.first)->name().c_str());
-					category_found = true;
-				}
-			}
-		// }
-
-		if (!category_found) {
-			// No ware in- or outputs on its own. Use the supported/supporting relationship below to categorize.
-			uncategorized_productionsites.insert(std::make_pair(prod_index, prod));
 		}
 
 		// Sites that create any immovables should not overlap each other
