@@ -130,9 +130,93 @@ void load_helptexts(Widelands::MapObjectDescr* descr,
 	}
 	descr->set_helptexts(tribe_name, helptexts);
 }
+
+// NOCOM process workers too
+void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
+							std::set<Widelands::DescriptionIndex>& walked_productionsites,
+							std::set<Widelands::DescriptionIndex>& wares,
+							const std::set<Widelands::WareCategory>& categories,
+							std::map<Widelands::DescriptionIndex, std::set<Widelands::WareCategory>>* target) {
+	for (Widelands::DescriptionIndex ware_index : wares) {
+		const Widelands::WareDescr* ware_descr = tribe->get_ware_descr(ware_index);
+		for (Widelands::DescriptionIndex producer_index : ware_descr->producers()) {
+			const Widelands::ProductionSiteDescr* prod = dynamic_cast<const Widelands::ProductionSiteDescr*>(tribe->get_building_descr(producer_index));
+			Widelands::DescriptionIndex building_index = tribe->building_index(prod->name());
+			if (walked_productionsites.count(building_index) == 1) {
+				return;
+			}
+			walked_productionsites.insert(building_index);
+			if (!tribe->has_building(building_index)) {
+				return;
+			}
+			for (const Widelands::ProductionSiteDescr::ProductionLink& link : prod->production_links()) {
+				// Output: <DescriptionIndex, uint8_t>
+				// NOCOM ware or worker?
+				for (const auto& output_item : *link.outputs) {
+					if (tribe->has_ware(output_item.first)) {
+						if (wares.count(output_item.first)) {
+							// using WareTypeGroup = std::pair<std::set<std::pair<DescriptionIndex, WareWorker>>, uint8_t>;
+							for (const auto& input : *link.inputs) {
+								for (const auto& input_item : input.first) {
+									const Widelands::WareDescr* test = tribe->get_ware_descr(input_item.first);
+									for (Widelands::WareCategory ware_category : categories) {
+										assert(ware_category != Widelands::WareCategory::kNone);
+										(*target)[input_item.first].insert(ware_category);
+										log_dbg("%s: %s -> %s", prod->name().c_str(), test->name().c_str(), to_string(ware_category).c_str());
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
 }  // namespace
 
 namespace Widelands {
+
+void TribeDescr::process_ware_supply_chain() {
+	std::set<Widelands::DescriptionIndex> walked_productionsites;
+	for (const auto& category_info : ware_categories_) {
+		assert(!category_info.second.empty());
+		std::set<DescriptionIndex> wares{category_info.first};
+		walk_ware_supply_chain(this, walked_productionsites, wares, category_info.second, &ware_supply_categories_);
+		walked_productionsites.clear();
+	}
+
+	// Ensure all wares have at least an empty category set to prevent crashes
+	for (DescriptionIndex ware_idx : wares_) {
+		if (ware_categories_.count(ware_idx) != 1 && ware_supply_categories_.count(ware_idx) != 1) {
+			const WareDescr* ware_descr = get_ware_descr(ware_idx);
+			log_err("NOCOM Ware without category: %s", ware_descr->name().c_str());
+		}
+
+		if (ware_categories_.count(ware_idx) != 1) {
+			ware_categories_[ware_idx];
+		}
+		if (ware_supply_categories_.count(ware_idx) != 1) {
+			ware_supply_categories_[ware_idx];
+		}
+	}
+
+	// NOCOM debug, remove this
+	log_dbg("********* Direct categories *********");
+	for (const auto& ware: ware_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		for (WareCategory cat : ware.second) {
+			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		}
+	}
+	log_dbg("********* Supply categories *********");
+	for (const auto& ware: ware_supply_categories_) {
+		const WareDescr* test = get_ware_descr(ware.first);
+		for (WareCategory cat : ware.second) {
+			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
+		}
+	}
+}
 
 /**
  * The contents of 'table' are documented in
@@ -1044,21 +1128,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
-		// Add ware supply categories.
-		// NOCOM: This is too simple. We need to use the actual production programs for recursion.
-		for (DescriptionIndex ware_idx : prod->output_ware_types()) {
-			auto category_it = ware_categories_.find(ware_idx);
-			if (category_it != ware_categories_.end()) {
-				for (WareCategory ware_category : category_it->second) {
-					if (ware_category != WareCategory::kNone) {
-						for (const auto& input : prod->input_wares()) {
-							ware_supply_categories_[input.first].insert(ware_category);
-						}
-					}
-				}
-			}
-		}
-
 		// Sites that create any immovables should not overlap each other
 		if (!prod->created_immovables().empty()) {
 			for (const ProductionSiteDescr* other_prod : productionsites) {
@@ -1142,76 +1211,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
-	// Ensure all wares have at least 1 category to prevent crashes
-	for (DescriptionIndex ware_idx : wares_) {
-		if (ware_categories_.count(ware_idx) != 1) {
-			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
-			log_dbg("NOCOM Ware without category: %s", ware_descr->name().c_str());
-			ware_categories_[ware_idx].insert(WareCategory::kNone);
-		}
-		if (ware_supply_categories_.count(ware_idx) != 1) {
-			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
-			log_dbg("NOCOM Ware without supply category: %s", ware_descr->name().c_str());
-			ware_supply_categories_[ware_idx].insert(WareCategory::kNone);
-		}
-	}
-
-	// NOCOM debug, remove this
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		for (WareCategory cat : ware.second) {
-			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
-		}
-	}
-	for (const auto& ware: ware_supply_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		for (WareCategory cat : ware.second) {
-			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
-		}
-	}
-
-	/*
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kMining)) {
-			log_dbg("NOCOM mining: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareCategory::kTraining)) {
-			log_dbg("NOCOM training: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kTraining)) {
-			log_dbg("NOCOM training supply: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kConstruction)) {
-			log_dbg("NOCOM construction supply: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareCategory::kConstruction)) {
-			log_dbg("NOCOM construction: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_supply_categories_.at(ware.first).count(WareSupplyCategory::kTool)) {
-			log_dbg("NOCOM tool supply: %s", test->name().c_str());
-		}
-	}
-	for (const auto& ware: ware_categories_) {
-		const WareDescr* test = get_ware_descr(ware.first);
-		if (ware_categories_.at(ware.first).count(WareCategory::kTool)) {
-			log_dbg("NOCOM tool: %s", test->name().c_str());
-		}
-	} */
+	// Calculate ware supply chain
+	process_ware_supply_chain();
 }
 }  // namespace Widelands

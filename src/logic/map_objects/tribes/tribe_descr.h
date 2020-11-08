@@ -174,6 +174,7 @@ private:
 	void calculate_trainingsites_proportions(Descriptions& descriptions);
 
 	void process_productionsites(Descriptions& descriptions);
+	void process_ware_supply_chain();
 
 	const std::string name_;
 	const std::string descname_;

@@ -100,8 +100,8 @@ public:
 	}
 
 	struct ProductionLink {
-		const ProductionProgram::Groups* input; // Not owned
-		const Buildcost* output; // Not owned
+		const ProductionProgram::Groups* inputs; // Not owned
+		const Buildcost* outputs; // Not owned
 	};
 
 	// NOCOM document
