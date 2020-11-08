@@ -142,8 +142,8 @@ public:
 	}
 
 	// NOCOM document
-	const std::set<WareCategory>& production_categories(DescriptionIndex index, WareWorker type);
-	const std::set<WareCategory>& production_supply_categories(DescriptionIndex index, WareWorker type);
+	const std::set<WareCategory>& production_categories(DescriptionIndex index, WareWorker type) const;
+	const std::set<WareCategory>& production_supply_categories(DescriptionIndex index, WareWorker type) const;
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);

@@ -862,12 +862,12 @@ DescriptionIndex TribeDescr::get_resource_indicator(ResourceDescription const* c
 	return list->second.find(lowest)->second;
 }
 
-const std::set<WareCategory>& TribeDescr::production_categories(DescriptionIndex index, WareWorker type) {
+const std::set<WareCategory>& TribeDescr::production_categories(DescriptionIndex index, WareWorker type) const {
 	const ProductionProgram::WareWorkerId key{index, type};
 	assert(ware_worker_categories_.count(key) == 1);
 	return ware_worker_categories_.at(key);
 }
-const std::set<WareCategory>& TribeDescr::production_supply_categories(DescriptionIndex index, WareWorker type) {
+const std::set<WareCategory>& TribeDescr::production_supply_categories(DescriptionIndex index, WareWorker type) const {
 	const ProductionProgram::WareWorkerId key{index, type};
 	assert(ware_worker_supply_categories_.count(key) == 1);
 	return ware_worker_supply_categories_.at(key);

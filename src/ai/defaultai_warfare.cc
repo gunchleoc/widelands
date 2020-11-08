@@ -752,15 +752,10 @@ bool DefaultAI::check_trainingsites(const Time& gametime) {
 			continue;
 		}
 
-		// now modifying max_fill of armors and weapons
-		for (const std::string& pattern : armors_and_weapons) {
-
-			if (tribe_->get_ware_descr(queue->get_index())->name().find(pattern) !=
-			    std::string::npos) {
-				if (queue->get_max_fill() > 1) {
-					game().send_player_set_input_max_fill(*ts, queue->get_index(), Widelands::wwWARE, 1);
-					continue;
-				}
+		// now modifying max_fill of weapons and armor
+		if (weapons_and_armor_.count(queue->get_index()) != 0) {
+			if (queue->get_max_fill() > 1) {
+				game().send_player_set_input_max_fill(*ts, queue->get_index(), Widelands::wwWARE, 1);
 			}
 		}
 	}
