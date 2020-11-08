@@ -920,6 +920,8 @@ void DefaultAI::late_initialization() {
 					if (production_supply_categories.count(Widelands::ProductionCategory::kMining) ==
 					    0) {
 						weapons_and_armor_.insert(temp_input.first);
+						log_dbg("AI %d categorized '%s' as weapon/armor to micromanage", player_number(),
+						        tribe_->get_ware_descr(temp_input.first)->name().c_str());
 					}
 				}
 			}
