@@ -37,22 +37,4 @@ const std::string to_string(WareCategory category) {
 	}
 	NEVER_HERE();
 }
-
-
-const std::string to_string(WareSupplyCategory category) {
-	switch (category) {
-	case WareSupplyCategory::kConstruction:
-		return "construction";
-	case WareSupplyCategory::kMining:
-		return "mining";
-	case WareSupplyCategory::kTool:
-		return "tool";
-	case WareSupplyCategory::kTraining:
-		return "training";
-	case WareSupplyCategory::kNone:
-		return "none";
-	}
-	NEVER_HERE();
-}
-
 }  // namespace Widelands

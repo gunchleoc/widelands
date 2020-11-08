@@ -36,17 +36,6 @@ namespace Widelands {
 	};
 
 	const std::string to_string(WareCategory category);
-
-	enum class WareSupplyCategory {
-		kNone,
-		kConstruction,
-		kMining,
-		kTool,
-		kTraining
-	};
-
-	const std::string to_string(WareSupplyCategory category);
-
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_TRIBES_WARE_CATEGORY_H

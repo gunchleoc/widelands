@@ -220,7 +220,7 @@ private:
 	// Direct ware categories (e.g. ration is a Barbarian mining ware, but bread is not.
 	// The full production chain is available at each WareDescr
 	std::map<DescriptionIndex, std::set<WareCategory>> ware_categories_;
-	std::map<DescriptionIndex, std::set<WareSupplyCategory>> ware_supply_categories_;
+	std::map<DescriptionIndex, std::set<WareCategory>> ware_supply_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

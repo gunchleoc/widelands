@@ -1049,28 +1049,10 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		for (DescriptionIndex ware_idx : prod->output_ware_types()) {
 			auto category_it = ware_categories_.find(ware_idx);
 			if (category_it != ware_categories_.end()) {
-				for (WareCategory output_category : category_it->second) {
-					WareSupplyCategory input_category = WareSupplyCategory::kNone;
-					switch (output_category) {
-					case WareCategory::kConstruction: {
-						input_category = WareSupplyCategory::kConstruction;
-					} break;
-					case WareCategory::kMining: {
-						input_category = WareSupplyCategory::kMining;
-					} break;
-					case WareCategory::kTool: {
-						input_category = WareSupplyCategory::kTool;
-					} break;
-					case WareCategory::kTraining: {
-						input_category = WareSupplyCategory::kTraining;
-					} break;
-					default:
-					; // Do nothing
-					}
-
-					if (input_category != WareSupplyCategory::kNone) {
+				for (WareCategory ware_category : category_it->second) {
+					if (ware_category != WareCategory::kNone) {
 						for (const auto& input : prod->input_wares()) {
-							ware_supply_categories_[input.first].insert(input_category);
+							ware_supply_categories_[input.first].insert(ware_category);
 						}
 					}
 				}
@@ -1170,7 +1152,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		if (ware_supply_categories_.count(ware_idx) != 1) {
 			WareDescr* ware_descr = descriptions.get_mutable_ware_descr(ware_idx);
 			log_dbg("NOCOM Ware without supply category: %s", ware_descr->name().c_str());
-			ware_supply_categories_[ware_idx].insert(WareSupplyCategory::kNone);
+			ware_supply_categories_[ware_idx].insert(WareCategory::kNone);
 		}
 	}
 
@@ -1183,7 +1165,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 	for (const auto& ware: ware_supply_categories_) {
 		const WareDescr* test = get_ware_descr(ware.first);
-		for (WareSupplyCategory cat : ware.second) {
+		for (WareCategory cat : ware.second) {
 			log_dbg("NOCOM %s -> %s", test->name().c_str(), to_string(cat).c_str());
 		}
 	}
