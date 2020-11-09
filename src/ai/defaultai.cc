@@ -949,17 +949,14 @@ void DefaultAI::late_initialization() {
 				}
 
 				// We will want to control wares that have training as their exclusive primary category
-				// and are not used in mining, and treat them as weapons and armor. We can't restrict
-				// the categorization further due to circular dependencies in the Frisians recycling
-				// center.
-
+				// and are not used for tools, and treat them as weapons and armor.
 				bool has_zero_training_distance = false;
-				bool has_mining = false;
+				bool has_tool = false;
 
 				for (const Widelands::WeightedProductionCategory& production_category :
 				     tribe_->ware_worker_categories(input_ware.first, Widelands::WareWorker::wwWARE)) {
-					if (production_category.category == Widelands::ProductionCategory::kMining) {
-						has_mining = true;
+					if (production_category.category == Widelands::ProductionCategory::kTool) {
+						has_tool = true;
 						break;
 					}
 					if (production_category.category == Widelands::ProductionCategory::kTraining &&
@@ -967,7 +964,7 @@ void DefaultAI::late_initialization() {
 						has_zero_training_distance = true;
 					}
 				}
-				if (!has_mining && has_zero_training_distance) {
+				if (!has_tool && has_zero_training_distance) {
 					weapons_and_armor_.insert(input_ware.first);
 					log_dbg("  weapon/armor to micromanage: '%s'",
 					        tribe_->get_ware_descr(input_ware.first)->name().c_str());

@@ -167,8 +167,7 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 				continue;
 			}
 
-			// Collect categories for producing site so we can stop on mismatch
-			// NOCOM check if this helps or not
+			// Collect categories for producing site so we can stop on mismatch. This fixes overgeneration to to circularity by Frisian Recycling Center.
 			std::set<Widelands::ProductionCategory> producer_categories;
 			for (const auto& prod_cat : productionsite_categories) {
 				for (const Widelands::TribeDescr::ScoredDescriptionIndex& prod_cat_item : prod_cat.second) {
@@ -218,17 +217,17 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 								}
 
 								// Check first if it's already there.
-								// NOCOM We will also want to replace if our distance is lower
 								if (addme) {
 									for (auto target_it = target->begin(); target_it != target->end(); ++target_it) {
 										if (target_it->first == input_item) {
 											for (auto check_it = target_it->second.begin(); check_it != target_it->second.end(); ++check_it) {
 												const Widelands::WeightedProductionCategory& check_second = *check_it;
 												if (check_second.category == ware_category.category) {
-													// Kick it out - we'll add it back in with the sorter distance
 													if (check_second.distance > distance) {
+														// Ours is better. Kick it out - we'll add it back in with the shorter distance
 														target_it->second.erase(check_it);
 													} else {
+														// Their is better. Keep it and stop processing this wareworker.
 														addme = false;
 													}
 													break;
@@ -697,9 +696,7 @@ void TribeDescr::load_buildings(const LuaTable& table, Descriptions& description
 				building_ui_categories_[ProductionUICategory::kTransport].insert({index, 0});
 				break;
 			default:
-				if (building_descr->get_ismine()) {
-					building_ui_categories_[ProductionUICategory::kMines].insert({index, 0});
-				}
+				;
 			}
 
 			// Register construction materials
@@ -1278,7 +1275,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		// Add ware input categories
 		if (prod->get_ismine()) {
 
-			/* NOCOM blocking too much?
 			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add mining ware %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
@@ -1290,7 +1286,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWORKER}]
 				   .insert(WeightedProductionCategory{ProductionCategory::kMining, 0});
-			} */
+			}
 		} else if (prod->type() == MapObjectType::TRAININGSITE) {
 			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add training ware %d", input.first);
@@ -1353,8 +1349,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
 		// NOCOM fix Amazon ferries
-		// Make scouts uncategorized
-		// NOCOM this over/undergenerates. We need a concept of ware distance.
+
 		const DescriptionIndex prod_index = building_index(prod->name());
 
 		std::map<ProductionCategory, unsigned> squashed_categories;
@@ -1481,30 +1476,37 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
-		bool found = false;
-		log_dbg("-");
-		// NOCOM we need to squash these too (c.f. Frisian berry farm)
+		std::map<ProductionCategory, unsigned> squashed_categories;
 		for (const std::string& supported_name : uncategorized.second->supported_productionsites()) {
 			const DescriptionIndex supported_index = building_index(supported_name);
 			for (const auto& category : productionsite_categories_) {
 				for (const ScoredDescriptionIndex& candidate : category.second) {
 					if (candidate.index == supported_index) {
-						found = true;
-						productionsite_categories_[category.first].insert({uncategorized.first, candidate.score + 1});
-						log_dbg("\t%s\t%d\t%s (supported)", uncategorized.second->name().c_str(), candidate.score + 1,
-								to_string(category.first).c_str());
+						auto category_it = squashed_categories.find(category.first);
+						if (category_it != squashed_categories.end()) {
+							category_it->second = std::min(category_it->second, candidate.score);
+						} else {
+							squashed_categories.insert(std::make_pair(category.first, candidate.score));
+						}
 					}
 				}
 			}
 		}
-		if (!found) {
+		if (squashed_categories.empty()) {
+			// Remaining buildings (e.g. scouts) are uncategorized
 			log_dbg("NOCOM ############# Missing: %s", uncategorized.second->name().c_str());
 			productionsite_categories_[ProductionCategory::kNone].insert({uncategorized.first, 0});
+		} else {
+			log_dbg("-");
+			for (const auto& squashed : squashed_categories) {
+				log_dbg("\t%s\t%d\t%s", uncategorized.second->name().c_str(), squashed.second + 1,
+						to_string(squashed.first).c_str());
+				productionsite_categories_[squashed.first].insert({uncategorized.first, squashed.second + 1});
+			}
 		}
 	}
 
-	// NOCOM ranking cutoff?
-	// NOCOM special handling for mines
+	// NOCOM document special handling for mines
 	for (const auto& category : productionsite_categories_) {
 		switch (category.first) {
 		case ProductionCategory::kNone:
@@ -1524,6 +1526,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		case ProductionCategory::kRoads:
 		case ProductionCategory::kSeafaring:
 		case ProductionCategory::kWaterways:
+			// NOCOM 2 Reed Yard for Wares & Transport
 			building_ui_categories_[ProductionUICategory::kTransport].insert(category.second.begin(), category.second.end());
 		}
 	}

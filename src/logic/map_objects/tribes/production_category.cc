@@ -45,15 +45,12 @@ const std::string to_string(ProductionCategory category) {
 	NEVER_HERE();
 }
 
-// NOCOM we'll want name/descname here
 const std::string to_string(ProductionUICategory category) {
 	switch (category) {
 	case ProductionUICategory::kConstruction:
 		return "construction";
 	case ProductionUICategory::kMilitary:
 		return "military";
-	case ProductionUICategory::kMines:
-		return "mines";
 	case ProductionUICategory::kTransport:
 		return "transport";
 	case ProductionUICategory::kTools:

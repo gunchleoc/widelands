@@ -541,7 +541,6 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 		const Widelands::BuildingDescr* representative_building = tribe.get_building_descr(category.second.begin()->index);
 
 		for (const Widelands::TribeDescr::ScoredDescriptionIndex& item : category.second) {
-			// NOCOM
 			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(item.index);
 
 			//  Some building types cannot be built (i.e. construction site) and not
@@ -575,16 +574,9 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					  Widelands::BUILDCAPS_MINE)) {
 					continue;
 				}
-				usable_buildings[Widelands::ProductionUICategory::kMines][Widelands::NodeCaps::BUILDCAPS_MINE].insert({item.index, 0});
+				usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_MINE].insert(item);
 
-				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
-					representative_building = building_descr;
-				}
-			} else if (category.first != Widelands::ProductionUICategory::kMines) {
-				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
-					representative_building = building_descr;
-				}
-
+			} else {
 				int32_t size = building_descr->get_size() - Widelands::BaseImmovable::SMALL;
 
 				if (((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
@@ -621,12 +613,15 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 				}
 
 			}
+			if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
+				representative_building = building_descr;
+			}
 		}
+		// NOCOM autogeneration for the tab icon sucks.
 		representative_buildings[category.first] = representative_building;
 	}
 
 	// NOCOM document
-	// std::map<Widelands::ProductionUICategory, std::map<Widelands::NodeCaps, std::vector<std::pair<Widelands::DescriptionIndex, unsigned>>>> usable_buildings;
 	for (const auto& category : usable_buildings) {
 		UI::Box* vbox = new UI::Box(&tabpanel_, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
 
@@ -705,9 +700,6 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			break;
 		case Widelands::ProductionUICategory::kMilitary:
 			tooltip = pgettext("buildgrid", "Military");
-			break;
-		case Widelands::ProductionUICategory::kMines:
-			tooltip = pgettext("buildgrid", "Mines");
 			break;
 		}
 		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
