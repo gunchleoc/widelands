@@ -673,6 +673,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			vbox->add(grid);
 			vbox->add_space(8);
 
+			// NOCOM Names too?
 			grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
 			grid->buildmouseout.connect(
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
@@ -680,9 +681,32 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
 		}
 
-		// NOCOM Names too?
+		std::string tooltip;
+		switch (category.first) {
+		case Widelands::ProductionUICategory::kConstruction:
+			tooltip = pgettext("buildgrid", "Construction");
+			break;
+		case Widelands::ProductionUICategory::kTools:
+			tooltip = pgettext("buildgrid", "Tools");
+			break;
+		case Widelands::ProductionUICategory::kTraining:
+			tooltip = pgettext("buildgrid", "Training");
+			break;
+		case Widelands::ProductionUICategory::kTransport:
+			tooltip = pgettext("buildgrid", "Wares & Transport");
+			break;
+		case Widelands::ProductionUICategory::kNone:
+			tooltip = pgettext("buildgrid", "Miscellaneous");
+			break;
+		case Widelands::ProductionUICategory::kMilitary:
+			tooltip = pgettext("buildgrid", "Military");
+			break;
+		case Widelands::ProductionUICategory::kMines:
+			tooltip = pgettext("buildgrid", "Mines");
+			break;
+		}
 		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
-		add_tab(to_string(category.first), representative->icon_filename().c_str(), vbox, to_string(category.first));
+		add_tab(to_string(category.first), representative->icon_filename().c_str(), vbox, tooltip);
 	}
 }
 
