@@ -52,9 +52,11 @@ const std::string to_string(ProductionUICategory category) {
 		return "construction";
 	case ProductionUICategory::kMilitary:
 		return "military";
+	case ProductionUICategory::kMines:
+		return "mines";
 	case ProductionUICategory::kTransport:
 		return "transport";
-	case ProductionUICategory::kTool:
+	case ProductionUICategory::kTools:
 		return "tool";
 	case ProductionUICategory::kTraining:
 		return "training";

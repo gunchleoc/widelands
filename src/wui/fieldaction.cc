@@ -20,6 +20,7 @@
 #include "wui/fieldaction.h"
 
 #include "base/i18n.h"
+#include "base/log.h" // NOCOM
 #include "base/macros.h"
 #include "economy/economy.h"
 #include "economy/flag.h"
@@ -537,102 +538,98 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 	    !(player_->get_buildcaps(brn) & Widelands::BUILDCAPS_FLAG)) {
 		return;
 	}
-	BuildGrid* bbg_house[4] = {nullptr, nullptr, nullptr, nullptr};
-	BuildGrid* bbg_mine = nullptr;
 
 	const Widelands::TribeDescr& tribe = player_->tribe();
 
 	fastclick_ = false;
 
-	for (const Widelands::DescriptionIndex& building_index : tribe.buildings()) {
-		const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(building_index);
-		BuildGrid** ppgrid;
+	std::map<Widelands::ProductionUICategory, std::set<Widelands::DescriptionIndex>> usable_buildings;
 
-		//  Some building types cannot be built (i.e. construction site) and not
-		//  allowed buildings.
-		if (ibase().egbase().is_game()) {
-			if (!building_descr->is_buildable() ||
-			    !player_->is_building_type_allowed(building_index)) {
-				continue;
-			}
-			if (!building_descr->is_useful_on_map(
-			       ibase().egbase().map().allows_seafaring(),
-			       ibase().egbase().map().get_waterway_max_length() >= 2)) {
-				continue;
-			}
-		} else if (!building_descr->is_buildable() && !building_descr->is_enhanced()) {
-			continue;
-		}
+	for (const auto& category : tribe.building_ui_categories()) {
+		log_dbg("NOCOM processing %s", to_string(category.first).c_str());
 
-		// TODO(Nordfriese): Use Player::check_can_build to simplify the code
+		for (const Widelands::DescriptionIndex& building_index : category.second) {
+			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(building_index);
 
-		if (building_descr->get_built_over_immovable() != Widelands::INVALID_INDEX &&
-		    !(node_.field->get_immovable() && node_.field->get_immovable()->has_attribute(
-		                                         building_descr->get_built_over_immovable()))) {
-			continue;
-		}
-		// Figure out if we can build it here, and in which tab it belongs
-		if (building_descr->get_ismine()) {
-			if (!((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
-			          buildcaps :
-			          max_nodecaps) &
-			      Widelands::BUILDCAPS_MINE)) {
+			//  Some building types cannot be built (i.e. construction site) and not
+			//  allowed buildings.
+			if (ibase().egbase().is_game()) {
+				if (!building_descr->is_buildable() ||
+					!player_->is_building_type_allowed(building_index)) {
+					continue;
+				}
+				if (!building_descr->is_useful_on_map(
+					   ibase().egbase().map().allows_seafaring(),
+					   ibase().egbase().map().get_waterway_max_length() >= 2)) {
+					continue;
+				}
+			} else if (!building_descr->is_buildable() && !building_descr->is_enhanced()) {
 				continue;
 			}
 
-			ppgrid = &bbg_mine;
-		} else {
-			int32_t size = building_descr->get_size() - Widelands::BaseImmovable::SMALL;
+			// TODO(Nordfriese): Use Player::check_can_build to simplify the code
 
-			if (((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
-			         buildcaps :
-			         max_nodecaps) &
-			     Widelands::BUILDCAPS_SIZEMASK) < size + 1) {
+			if (building_descr->get_built_over_immovable() != Widelands::INVALID_INDEX &&
+				!(node_.field->get_immovable() && node_.field->get_immovable()->has_attribute(
+													 building_descr->get_built_over_immovable()))) {
 				continue;
 			}
-			if (building_descr->get_isport() && !(buildcaps & Widelands::BUILDCAPS_PORT)) {
-				continue;
-			}
-			if (building_descr->get_size() >= Widelands::BaseImmovable::BIG &&
-			    !((map_.l_n(node_).field->is_interior(player_->player_number())) &&
-			      (map_.tr_n(node_).field->is_interior(player_->player_number())) &&
-			      (map_.tl_n(node_).field->is_interior(player_->player_number())))) {
-				continue;
-			}
-
-			if (building_descr->get_isport()) {
-				ppgrid = &bbg_house[3];
+			// Figure out if we can build it here, and in which tab it belongs
+			if (building_descr->get_ismine()) {
+				if (!((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
+						  buildcaps :
+						  max_nodecaps) &
+					  Widelands::BUILDCAPS_MINE)) {
+					continue;
+				}
+				usable_buildings[category.first].insert(building_index);
 			} else {
-				ppgrid = &bbg_house[size];
+				int32_t size = building_descr->get_size() - Widelands::BaseImmovable::SMALL;
+
+				if (((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
+						 buildcaps :
+						 max_nodecaps) &
+					 Widelands::BUILDCAPS_SIZEMASK) < size + 1) {
+					continue;
+				}
+				if (building_descr->get_isport() && !(buildcaps & Widelands::BUILDCAPS_PORT)) {
+					continue;
+				}
+				if (building_descr->get_size() >= Widelands::BaseImmovable::BIG &&
+					!((map_.l_n(node_).field->is_interior(player_->player_number())) &&
+					  (map_.tr_n(node_).field->is_interior(player_->player_number())) &&
+					  (map_.tl_n(node_).field->is_interior(player_->player_number())))) {
+					continue;
+				}
+				usable_buildings[category.first].insert(building_index);
 			}
 		}
-
-		// Allocate the tab's grid if necessary
-		if (!*ppgrid) {
-			*ppgrid = new BuildGrid(&tabpanel_, player_, 0, 0, 5);
-			(*ppgrid)->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
-			(*ppgrid)->buildmouseout.connect(
-			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
-			(*ppgrid)->buildmousein.connect(
-			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
-		}
-
-		// Add it to the grid
-		(*ppgrid)->add(building_index);
 	}
 
-	// Add all necessary tabs
-	for (int32_t i = 0; i < 4; ++i) {
-		if (bbg_house[i]) {
-			tabpanel_.activate(best_tab_ =
-			                      add_tab(name_tab_build[i], pic_tab_buildhouse[i], bbg_house[i],
-			                              i18n::translate(tooltip_tab_build[i])));
-		}
-	}
 
-	if (bbg_mine) {
-		tabpanel_.activate(best_tab_ =
-		                      add_tab("mines", kImgTabBuildmine, bbg_mine, _("Build mines")));
+	// NOCOM std::vector<BuildGrid*> build_grids;
+	// std::map<Widelands::ProductionUICategory, std::set<Widelands::DescriptionIndex>> usable_buildings;
+
+	for (const auto& category : usable_buildings) {
+		log_dbg("NOCOM creating build grid for %s", to_string(category.first).c_str());
+		BuildGrid* grid = new BuildGrid(&tabpanel_, player_, 0, 0, 5);
+		for (const Widelands::DescriptionIndex& building_index : category.second) {
+			grid->add(building_index);
+		}
+
+		grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
+		grid->buildmouseout.connect(
+		   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
+		grid->buildmousein.connect(
+		   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
+
+		// tabpanel_.add(to_string(category.first), to_string(category.first), grid);
+		// NOCOM kImgTabBuildmine
+
+		// NOCOM we'll still want to see building size. Names too?
+
+		const Widelands::BuildingDescr* representative = tribe.get_building_descr(*category.second.begin());
+		add_tab(to_string(category.first), representative->icon_filename().c_str(), grid, to_string(category.first));
 	}
 }
 

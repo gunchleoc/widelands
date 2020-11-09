@@ -654,17 +654,19 @@ void TribeDescr::load_buildings(const LuaTable& table, Descriptions& description
 			switch (building_descr->type()) {
 			case MapObjectType::TRAININGSITE:
 				trainingsites_.push_back(index);
-				productionsite_ui_categories_[ProductionUICategory::kTraining].insert(index);
+				building_ui_categories_[ProductionUICategory::kTraining].insert(index);
 				break;
 			case MapObjectType::MILITARYSITE:
-				productionsite_ui_categories_[ProductionUICategory::kMilitary].insert(index);
+				building_ui_categories_[ProductionUICategory::kMilitary].insert(index);
 				break;
 			case MapObjectType::MARKET:
 			case MapObjectType::WAREHOUSE:
-				productionsite_ui_categories_[ProductionUICategory::kTransport].insert(index);
+				building_ui_categories_[ProductionUICategory::kTransport].insert(index);
 				break;
 			default:
-				; // Do nothing
+				if (building_descr->get_ismine()) {
+					building_ui_categories_[ProductionUICategory::kMines].insert(index);
+				}
 			}
 
 			// Register construction materials
@@ -895,6 +897,9 @@ TribeDescr::ware_worker_categories(DescriptionIndex index, WareWorker type) cons
 const std::map<ProductionCategory, std::set<DescriptionIndex>>&
 TribeDescr::productionsite_categories() const {
 	return productionsite_categories_;
+}
+const std::map<ProductionUICategory, std::set<DescriptionIndex>>& TribeDescr::building_ui_categories() const {
+	return building_ui_categories_;
 }
 
 ToolbarImageset* TribeDescr::toolbar_image_set() const {
@@ -1475,26 +1480,27 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 
 	// NOCOM ranking cutoff?
+	// NOCOM special handling for mines
 	for (const auto& category : productionsite_categories_) {
 		switch (category.first) {
 		case ProductionCategory::kNone:
-			productionsite_ui_categories_[ProductionUICategory::kNone].insert(category.second.begin(), category.second.end());
+			building_ui_categories_[ProductionUICategory::kNone].insert(category.second.begin(), category.second.end());
 			break;
 		case ProductionCategory::kConstruction:
-			productionsite_ui_categories_[ProductionUICategory::kConstruction].insert(category.second.begin(), category.second.end());
+			building_ui_categories_[ProductionUICategory::kConstruction].insert(category.second.begin(), category.second.end());
 			break;
 		case ProductionCategory::kTool:
-			productionsite_ui_categories_[ProductionUICategory::kTool].insert(category.second.begin(), category.second.end());
+			building_ui_categories_[ProductionUICategory::kTools].insert(category.second.begin(), category.second.end());
 			break;
 		case ProductionCategory::kTraining:
-			productionsite_ui_categories_[ProductionUICategory::kTraining].insert(category.second.begin(), category.second.end());
+			building_ui_categories_[ProductionUICategory::kTraining].insert(category.second.begin(), category.second.end());
 			break;
 		case ProductionCategory::kMining:
 			break;
 		case ProductionCategory::kRoads:
 		case ProductionCategory::kSeafaring:
 		case ProductionCategory::kWaterways:
-			productionsite_ui_categories_[ProductionUICategory::kTransport].insert(category.second.begin(), category.second.end());
+			building_ui_categories_[ProductionUICategory::kTransport].insert(category.second.begin(), category.second.end());
 		}
 	}
 

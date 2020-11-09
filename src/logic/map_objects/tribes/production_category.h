@@ -43,8 +43,9 @@ enum class ProductionUICategory {
 	kNone,
 	kConstruction,
 	kMilitary,
+	kMines,
 	kTransport,
-	kTool,
+	kTools,
 	kTraining,
 };
 const std::string to_string(ProductionUICategory category);
