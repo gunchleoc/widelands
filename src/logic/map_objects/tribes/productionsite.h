@@ -109,6 +109,10 @@ public:
 		return production_links_;
 	}
 
+	const std::vector<const ProductionProgram::Groups*> consumed_wares_workers() const {
+		return consumed_wares_workers_;
+	}
+
 	/// Map objects that are collected from the map by this production site according to attribute
 	const std::set<std::pair<MapObjectType, MapObjectDescr::AttributeIndex>>&
 	collected_attributes() const {
@@ -263,6 +267,7 @@ private:
 	Output output_ware_types_;
 	Output output_worker_types_;
 	std::vector<ProductionLink> production_links_;
+	std::vector<const ProductionProgram::Groups*> consumed_wares_workers_;  // Groups not owned
 	std::set<std::pair<MapObjectType, MapObjectDescr::AttributeIndex>> collected_attributes_;
 	std::set<std::pair<MapObjectType, MapObjectDescr::AttributeIndex>> created_attributes_;
 	std::set<std::string> collected_resources_;

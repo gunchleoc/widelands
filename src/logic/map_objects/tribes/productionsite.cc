@@ -180,10 +180,16 @@ ProductionSiteDescr::ProductionSiteDescr(const std::string& init_descname,
 				   &production_program->consumed_wares_workers(),
 				   std::make_pair(&production_program->produced_wares(), WareWorker::wwWARE)});
 			}
+
 			if (!production_program->recruited_workers().empty()) {
 				production_links_.push_back(ProductionLink{
 				   &production_program->consumed_wares_workers(),
 				   std::make_pair(&production_program->recruited_workers(), WareWorker::wwWORKER)});
+			}
+
+			// Record consumed wares/workers again, because some programs have no outputs
+			if (!production_program->consumed_wares_workers().empty()) {
+				consumed_wares_workers_.push_back(&production_program->consumed_wares_workers());
 			}
 
 			// TODO(GunChleoc): API compatibility, remove "work" check after v1.0

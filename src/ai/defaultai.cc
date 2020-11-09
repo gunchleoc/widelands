@@ -895,34 +895,64 @@ void DefaultAI::late_initialization() {
 			assert(bo.max_trainingsites_proportion <= 100);
 			const Widelands::TrainingSiteDescr& train =
 			   dynamic_cast<const Widelands::TrainingSiteDescr&>(bld);
-			for (const auto& temp_input : train.input_wares()) {
-				bo.inputs.push_back(temp_input.first);
 
-				// collecting subsitutes
-				if (tribe_->ware_index("meat") == temp_input.first ||
-				    tribe_->ware_index("fish") == temp_input.first ||
-				    tribe_->ware_index("smoked_meat") == temp_input.first ||
-				    tribe_->ware_index("smoked_fish") == temp_input.first) {
-					bo.substitute_inputs.insert(temp_input.first);
+			log_dbg(
+			   "AI %d: categorizing training inputs for '%s'", player_number(), train.name().c_str());
+
+			// Collecting subsitutes. A ware is a substitute if it is an alternative in all the
+			// building's programs that consume it.
+			std::set<Widelands::DescriptionIndex> substitution_candidates;
+			std::set<Widelands::DescriptionIndex> skip_substitution;
+
+			for (const auto& group : train.consumed_wares_workers()) {
+				for (const Widelands::ProductionProgram::WareTypeGroup& input : *group) {
+					if (input.first.size() == 1) {
+						skip_substitution.insert(input.first.begin()->index);
+					} else {
+						for (const Widelands::ProductionProgram::WareWorkerId& id : input.first) {
+							substitution_candidates.insert(id.index);
+						}
+					}
+				}
+			}
+			for (const auto& substitution_candidate : substitution_candidates) {
+				if (skip_substitution.count(substitution_candidate) == 0) {
+					bo.substitute_inputs.insert(substitution_candidate);
+					log_dbg("  ware substitute: %s",
+					        tribe_->get_ware_descr(substitution_candidate)->name().c_str());
+				}
+			}
+
+			// We will want to control wares that have training as their exclusive primary category and
+			// are not used in mining, and treat them as weapons and armor. We can't restrict this
+			// further due to circular dependencies in the Frisians recycling center, so we get mead
+			// and chocolate here too.
+			for (const auto& input_ware : train.input_wares()) {
+				bo.inputs.push_back(input_ware.first);
+
+				// If it has a substitute, let that code handle it
+				if (skip_substitution.count(input_ware.first) == 0) {
+					continue;
 				}
 
-				// At trainingsites, we will want to control wares that have training as their exclusive
-				// primary category and are not used in mining, and treat them as weapons and armor. We
-				// can't restrict this further due to circular dependencies in the Frisians recycling
-				// center, so we get mead and chocolate here too.
-				const std::set<Widelands::ProductionCategory>& production_categories =
-				   tribe_->production_categories(temp_input.first, Widelands::WareWorker::wwWARE);
-				if (production_categories.size() == 1 &&
-				    *production_categories.begin() == Widelands::ProductionCategory::kTraining) {
-					const std::set<Widelands::ProductionCategory>& production_supply_categories =
-					   tribe_->production_supply_categories(
-					      temp_input.first, Widelands::WareWorker::wwWARE);
-					if (production_supply_categories.count(Widelands::ProductionCategory::kMining) ==
-					    0) {
-						weapons_and_armor_.insert(temp_input.first);
-						log_dbg("AI %d categorized '%s' as weapon/armor to micromanage", player_number(),
-						        tribe_->get_ware_descr(temp_input.first)->name().c_str());
+				bool has_zero_training_distance = false;
+				bool has_mining = false;
+
+				for (const Widelands::WeightedProductionCategory& production_category :
+				     tribe_->ware_worker_categories(input_ware.first, Widelands::WareWorker::wwWARE)) {
+					if (production_category.category == Widelands::ProductionCategory::kMining) {
+						has_mining = true;
+						break;
 					}
+					if (production_category.category == Widelands::ProductionCategory::kTraining &&
+					    production_category.distance == 0) {
+						has_zero_training_distance = true;
+					}
+				}
+				if (!has_mining && has_zero_training_distance) {
+					weapons_and_armor_.insert(input_ware.first);
+					log_dbg("  weapon/armor to micromanage: '%s'",
+					        tribe_->get_ware_descr(input_ware.first)->name().c_str());
 				}
 			}
 			// Creating vector with critical material, to be used to discourage

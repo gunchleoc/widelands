@@ -48,6 +48,9 @@ struct ProductionProgram : public MapObjectProgram {
 		inline bool operator<(const WareWorkerId& other) const {
 			return (index < other.index) || (index == other.index && type < other.type);
 		}
+		inline bool operator==(const WareWorkerId& other) const {
+			return (index == other.index) && (type == other.type);
+		}
 	};
 	/// A group of ware types with a count.
 	using WareTypeGroup = std::pair<std::set<WareWorkerId>, uint8_t>;
