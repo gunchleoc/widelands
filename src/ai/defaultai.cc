@@ -923,17 +923,35 @@ void DefaultAI::late_initialization() {
 				}
 			}
 
-			// We will want to control wares that have training as their exclusive primary category and
-			// are not used in mining, and treat them as weapons and armor. We can't restrict this
-			// further due to circular dependencies in the Frisians recycling center, so we get mead
-			// and chocolate here too.
+			// Record input queues and find weapons & armor to micromanage
+			Widelands::Quantity longest_input = 0;
+			Widelands::Quantity shortest_input = std::numeric_limits<Widelands::Quantity>::max();
+			;
+			for (const auto input_ware : train.input_wares()) {
+				longest_input = std::max(longest_input, input_ware.second);
+				shortest_input = std::min(shortest_input, input_ware.second);
+			}
+			bool check_skip_for_input_length = (longest_input - shortest_input > 2);
 			for (const auto& input_ware : train.input_wares()) {
+				// Add all wares to the observer's input list
 				bo.inputs.push_back(input_ware.first);
 
 				// If it has a substitute, let that code handle it
 				if (skip_substitution.count(input_ware.first) == 0) {
 					continue;
 				}
+
+				// We have apparently have need for lots of it, so don't micromanage as weapon/armor
+				if (check_skip_for_input_length &&
+				    (input_ware.second > shortest_input + (longest_input - shortest_input) / 2)) {
+					// This will skip mead and chocolate
+					continue;
+				}
+
+				// We will want to control wares that have training as their exclusive primary category
+				// and are not used in mining, and treat them as weapons and armor. We can't restrict
+				// the categorization further due to circular dependencies in the Frisians recycling
+				// center.
 
 				bool has_zero_training_distance = false;
 				bool has_mining = false;
