@@ -44,4 +44,23 @@ const std::string to_string(ProductionCategory category) {
 	}
 	NEVER_HERE();
 }
+
+// NOCOM we'll want name/descname here
+const std::string to_string(ProductionUICategory category) {
+	switch (category) {
+	case ProductionUICategory::kConstruction:
+		return "construction";
+	case ProductionUICategory::kMilitary:
+		return "military";
+	case ProductionUICategory::kTransport:
+		return "transport";
+	case ProductionUICategory::kTool:
+		return "tool";
+	case ProductionUICategory::kTraining:
+		return "training";
+	case ProductionUICategory::kNone:
+		return "miscellaneous";
+	}
+	NEVER_HERE();
+}
 }  // namespace Widelands

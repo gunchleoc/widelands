@@ -650,9 +650,21 @@ void TribeDescr::load_buildings(const LuaTable& table, Descriptions& description
 				descriptions.get_mutable_building_descr(enhancement)->set_enhanced_from(index);
 			}
 
-			// Register trainigsites
-			if (building_descr->type() == MapObjectType::TRAININGSITE) {
+			// Register trainigsites & production categories
+			switch (building_descr->type()) {
+			case MapObjectType::TRAININGSITE:
 				trainingsites_.push_back(index);
+				productionsite_ui_categories_[ProductionUICategory::kTraining].insert(index);
+				break;
+			case MapObjectType::MILITARYSITE:
+				productionsite_ui_categories_[ProductionUICategory::kMilitary].insert(index);
+				break;
+			case MapObjectType::MARKET:
+			case MapObjectType::WAREHOUSE:
+				productionsite_ui_categories_[ProductionUICategory::kTransport].insert(index);
+				break;
+			default:
+				; // Do nothing
 			}
 
 			// Register construction materials
@@ -1455,10 +1467,36 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 		if (prod_cats.empty()) {
 			log_dbg("NOCOM ############# Missing: %s", uncategorized.second->name().c_str());
+			productionsite_categories_[ProductionCategory::kNone].insert(uncategorized.first);
 		}
 		for (const ProductionCategory& cat : prod_cats) {
 			productionsite_categories_[cat].insert(uncategorized.first);
 		}
 	}
+
+	// NOCOM ranking cutoff?
+	for (const auto& category : productionsite_categories_) {
+		switch (category.first) {
+		case ProductionCategory::kNone:
+			productionsite_ui_categories_[ProductionUICategory::kNone].insert(category.second.begin(), category.second.end());
+			break;
+		case ProductionCategory::kConstruction:
+			productionsite_ui_categories_[ProductionUICategory::kConstruction].insert(category.second.begin(), category.second.end());
+			break;
+		case ProductionCategory::kTool:
+			productionsite_ui_categories_[ProductionUICategory::kTool].insert(category.second.begin(), category.second.end());
+			break;
+		case ProductionCategory::kTraining:
+			productionsite_ui_categories_[ProductionUICategory::kTraining].insert(category.second.begin(), category.second.end());
+			break;
+		case ProductionCategory::kMining:
+			break;
+		case ProductionCategory::kRoads:
+		case ProductionCategory::kSeafaring:
+		case ProductionCategory::kWaterways:
+			productionsite_ui_categories_[ProductionUICategory::kTransport].insert(category.second.begin(), category.second.end());
+		}
+	}
+
 }
 }  // namespace Widelands

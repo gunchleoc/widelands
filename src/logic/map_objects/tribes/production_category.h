@@ -37,6 +37,17 @@ enum class ProductionCategory {
 	kTraining,
 	kWaterways
 };
+const std::string to_string(ProductionCategory category);
+
+enum class ProductionUICategory {
+	kNone,
+	kConstruction,
+	kMilitary,
+	kTransport,
+	kTool,
+	kTraining,
+};
+const std::string to_string(ProductionUICategory category);
 
 struct WeightedProductionCategory {
 	const ProductionCategory category;
@@ -49,7 +60,6 @@ struct WeightedProductionCategory {
 	}
 };
 
-const std::string to_string(ProductionCategory category);
 }  // namespace Widelands
 
 #endif  // end of include guard: WL_LOGIC_MAP_OBJECTS_TRIBES_PRODUCTION_CATEGORY_H

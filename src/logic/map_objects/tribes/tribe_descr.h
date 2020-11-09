@@ -229,6 +229,7 @@ private:
 	std::map<ProductionProgram::WareWorkerId, std::set<WeightedProductionCategory>>
 	   ware_worker_categories_;
 	std::map<ProductionCategory, std::set<DescriptionIndex>> productionsite_categories_;
+	std::map<ProductionUICategory, std::set<DescriptionIndex>> productionsite_ui_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;
