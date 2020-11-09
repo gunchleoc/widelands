@@ -60,6 +60,16 @@ Two players can choose the same tribe.
 */
 class TribeDescr {
 public:
+	struct ScoredDescriptionIndex {
+		const DescriptionIndex index;
+		const unsigned score;
+
+		inline bool operator<(const ScoredDescriptionIndex& other) const {
+			return (score < other.score) || (score == other.score && index < other.index);
+		}
+	};
+
+
 	TribeDescr(const Widelands::TribeBasicInfo& info,
 	           Descriptions& descriptions,
 	           const LuaTable& table,
@@ -144,9 +154,8 @@ public:
 	// NOCOM document
 	const std::set<WeightedProductionCategory>& ware_worker_categories(DescriptionIndex index,
 	                                                                   WareWorker type) const;
-	const std::map<ProductionCategory, std::set<DescriptionIndex>>&
-	productionsite_categories() const;
-	const std::map<ProductionUICategory, std::set<DescriptionIndex>>& building_ui_categories() const;
+	const std::map<ProductionCategory, std::set<ScoredDescriptionIndex>>& productionsite_categories() const;
+	const std::map<ProductionUICategory, std::set<ScoredDescriptionIndex>>& building_ui_categories() const;
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
@@ -229,8 +238,8 @@ private:
 	// The full production chain is available at each WareDescr
 	std::map<ProductionProgram::WareWorkerId, std::set<WeightedProductionCategory>>
 	   ware_worker_categories_;
-	std::map<ProductionCategory, std::set<DescriptionIndex>> productionsite_categories_;
-	std::map<ProductionUICategory, std::set<DescriptionIndex>> building_ui_categories_;
+	std::map<ProductionCategory, std::set<ScoredDescriptionIndex>> productionsite_categories_;
+	std::map<ProductionUICategory, std::set<ScoredDescriptionIndex>> building_ui_categories_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

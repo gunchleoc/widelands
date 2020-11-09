@@ -654,18 +654,18 @@ void TribeDescr::load_buildings(const LuaTable& table, Descriptions& description
 			switch (building_descr->type()) {
 			case MapObjectType::TRAININGSITE:
 				trainingsites_.push_back(index);
-				building_ui_categories_[ProductionUICategory::kTraining].insert(index);
+				building_ui_categories_[ProductionUICategory::kTraining].insert({index, 0});
 				break;
 			case MapObjectType::MILITARYSITE:
-				building_ui_categories_[ProductionUICategory::kMilitary].insert(index);
+				building_ui_categories_[ProductionUICategory::kMilitary].insert({index, 0});
 				break;
 			case MapObjectType::MARKET:
 			case MapObjectType::WAREHOUSE:
-				building_ui_categories_[ProductionUICategory::kTransport].insert(index);
+				building_ui_categories_[ProductionUICategory::kTransport].insert({index, 0});
 				break;
 			default:
 				if (building_descr->get_ismine()) {
-					building_ui_categories_[ProductionUICategory::kMines].insert(index);
+					building_ui_categories_[ProductionUICategory::kMines].insert({index, 0});
 				}
 			}
 
@@ -894,11 +894,11 @@ TribeDescr::ware_worker_categories(DescriptionIndex index, WareWorker type) cons
 	return ware_worker_categories_.at(key);
 }
 
-const std::map<ProductionCategory, std::set<DescriptionIndex>>&
+const std::map<ProductionCategory, std::set<TribeDescr::ScoredDescriptionIndex>>&
 TribeDescr::productionsite_categories() const {
 	return productionsite_categories_;
 }
-const std::map<ProductionUICategory, std::set<DescriptionIndex>>& TribeDescr::building_ui_categories() const {
+const std::map<ProductionUICategory, std::set<TribeDescr::ScoredDescriptionIndex>>& TribeDescr::building_ui_categories() const {
 	return building_ui_categories_;
 }
 
@@ -1270,7 +1270,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				   .insert(WeightedProductionCategory{ProductionCategory::kTraining, 0});
 			}
 			const DescriptionIndex prod_index = building_index(prod->name());
-			productionsite_categories_[ProductionCategory::kTraining].insert(prod_index);
+			productionsite_categories_[ProductionCategory::kTraining].insert({prod_index, 0});
 			categorized_productionsites.insert(prod_index);
 		} else {
 			for (const std::string& bobname : prod->created_bobs()) {
@@ -1286,7 +1286,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 						   .insert(WeightedProductionCategory{ProductionCategory::kSeafaring, 0});
 					}
 					const DescriptionIndex prod_index = building_index(prod->name());
-					productionsite_categories_[ProductionCategory::kSeafaring].insert(prod_index);
+					productionsite_categories_[ProductionCategory::kSeafaring].insert({prod_index, 0});
 					categorized_productionsites.insert(prod_index);
 				} else if (descriptions.worker_index(bobname) == ferry_) {
 					for (const WareAmount& input : prod->input_wares()) {
@@ -1300,7 +1300,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 						   .insert(WeightedProductionCategory{ProductionCategory::kWaterways, 0});
 					}
 					const DescriptionIndex prod_index = building_index(prod->name());
-					productionsite_categories_[ProductionCategory::kWaterways].insert(prod_index);
+					productionsite_categories_[ProductionCategory::kWaterways].insert({prod_index, 0});
 					categorized_productionsites.insert(prod_index);
 				}
 				add_creator(bobname, prod);
@@ -1356,7 +1356,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				for (const auto& squashed : squashed_categories) {
 					log_dbg("\t%s\t%d\t%s", prod->name().c_str(), squashed.second,
 					        to_string(squashed.first).c_str());
-					productionsite_categories_[squashed.first].insert(prod_index);
+					productionsite_categories_[squashed.first].insert({prod_index, squashed.second});
 				}
 			}
 		}
@@ -1446,36 +1446,23 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
-		std::set<ProductionCategory> prod_cats;
+		bool found = false;
 		for (const std::string& supported_name : uncategorized.second->supported_productionsites()) {
 			const DescriptionIndex supported_index = building_index(supported_name);
 			for (const auto& category : productionsite_categories_) {
-				if (category.second.count(supported_index)) {
-					prod_cats.insert(category.first);
-					log_dbg("%s -> %s (supported)", uncategorized.second->name().c_str(),
-					        to_string(category.first).c_str());
-				}
-			}
-		}
-		if (prod_cats.empty()) {
-			for (const std::string& supported_name :
-			     uncategorized.second->supported_by_productionsites()) {
-				const DescriptionIndex supported_index = building_index(supported_name);
-				for (const auto& category : productionsite_categories_) {
-					if (category.second.count(supported_index)) {
-						prod_cats.insert(category.first);
-						log_dbg("%s -> %s (supported by)", uncategorized.second->name().c_str(),
-						        to_string(category.first).c_str());
+				for (const ScoredDescriptionIndex& candidate : category.second) {
+					if (candidate.index == supported_index) {
+						found = true;
+						productionsite_categories_[category.first].insert({uncategorized.first, candidate.score + 1});
+						log_dbg("%s -> %d %s (supported)", uncategorized.second->name().c_str(), candidate.score + 1,
+								to_string(category.first).c_str());
 					}
 				}
 			}
 		}
-		if (prod_cats.empty()) {
+		if (!found) {
 			log_dbg("NOCOM ############# Missing: %s", uncategorized.second->name().c_str());
-			productionsite_categories_[ProductionCategory::kNone].insert(uncategorized.first);
-		}
-		for (const ProductionCategory& cat : prod_cats) {
-			productionsite_categories_[cat].insert(uncategorized.first);
+			productionsite_categories_[ProductionCategory::kNone].insert({uncategorized.first, 0});
 		}
 	}
 

@@ -533,21 +533,22 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 
 	fastclick_ = false;
 
-	std::map<Widelands::ProductionUICategory, std::map<Widelands::NodeCaps, std::set<Widelands::DescriptionIndex>>> usable_buildings;
+	std::map<Widelands::ProductionUICategory, std::map<Widelands::NodeCaps, std::set<Widelands::TribeDescr::ScoredDescriptionIndex>>> usable_buildings;
 
 	std::map<Widelands::ProductionUICategory, const Widelands::BuildingDescr*> representative_buildings;
 
 	for (const auto& category : tribe.building_ui_categories()) {
-		const Widelands::BuildingDescr* representative_building = tribe.get_building_descr(*category.second.begin());
+		const Widelands::BuildingDescr* representative_building = tribe.get_building_descr(category.second.begin()->index);
 
-		for (const Widelands::DescriptionIndex& building_index : category.second) {
-			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(building_index);
+		for (const Widelands::TribeDescr::ScoredDescriptionIndex& item : category.second) {
+			// NOCOM
+			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(item.index);
 
 			//  Some building types cannot be built (i.e. construction site) and not
 			//  allowed buildings.
 			if (ibase().egbase().is_game()) {
 				if (!building_descr->is_buildable() ||
-					!player_->is_building_type_allowed(building_index)) {
+					!player_->is_building_type_allowed(item.index)) {
 					continue;
 				}
 				if (!building_descr->is_useful_on_map(
@@ -574,7 +575,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					  Widelands::BUILDCAPS_MINE)) {
 					continue;
 				}
-				usable_buildings[Widelands::ProductionUICategory::kMines][Widelands::NodeCaps::BUILDCAPS_MINE].insert(building_index);
+				usable_buildings[Widelands::ProductionUICategory::kMines][Widelands::NodeCaps::BUILDCAPS_MINE].insert({item.index, 0});
 
 				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
 					representative_building = building_descr;
@@ -602,17 +603,17 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					continue;
 				}
 				if (building_descr->get_isport()) {
-					usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_PORT].insert(building_index);
+					usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_PORT].insert(item);
 				} else {
 					switch(building_descr->get_size()) {
 					case Widelands::BaseImmovable::BIG:
-						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_BIG].insert(building_index);
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_BIG].insert(item);
 						break;
 					case Widelands::BaseImmovable::MEDIUM:
-						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_MEDIUM].insert(building_index);
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_MEDIUM].insert(item);
 						break;
 					case Widelands::BaseImmovable::SMALL:
-						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_SMALL].insert(building_index);
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_SMALL].insert(item);
 						break;
 					default:
 						NEVER_HERE();
@@ -625,6 +626,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 	}
 
 	// NOCOM document
+	// std::map<Widelands::ProductionUICategory, std::map<Widelands::NodeCaps, std::vector<std::pair<Widelands::DescriptionIndex, unsigned>>>> usable_buildings;
 	for (const auto& category : usable_buildings) {
 		UI::Box* vbox = new UI::Box(&tabpanel_, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
 
@@ -655,6 +657,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			default:
 				NEVER_HERE();
 			}
+			log_dbg("############# Category: %s", label_text.c_str());
 			UI::Box* label_box = new UI::Box(vbox, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
 			UI::Textarea* label = new UI::Textarea(label_box,
 												   UI::PanelStyle::kWui,
@@ -667,8 +670,10 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			vbox->add(label_box);
 
 			BuildGrid* grid = new BuildGrid(vbox, player_, 0, 0, 5);
-			for (const Widelands::DescriptionIndex& building_index : size_category.second) {
-				grid->add(building_index);
+			for (const Widelands::TribeDescr::ScoredDescriptionIndex& item : size_category.second) {
+				const Widelands::BuildingDescr* temp = tribe.get_building_descr(item.index);
+				log_dbg ("  %d: %s", item.score, temp->name().c_str());
+				grid->add(item.index);
 			}
 			vbox->add(grid);
 			vbox->add_space(8);
