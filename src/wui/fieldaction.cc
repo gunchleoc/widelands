@@ -226,16 +226,6 @@ constexpr const char* const kImgTabBuildroad = "images/wui/fieldaction/menu_tab_
 constexpr const char* const kImgTabBuildwaterway =
    "images/wui/fieldaction/menu_tab_buildwaterway.png";
 constexpr const char* const kImgTabWatch = "images/wui/fieldaction/menu_tab_watch.png";
-static const char* const pic_tab_buildhouse[] = {"images/wui/fieldaction/menu_tab_buildsmall.png",
-                                                 "images/wui/fieldaction/menu_tab_buildmedium.png",
-                                                 "images/wui/fieldaction/menu_tab_buildbig.png",
-                                                 "images/wui/fieldaction/menu_tab_buildport.png"};
-static const char* const tooltip_tab_build[] = {_("Build small building"),
-                                                _("Build medium building"), _("Build big building"),
-                                                _("Build port building")};
-static const char* const name_tab_build[] = {"small", "medium", "big", "port"};
-
-constexpr const char* const kImgTabBuildmine = "images/wui/fieldaction/menu_tab_buildmine.png";
 
 constexpr const char* const kImgButtonBuildRoad = "images/wui/fieldaction/menu_build_way.png";
 constexpr const char* const kImgButtonRemoveRoad = "images/wui/fieldaction/menu_rem_way.png";
@@ -639,35 +629,49 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 		UI::Box* vbox = new UI::Box(&tabpanel_, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
 
 		for (const auto& size_category : category.second) {
+			std::string label_icon;
 			std::string label_text;
 			switch (size_category.first) {
 			case Widelands::NodeCaps::BUILDCAPS_MINE:
 				label_text = pgettext("buildgrid", "Mines");
+				label_icon = "images/wui/fieldaction/menu_tab_buildmine.png";
 				break;
 			case Widelands::NodeCaps::BUILDCAPS_PORT:
 				label_text = pgettext("buildgrid", "Ports");
+				label_icon = "images/wui/fieldaction/menu_tab_buildport.png";
 				break;
 			case Widelands::NodeCaps::BUILDCAPS_BIG:
 				label_text = pgettext("buildgrid", "Big");
+				label_icon = "images/wui/fieldaction/menu_tab_buildbig.png";
 				break;
 			case Widelands::NodeCaps::BUILDCAPS_MEDIUM:
 				label_text = pgettext("buildgrid", "Medium");
+				label_icon = "images/wui/fieldaction/menu_tab_buildmedium.png";
 				break;
 			case Widelands::NodeCaps::BUILDCAPS_SMALL:
 				label_text = pgettext("buildgrid", "Small");
+				label_icon = "images/wui/fieldaction/menu_tab_buildsmall.png";
 				break;
 			default:
 				NEVER_HERE();
 			}
-			UI::Textarea* label = new UI::Textarea(vbox,
+			UI::Box* label_box = new UI::Box(vbox, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
+			UI::Textarea* label = new UI::Textarea(label_box,
 												   UI::PanelStyle::kWui,
 												   UI::FontStyle::kWuiInfoPanelHeading, label_text);
+
+			UI::Icon* icon = new UI::Icon(label_box, UI::PanelStyle::kWui, g_image_cache->get(label_icon));
+			label_box->add(icon, UI::Box::Resizing::kAlign, UI::Align::kBottom);
+			label_box->add_space(4);
+			label_box->add(label, UI::Box::Resizing::kAlign, UI::Align::kBottom);
+			vbox->add(label_box);
+
 			BuildGrid* grid = new BuildGrid(vbox, player_, 0, 0, 5);
 			for (const Widelands::DescriptionIndex& building_index : size_category.second) {
 				grid->add(building_index);
 			}
-			vbox->add(label);
 			vbox->add(grid);
+			vbox->add_space(8);
 
 			grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
 			grid->buildmouseout.connect(
@@ -676,10 +680,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
 		}
 
-		// tabpanel_.add(to_string(category.first), to_string(category.first), grid);
-		// NOCOM kImgTabBuildmine
-
-		// NOCOM we'll still want to see building size. Names too?
+		// NOCOM Names too?
 		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
 		add_tab(to_string(category.first), representative->icon_filename().c_str(), vbox, to_string(category.first));
 	}
