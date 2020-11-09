@@ -543,13 +543,11 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 
 	fastclick_ = false;
 
-	std::map<Widelands::ProductionUICategory, std::set<Widelands::DescriptionIndex>> usable_buildings;
+	std::map<Widelands::ProductionUICategory, std::map<Widelands::NodeCaps, std::set<Widelands::DescriptionIndex>>> usable_buildings;
 
 	std::map<Widelands::ProductionUICategory, const Widelands::BuildingDescr*> representative_buildings;
 
 	for (const auto& category : tribe.building_ui_categories()) {
-		log_dbg("NOCOM processing %s", to_string(category.first).c_str());
-
 		const Widelands::BuildingDescr* representative_building = tribe.get_building_descr(*category.second.begin());
 
 		for (const Widelands::DescriptionIndex& building_index : category.second) {
@@ -586,7 +584,8 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					  Widelands::BUILDCAPS_MINE)) {
 					continue;
 				}
-				usable_buildings[Widelands::ProductionUICategory::kMines].insert(building_index);
+				usable_buildings[Widelands::ProductionUICategory::kMines][Widelands::NodeCaps::BUILDCAPS_MINE].insert(building_index);
+
 				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
 					representative_building = building_descr;
 				}
@@ -612,35 +611,77 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					  (map_.tl_n(node_).field->is_interior(player_->player_number())))) {
 					continue;
 				}
-				usable_buildings[category.first].insert(building_index);
+				if (building_descr->get_isport()) {
+					usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_PORT].insert(building_index);
+				} else {
+					switch(building_descr->get_size()) {
+					case Widelands::BaseImmovable::BIG:
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_BIG].insert(building_index);
+						break;
+					case Widelands::BaseImmovable::MEDIUM:
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_MEDIUM].insert(building_index);
+						break;
+					case Widelands::BaseImmovable::SMALL:
+						usable_buildings[category.first][Widelands::NodeCaps::BUILDCAPS_SMALL].insert(building_index);
+						break;
+					default:
+						NEVER_HERE();
+					}
+				}
+
 			}
 		}
 		representative_buildings[category.first] = representative_building;
 	}
 
-
-	// NOCOM std::vector<BuildGrid*> build_grids;
-	// std::map<Widelands::ProductionUICategory, std::set<Widelands::DescriptionIndex>> usable_buildings;
-
+	// NOCOM document
 	for (const auto& category : usable_buildings) {
-		log_dbg("NOCOM creating build grid for %s", to_string(category.first).c_str());
-		BuildGrid* grid = new BuildGrid(&tabpanel_, player_, 0, 0, 5);
-		for (const Widelands::DescriptionIndex& building_index : category.second) {
-			grid->add(building_index);
-		}
+		UI::Box* vbox = new UI::Box(&tabpanel_, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
 
-		grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
-		grid->buildmouseout.connect(
-		   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
-		grid->buildmousein.connect(
-		   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
+		for (const auto& size_category : category.second) {
+			std::string label_text;
+			switch (size_category.first) {
+			case Widelands::NodeCaps::BUILDCAPS_MINE:
+				label_text = pgettext("buildgrid", "Mines");
+				break;
+			case Widelands::NodeCaps::BUILDCAPS_PORT:
+				label_text = pgettext("buildgrid", "Ports");
+				break;
+			case Widelands::NodeCaps::BUILDCAPS_BIG:
+				label_text = pgettext("buildgrid", "Big");
+				break;
+			case Widelands::NodeCaps::BUILDCAPS_MEDIUM:
+				label_text = pgettext("buildgrid", "Medium");
+				break;
+			case Widelands::NodeCaps::BUILDCAPS_SMALL:
+				label_text = pgettext("buildgrid", "Small");
+				break;
+			default:
+				NEVER_HERE();
+			}
+			UI::Textarea* label = new UI::Textarea(vbox,
+												   UI::PanelStyle::kWui,
+												   UI::FontStyle::kWuiInfoPanelHeading, label_text);
+			BuildGrid* grid = new BuildGrid(vbox, player_, 0, 0, 5);
+			for (const Widelands::DescriptionIndex& building_index : size_category.second) {
+				grid->add(building_index);
+			}
+			vbox->add(label);
+			vbox->add(grid);
+
+			grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
+			grid->buildmouseout.connect(
+			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
+			grid->buildmousein.connect(
+			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
+		}
 
 		// tabpanel_.add(to_string(category.first), to_string(category.first), grid);
 		// NOCOM kImgTabBuildmine
 
 		// NOCOM we'll still want to see building size. Names too?
 		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
-		add_tab(to_string(category.first), representative->icon_filename().c_str(), grid, to_string(category.first));
+		add_tab(to_string(category.first), representative->icon_filename().c_str(), vbox, to_string(category.first));
 	}
 }
 
