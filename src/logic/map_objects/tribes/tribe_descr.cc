@@ -133,14 +133,15 @@ void load_helptexts(Widelands::MapObjectDescr* descr,
 
 // NOCOM document
 void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
+							const std::map<Widelands::ProductionCategory, std::set<Widelands::TribeDescr::ScoredDescriptionIndex>>& productionsite_categories,
                             std::set<Widelands::DescriptionIndex>& walked_productionsites,
-                            std::set<Widelands::ProductionProgram::WareWorkerId>& ware_workers,
-                            const std::set<Widelands::WeightedProductionCategory>& categories,
+                            std::set<Widelands::ProductionProgram::WareWorkerId>& assigned_ware_workers,
+                            const std::set<Widelands::WeightedProductionCategory>& categories_to_search,
                             std::map<Widelands::ProductionProgram::WareWorkerId,
                                      std::set<Widelands::WeightedProductionCategory>>* target,
                             unsigned distance) {
 
-	for (const Widelands::ProductionProgram::WareWorkerId& ware_worker : ware_workers) {
+	for (const Widelands::ProductionProgram::WareWorkerId& ware_worker : assigned_ware_workers) {
 		// Find suitable productionsites
 		const std::set<Widelands::DescriptionIndex>& candidates =
 		   ware_worker.type == Widelands::WareWorker::wwWARE ?
@@ -151,12 +152,31 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 			const Widelands::ProductionSiteDescr* prod =
 			   dynamic_cast<const Widelands::ProductionSiteDescr*>(
 			      tribe->get_building_descr(producer_index));
-			Widelands::DescriptionIndex building_index = tribe->building_index(prod->name());
-			if (!tribe->has_building(building_index)) {
+
+			if (!tribe->has_building(producer_index)) {
 				continue;
 			}
-			if (walked_productionsites.count(building_index) == 1) {
+
+			// Prevent endless loops
+			if (walked_productionsites.count(producer_index) == 1) {
 				continue;
+			}
+			walked_productionsites.insert(producer_index);
+
+			if (prod->production_links().empty()) {
+				continue;
+			}
+
+			// Collect categories for producing site so we can stop on mismatch
+			// NOCOM check if this helps or not
+			std::set<Widelands::ProductionCategory> producer_categories;
+			for (const auto& prod_cat : productionsite_categories) {
+				for (const Widelands::TribeDescr::ScoredDescriptionIndex& prod_cat_item : prod_cat.second) {
+					if (prod_cat_item.index == producer_index) {
+						producer_categories.insert(prod_cat.first);
+						break;
+					}
+				}
 			}
 
 			// Check the production links and add any matches
@@ -168,7 +188,7 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 				}
 				for (const auto& output_item : *link.outputs.first) {
 					// Check if the production site's output wareworker is wanted for this category
-					if (ware_workers.count(Widelands::ProductionProgram::WareWorkerId{
+					if (assigned_ware_workers.count(Widelands::ProductionProgram::WareWorkerId{
 					       output_item.first, link.outputs.second}) == 0) {
 						continue;
 					}
@@ -187,25 +207,38 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 					for (const Widelands::ProductionProgram::WareTypeGroup& input : *link.inputs) {
 						for (const Widelands::ProductionProgram::WareWorkerId& input_item : input.first) {
 
-							for (Widelands::WeightedProductionCategory ware_category : categories) {
+							for (Widelands::WeightedProductionCategory ware_category : categories_to_search) {
 								assert(ware_category != Widelands::ProductionCategory::kNone);
-								// Prevent endless loops
-								walked_productionsites.insert(building_index);
 
-								// Insert
-								// NOCOM check first if it's already there!
-								bool already_weighted = false;
-								for (const auto& check : *target) {
-									if (check.first == input_item) {
-										for (const Widelands::WeightedProductionCategory& check_second :
-										     check.second) {
-											if (check_second.category == ware_category.category) {
-												already_weighted = true;
+
+								// Check if building matches. This gets rid of e.g. some cycles from the recycling centers.
+								bool addme = producer_categories.empty() || producer_categories.count(ware_category.category) == 1;
+								if (!addme) {
+									log_dbg("NOCOM +++ %s blocked category %s", prod->name().c_str(), to_string(ware_category.category).c_str());
+								}
+
+								// Check first if it's already there.
+								// NOCOM We will also want to replace if our distance is lower
+								if (addme) {
+									for (auto target_it = target->begin(); target_it != target->end(); ++target_it) {
+										if (target_it->first == input_item) {
+											for (auto check_it = target_it->second.begin(); check_it != target_it->second.end(); ++check_it) {
+												const Widelands::WeightedProductionCategory& check_second = *check_it;
+												if (check_second.category == ware_category.category) {
+													// Kick it out - we'll add it back in with the sorter distance
+													if (check_second.distance > distance) {
+														target_it->second.erase(check_it);
+													} else {
+														addme = false;
+													}
+													break;
+												}
 											}
 										}
 									}
 								}
-								if (!already_weighted) {
+								if (addme) {
+									// All good, now insert
 									(*target)[input_item].insert(Widelands::WeightedProductionCategory{
 									   ware_category.category, distance});
 
@@ -224,10 +257,10 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 									        to_string(ware_category.category).c_str());
 
 									// Call again with new ware added
-									ware_workers.insert(input_item);
+									assigned_ware_workers.insert(input_item);
 									++distance;
-									walk_ware_supply_chain(tribe, walked_productionsites, ware_workers,
-									                       categories, target, distance);
+									walk_ware_supply_chain(tribe, productionsite_categories, walked_productionsites, assigned_ware_workers,
+									                       categories_to_search, target, distance);
 								}
 							}
 						}
@@ -251,7 +284,7 @@ void TribeDescr::process_ware_supply_chain() {
 		assert(!category_info.second.empty());
 		std::set<ProductionProgram::WareWorkerId> wares{category_info.first};
 		walk_ware_supply_chain(
-		   this, walked_productionsites, wares, category_info.second, &ware_worker_categories_, 1);
+		   this, productionsite_categories_, walked_productionsites, wares, category_info.second, &ware_worker_categories_, 1);
 		walked_productionsites.clear();
 	}
 
@@ -1244,6 +1277,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 		// Add ware input categories
 		if (prod->get_ismine()) {
+
+			/* NOCOM blocking too much?
 			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add mining ware %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
@@ -1255,7 +1290,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWORKER}]
 				   .insert(WeightedProductionCategory{ProductionCategory::kMining, 0});
-			}
+			} */
 		} else if (prod->type() == MapObjectType::TRAININGSITE) {
 			for (const WareAmount& input : prod->input_wares()) {
 				// log_dbg("NOCOM add training ware %d", input.first);
@@ -1447,6 +1482,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
 		bool found = false;
+		log_dbg("-");
+		// NOCOM we need to squash these too (c.f. Frisian berry farm)
 		for (const std::string& supported_name : uncategorized.second->supported_productionsites()) {
 			const DescriptionIndex supported_index = building_index(supported_name);
 			for (const auto& category : productionsite_categories_) {
@@ -1454,7 +1491,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 					if (candidate.index == supported_index) {
 						found = true;
 						productionsite_categories_[category.first].insert({uncategorized.first, candidate.score + 1});
-						log_dbg("%s -> %d %s (supported)", uncategorized.second->name().c_str(), candidate.score + 1,
+						log_dbg("\t%s\t%d\t%s (supported)", uncategorized.second->name().c_str(), candidate.score + 1,
 								to_string(category.first).c_str());
 					}
 				}
@@ -1467,7 +1504,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 
 	// NOCOM ranking cutoff?
-	// NOCOM document special handling for mines
+	// NOCOM special handling for mines
 	for (const auto& category : productionsite_categories_) {
 		switch (category.first) {
 		case ProductionCategory::kNone:
