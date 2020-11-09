@@ -1480,7 +1480,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 
 	// NOCOM ranking cutoff?
-	// NOCOM special handling for mines
+	// NOCOM document special handling for mines
 	for (const auto& category : productionsite_categories_) {
 		switch (category.first) {
 		case ProductionCategory::kNone:

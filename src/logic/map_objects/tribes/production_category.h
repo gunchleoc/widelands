@@ -39,14 +39,15 @@ enum class ProductionCategory {
 };
 const std::string to_string(ProductionCategory category);
 
+// The order here determines the UI order
 enum class ProductionUICategory {
-	kNone,
 	kConstruction,
-	kMilitary,
-	kMines,
-	kTransport,
 	kTools,
 	kTraining,
+	kTransport,
+	kNone,
+	kMilitary,
+	kMines,
 };
 const std::string to_string(ProductionUICategory category);
 

@@ -545,8 +545,12 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 
 	std::map<Widelands::ProductionUICategory, std::set<Widelands::DescriptionIndex>> usable_buildings;
 
+	std::map<Widelands::ProductionUICategory, const Widelands::BuildingDescr*> representative_buildings;
+
 	for (const auto& category : tribe.building_ui_categories()) {
 		log_dbg("NOCOM processing %s", to_string(category.first).c_str());
+
+		const Widelands::BuildingDescr* representative_building = tribe.get_building_descr(*category.second.begin());
 
 		for (const Widelands::DescriptionIndex& building_index : category.second) {
 			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(building_index);
@@ -582,8 +586,15 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 					  Widelands::BUILDCAPS_MINE)) {
 					continue;
 				}
-				usable_buildings[category.first].insert(building_index);
-			} else {
+				usable_buildings[Widelands::ProductionUICategory::kMines].insert(building_index);
+				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
+					representative_building = building_descr;
+				}
+			} else if (category.first != Widelands::ProductionUICategory::kMines) {
+				if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
+					representative_building = building_descr;
+				}
+
 				int32_t size = building_descr->get_size() - Widelands::BaseImmovable::SMALL;
 
 				if (((building_descr->get_built_over_immovable() == Widelands::INVALID_INDEX ?
@@ -604,6 +615,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 				usable_buildings[category.first].insert(building_index);
 			}
 		}
+		representative_buildings[category.first] = representative_building;
 	}
 
 
@@ -627,8 +639,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 		// NOCOM kImgTabBuildmine
 
 		// NOCOM we'll still want to see building size. Names too?
-
-		const Widelands::BuildingDescr* representative = tribe.get_building_descr(*category.second.begin());
+		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
 		add_tab(to_string(category.first), representative->icon_filename().c_str(), grid, to_string(category.first));
 	}
 }
