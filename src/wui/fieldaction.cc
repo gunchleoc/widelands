@@ -543,6 +543,10 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 		for (const Widelands::TribeDescr::ScoredDescriptionIndex& item : category.second) {
 			const Widelands::BuildingDescr* building_descr = tribe.get_building_descr(item.index);
 
+			if (!representative_building->is_buildable() || representative_building->get_size() < Widelands::BaseImmovable::MEDIUM) {
+				representative_building = building_descr;
+			}
+
 			//  Some building types cannot be built (i.e. construction site) and not
 			//  allowed buildings.
 			if (ibase().egbase().is_game()) {
@@ -613,9 +617,6 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 				}
 
 			}
-			if (!representative_building->is_buildable() || (building_descr->get_size() > representative_building->get_size())) {
-				representative_building = building_descr;
-			}
 		}
 		// NOCOM autogeneration for the tab icon sucks.
 		representative_buildings[category.first] = representative_building;
@@ -624,6 +625,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 	// NOCOM document
 	for (const auto& category : usable_buildings) {
 		UI::Box* vbox = new UI::Box(&tabpanel_, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
+		log_dbg("############# Category: %s", to_string(category.first).c_str());
 
 		for (const auto& size_category : category.second) {
 			std::string label_icon;
@@ -652,7 +654,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			default:
 				NEVER_HERE();
 			}
-			log_dbg("############# Category: %s", label_text.c_str());
+			log_dbg("----------- Section: %s", label_text.c_str());
 			UI::Box* label_box = new UI::Box(vbox, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
 			UI::Textarea* label = new UI::Textarea(label_box,
 												   UI::PanelStyle::kWui,
@@ -681,29 +683,34 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
 		}
 
-		std::string tooltip;
+		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
+		std::string category_tooltip;
+		std::string category_icon = representative->icon_filename();
 		switch (category.first) {
 		case Widelands::ProductionUICategory::kConstruction:
-			tooltip = pgettext("buildgrid", "Construction");
+			category_tooltip = pgettext("buildgrid", "Construction");
+			category_icon = tribe.get_worker_descr(tribe.builder())->icon_filename();
 			break;
 		case Widelands::ProductionUICategory::kTools:
-			tooltip = pgettext("buildgrid", "Tools");
+			category_tooltip = pgettext("buildgrid", "Tools");
 			break;
 		case Widelands::ProductionUICategory::kTraining:
-			tooltip = pgettext("buildgrid", "Training");
+			category_tooltip = pgettext("buildgrid", "Training");
+			category_icon = tribe.get_worker_descr(tribe.soldier())->icon_filename();
 			break;
 		case Widelands::ProductionUICategory::kTransport:
-			tooltip = pgettext("buildgrid", "Wares & Transport");
+			category_tooltip = pgettext("buildgrid", "Wares & Transport");
+			category_icon = tribe.get_worker_descr(tribe.carrier2())->icon_filename();
 			break;
 		case Widelands::ProductionUICategory::kNone:
-			tooltip = pgettext("buildgrid", "Miscellaneous");
+			category_tooltip = pgettext("buildgrid", "Miscellaneous");
 			break;
 		case Widelands::ProductionUICategory::kMilitary:
-			tooltip = pgettext("buildgrid", "Military");
+			category_tooltip = pgettext("buildgrid", "Military");
 			break;
 		}
-		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
-		add_tab(to_string(category.first), representative->icon_filename().c_str(), vbox, tooltip);
+
+		add_tab(to_string(category.first), category_icon.c_str(), vbox, category_tooltip);
 	}
 }
 
