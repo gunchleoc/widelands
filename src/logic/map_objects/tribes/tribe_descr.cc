@@ -1507,6 +1507,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 
 	// NOCOM document special handling for mines
+	std::map<DescriptionIndex, unsigned> squashed_buildings;
 	for (const auto& category : productionsite_categories_) {
 		switch (category.first) {
 		case ProductionCategory::kNone:
@@ -1522,12 +1523,29 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			building_ui_categories_[ProductionUICategory::kTraining].insert(category.second.begin(), category.second.end());
 			break;
 		case ProductionCategory::kMining:
+			// Skip; this is for potential AI use
 			break;
 		case ProductionCategory::kRoads:
 		case ProductionCategory::kSeafaring:
 		case ProductionCategory::kWaterways:
-			// NOCOM 2 Reed Yard for Wares & Transport
-			building_ui_categories_[ProductionUICategory::kTransport].insert(category.second.begin(), category.second.end());
+			// Avoid duplicates due to differences in scoring. Take the lowest score.
+			for (const ScoredDescriptionIndex& scored : category.second) {
+				auto squashed_it = squashed_buildings.find(scored.index);
+				if (squashed_it != squashed_buildings.end()) {
+					if (squashed_it->second > scored.score) {
+						// All const, so we remove and add
+						squashed_buildings.erase(squashed_it);
+						squashed_buildings.insert(std::make_pair(scored.index, scored.score));
+					}
+				} else {
+					squashed_buildings.insert(std::make_pair(scored.index, scored.score));
+				}
+			}
+		}
+	}
+	if (!squashed_buildings.empty()) {
+		for (const auto& item : squashed_buildings) {
+			building_ui_categories_[ProductionUICategory::kTransport].insert({item.first, item.second});
 		}
 	}
 
