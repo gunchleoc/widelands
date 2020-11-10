@@ -1348,8 +1348,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// Calculate workarea overlaps + AI info
 	for (ProductionSiteDescr* prod : productionsites) {
-		// NOCOM fix Amazon ferries
-
 		const DescriptionIndex prod_index = building_index(prod->name());
 
 		std::map<ProductionCategory, unsigned> squashed_categories;
