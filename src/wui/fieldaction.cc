@@ -27,6 +27,7 @@
 #include "economy/road.h"
 #include "economy/waterway.h"
 #include "graphic/style_manager.h"
+#include "graphic/text_layout.h"
 #include "logic/cmd_queue.h"
 #include "logic/map_objects/checkstep.h"
 #include "logic/map_objects/tribes/attack_target.h"
@@ -73,7 +74,6 @@ private:
 	void mouseout_slot(int32_t idx);
 	void mousein_slot(int32_t idx);
 
-private:
 	Widelands::Player* plr_;
 };
 
@@ -95,12 +95,7 @@ void BuildGrid::add(Widelands::DescriptionIndex id) {
 	   *plr_->tribe().get_building_descr(Widelands::DescriptionIndex(id));
 
 	UI::IconGrid::add(descr.name(), descr.representative_image(&plr_->get_playercolor()),
-	                  reinterpret_cast<void*>(id),
-	                  descr.descname() + "<br>" +
-	                     g_style_manager->ware_info_style(UI::WareInfoStyle::kNormal)
-	                        .header_font()
-	                        .as_font_tag(_("Construction costs:")) +
-	                     "<br>" + waremap_to_richtext(plr_->tribe(), descr.buildcost()));
+	                  reinterpret_cast<void*>(id));
 }
 
 /*
@@ -182,6 +177,7 @@ public:
 	void act_build(Widelands::DescriptionIndex);
 	void building_icon_mouse_out(Widelands::DescriptionIndex);
 	void building_icon_mouse_in(Widelands::DescriptionIndex);
+	void update_buildinginfo(Widelands::DescriptionIndex idx);
 	void act_geologist();
 	void act_mark_removal();
 	void act_unmark_removal();
@@ -217,6 +213,9 @@ private:
 	std::set<Widelands::Coords> overlapping_workareas_;
 	bool is_showing_workarea_overlaps_;
 	Widelands::DescriptionIndex building_under_mouse_;
+
+	// Infolabels for tab panels
+	std::map<uint32_t, UI::MultilineTextarea*> infolabels_;
 
 	/// Variables to use with attack dialog.
 	AttackBox* attack_box_;
@@ -675,12 +674,14 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			vbox->add(grid);
 			vbox->add_space(8);
 
-			// NOCOM Names too?
 			grid->buildclicked.connect([this](Widelands::DescriptionIndex i) { act_build(i); });
 			grid->buildmouseout.connect(
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_out(i); });
 			grid->buildmousein.connect(
 			   [this](Widelands::DescriptionIndex i) { building_icon_mouse_in(i); });
+			grid->buildmousein.connect(
+			   [this](Widelands::DescriptionIndex i) { update_buildinginfo(i); });
+
 		}
 
 		const Widelands::BuildingDescr* representative = representative_buildings.at(category.first);
@@ -710,7 +711,18 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			break;
 		}
 
-		add_tab(to_string(category.first), category_icon.c_str(), vbox, category_tooltip);
+		uint32_t tab_id = add_tab(to_string(category.first), category_icon.c_str(), vbox, category_tooltip);
+
+		// Bottom label with info about current building
+		UI::Textarea* selected_building_label = new UI::Textarea(vbox,
+											   UI::PanelStyle::kFsMenu,
+											   UI::FontStyle::kWuiInfoPanelHeading, _("Building Information"));
+		vbox->add(selected_building_label);
+
+		UI::MultilineTextarea* infolabel = new UI::MultilineTextarea(vbox, 0, 0, 0, 0, UI::PanelStyle::kWui, "", UI::Align::kLeft, UI::MultilineTextarea::ScrollMode::kNoScrolling);
+
+		infolabels_.insert(std::make_pair(tab_id, infolabel));
+		vbox->add(infolabel, UI::Box::Resizing::kExpandBoth);
 	}
 }
 
@@ -996,7 +1008,19 @@ constexpr uint32_t kOverlapColorPositive = 0xff3fbf3f;
 constexpr uint32_t kOverlapColorNegative = 0xffbf3f3f;
 constexpr uint32_t kOverlapColorPale = 0x7fffffff;
 
+void FieldActionWindow::update_buildinginfo(const Widelands::DescriptionIndex idx) {
+	const Widelands::TribeDescr& tribe = player_->tribe();
+	const Widelands::BuildingDescr& descr = *tribe.get_building_descr(idx);
+	infolabels_.at(tabpanel_.active())->set_text(as_richtext_paragraph(descr.descname() + "<br>" +
+												 g_style_manager->ware_info_style(UI::WareInfoStyle::kNormal)
+													.header_font()
+													.as_font_tag(_("Construction costs:")) +
+												 "<br>" + waremap_to_richtext(tribe, descr.buildcost()), UI::FontStyle::kWuiTooltip));
+
+}
+
 void FieldActionWindow::building_icon_mouse_in(const Widelands::DescriptionIndex idx) {
+
 	if (!showing_workarea_preview_) {
 		assert(overlapping_workareas_.empty());
 		building_under_mouse_ = idx;
