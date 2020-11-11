@@ -240,6 +240,7 @@ private:
 	   ware_worker_categories_;
 	std::map<ProductionCategory, std::set<ScoredDescriptionIndex>> productionsite_categories_;
 	std::map<ProductionUICategory, std::set<ScoredDescriptionIndex>> building_ui_categories_;
+	std::map<DescriptionIndex, float> ware_preciousness_;
 
 	// An optional custom imageset for the in-game menu toolbar
 	std::unique_ptr<ToolbarImageset> toolbar_image_set_;

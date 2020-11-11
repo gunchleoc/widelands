@@ -520,6 +520,8 @@ void TribeDescr::load_wares(const LuaTable& table, Descriptions& descriptions) {
 
 				// log_dbg("NOCOM loaded ware %d %s", wareindex, ware_name.c_str());
 
+				ware_preciousness_.insert(std::make_pair(wareindex, 1.f));
+
 				// Set default_target_quantity (optional) and preciousness
 				WareDescr* ware_descr = descriptions.get_mutable_ware_descr(wareindex);
 				if (ware_table->has_key("default_target_quantity")) {
@@ -1470,6 +1472,53 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				}
 			}
 		}
+
+		// NOCOM document
+		/*
+		if (prod->input_wares().empty() && prod->input_workers().empty()) {
+			std::set<Widelands::DescriptionIndex> walked_productionsites;
+			std::set<Widelands::DescriptionIndex> productionsites_to_walk{building_index(prod->name())};
+			for (DescriptionIndex ware_index : prod->output_ware_types()) {
+				walk_ware_preciousness(this, walked_productionsites, productionsites_to_walk, ware_index, ware_preciousness_);
+			}
+		} */
+
+		if (prod->production_links().empty()) {
+			for (DescriptionIndex output_ware : prod->output_ware_types()) {
+				ware_preciousness_.at(output_ware) += 1.f;
+			}
+		}
+
+		// NOCOM ware preciousness here
+		// NOCOM scale by length of production chain
+		for (const Widelands::ProductionSiteDescr::ProductionLink& link :
+			 prod->production_links()) {
+			// The more output we generate, the more precious we are
+			float output_factor = 1.f;
+			output_factor *= static_cast<float>(link.outputs.first->size());
+			for (const WareAmount& ware_amount : *link.outputs.first) {
+				output_factor *= ware_amount.second;
+			}
+
+			for (const Widelands::ProductionProgram::WareTypeGroup& group : *link.inputs) {
+
+				// using WareTypeGroup = std::pair<std::set<WareWorkerId>, uint8_t>;
+				// More precious for bigger amount needed, less precious for alternative wares
+				const float input_factor = group.second / static_cast<float>(group.first.size());
+				for (const Widelands::ProductionProgram::WareWorkerId& id : group.first) {
+					if (id.type == Widelands::WareWorker::wwWARE) {
+						ware_preciousness_.at(id.index) *= output_factor * input_factor;
+					}
+				}
+			}
+
+		}
+	}
+
+	log_dbg("====== Ware preciousness ========");
+	for (DescriptionIndex ware_index : wares_) {
+		const WareDescr* ware_descr = get_ware_descr(ware_index);
+		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_.at(ware_index), ware_descr->name().c_str());
 	}
 
 	// NOCOM document
