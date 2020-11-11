@@ -20,6 +20,7 @@
 #include "logic/map_objects/tribes/tribe_descr.h"
 
 #include <memory>
+#include <stack>
 
 #include "base/i18n.h"
 #include "base/log.h"
@@ -1594,6 +1595,47 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		for (const auto& item : squashed_buildings) {
 			building_ui_categories_[ProductionUICategory::kTransport].insert({item.first, item.second});
 		}
+	}
+
+	// NOCOM preciousness2. I the end, we'll need to take both production cost and usefulness into acount.
+	std::map<DescriptionIndex, const ProductionSiteDescr*> idx2prod;
+	for (const ProductionSiteDescr* prod : productionsites) {
+		idx2prod.insert((std::make_pair(building_index(prod->name()), prod)));
+	}
+
+	log_dbg("====== Ware preciousness 2 ========");
+
+	for (const DescriptionIndex ware_index : wares_) {
+		const WareDescr* ware = get_ware_descr(ware_index);
+		int preciousness = 0;
+
+		std::set<DescriptionIndex> walked_productionsites;
+		std::stack<DescriptionIndex> productionsites_to_walk;
+		for (const auto& producer_idx : ware->producers()) {
+			productionsites_to_walk.push(producer_idx);
+		}
+
+		// NOCOM separately for each producer?
+		while (!productionsites_to_walk.empty()) {
+			const DescriptionIndex prod_index = productionsites_to_walk.top();
+			productionsites_to_walk.pop();
+			walked_productionsites.insert(prod_index);
+			const ProductionSiteDescr* prod = idx2prod.at(prod_index);
+			// NOCOM do something more fancy with the production links
+			for (const WareAmount& amount : prod->input_wares()) {
+				// Size of input queue is a bad metric preciousness += amount.second;
+				++preciousness;
+				if (has_ware(amount.first)) {
+					for (const auto& new_producer_idx : get_ware_descr(amount.first)->producers()) {
+						if (walked_productionsites.count(new_producer_idx) == 0) {
+							productionsites_to_walk.push(new_producer_idx);
+					}
+				}
+				}
+			}
+		}
+
+		log_dbg("\t%d\t%d\t%s", ware->ai_hints().preciousness(name()), preciousness, ware->name().c_str());
 	}
 
 }
