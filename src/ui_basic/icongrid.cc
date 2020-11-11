@@ -39,7 +39,7 @@ struct IconGridButton : public Button {
 	            y,
 	            w,
 	            h,
-	            UI::ButtonStyle::kWuiBuildingStats,
+	            UI::ButtonStyle::kWuiSecondary,
 	            foreground_picture_id,
 	            tooltip_text,
 	            UI::Button::VisualState::kFlat),
@@ -82,6 +82,7 @@ int32_t IconGrid::add(const std::string& name,
                       const Image* pic,
                       void* data,
                       const std::string& tooltip_text) {
+	constexpr int kPadding = 4;
 	Item it;
 
 	it.data = data;
@@ -92,17 +93,17 @@ int32_t IconGrid::add(const std::string& name,
 	const int32_t rows = (items_.size() + columns_ - 1) / columns_;
 
 	if (rows <= 1) {
-		set_desired_size(cell_width_ * columns_, cell_height_);
+		set_desired_size((cell_width_ + kPadding) * columns_ + kPadding, (cell_height_ + kPadding) + kPadding);
 	} else {
-		set_desired_size(cell_width_ * columns_, cell_height_ * rows);
+		set_desired_size((cell_width_ + kPadding) * columns_ + kPadding, (cell_height_ + kPadding) * rows + kPadding);
 	}
 
 	uint32_t idx = items_.size() - 1;
-	uint32_t x = (idx % columns_) * cell_width_;
-	uint32_t y = (idx / columns_) * cell_height_;
+	uint32_t x = (idx % columns_) * (cell_width_ + kPadding);
+	uint32_t y = (idx / columns_) * (cell_height_ + kPadding);
 
 	UI::Button* btn =
-	   new IconGridButton(*this, name, x, y, cell_width_, cell_height_, pic, idx, tooltip_text);
+	   new IconGridButton(*this, name, x + kPadding, y + kPadding, cell_width_, cell_height_, pic, idx, tooltip_text);
 	btn->sigclicked.connect([this, idx]() { clicked_button(idx); });
 
 	return idx;

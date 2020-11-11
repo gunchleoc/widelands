@@ -256,7 +256,7 @@ FieldActionWindow::FieldActionWindow(InteractiveBase* const ib,
      player_(plr),
      map_(ib->egbase().map()),
      node_(ib->get_sel_pos().node, &map_[ib->get_sel_pos().node]),
-     tabpanel_(this, UI::TabPanelStyle::kWuiDark),
+     tabpanel_(this, UI::TabPanelStyle::kWuiLight),
      fastclick_(true),
      best_tab_(0),
      showing_workarea_preview_(false),
@@ -657,7 +657,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			log_dbg("----------- Section: %s", label_text.c_str());
 			UI::Box* label_box = new UI::Box(vbox, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
 			UI::Textarea* label = new UI::Textarea(label_box,
-												   UI::PanelStyle::kWui,
+												   UI::PanelStyle::kFsMenu,
 												   UI::FontStyle::kWuiInfoPanelHeading, label_text);
 
 			UI::Icon* icon = new UI::Icon(label_box, UI::PanelStyle::kWui, g_image_cache->get(label_icon));
