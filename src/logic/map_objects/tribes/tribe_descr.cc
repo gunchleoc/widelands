@@ -1522,6 +1522,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_.at(ware_index), ware_descr->name().c_str());
 	}
 
+	// NOCOM crash somewhere with tribes other than Barbarians
+
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
 		std::map<ProductionCategory, unsigned> squashed_categories;

@@ -697,23 +697,29 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 		case Widelands::ProductionUICategory::kConstruction:
 			category_tooltip = pgettext("buildgrid", "Construction");
 			category_icon = tribe.get_worker_descr(tribe.builder())->icon_filename();
+			// NOCOM category_icon = "images/wui/stats/genstats_nrbuildings.png";
 			break;
 		case Widelands::ProductionUICategory::kTools:
 			category_tooltip = pgettext("buildgrid", "Tools");
+			category_icon = "images/wui/buildings/menu_tab_workers.png";
 			break;
 		case Widelands::ProductionUICategory::kTraining:
 			category_tooltip = pgettext("buildgrid", "Training");
-			category_icon = tribe.get_worker_descr(tribe.soldier())->icon_filename();
+			// NOCOM category_icon = tribe.get_worker_descr(tribe.soldier())->icon_filename();
+			category_icon = "images/wui/buildings/menu_tab_military.png";
 			break;
 		case Widelands::ProductionUICategory::kTransport:
 			category_tooltip = pgettext("buildgrid", "Wares & Transport");
-			category_icon = tribe.get_worker_descr(tribe.carrier2())->icon_filename();
+			// NOCOM category_icon = tribe.get_worker_descr(tribe.carrier2())->icon_filename();
+			category_icon = "images/wui/buildings/menu_tab_wares.png";
 			break;
 		case Widelands::ProductionUICategory::kNone:
 			category_tooltip = pgettext("buildgrid", "Miscellaneous");
+			category_icon = "images/wui/stats/genstats_nrbuildings.png";
 			break;
 		case Widelands::ProductionUICategory::kMilitary:
 			category_tooltip = pgettext("buildgrid", "Military");
+			category_icon = "images/wui/messages/messages_warfare.png";
 			break;
 		}
 
