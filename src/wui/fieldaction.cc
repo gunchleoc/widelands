@@ -31,6 +31,7 @@
 #include "logic/cmd_queue.h"
 #include "logic/map_objects/checkstep.h"
 #include "logic/map_objects/tribes/attack_target.h"
+#include "logic/map_objects/tribes/militarysite.h"
 #include "logic/map_objects/tribes/soldier.h"
 #include "logic/map_objects/tribes/tribe_descr.h"
 #include "logic/map_objects/tribes/warehouse.h"
@@ -214,8 +215,13 @@ private:
 	bool is_showing_workarea_overlaps_;
 	Widelands::DescriptionIndex building_under_mouse_;
 
-	// Infolabels for tab panels
-	std::map<uint32_t, UI::MultilineTextarea*> infolabels_;
+	// Info section for tab panels
+	std::map<uint32_t, UI::Textarea*> infolabels_descname_;
+	std::map<uint32_t, UI::MultilineTextarea*> infolabels_construction_;
+	std::map<uint32_t, UI::Textarea*> infolabels_input_header_;
+	std::map<uint32_t, UI::Textarea*> infolabels_output_header_;
+	std::map<uint32_t, UI::Box*> infoboxes_input_;
+	std::map<uint32_t, UI::Box*> infoboxes_output_;
 
 	/// Variables to use with attack dialog.
 	AttackBox* attack_box_;
@@ -713,16 +719,42 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 
 		uint32_t tab_id = add_tab(to_string(category.first), category_icon.c_str(), vbox, category_tooltip);
 
-		// Bottom label with info about current building
-		UI::Textarea* selected_building_label = new UI::Textarea(vbox,
-											   UI::PanelStyle::kFsMenu,
-											   UI::FontStyle::kWuiInfoPanelHeading, _("Building Information"));
-		vbox->add(selected_building_label);
+		// Bottom area with info about current building
 
-		UI::MultilineTextarea* infolabel = new UI::MultilineTextarea(vbox, 0, 0, 0, 0, UI::PanelStyle::kWui, "", UI::Align::kLeft, UI::MultilineTextarea::ScrollMode::kNoScrolling);
+		// Building descname
+		UI::Textarea* header_label = new UI::Textarea(vbox, UI::PanelStyle::kWui, UI::FontStyle::kWuiInfoPanelHeading, "");
+		vbox->add(header_label);
+		infolabels_descname_.insert(std::make_pair(tab_id, header_label));
 
-		infolabels_.insert(std::make_pair(tab_id, infolabel));
-		vbox->add(infolabel, UI::Box::Resizing::kExpandBoth);
+		// Building info
+		UI::Box* info_box = new UI::Box(vbox, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
+		vbox->add(info_box, UI::Box::Resizing::kExpandBoth);
+
+		// Construction costs
+		UI::MultilineTextarea* infolabel = new UI::MultilineTextarea(info_box, 0, 0, 0, 0, UI::PanelStyle::kWui, "", UI::Align::kLeft, UI::MultilineTextarea::ScrollMode::kNoScrolling);
+		infolabels_construction_.insert(std::make_pair(tab_id, infolabel));
+		info_box->add(infolabel, UI::Box::Resizing::kExpandBoth);
+
+		// Production
+		UI::Box* production_box = new UI::Box(info_box, UI::PanelStyle::kWui, 0, 0, UI::Box::Vertical);
+		info_box->add(production_box, UI::Box::Resizing::kExpandBoth);
+
+		header_label = new UI::Textarea(production_box, UI::PanelStyle::kWui, UI::FontStyle::kWuiInfoPanelParagraph, " ");
+		infolabels_input_header_.insert(std::make_pair(tab_id, header_label));
+		production_box->add(header_label);
+
+		UI::Box* inputs_box = new UI::Box(production_box, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
+		infoboxes_input_.insert(std::make_pair(tab_id, inputs_box));
+		production_box->add(inputs_box);
+
+		header_label = new UI::Textarea(production_box, UI::PanelStyle::kWui, UI::FontStyle::kWuiInfoPanelParagraph, " ");
+		infolabels_output_header_.insert(std::make_pair(tab_id, header_label));
+		production_box->add(header_label);
+
+
+		UI::Box* outputs_box = new UI::Box(production_box, UI::PanelStyle::kWui, 0, 0, UI::Box::Horizontal);
+		infoboxes_output_.insert(std::make_pair(tab_id, outputs_box));
+		production_box->add(outputs_box);
 	}
 }
 
@@ -1011,12 +1043,74 @@ constexpr uint32_t kOverlapColorPale = 0x7fffffff;
 void FieldActionWindow::update_buildinginfo(const Widelands::DescriptionIndex idx) {
 	const Widelands::TribeDescr& tribe = player_->tribe();
 	const Widelands::BuildingDescr& descr = *tribe.get_building_descr(idx);
-	infolabels_.at(tabpanel_.active())->set_text(as_richtext_paragraph(descr.descname() + "<br>" +
+	infolabels_descname_.at(tabpanel_.active())->set_text(descr.descname());
+
+	infolabels_construction_.at(tabpanel_.active())->set_text(as_richtext_paragraph(
 												 g_style_manager->ware_info_style(UI::WareInfoStyle::kNormal)
 													.header_font()
 													.as_font_tag(_("Construction costs:")) +
 												 "<br>" + waremap_to_richtext(tribe, descr.buildcost()), UI::FontStyle::kWuiTooltip));
 
+
+	infolabels_input_header_.at(tabpanel_.active())->set_text("");
+	infolabels_output_header_.at(tabpanel_.active())->set_text("");
+
+	UI::Box* input_box = infoboxes_input_.at(tabpanel_.active());
+	input_box->clear();
+	input_box->free_children();
+	UI::Box* output_box = infoboxes_output_.at(tabpanel_.active());
+	output_box->clear();
+	output_box->free_children();
+
+	auto add_icon = [](const Image* icon_image, UI::Box* box) {
+		if (icon_image != nullptr) {
+			UI::Icon* icon = new UI::Icon(box,
+				 UI::PanelStyle::kWui,
+				 0,
+				 0,
+				 icon_image->width(),
+				 icon_image->height(),
+				 icon_image);
+			box->add(icon);
+		}
+	};
+
+	// We cast this here for both trainingsites and productionsites
+	const Widelands::ProductionSiteDescr* productionsite = dynamic_cast<const Widelands::ProductionSiteDescr*>(&descr);
+
+	switch (descr.type()) {
+	case Widelands::MapObjectType::PRODUCTIONSITE: {
+		infolabels_output_header_.at(tabpanel_.active())->set_text("Produces:");
+		for (const Widelands::DescriptionIndex output : productionsite->output_ware_types()) {
+			add_icon(tribe.get_ware_descr(output)->icon(), output_box);
+		}
+
+		for (const Widelands::DescriptionIndex output : productionsite->output_worker_types()) {
+			add_icon(tribe.get_worker_descr(output)->icon(), output_box);
+		}
+	}
+		FALLS_THROUGH;
+	case Widelands::MapObjectType::TRAININGSITE:
+		infolabels_input_header_.at(tabpanel_.active())->set_text("Consumes:");
+
+		for (const Widelands::WareAmount& input : productionsite->input_wares()) {
+			add_icon(tribe.get_ware_descr(input.first)->icon(), input_box);
+		}
+		for (const Widelands::WareAmount& input : productionsite->input_workers()) {
+			add_icon(tribe.get_worker_descr(input.first)->icon(), input_box);
+		}
+		break;
+	case Widelands::MapObjectType::MILITARYSITE: {
+		const Widelands::MilitarySiteDescr& militarysite = dynamic_cast<const Widelands::MilitarySiteDescr&>(descr);
+		infolabels_input_header_.at(tabpanel_.active())->set_text("Capacity:");
+		Widelands::Quantity quantity = militarysite.get_max_number_of_soldiers();
+		UI::Textarea* quantity_label = new UI::Textarea(input_box, UI::PanelStyle::kWui, UI::FontStyle::kWuiInfoPanelParagraph,
+														(boost::format("%d") % quantity).str());
+		input_box->add(quantity_label);
+	}
+	default:
+		; // NOCOM implement the rest
+	}
 }
 
 void FieldActionWindow::building_icon_mouse_in(const Widelands::DescriptionIndex idx) {
