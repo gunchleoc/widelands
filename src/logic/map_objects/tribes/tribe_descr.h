@@ -155,7 +155,7 @@ public:
 	const std::set<WeightedProductionCategory>& ware_worker_categories(DescriptionIndex index,
 	                                                                   WareWorker type) const;
 	const std::map<ProductionCategory, std::set<ScoredDescriptionIndex>>& productionsite_categories() const;
-	const std::map<ProductionUICategory, std::set<ScoredDescriptionIndex>>& building_ui_categories() const;
+	const std::map<ProductionUICategory, std::set<DescriptionIndex>>& building_ui_categories() const;
 
 	bool uses_resource(const std::string& name) const {
 		return used_resources_.count(name);
@@ -239,7 +239,7 @@ private:
 	std::map<ProductionProgram::WareWorkerId, std::set<WeightedProductionCategory>>
 	   ware_worker_categories_;
 	std::map<ProductionCategory, std::set<ScoredDescriptionIndex>> productionsite_categories_;
-	std::map<ProductionUICategory, std::set<ScoredDescriptionIndex>> building_ui_categories_;
+	std::map<ProductionUICategory, std::set<DescriptionIndex>> building_ui_categories_;
 	std::map<DescriptionIndex, float> ware_preciousness_;
 
 	// An optional custom imageset for the in-game menu toolbar

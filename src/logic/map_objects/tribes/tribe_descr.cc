@@ -689,14 +689,14 @@ void TribeDescr::load_buildings(const LuaTable& table, Descriptions& description
 			switch (building_descr->type()) {
 			case MapObjectType::TRAININGSITE:
 				trainingsites_.push_back(index);
-				building_ui_categories_[ProductionUICategory::kTraining].insert({index, 0});
+				building_ui_categories_[ProductionUICategory::kTraining].insert(index);
 				break;
 			case MapObjectType::MILITARYSITE:
-				building_ui_categories_[ProductionUICategory::kMilitary].insert({index, 0});
+				building_ui_categories_[ProductionUICategory::kMilitary].insert(index);
 				break;
 			case MapObjectType::MARKET:
 			case MapObjectType::WAREHOUSE:
-				building_ui_categories_[ProductionUICategory::kTransport].insert({index, 0});
+				building_ui_categories_[ProductionUICategory::kTransport].insert(index);
 				break;
 			default:
 				;
@@ -931,7 +931,7 @@ const std::map<ProductionCategory, std::set<TribeDescr::ScoredDescriptionIndex>>
 TribeDescr::productionsite_categories() const {
 	return productionsite_categories_;
 }
-const std::map<ProductionUICategory, std::set<TribeDescr::ScoredDescriptionIndex>>& TribeDescr::building_ui_categories() const {
+const std::map<ProductionUICategory, std::set<DescriptionIndex>>& TribeDescr::building_ui_categories() const {
 	return building_ui_categories_;
 }
 
@@ -1555,47 +1555,35 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	}
 
 	// NOCOM document special handling for mines
-	std::map<DescriptionIndex, unsigned> squashed_buildings;
+
 	for (const auto& category : productionsite_categories_) {
+		ProductionUICategory ui_category;
 		switch (category.first) {
 		case ProductionCategory::kNone:
-			building_ui_categories_[ProductionUICategory::kNone].insert(category.second.begin(), category.second.end());
+			ui_category = ProductionUICategory::kNone;
 			break;
 		case ProductionCategory::kConstruction:
-			building_ui_categories_[ProductionUICategory::kConstruction].insert(category.second.begin(), category.second.end());
+			ui_category = ProductionUICategory::kConstruction;
 			break;
 		case ProductionCategory::kTool:
-			building_ui_categories_[ProductionUICategory::kTools].insert(category.second.begin(), category.second.end());
+			ui_category = ProductionUICategory::kTools;
 			break;
 		case ProductionCategory::kTraining:
-			building_ui_categories_[ProductionUICategory::kTraining].insert(category.second.begin(), category.second.end());
+			ui_category = ProductionUICategory::kTraining;
 			break;
 		case ProductionCategory::kMining:
 			// Skip; this is for potential AI use
-			break;
+			continue;
 		case ProductionCategory::kRoads:
 		case ProductionCategory::kSeafaring:
 		case ProductionCategory::kWaterways:
-			// Avoid duplicates due to differences in scoring. Take the lowest score.
-			for (const ScoredDescriptionIndex& scored : category.second) {
-				auto squashed_it = squashed_buildings.find(scored.index);
-				if (squashed_it != squashed_buildings.end()) {
-					if (squashed_it->second > scored.score) {
-						// All const, so we remove and add
-						squashed_buildings.erase(squashed_it);
-						squashed_buildings.insert(std::make_pair(scored.index, scored.score));
-					}
-				} else {
-					squashed_buildings.insert(std::make_pair(scored.index, scored.score));
-				}
-			}
+			ui_category = ProductionUICategory::kTransport;
+		}
+		for (const ScoredDescriptionIndex& item : category.second) {
+			building_ui_categories_[ui_category].insert(item.index);
 		}
 	}
-	if (!squashed_buildings.empty()) {
-		for (const auto& item : squashed_buildings) {
-			building_ui_categories_[ProductionUICategory::kTransport].insert({item.first, item.second});
-		}
-	}
+
 
 	// NOCOM preciousness2. I the end, we'll need to take both production cost and usefulness into acount.
 	std::map<DescriptionIndex, const ProductionSiteDescr*> idx2prod;
