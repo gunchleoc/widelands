@@ -1522,8 +1522,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_.at(ware_index), ware_descr->name().c_str());
 	}
 
-	// NOCOM crash somewhere with tribes other than Barbarians
-
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
 		std::map<ProductionCategory, unsigned> squashed_categories;
@@ -1610,14 +1608,16 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			const DescriptionIndex prod_index = productionsites_to_walk.top();
 			productionsites_to_walk.pop();
 			walked_productionsites.insert(prod_index);
+
 			const ProductionSiteDescr* prod = idx2prod.at(prod_index);
+
 			// NOCOM do something more fancy with the production links
 			for (const WareAmount& amount : prod->input_wares()) {
 				// Size of input queue is a bad metric preciousness += amount.second;
 				++preciousness;
 				if (has_ware(amount.first)) {
 					for (const auto& new_producer_idx : get_ware_descr(amount.first)->producers()) {
-						if (walked_productionsites.count(new_producer_idx) == 0) {
+						if (walked_productionsites.count(new_producer_idx) == 0 && idx2prod.count(new_producer_idx) == 1) {
 							productionsites_to_walk.push(new_producer_idx);
 					}
 				}
