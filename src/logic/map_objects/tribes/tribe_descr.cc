@@ -1473,53 +1473,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				}
 			}
 		}
-
-		// NOCOM document
-		/*
-		if (prod->input_wares().empty() && prod->input_workers().empty()) {
-			std::set<Widelands::DescriptionIndex> walked_productionsites;
-			std::set<Widelands::DescriptionIndex> productionsites_to_walk{building_index(prod->name())};
-			for (DescriptionIndex ware_index : prod->output_ware_types()) {
-				walk_ware_preciousness(this, walked_productionsites, productionsites_to_walk, ware_index, ware_preciousness_);
-			}
-		} */
-
-		if (prod->production_links().empty()) {
-			for (DescriptionIndex output_ware : prod->output_ware_types()) {
-				ware_preciousness_.at(output_ware) += 1.f;
-			}
-		}
-
-		// NOCOM ware preciousness here
-		// NOCOM scale by length of production chain
-		for (const Widelands::ProductionSiteDescr::ProductionLink& link :
-			 prod->production_links()) {
-			// The more output we generate, the more precious we are
-			float output_factor = 1.f;
-			output_factor *= static_cast<float>(link.outputs.first->size());
-			for (const WareAmount& ware_amount : *link.outputs.first) {
-				output_factor *= ware_amount.second;
-			}
-
-			for (const Widelands::ProductionProgram::WareTypeGroup& group : *link.inputs) {
-
-				// using WareTypeGroup = std::pair<std::set<WareWorkerId>, uint8_t>;
-				// More precious for bigger amount needed, less precious for alternative wares
-				const float input_factor = group.second / static_cast<float>(group.first.size());
-				for (const Widelands::ProductionProgram::WareWorkerId& id : group.first) {
-					if (id.type == Widelands::WareWorker::wwWARE) {
-						ware_preciousness_.at(id.index) *= output_factor * input_factor;
-					}
-				}
-			}
-
-		}
-	}
-
-	log_dbg("====== Ware preciousness ========");
-	for (DescriptionIndex ware_index : wares_) {
-		const WareDescr* ware_descr = get_ware_descr(ware_index);
-		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_.at(ware_index), ware_descr->name().c_str());
 	}
 
 	// NOCOM document
@@ -1584,48 +1537,167 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
-
-	// NOCOM preciousness2. I the end, we'll need to take both production cost and usefulness into acount.
+	// NOCOM Calculate ware preciousness
 	std::map<DescriptionIndex, const ProductionSiteDescr*> idx2prod;
 	for (const ProductionSiteDescr* prod : productionsites) {
 		idx2prod.insert((std::make_pair(building_index(prod->name()), prod)));
 	}
 
-	log_dbg("====== Ware preciousness 2 ========");
+	auto preciousness_at_building = [this](const ProductionSiteDescr* prodsite, std::set<ProductionProgram::WareWorkerId>* wares) {
+		float result = 1.f;
+		for (const ProductionSiteDescr::ProductionLink& link :
+			 prodsite->production_links()) {
+			bool use_this_link = false;
+			for (const ProductionProgram::WareTypeGroup& group : *link.inputs) {
+				for (const ProductionProgram::WareWorkerId& ware: *wares) {
+					if (group.first.count(ware)) {
+						use_this_link = true;
+						break;
+					}
+				}
+				if (use_this_link) {
+					break;
+				}
+			}
+			if (!use_this_link) {
+				continue;
+			}
+
+			float overall_count = 0.f;
+			float input = 1.f;
+			for (const ProductionProgram::WareTypeGroup& group : *link.inputs) {
+				overall_count += group.second;
+				// More precious for bigger amount needed, less precious for alternative wares
+				const float current_input_factor = group.second / static_cast<float>(group.first.size());
+				for (const ProductionProgram::WareWorkerId& id : group.first) {
+					if (wares->count(id) == 1) {
+						input *= current_input_factor;
+					}
+				}
+			}
+			input /= overall_count;
+			result *= input;
+
+			// log_dbg("NOCOM input: %.2f", result);
+
+			// The more output we generate, the more precious we are
+			float output_factor = 1.f;
+			output_factor *= static_cast<float>(link.outputs.first->size());
+			for (const WareAmount& ware_amount : *link.outputs.first) {
+				output_factor *= ware_amount.second;
+				wares->insert({ware_amount.first, link.outputs.second});
+			}
+			// log_dbg("NOCOM output factor: %.2f", output_factor);
+			result += output_factor;
+		}
+		return result;
+	};
+
+	log_dbg("====== Ware preciousness ========");
 
 	for (const DescriptionIndex ware_index : wares_) {
+		std::set<ProductionProgram::WareWorkerId> preciousness_wares;
+		ProductionProgram::WareWorkerId ware_id({ware_index, WareWorker::wwWARE});
+		preciousness_wares.insert(ware_id);
 		const WareDescr* ware = get_ware_descr(ware_index);
-		int preciousness = 0;
+		float preciousness = 0.f;
 
 		std::set<DescriptionIndex> walked_productionsites;
 		std::stack<DescriptionIndex> productionsites_to_walk;
-		for (const auto& producer_idx : ware->producers()) {
-			productionsites_to_walk.push(producer_idx);
+		for (const auto& producer_idx : ware->consumers()) {
+			if (idx2prod.count(producer_idx) == 1) {
+				productionsites_to_walk.push(producer_idx);
+			}
 		}
 
-		// NOCOM separately for each producer?
 		while (!productionsites_to_walk.empty()) {
 			const DescriptionIndex prod_index = productionsites_to_walk.top();
 			productionsites_to_walk.pop();
 			walked_productionsites.insert(prod_index);
+			preciousness += preciousness_at_building(idx2prod.at(prod_index), &preciousness_wares);
 
-			const ProductionSiteDescr* prod = idx2prod.at(prod_index);
-
-			// NOCOM do something more fancy with the production links
-			for (const WareAmount& amount : prod->input_wares()) {
-				// Size of input queue is a bad metric preciousness += amount.second;
-				++preciousness;
-				if (has_ware(amount.first)) {
-					for (const auto& new_producer_idx : get_ware_descr(amount.first)->producers()) {
+			for (const ProductionProgram::WareWorkerId& new_ware_id : preciousness_wares) {
+				if (new_ware_id.type == WareWorker::wwWARE) {
+					const WareDescr* new_ware = get_ware_descr(new_ware_id.index);
+					for (const DescriptionIndex& new_producer_idx : new_ware->producers()) {
 						if (walked_productionsites.count(new_producer_idx) == 0 && idx2prod.count(new_producer_idx) == 1) {
-							productionsites_to_walk.push(new_producer_idx);
+							// NOCOM some cutoff points here for circularity!
+							bool walk_this = true;
+							for (const auto& category : productionsite_categories_) {
+								for (const ScoredDescriptionIndex& scored : category.second) {
+									if (scored.score == 0) {
+										walk_this = false;
+										break;
+									}
+								}
+							}
+							if (walk_this) {
+								productionsites_to_walk.push(new_producer_idx);
+							}
+						}
 					}
-				}
 				}
 			}
 		}
 
-		log_dbg("\t%d\t%d\t%s", ware->ai_hints().preciousness(name()), preciousness, ware->name().c_str());
+
+
+		// Construction
+		constexpr float kBuildcostFactor = 1 / 6.f;
+		constexpr float kEnhancementcostFactor = 1 / 12.f;
+		if (construction_materials_.count(ware_index) == 1) {
+			for (const DescriptionIndex building_index : buildings_) {
+				const BuildingDescr* building_descr = get_building_descr(building_index);
+				for (const auto& building_buildcost : building_descr->buildcost()) {
+					if (building_buildcost.first == ware_index) {
+						preciousness += building_buildcost.second * kBuildcostFactor;
+					}
+				}
+
+				for (const auto& building_buildcost : building_descr->enhancement_cost()) {
+					if (building_buildcost.first == ware_index) {
+						preciousness += building_buildcost.second * kEnhancementcostFactor;
+					}
+				}
+			}
+		}
+
+		ware_preciousness_.insert(std::make_pair(ware_index, preciousness));
+
+	}
+
+	// Tools need a separate iteration, because they reuse the scores from the previous preciousness calculation
+	for (const DescriptionIndex ware_index : wares_) {
+		// Tools
+		float preciousness = 0.f;
+		const WareDescr* ware_descr = get_ware_descr(ware_index);
+
+		// Scale by how buildings use the worker and how precious the building output is
+		for (const ProductionSiteDescr* prod : productionsites) {
+			for (const WareAmount& working_position : prod->working_positions()) {
+
+				const WorkerDescr* worker_descr = get_worker_descr(working_position.first);
+				for (const auto& worker_buildcost : worker_descr->buildcost()) {
+					if (worker_buildcost.first == ware_descr->name()) {
+						preciousness += worker_buildcost.second;
+
+						float building_worker_score = 0.f;
+						for (const DescriptionIndex output_ware_index : prod->output_ware_types()) {
+							building_worker_score += ware_preciousness_[output_ware_index];
+						}
+						building_worker_score += prod->output_worker_types().size();
+						if (!prod->output_ware_types().empty()) {
+							building_worker_score /= static_cast<float>(prod->output_ware_types().size());
+						}
+						preciousness += building_worker_score * working_position.second;
+					}
+				}
+			}
+		}
+
+		ware_preciousness_[ware_index] += preciousness;
+
+		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_[ware_index], ware_descr->name().c_str());
 	}
 
 }
