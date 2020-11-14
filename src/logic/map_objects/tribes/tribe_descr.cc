@@ -208,7 +208,7 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 						for (const Widelands::ProductionProgram::WareWorkerId& input_item : input.first) {
 
 							for (Widelands::WeightedProductionCategory ware_category : categories_to_search) {
-								assert(ware_category != Widelands::ProductionCategory::kNone);
+								assert(ware_category.category != Widelands::ProductionCategory::kNone);
 
 
 								// Check if building matches. This gets rid of e.g. some cycles from the recycling centers.
@@ -920,6 +920,11 @@ DescriptionIndex TribeDescr::get_resource_indicator(ResourceDescription const* c
 	return list->second.find(lowest)->second;
 }
 
+float TribeDescr::ware_preciousness(DescriptionIndex ware_index) const {
+	assert(ware_preciousness_.count(ware_index) == 1);
+	return ware_preciousness_.at(ware_index);
+}
+
 const std::set<WeightedProductionCategory>&
 TribeDescr::ware_worker_categories(DescriptionIndex index, WareWorker type) const {
 	const ProductionProgram::WareWorkerId key{index, type};
@@ -1537,6 +1542,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
+
 	// NOCOM Calculate ware preciousness
 	std::map<DescriptionIndex, const ProductionSiteDescr*> idx2prod;
 	for (const ProductionSiteDescr* prod : productionsites) {
@@ -1640,8 +1646,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			}
 		}
 
-
-
 		// Construction
 		constexpr float kBuildcostFactor = 1 / 6.f;
 		constexpr float kEnhancementcostFactor = 1 / 12.f;
@@ -1662,8 +1666,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			}
 		}
 
-		ware_preciousness_.insert(std::make_pair(ware_index, preciousness));
-
+		ware_preciousness_[ware_index] = preciousness;
 	}
 
 	// Tools need a separate iteration, because they reuse the scores from the previous preciousness calculation
@@ -1672,33 +1675,44 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		float preciousness = 0.f;
 		const WareDescr* ware_descr = get_ware_descr(ware_index);
 
+		float buildings_divisor = 0.f;
+
 		// Scale by how buildings use the worker and how precious the building output is
 		for (const ProductionSiteDescr* prod : productionsites) {
 			for (const WareAmount& working_position : prod->working_positions()) {
 
 				const WorkerDescr* worker_descr = get_worker_descr(working_position.first);
-				for (const auto& worker_buildcost : worker_descr->buildcost()) {
-					if (worker_buildcost.first == ware_descr->name()) {
-						preciousness += worker_buildcost.second;
+				if (worker_descr->is_buildable()) {
+					for (const auto& worker_buildcost : worker_descr->buildcost()) {
+						if (worker_buildcost.first == ware_descr->name()) {
+							preciousness += worker_buildcost.second;
 
-						float building_worker_score = 0.f;
-						for (const DescriptionIndex output_ware_index : prod->output_ware_types()) {
-							building_worker_score += ware_preciousness_[output_ware_index];
+							float building_worker_score = 0.f;
+							for (const DescriptionIndex output_ware_index : prod->output_ware_types()) {
+								building_worker_score += ware_preciousness_[output_ware_index];
+							}
+							building_worker_score += prod->output_worker_types().size();
+							if (!prod->output_ware_types().empty()) {
+								building_worker_score /= static_cast<float>(prod->output_ware_types().size());
+							}
+							preciousness += building_worker_score * working_position.second;
+							buildings_divisor += working_position.second;
 						}
-						building_worker_score += prod->output_worker_types().size();
-						if (!prod->output_ware_types().empty()) {
-							building_worker_score /= static_cast<float>(prod->output_ware_types().size());
-						}
-						preciousness += building_worker_score * working_position.second;
 					}
 				}
 			}
 		}
 
-		ware_preciousness_[ware_index] += preciousness;
+		constexpr float kDownscaler = 7.f;
+
+		ware_preciousness_[ware_index] += preciousness / std::max(1.f, buildings_divisor * kDownscaler);
 
 		log_dbg("\t%d\t%.2f\t%s", ware_descr->ai_hints().preciousness(name()), ware_preciousness_[ware_index], ware_descr->name().c_str());
-	}
 
+		// NOCOM AI is still using vector instead of map for indices
+		for (const auto& prec : ware_preciousness_) {
+			descriptions.get_mutable_ware_descr(prec.first)->set_preciousness(name(), std::ceil(prec.second));
+		}
+	}
 }
 }  // namespace Widelands

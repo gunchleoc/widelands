@@ -152,6 +152,7 @@ public:
 	}
 
 	// NOCOM document
+	float ware_preciousness(DescriptionIndex ware_index) const;
 	const std::set<WeightedProductionCategory>& ware_worker_categories(DescriptionIndex index,
 	                                                                   WareWorker type) const;
 	const std::map<ProductionCategory, std::set<ScoredDescriptionIndex>>& productionsite_categories() const;
