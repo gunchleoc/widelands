@@ -113,8 +113,11 @@ public:
 	bool needs_seafaring() const {
 		return needs_seafaring_;
 	}
-	bool needs_waterways() const {
-		return needs_waterways_;
+	void set_needs_seafaring() {
+		needs_seafaring_ = true;
+	}
+	void set_needs_waterways() {
+		needs_waterways_ = true;
 	}
 
 	bool is_useful_on_map(bool seafaring_allowed, bool waterways_allowed) const;

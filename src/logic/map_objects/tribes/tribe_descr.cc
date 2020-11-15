@@ -1438,6 +1438,43 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
+	std::map<DescriptionIndex, ProductionSiteDescr*> idx2prod;
+	for (ProductionSiteDescr* prod : productionsites) {
+		idx2prod.insert((std::make_pair(building_index(prod->name()), prod)));
+	}
+
+	// Find seafaring & waterways buildings
+	std::map<DescriptionIndex, std::set<ProductionCategory>> building_categories;
+	for (const auto& category : productionsite_categories_) {
+		for (const DescriptionIndex& building_index : category.second) {
+			building_categories[building_index].insert(category.first);
+		}
+	}
+
+	// NOCOM weaving mill is overcategorized as construction
+	// NOCOM remove from Lua API once this is fixed
+	for (const auto& current : building_categories) {
+		if (current.second.size() == 2) {
+			if (current.second.count(ProductionCategory::kSeafaring) == 1 && current.second.count(ProductionCategory::kWaterways) == 1) {
+				ProductionSiteDescr* prod = idx2prod.at(current.first);
+				log_dbg("NOCOM seafaring & waterways: %s", prod->name().c_str());
+				prod->set_needs_seafaring();
+				prod->set_needs_waterways();
+			}
+
+		} else if (current.second.size() == 1) {
+			if (*current.second.begin() == ProductionCategory::kSeafaring) {
+				log_dbg("NOCOM seafaring: %s", idx2prod.at(current.first)->name().c_str());
+				idx2prod.at(current.first)->set_needs_seafaring();
+			} else if (*current.second.begin() == ProductionCategory::kWaterways) {
+				log_dbg("NOCOM waterways: %s", idx2prod.at(current.first)->name().c_str());
+				idx2prod.at(current.first)->set_needs_waterways();
+			}
+
+		}
+	}
+
+
 	// Assign UI categories for fieldaction
 	for (const auto& category : productionsite_categories_) {
 		ProductionUICategory ui_category;
@@ -1466,11 +1503,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 
 	// NOCOM Calculate ware preciousness
-	std::map<DescriptionIndex, const ProductionSiteDescr*> idx2prod;
-	for (const ProductionSiteDescr* prod : productionsites) {
-		idx2prod.insert((std::make_pair(building_index(prod->name()), prod)));
-	}
-
 	auto preciousness_at_building = [this](const ProductionSiteDescr* prodsite, std::set<ProductionProgram::WareWorkerId>* wares) {
 		float result = 1.f;
 		for (const ProductionSiteDescr::ProductionLink& link :
