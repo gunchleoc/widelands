@@ -270,7 +270,6 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 }  // namespace
 
 namespace Widelands {
-// NOCOM we need detection for waterway supplies and ships
 void TribeDescr::process_ware_supply_chain() {
 	std::set<DescriptionIndex> walked_productionsites;
 	// Take a copy for initialization, because we will be adding to the colntainer
@@ -302,25 +301,6 @@ void TribeDescr::process_ware_supply_chain() {
 			ware_worker_categories_[key];
 		}
 	}
-
-	// NOCOM debug, remove this
-	/*
-	log_dbg("********* Categories *********");
-	for (const auto& ware : ware_worker_categories_) {
-	   if (ware.first.type == WareWorker::wwWARE) {
-	      const WareDescr* test = get_ware_descr(ware.first.index);
-	      for (const WeightedProductionCategory& cat : ware.second) {
-	         log_dbg("NOCOM ware: %s -> %d %s", test->name().c_str(), cat.distance,
-	to_string(cat.category).c_str());
-	      }
-	   } else {
-	      const WorkerDescr* test = get_worker_descr(ware.first.index);
-	      for (const WeightedProductionCategory& cat : ware.second) {
-	         log_dbg("NOCOM worker: %s -> %d %s", test->name().c_str(), cat.distance,
-	to_string(cat.category).c_str());
-	      }
-	   }
-	} */
 }
 
 /**
@@ -525,8 +505,6 @@ void TribeDescr::load_wares(const LuaTable& table, Descriptions& descriptions) {
 					throw GameDataError("Duplicate definition of ware");
 				}
 
-				// log_dbg("NOCOM loaded ware %d %s", wareindex, ware_name.c_str());
-
 				ware_preciousness_.insert(std::make_pair(wareindex, 1.f));
 
 				// Set default_target_quantity (optional) and preciousness
@@ -601,8 +579,6 @@ void TribeDescr::load_workers(const LuaTable& table, Descriptions& descriptions)
 					throw GameDataError("Duplicate definition of worker");
 				}
 
-				// log_dbg("NOCOM loaded worker %d %s", workerindex, workername.c_str());
-
 				// Set default_target_quantity and preciousness (both optional)
 				WorkerDescr* worker_descr = descriptions.get_mutable_worker_descr(workerindex);
 				if (worker_table->has_key("default_target_quantity")) {
@@ -638,34 +614,22 @@ void TribeDescr::load_workers(const LuaTable& table, Descriptions& descriptions)
 	}
 
 	if (table.has_key("builder")) {
-		builder_ = add_special_worker(
-		   table.get_string("builder"), ProductionCategory::kConstruction, descriptions);
-		// log_dbg("NOCOM add special construction worker %d", builder_);
+		builder_ = add_special_worker(table.get_string("builder"), descriptions);
 	}
 	if (table.has_key("carrier")) {
-		carrier_ =
-		   add_special_worker(table.get_string("carrier"), ProductionCategory::kRoads, descriptions);
-		// log_dbg("NOCOM add special road worker %d", carrier_);
+		carrier_ = add_special_worker(table.get_string("carrier"), descriptions);
 	}
 	if (table.has_key("carrier2")) {
-		carrier2_ =
-		   add_special_worker(table.get_string("carrier2"), ProductionCategory::kRoads, descriptions);
-		// log_dbg("NOCOM add special road worker %d", carrier2_);
+		carrier2_ = add_special_worker(table.get_string("carrier2"), descriptions);
 	}
 	if (table.has_key("geologist")) {
-		geologist_ = add_special_worker(
-		   table.get_string("geologist"), ProductionCategory::kMining, descriptions);
-		// log_dbg("NOCOM add special mining worker %d", geologist_);
+		geologist_ = add_special_worker(table.get_string("geologist"), descriptions);
 	}
 	if (table.has_key("soldier")) {
-		soldier_ = add_special_worker(
-		   table.get_string("soldier"), ProductionCategory::kTraining, descriptions);
-		// log_dbg("NOCOM add special training worker %d", soldier_);
+		soldier_ = add_special_worker(table.get_string("soldier"), descriptions);
 	}
 	if (table.has_key("ferry")) {
-		ferry_ = add_special_worker(
-		   table.get_string("ferry"), ProductionCategory::kWaterways, descriptions);
-		// log_dbg("NOCOM add special waterway worker %d", ferry_);
+		ferry_ = add_special_worker(table.get_string("ferry"), descriptions);
 	}
 }
 
@@ -954,17 +918,12 @@ ToolbarImageset* TribeDescr::toolbar_image_set() const {
  */
 
 DescriptionIndex TribeDescr::add_special_worker(const std::string& workername,
-                                                ProductionCategory category,
                                                 Descriptions& descriptions) {
 	try {
 		DescriptionIndex worker = descriptions.load_worker(workername);
 		if (!has_worker(worker)) {
 			throw GameDataError("This tribe doesn't have the worker '%s'", workername.c_str());
 		}
-
-		ware_worker_categories_[ProductionProgram::WareWorkerId{worker, WareWorker::wwWORKER}].insert(
-		   WeightedProductionCategory{category, 0});
-
 		return worker;
 	} catch (const WException& e) {
 		throw GameDataError("Failed adding special worker '%s': %s", workername.c_str(), e.what());
@@ -1076,7 +1035,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM construction_materials_ is redundant now!
 	for (DescriptionIndex ware_idx : construction_materials_) {
-		// log_dbg("NOCOM add construction ware %d", ware_idx);
 		ware_worker_categories_[ProductionProgram::WareWorkerId{ware_idx, WareWorker::wwWARE}].insert(
 		   WeightedProductionCategory{ProductionCategory::kConstruction, 0});
 	}
@@ -1087,7 +1045,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			for (const auto& buildcost : worker->buildcost()) {
 				const DescriptionIndex ware_idx = ware_index(buildcost.first);
 				if (has_ware(ware_idx)) {
-					// log_dbg("NOCOM add tool ware %d for worker %s", ware_idx, worker->name().c_str());
 					ware_worker_categories_[ProductionProgram::WareWorkerId{
 					                           ware_idx, WareWorker::wwWARE}]
 					   .insert(WeightedProductionCategory{ProductionCategory::kTool, 0});
@@ -1287,29 +1244,13 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 
 		// Add ware input categories
-		if (prod->get_ismine()) {
-
+		if (prod->type() == MapObjectType::TRAININGSITE) {
 			for (const WareAmount& input : prod->input_wares()) {
-				// log_dbg("NOCOM add mining ware %d", input.first);
-				ware_worker_categories_[ProductionProgram::WareWorkerId{
-				                           input.first, WareWorker::wwWARE}]
-				   .insert(WeightedProductionCategory{ProductionCategory::kMining, 0});
-			}
-			for (const auto& input : prod->input_workers()) {
-				// log_dbg("NOCOM add mining worker %d", input.first);
-				ware_worker_categories_[ProductionProgram::WareWorkerId{
-				                           input.first, WareWorker::wwWORKER}]
-				   .insert(WeightedProductionCategory{ProductionCategory::kMining, 0});
-			}
-		} else if (prod->type() == MapObjectType::TRAININGSITE) {
-			for (const WareAmount& input : prod->input_wares()) {
-				// log_dbg("NOCOM add training ware %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWARE}]
 				   .insert(WeightedProductionCategory{ProductionCategory::kTraining, 0});
 			}
 			for (const auto& input : prod->input_workers()) {
-				// log_dbg("NOCOM add training worker %d", input.first);
 				ware_worker_categories_[ProductionProgram::WareWorkerId{
 				                           input.first, WareWorker::wwWORKER}]
 				   .insert(WeightedProductionCategory{ProductionCategory::kTraining, 0});
@@ -1497,8 +1438,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 	}
 
-	// NOCOM document special handling for mines
-
+	// Assign UI categories for fieldaction
 	for (const auto& category : productionsite_categories_) {
 		ProductionUICategory ui_category;
 		switch (category.first) {
@@ -1514,9 +1454,6 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		case ProductionCategory::kTraining:
 			ui_category = ProductionUICategory::kTraining;
 			break;
-		case ProductionCategory::kMining:
-			// Skip; this is for potential AI use
-			continue;
 		case ProductionCategory::kRoads:
 		case ProductionCategory::kSeafaring:
 		case ProductionCategory::kWaterways:

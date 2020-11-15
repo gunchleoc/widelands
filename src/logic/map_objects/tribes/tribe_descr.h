@@ -180,7 +180,6 @@ private:
 
 	// Helper function for adding a special worker type (carriers etc.)
 	DescriptionIndex add_special_worker(const std::string& workername,
-	                                    ProductionCategory category,
 	                                    Descriptions& descriptions);
 	// Helper function for adding a special building type (port etc.)
 	DescriptionIndex add_special_building(const std::string& buildingname,

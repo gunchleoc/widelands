@@ -27,8 +27,6 @@ const std::string to_string(ProductionCategory category) {
 	switch (category) {
 	case ProductionCategory::kConstruction:
 		return "construction";
-	case ProductionCategory::kMining:
-		return "mining";
 	case ProductionCategory::kRoads:
 		return "roads";
 	case ProductionCategory::kSeafaring:

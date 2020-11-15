@@ -30,7 +30,6 @@ namespace Widelands {
 enum class ProductionCategory {
 	kNone,
 	kConstruction,
-	kMining,
 	kRoads,
 	kSeafaring,
 	kTool,
