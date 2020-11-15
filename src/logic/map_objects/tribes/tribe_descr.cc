@@ -171,11 +171,8 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 			// Collect categories for producing site so we can stop on mismatch. This fixes overgeneration to to circularity by Frisian Recycling Center.
 			std::set<Widelands::ProductionCategory> producer_categories;
 			for (const auto& prod_cat : productionsite_categories) {
-				for (const Widelands::DescriptionIndex& prod_index : prod_cat.second) {
-					if (prod_index == producer_index) {
-						producer_categories.insert(prod_cat.first);
-						break;
-					}
+				if (prod_cat.second.count(producer_index) == 1) {
+					producer_categories.insert(prod_cat.first);
 				}
 			}
 
