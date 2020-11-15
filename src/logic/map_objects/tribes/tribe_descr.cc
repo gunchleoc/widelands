@@ -205,7 +205,7 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 						for (const Widelands::ProductionProgram::WareWorkerId& input_item : input.first) {
 
 							for (Widelands::WeightedProductionCategory ware_category : categories_to_search) {
-								assert(ware_category.category != Widelands::ProductionCategory::kNone);
+								assert(ware_category.category != Widelands::ProductionCategory::kMisc);
 
 
 								// Check if building matches. This gets rid of e.g. some cycles from the recycling centers.
@@ -1433,8 +1433,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		}
 		if (!found) {
 			// Remaining buildings (e.g. scouts) are uncategorized
-			log_dbg("\t%s\t%s", uncategorized.second->name().c_str(), to_string(ProductionCategory::kNone).c_str());
-			productionsite_categories_[ProductionCategory::kNone].insert(uncategorized.first);
+			log_dbg("\t%s\t%s", uncategorized.second->name().c_str(), to_string(ProductionCategory::kMisc).c_str());
+			productionsite_categories_[ProductionCategory::kMisc].insert(uncategorized.first);
 		}
 	}
 
@@ -1442,8 +1442,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	for (const auto& category : productionsite_categories_) {
 		ProductionUICategory ui_category;
 		switch (category.first) {
-		case ProductionCategory::kNone:
-			ui_category = ProductionUICategory::kNone;
+		case ProductionCategory::kMisc:
+			ui_category = ProductionUICategory::kMisc;
 			break;
 		case ProductionCategory::kConstruction:
 			ui_category = ProductionUICategory::kConstruction;

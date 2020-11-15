@@ -37,8 +37,8 @@ const std::string to_string(ProductionCategory category) {
 		return "training";
 	case ProductionCategory::kWaterways:
 		return "waterways";
-	case ProductionCategory::kNone:
-		return "none";
+	case ProductionCategory::kMisc:
+		return "miscellaneous";
 	}
 	NEVER_HERE();
 }
@@ -55,7 +55,7 @@ const std::string to_string(ProductionUICategory category) {
 		return "tool";
 	case ProductionUICategory::kTraining:
 		return "training";
-	case ProductionUICategory::kNone:
+	case ProductionUICategory::kMisc:
 		return "miscellaneous";
 	}
 	NEVER_HERE();

@@ -713,7 +713,7 @@ void FieldActionWindow::add_buttons_build(int32_t buildcaps, int32_t max_nodecap
 			// NOCOM category_icon = tribe.get_worker_descr(tribe.carrier2())->icon_filename();
 			category_icon = "images/wui/buildings/menu_tab_wares.png";
 			break;
-		case Widelands::ProductionUICategory::kNone:
+		case Widelands::ProductionUICategory::kMisc:
 			category_tooltip = pgettext("buildgrid", "Miscellaneous");
 			category_icon = "images/wui/stats/genstats_nrbuildings.png";
 			break;

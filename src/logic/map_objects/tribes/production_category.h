@@ -28,7 +28,7 @@ namespace Widelands {
 // Direct construction materials are registered at the TribeDescr.
 // The kConstruction class here includes all wares involved in creating a construction material too.
 enum class ProductionCategory {
-	kNone,
+	kMisc,
 	kConstruction,
 	kRoads,
 	kSeafaring,
@@ -43,7 +43,7 @@ enum class ProductionUICategory {
 	kConstruction,
 	kTools,
 	kTransport,
-	kNone,
+	kMisc,
 	kTraining,
 	kMilitary,
 };
