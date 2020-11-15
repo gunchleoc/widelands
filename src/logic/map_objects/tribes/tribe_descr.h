@@ -156,7 +156,6 @@ public:
 	float ware_preciousness(DescriptionIndex ware_index) const;
 	const std::set<WeightedProductionCategory>& ware_worker_categories(DescriptionIndex index,
 	                                                                   WareWorker type) const;
-	const std::map<ProductionCategory, std::set<ScoredDescriptionIndex>>& productionsite_categories() const;
 	const std::map<ProductionUICategory, std::set<DescriptionIndex>>& building_ui_categories() const;
 
 	bool uses_resource(const std::string& name) const {
@@ -241,7 +240,7 @@ private:
 	// The full production chain is available at each WareDescr
 	std::map<ProductionProgram::WareWorkerId, std::set<WeightedProductionCategory>>
 	   ware_worker_categories_;
-	std::map<ProductionCategory, std::set<ScoredDescriptionIndex>> productionsite_categories_;
+	std::map<ProductionCategory, std::set<DescriptionIndex>> productionsite_categories_;
 	std::map<ProductionUICategory, std::set<DescriptionIndex>> building_ui_categories_;
 	std::map<DescriptionIndex, float> ware_preciousness_;
 

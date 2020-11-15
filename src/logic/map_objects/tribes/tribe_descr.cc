@@ -134,7 +134,7 @@ void load_helptexts(Widelands::MapObjectDescr* descr,
 
 // NOCOM document
 void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
-							const std::map<Widelands::ProductionCategory, std::set<Widelands::TribeDescr::ScoredDescriptionIndex>>& productionsite_categories,
+							const std::map<Widelands::ProductionCategory, std::set<Widelands::DescriptionIndex>>& productionsite_categories,
                             std::set<Widelands::DescriptionIndex>& walked_productionsites,
                             std::set<Widelands::ProductionProgram::WareWorkerId>& assigned_ware_workers,
                             const std::set<Widelands::WeightedProductionCategory>& categories_to_search,
@@ -171,8 +171,8 @@ void walk_ware_supply_chain(Widelands::TribeDescr* tribe,
 			// Collect categories for producing site so we can stop on mismatch. This fixes overgeneration to to circularity by Frisian Recycling Center.
 			std::set<Widelands::ProductionCategory> producer_categories;
 			for (const auto& prod_cat : productionsite_categories) {
-				for (const Widelands::TribeDescr::ScoredDescriptionIndex& prod_cat_item : prod_cat.second) {
-					if (prod_cat_item.index == producer_index) {
+				for (const Widelands::DescriptionIndex& prod_index : prod_cat.second) {
+					if (prod_index == producer_index) {
 						producer_categories.insert(prod_cat.first);
 						break;
 					}
@@ -944,10 +944,6 @@ TribeDescr::ware_worker_categories(DescriptionIndex index, WareWorker type) cons
 	return ware_worker_categories_.at(key);
 }
 
-const std::map<ProductionCategory, std::set<TribeDescr::ScoredDescriptionIndex>>&
-TribeDescr::productionsite_categories() const {
-	return productionsite_categories_;
-}
 const std::map<ProductionUICategory, std::set<DescriptionIndex>>& TribeDescr::building_ui_categories() const {
 	return building_ui_categories_;
 }
@@ -1106,6 +1102,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	// Get a list of productionsites - we will need to iterate them more than once
 	// The temporary use of pointers here is fine, because it doesn't affect the game state.
 	std::set<ProductionSiteDescr*> productionsites;
+	// Main productionsites like trainingsites only get their primary category
 	std::set<DescriptionIndex> categorized_productionsites;
 
 	// Iterate buildings and update circular dependencies
@@ -1321,7 +1318,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 				   .insert(WeightedProductionCategory{ProductionCategory::kTraining, 0});
 			}
 			const DescriptionIndex prod_index = building_index(prod->name());
-			productionsite_categories_[ProductionCategory::kTraining].insert({prod_index, 0});
+			productionsite_categories_[ProductionCategory::kTraining].insert(prod_index);
 			categorized_productionsites.insert(prod_index);
 		} else {
 			for (const std::string& bobname : prod->created_bobs()) {
@@ -1337,7 +1334,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 						   .insert(WeightedProductionCategory{ProductionCategory::kSeafaring, 0});
 					}
 					const DescriptionIndex prod_index = building_index(prod->name());
-					productionsite_categories_[ProductionCategory::kSeafaring].insert({prod_index, 0});
+					productionsite_categories_[ProductionCategory::kSeafaring].insert(prod_index);
 					categorized_productionsites.insert(prod_index);
 				} else if (descriptions.worker_index(bobname) == ferry_) {
 					for (const WareAmount& input : prod->input_wares()) {
@@ -1351,7 +1348,7 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 						   .insert(WeightedProductionCategory{ProductionCategory::kWaterways, 0});
 					}
 					const DescriptionIndex prod_index = building_index(prod->name());
-					productionsite_categories_[ProductionCategory::kWaterways].insert({prod_index, 0});
+					productionsite_categories_[ProductionCategory::kWaterways].insert(prod_index);
 					categorized_productionsites.insert(prod_index);
 				}
 				add_creator(bobname, prod);
@@ -1370,42 +1367,30 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 	for (ProductionSiteDescr* prod : productionsites) {
 		const DescriptionIndex prod_index = building_index(prod->name());
 
-		std::map<ProductionCategory, unsigned> squashed_categories;
+		log_dbg("-");
+		bool found = false;
 		if (categorized_productionsites.count(prod_index) == 0) {
 			for (DescriptionIndex output : prod->output_ware_types()) {
 				for (const WeightedProductionCategory& cat :
 				     ware_worker_categories(output, WareWorker::wwWARE)) {
-					auto category_it = squashed_categories.find(cat.category);
-					if (category_it != squashed_categories.end()) {
-						category_it->second = std::min(category_it->second, cat.distance);
-					} else {
-						squashed_categories.insert(std::make_pair(cat.category, cat.distance));
-					}
+					log_dbg("\t%s\t%s", prod->name().c_str(), to_string(cat.category).c_str());
+					productionsite_categories_[cat.category].insert(prod_index);
+					found = true;
 				}
 			}
 			for (DescriptionIndex output : prod->output_worker_types()) {
 				for (const WeightedProductionCategory& cat :
 				     ware_worker_categories(output, WareWorker::wwWORKER)) {
-					auto category_it = squashed_categories.find(cat.category);
-					if (category_it != squashed_categories.end()) {
-						category_it->second = std::min(category_it->second, cat.distance);
-					} else {
-						squashed_categories.insert(std::make_pair(cat.category, cat.distance));
-					}
+					log_dbg("\t%s\t%s", prod->name().c_str(), to_string(cat.category).c_str());
+					productionsite_categories_[cat.category].insert(prod_index);
+					found = true;
 				}
 			}
 
-			if (squashed_categories.empty()) {
+			if (!found) {
 				// No ware in- or outputs on its own. Use the supported/supporting relationship below to
 				// categorize.
 				uncategorized_productionsites.insert(std::make_pair(prod_index, prod));
-			} else {
-				log_dbg("-");
-				for (const auto& squashed : squashed_categories) {
-					log_dbg("\t%s\t%d\t%s", prod->name().c_str(), squashed.second,
-					        to_string(squashed.first).c_str());
-					productionsite_categories_[squashed.first].insert({prod_index, squashed.second});
-				}
 			}
 		}
 
@@ -1494,33 +1479,24 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 
 	// NOCOM document
 	for (const auto& uncategorized : uncategorized_productionsites) {
-		std::map<ProductionCategory, unsigned> squashed_categories;
+		log_dbg("-");
+		bool found = false;
 		for (const std::string& supported_name : uncategorized.second->supported_productionsites()) {
 			const DescriptionIndex supported_index = building_index(supported_name);
 			for (const auto& category : productionsite_categories_) {
-				for (const ScoredDescriptionIndex& candidate : category.second) {
-					if (candidate.index == supported_index) {
-						auto category_it = squashed_categories.find(category.first);
-						if (category_it != squashed_categories.end()) {
-							category_it->second = std::min(category_it->second, candidate.score);
-						} else {
-							squashed_categories.insert(std::make_pair(category.first, candidate.score));
-						}
+				for (const DescriptionIndex& candidate : category.second) {
+					if (candidate == supported_index) {
+						log_dbg("\t%s\t%s", uncategorized.second->name().c_str(), to_string(category.first).c_str());
+						productionsite_categories_[category.first].insert(candidate);
+						found = true;
 					}
 				}
 			}
 		}
-		if (squashed_categories.empty()) {
+		if (!found) {
 			// Remaining buildings (e.g. scouts) are uncategorized
-			log_dbg("NOCOM ############# Missing: %s", uncategorized.second->name().c_str());
-			productionsite_categories_[ProductionCategory::kNone].insert({uncategorized.first, 0});
-		} else {
-			log_dbg("-");
-			for (const auto& squashed : squashed_categories) {
-				log_dbg("\t%s\t%d\t%s", uncategorized.second->name().c_str(), squashed.second + 1,
-						to_string(squashed.first).c_str());
-				productionsite_categories_[squashed.first].insert({uncategorized.first, squashed.second + 1});
-			}
+			log_dbg("\t%s\t%s", uncategorized.second->name().c_str(), to_string(ProductionCategory::kNone).c_str());
+			productionsite_categories_[ProductionCategory::kNone].insert(uncategorized.first);
 		}
 	}
 
@@ -1549,8 +1525,8 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 		case ProductionCategory::kWaterways:
 			ui_category = ProductionUICategory::kTransport;
 		}
-		for (const ScoredDescriptionIndex& item : category.second) {
-			building_ui_categories_[ui_category].insert(item.index);
+		for (const DescriptionIndex& item : category.second) {
+			building_ui_categories_[ui_category].insert(item);
 		}
 	}
 
@@ -1632,24 +1608,29 @@ void TribeDescr::process_productionsites(Descriptions& descriptions) {
 			const DescriptionIndex prod_index = productionsites_to_walk.top();
 			productionsites_to_walk.pop();
 			walked_productionsites.insert(prod_index);
-			preciousness += preciousness_at_building(idx2prod.at(prod_index), &preciousness_wares);
+			const ProductionSiteDescr* prod = idx2prod.at(prod_index);
+			preciousness += preciousness_at_building(prod, &preciousness_wares);
 
-			for (const ProductionProgram::WareWorkerId& new_ware_id : preciousness_wares) {
-				if (new_ware_id.type == WareWorker::wwWARE) {
-					const WareDescr* new_ware = get_ware_descr(new_ware_id.index);
-					for (const DescriptionIndex& new_producer_idx : new_ware->producers()) {
-						if (walked_productionsites.count(new_producer_idx) == 0 && idx2prod.count(new_producer_idx) == 1) {
-							// NOCOM some cutoff points here for circularity!
-							bool walk_this = true;
-							for (const auto& category : productionsite_categories_) {
-								for (const ScoredDescriptionIndex& scored : category.second) {
-									if (scored.score == 0) {
-										walk_this = false;
-										break;
-									}
-								}
-							}
-							if (walk_this) {
+			// Skip production circles for score
+			bool walk_this = true;
+			for (const WareAmount& input : prod->input_wares()) {
+				for (const WeightedProductionCategory& input_cat : ware_worker_categories_.at({input.first, WareWorker::wwWARE})) {
+					if (input_cat.distance == 0) {
+						walk_this = false;
+					}
+				}
+				if (!walk_this) {
+					break;
+				}
+			}
+
+			// Walk new producers
+			if (walk_this) {
+				for (const ProductionProgram::WareWorkerId& new_ware_id : preciousness_wares) {
+					if (new_ware_id.type == WareWorker::wwWARE) {
+						const WareDescr* new_ware = get_ware_descr(new_ware_id.index);
+						for (const DescriptionIndex& new_producer_idx : new_ware->producers()) {
+							if (walked_productionsites.count(new_producer_idx) == 0 && idx2prod.count(new_producer_idx) == 1) {
 								productionsites_to_walk.push(new_producer_idx);
 							}
 						}
